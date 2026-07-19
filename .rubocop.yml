@@ -1,0 +1,87 @@
+plugins:
+  - rubocop-rspec
+  - rubocop-performance
+  - rubocop-packaging
+  - rubocop-thread_safety
+
+require:
+  - ./.rubocop/cop/hashira/io_discipline.rb
+
+AllCops:
+  TargetRubyVersion: 3.4
+  NewCops: enable
+  Exclude:
+    - "vendor/**/*"
+
+Style/Documentation:
+  Enabled: false
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: double_quotes
+
+# The codebase consistently uses numbered block parameters (_1).
+Style/ItBlockParameter:
+  Enabled: false
+
+# Report tables use positional printf tokens (%-12s); annotations add noise.
+Style/FormatStringToken:
+  EnforcedStyle: unannotated
+
+# Specs are integration-flavoured and organised by area, not by class path.
+RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+Layout/LineLength:
+  Max: 120
+
+Metrics/BlockLength:
+  Exclude:
+    - "spec/**/*"
+    - "hashira.gemspec"
+
+# --- Sandi Metz rules: class <= 100 lines, method <= 5 lines, <= 4 params.
+# Broken only where a named exclude says why.
+
+Metrics/ClassLength:
+  Max: 100
+
+Metrics/ModuleLength:
+  Max: 100
+
+Metrics/MethodLength:
+  Max: 5
+  Exclude:
+    - "spec/**/*"   # fixture-builder helpers; the rule targets production code
+
+Metrics/ParameterLists:
+  Max: 4
+  CountKeywordArgs: true
+
+Style/EndlessMethod:
+  EnforcedStyle: allow_single_line
+
+Naming/RescuedExceptionsVariableName:
+  PreferredName: error
+
+# Printers and CI reporters write only through their injected IO.
+Hashira/IoDiscipline:
+  Include:
+    - "lib/hashira/report/**/*"
+    - "lib/hashira/ci/**/*"
+
+RSpec/VerifiedDoubles:
+  Enabled: true
+
+# Specs chdir into a private tmpdir per example; RSpec here is single-threaded.
+ThreadSafety/DirChdir:
+  Exclude:
+    - "spec/**/*"
