@@ -1,0 +1,21 @@
+# Documentation comments are off by choice (see .rubocop.yml Style/Documentation).
+detectors:
+  IrresponsibleModule:
+    enabled: false
+
+  # Private helpers may be stateless; the smell targets public API design.
+  UtilityFunction:
+    public_methods_only: true
+
+  # Match RuboCop Metrics/ParameterLists.
+  LongParameterList:
+    max_params: 4
+
+  FeatureEnvy:
+    exclude:
+      - "Hashira::Report::MetricsTable#row"       # a presenter formatting a value object
+      - "Hashira::CLI::CommandLine#parse_mode"    # local-variable envy, not a misplaced method
+
+exclude_paths:
+  - spec
+  - vendor

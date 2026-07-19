@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "edges": [
+    "(root) -> analysis",
+    "ci -> (root)",
+    "ci -> report",
+    "cli -> (root)",
+    "cli -> ci",
+    "cli -> diagram",
+    "cli -> report"
+  ]
+}

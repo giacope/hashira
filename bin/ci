@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Every check CI runs, runnable locally. Any failure fails the build.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+bundle exec rubocop
+bundle exec reek lib
+bundle exec rspec # spec_helper enforces the coverage floor (99% line and branch)
+bundle exec rubycritic lib --no-browser --format console --minimum-score 94
+bundle exec exe/hashira --fail-on cycles,sdp
+bundle exec exe/hashira --ratchet
+
+echo "bin/ci: all checks passed ✓"
