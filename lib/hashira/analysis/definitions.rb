@@ -14,7 +14,7 @@ module Hashira
         @trees.each { |file, tree| definitions_in(file, tree, &) }
       end
 
-      def packages = @trees.keys.map { @project.package_for(_1) }.uniq
+      def packages = @trees.keys.map { @project.package_for(it) }.uniq
 
       private
 

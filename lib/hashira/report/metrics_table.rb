@@ -25,8 +25,7 @@ module Hashira
 
       def row(package, metric)
         cyclic = @graph.cyclic?(package) ? "YES" : "-"
-        format("%-12s %3d %3d %3d %5.2f  %-3s", package,
-               metric.type_count, metric.afferent, metric.efferent, metric.instability, cyclic)
+        format("%-12s %3d %3d %3d %5.2f  %-3s", package, *metric.to_h.values, cyclic)
       end
 
       def legend

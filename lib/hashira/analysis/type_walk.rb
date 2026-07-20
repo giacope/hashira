@@ -19,7 +19,7 @@ module Hashira
 
       def each_child_definition(node, prefix, &)
         children = node ? node.compact_child_nodes : []
-        children.each { each_definition(_1, prefix, &) }
+        children.each { each_definition(it, prefix, &) }
       end
     end
   end

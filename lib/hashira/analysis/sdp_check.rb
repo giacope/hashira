@@ -10,7 +10,7 @@ module Hashira
 
       def violations
         @dependencies.flat_map do |from, tos|
-          tos.select { @metrics[_1].instability > @metrics[from].instability }.map { [from, _1] }
+          tos.select { @metrics[it].instability > @metrics[from].instability }.map { [from, it] }
         end
       end
     end

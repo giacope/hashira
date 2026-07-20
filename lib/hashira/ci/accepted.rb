@@ -24,20 +24,20 @@ module Hashira
       end
 
       def initialize(entries)
-        @entries = entries.map { Entry.from(_1) }
+        @entries = entries.map { Entry.from(it) }
       end
 
       def entries = @entries.map(&:to_h)
 
       def screen(findings)
-        accepted, live = findings.map { [_1, reason_for(_1)] }.partition(&:last)
+        accepted, live = findings.map { [it, reason_for(it)] }.partition(&:last)
         Screened.new(all: live.map(&:first), accepted:)
       end
 
       private
 
       def reason_for(finding)
-        @entries.find { _1.matches?(finding) }&.label
+        @entries.find { it.matches?(finding) }&.label
       end
     end
   end

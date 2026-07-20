@@ -13,10 +13,10 @@ module Hashira
 
       def dependencies_of(package) = dependencies[package].to_a.sort
 
-      def dependents_of(package) = packages.select { dependencies[_1].include?(package) }.sort
+      def dependents_of(package) = packages.select { dependencies[it].include?(package) }.sort
 
       def edge_list
-        dependencies.sort.flat_map { |from, tos| tos.sort.map { Edge.new(from:, to: _1) } }
+        dependencies.sort.flat_map { |from, tos| tos.sort.map { Edge.new(from:, to: it) } }
       end
 
       def weighted_edges
@@ -34,7 +34,7 @@ module Hashira
                    efferent: dependencies[package].size)
       end
 
-      def metrics = packages.to_h { [_1, metric_for(_1)] }
+      def metrics = packages.to_h { [it, metric_for(it)] }
 
       def sdp_violations = SdpCheck.new(dependencies, metrics).violations
 

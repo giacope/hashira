@@ -24,7 +24,7 @@ module FixtureHelper
 
   def build_pipeline(directories)
     project = Hashira::Project.new(directories)
-    trees = project.files.to_h { [_1, Prism.parse_file(_1).value] }
+    trees = project.files.to_h { [it, Prism.parse_file(it).value] }
     census = Hashira::Analysis::Census.new(project, trees)
     [project, census, Hashira::Analysis::Graph.new(project, trees, census)]
   end

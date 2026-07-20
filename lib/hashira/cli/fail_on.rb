@@ -13,7 +13,7 @@ module Hashira
       def parse(list)
         return [] unless list
 
-        list.split(",").map { kind(_1.strip) }.uniq
+        list.split(",").map { kind(it.strip) }.uniq
       end
 
       def kind(name)

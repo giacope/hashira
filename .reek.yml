@@ -11,11 +11,6 @@ detectors:
   LongParameterList:
     max_params: 4
 
-  FeatureEnvy:
-    exclude:
-      - "Hashira::Report::MetricsTable#row"       # a presenter formatting a value object
-      - "Hashira::CLI::CommandLine#parse_mode"    # local-variable envy, not a misplaced method
-
 exclude_paths:
   - spec
   - vendor
