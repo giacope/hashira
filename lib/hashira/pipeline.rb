@@ -6,7 +6,7 @@ module Hashira
   class Pipeline
     def initialize(project)
       @project = project
-      trees = project.files.to_h { [_1, parse(_1)] }
+      trees = project.files.to_h { [it, parse(it)] }
       @census = Analysis::Census.new(project, trees)
       @graph = Analysis::Graph.new(project, trees, @census)
     end
@@ -15,7 +15,7 @@ module Hashira
 
     RULES = [Analysis::CycleFindings, Analysis::SdpViolationFindings].freeze
 
-    def findings = RULES.flat_map { _1.new(@project, @graph).list }
+    def findings = RULES.flat_map { it.new(@project, @graph).list }
 
     private
 

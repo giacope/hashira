@@ -22,9 +22,9 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
-# The codebase consistently uses numbered block parameters (_1).
+# Prefer `it` over `_1` (Ruby 3.4+); named parameters stay allowed.
 Style/ItBlockParameter:
-  Enabled: false
+  EnforcedStyle: only_numbered_parameters
 
 # Report tables use positional printf tokens (%-12s); annotations add noise.
 Style/FormatStringToken:

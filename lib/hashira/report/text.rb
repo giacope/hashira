@@ -43,7 +43,7 @@ module Hashira
       def print_findings(all)
         return @io.puts "  none ✓ — structure is healthy" if all.empty?
 
-        all.each { FindingLines.new(_1, indent: "  ", io: @io).print_with_overflow }
+        all.each { FindingLines.new(it, indent: "  ", io: @io).print_with_overflow }
       end
 
       def accepted_section

@@ -7,7 +7,7 @@ module Hashira
         @dependencies = dependencies
         @package = package
         @predecessor = {}
-        @queue = dependencies[package].to_a.each { @predecessor[_1] = package }
+        @queue = dependencies[package].to_a.each { @predecessor[it] = package }
       end
 
       def path

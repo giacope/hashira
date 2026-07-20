@@ -38,10 +38,15 @@ module Hashira
       end
 
       def parse_mode(fail_on)
-        requested = requested_modes(fail_on).uniq(&:last)
-        raise Error, "conflicting options: #{requested.map(&:first).join(" and ")}" if requested.size > 1
+        case (requested = requested_modes(fail_on).uniq(&:last))
+        in [] then :text
+        in [[_flag, mode]] then mode
+        else conflict(requested)
+        end
+      end
 
-        requested.dig(0, 1) || :text
+      def conflict(requested)
+        raise Error, "conflicting options: #{requested.map(&:first).join(" and ")}"
       end
 
       def requested_modes(fail_on)
@@ -78,7 +83,7 @@ module Hashira
       def delete(flag) = @arguments.delete(flag)
 
       def reject_unknown_flags
-        stray = @arguments.find { _1.start_with?("-") }
+        stray = @arguments.find { it.start_with?("-") }
         raise Error, "unknown option #{stray}" if stray
       end
     end

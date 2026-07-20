@@ -12,14 +12,14 @@ module Hashira
       end
 
       def each_sighting(tree)
-        [].tap { collect(tree, _1) }
+        [].tap { collect(tree, it) }
       end
 
       def collect(node, accumulator)
         return unless node
         return accumulator << [Syntax.path_segments(node), node.location.start_line] if constant?(node)
 
-        branches(node).each { collect(_1, accumulator) }
+        branches(node).each { collect(it, accumulator) }
       end
 
       def constant?(node) = node.is_a?(Prism::ConstantPathNode) || node.is_a?(Prism::ConstantReadNode)

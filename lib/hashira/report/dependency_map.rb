@@ -10,18 +10,21 @@ module Hashira
 
       def print
         @io.puts "Dependencies (DependsUpon(refs) -> | <- UsedBy):"
-        @graph.packages.sort.each { @io.puts row(_1) }
+        @graph.packages.sort.each { @io.puts row(it) }
       end
 
       private
 
       def row(package)
-        depends_upon = @graph.dependencies_of(package).map { "#{_1}(#{@graph.weight(package, _1)})" }.join(", ")
-        used_by = @graph.dependents_of(package).join(", ")
         format("  %-12s -> %-32s <- %s", package,
-               depends_upon.empty? ? "(none)" : depends_upon,
-               used_by.empty? ? "(none)" : used_by)
+               list(depends_upon(package)), list(@graph.dependents_of(package)))
       end
+
+      def depends_upon(package)
+        @graph.dependencies_of(package).map { "#{it}(#{@graph.weight(package, it)})" }
+      end
+
+      def list(items) = items.empty? ? "(none)" : items.join(", ")
     end
   end
 end

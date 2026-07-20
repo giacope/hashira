@@ -26,14 +26,14 @@ module Hashira
       def print_added(added)
         return if added.empty?
 
-        added.each { print_edge(_1) }
+        added.each { print_edge(it) }
         @io.puts "\nRatchet FAILED. Either decouple, or if the new edge is a deliberate"
         @io.puts "design decision, update the baseline and say why in the commit."
       end
 
       def print_edge(edge)
         @io.puts "NEW EDGE #{edge} — introduced by:"
-        @graph.evidence_for(edge.from, edge.to).to_a.sort.each { @io.puts "  · #{_1}" }
+        @graph.evidence_for(edge.from, edge.to).to_a.sort.each { @io.puts "  · #{it}" }
       end
 
       def print_removed(removed)

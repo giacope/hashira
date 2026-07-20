@@ -9,7 +9,7 @@ RSpec.describe Hashira::Pipeline, "#findings" do
 
   it "reports cycles with path, weakest edge, and evidence" do
     findings_for(FixtureHelper::CYCLIC_FILES) do |all|
-      cycles = all.select { _1.kind == "cycle" }
+      cycles = all.select { it.kind == "cycle" }
       expect(cycles.map(&:package)).to eq(%w[alpha beta])
       finding = cycles.first
       expect(finding.cycle).to eq(%w[alpha beta alpha])
@@ -21,7 +21,7 @@ RSpec.describe Hashira::Pipeline, "#findings" do
 
   it "pluralizes the weakest-edge ref count" do
     findings_for(FixtureHelper::CYCLIC_FILES) do |all|
-      beta_cycle = all.find { _1.kind == "cycle" && _1.package == "beta" }
+      beta_cycle = all.find { it.kind == "cycle" && it.package == "beta" }
       expect(beta_cycle.message).to include("(1 ref).")
     end
   end
@@ -32,14 +32,14 @@ RSpec.describe Hashira::Pipeline, "#findings" do
       "lib/app/b/x.rb" => "module App; module B; class X; def c = [A::X, A::Y]; end; end; end\n"
     }
     findings_for(files) do |all|
-      cycle = all.find { _1.kind == "cycle" }
+      cycle = all.find { it.kind == "cycle" }
       expect(cycle.message).to include("(2 refs).")
     end
   end
 
   it "reports SDP violations with instabilities and evidence" do
     findings_for(FixtureHelper::CYCLIC_FILES) do |all|
-      violations = all.select { _1.kind == "sdp_violation" }
+      violations = all.select { it.kind == "sdp_violation" }
       expect(violations.size).to eq(1)
       finding = violations.first
       expect(finding.package).to eq("beta")

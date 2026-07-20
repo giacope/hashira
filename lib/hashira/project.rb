@@ -5,24 +5,27 @@ module Hashira
     ROOT_PACKAGE = "(root)"
 
     def self.detect(directories)
-      return new(directories) unless directories.empty?
-
-      subdirectories = Dir["lib/*/"].map { File.basename(_1) }
-      raise Error, "no lib/ directory here — pass the source directory explicitly" if subdirectories.empty?
-
-      new(subdirectories.size == 1 ? ["lib/#{subdirectories.first}"] : ["lib"])
+      directories.empty? ? new(default_directories) : new(directories)
     end
 
+    def self.default_directories
+      subdirectories = Dir["lib/*/"].map { File.basename(it) }
+      raise Error, "no lib/ directory here — pass the source directory explicitly" if subdirectories.empty?
+
+      subdirectories.size == 1 ? ["lib/#{subdirectories.first}"] : ["lib"]
+    end
+    private_class_method :default_directories
+
     def initialize(directories)
-      missing = directories.reject { Dir.exist?(_1) }
+      missing = directories.reject { Dir.exist?(it) }
       raise Error, "no such directory: #{missing.join(", ")}" unless missing.empty?
 
-      @directories = directories.map { _1.delete_suffix("/") }
+      @directories = directories.map { it.delete_suffix("/") }
     end
 
     attr_reader :directories
 
-    def files = @directories.flat_map { Dir["#{_1}/**/*.rb"] }.sort
+    def files = @directories.flat_map { Dir["#{it}/**/*.rb"] }.sort
 
     def package_for(path)
       first, rest = relative(path).delete_suffix(".rb").split("/", 2)
@@ -40,7 +43,7 @@ module Hashira
     def folder?(path, name) = Dir.exist?("#{directory_of(path)}/#{name}")
 
     def directory_of(path)
-      @directories.find { path.start_with?("#{_1}/") } ||
+      @directories.find { path.start_with?("#{it}/") } ||
         raise(Error, "#{path} is outside the analyzed directories")
     end
   end

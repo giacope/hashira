@@ -37,7 +37,7 @@ module Hashira
         raise Error, "no baseline at #{@baseline_path} — run --update-baseline first" unless File.exist?(@baseline_path)
 
         baseline = JSON.parse(File.read(@baseline_path)).fetch("edges")
-        [edges.reject { baseline.include?(_1.to_s) }, baseline - edges.map(&:to_s)]
+        [edges.reject { baseline.include?(it.to_s) }, baseline - edges.map(&:to_s)]
       end
     end
   end

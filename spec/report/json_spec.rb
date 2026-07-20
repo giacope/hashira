@@ -13,10 +13,10 @@ RSpec.describe Hashira::Report::Json do
       expect(report["edges"]).to include(
         "from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]
       )
-      expect(report["edges"].map { [_1["from"], _1["to"]] })
+      expect(report["edges"].map { [it["from"], it["to"]] })
         .to eq([%w[alpha beta], %w[alpha core], %w[beta alpha]])
 
-      expect(report["findings"].map { _1["kind"] }).to eq(%w[cycle cycle sdp_violation])
+      expect(report["findings"].map { it["kind"] }).to eq(%w[cycle cycle sdp_violation])
     end
   end
 end

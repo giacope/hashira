@@ -6,7 +6,7 @@ module Hashira
       KIND = "cycle"
 
       def list
-        graph.packages.select { graph.cyclic?(_1) }.sort.map { cycle_finding(_1) }
+        graph.packages.select { graph.cyclic?(it) }.sort.map { cycle_finding(it) }
       end
 
       private

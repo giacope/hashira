@@ -13,7 +13,7 @@ module Hashira
 
       def print
         @io.puts "#{@indent}#{@finding.kind}: #{@finding.message}"
-        @finding.evidence.first(SAMPLE).each { @io.puts "#{@indent}    · #{_1}" }
+        @finding.evidence.first(SAMPLE).each { @io.puts "#{@indent}    · #{it}" }
       end
 
       def print_with_overflow
