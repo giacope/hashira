@@ -6,6 +6,7 @@ plugins:
 
 require:
   - ./.rubocop/cop/hashira/io_discipline.rb
+  - ./.rubocop/cop/hashira/no_comments.rb
 
 AllCops:
   TargetRubyVersion: 3.4
@@ -56,6 +57,8 @@ Metrics/ClassLength:
 
 Metrics/ModuleLength:
   Max: 100
+  Exclude:
+    - "spec/**/*"   # fixture modules mirror multi-field data objects
 
 Metrics/MethodLength:
   Max: 5
@@ -65,6 +68,8 @@ Metrics/MethodLength:
 Metrics/ParameterLists:
   Max: 4
   CountKeywordArgs: true
+  Exclude:
+    - "spec/**/*"
 
 Style/EndlessMethod:
   EnforcedStyle: allow_single_line
@@ -77,6 +82,10 @@ Hashira/IoDiscipline:
   Include:
     - "lib/hashira/report/**/*"
     - "lib/hashira/ci/**/*"
+
+Hashira/NoComments:
+  Include:
+    - "lib/**/*"
 
 RSpec/VerifiedDoubles:
   Enabled: true

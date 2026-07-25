@@ -1,12 +1,26 @@
 {
-  "version": 1,
+  "version": 2,
   "edges": [
     "(root) -> analysis",
+    "(root) -> complexity",
+    "(root) -> duplication",
+    "(root) -> hotspots",
     "ci -> (root)",
     "ci -> report",
     "cli -> (root)",
     "cli -> ci",
     "cli -> diagram",
-    "cli -> report"
+    "cli -> report",
+    "complexity -> analysis",
+    "duplication -> analysis",
+    "report -> duplication"
+  ],
+  "findings": [],
+  "accepted": [
+    {
+      "kind": "duplication",
+      "digest": "8bbddea787bc",
+      "reason": "CLI::Run mode delegators; one line per MODES entry is the dispatch table, not a copy"
+    }
   ]
 }

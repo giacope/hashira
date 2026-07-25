@@ -7,14 +7,18 @@ module Hashira
     class Accepted
       Screened = Data.define(:all, :accepted)
 
-      Entry = Data.define(:kind, :package, :reason) do
-        def self.from(hash) = new(kind: hash["kind"], package: hash["package"], reason: hash["reason"])
+      Entry = Data.define(:kind, :package, :digest, :reason) do
+        def self.from(hash)
+          new(kind: hash["kind"], package: hash["package"], digest: hash["digest"], reason: hash["reason"])
+        end
 
-        def matches?(finding) = [kind, package] == [finding.kind, finding.package]
+        def matches?(finding) = kind == finding.kind && identity == finding.identity
+
+        def identity = digest || package
 
         def label = reason || "accepted (no reason recorded)"
 
-        def to_h = { kind:, package:, reason: }.compact
+        def to_h = { kind:, package:, digest:, reason: }.compact
       end
 
       def self.load(path)

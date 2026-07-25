@@ -23,7 +23,7 @@ module Hashira
         usage(:version) if delete("--version")
       end
 
-      def usage(mode) = Options.new(directories: [], mode:, baseline: nil, fail_on: [])
+      def usage(mode) = Options.new(directories: [], mode:, baseline: nil, fail_on: [], skip: [])
 
       def parsed_options
         values = flag_values
@@ -33,7 +33,8 @@ module Hashira
       end
 
       def flag_values
-        { fail_on: FailOn.parse(take_value("--fail-on")),
+        { skip: Skip.parse(take_value("--skip")),
+          fail_on: FailOn.parse(take_value("--fail-on")),
           baseline: take_value("--baseline") || DEFAULT_BASELINE }
       end
 

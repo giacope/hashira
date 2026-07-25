@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe Hashira::Report::Text do
+  def view_for(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil)
+    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:)
+  end
+
   it "prints the full report verbatim" do
     with_pipeline do |project, graph, findings|
-      output = capture_stdout { described_class.new(project, graph, findings).print }
+      output = capture_stdout { described_class.new(view_for(project, graph, findings)).print }
 
       expect(output).to eq(<<~TEXT)
         Package (layer) metrics for lib/app  (3 packages, 3 files)
@@ -45,7 +49,7 @@ RSpec.describe Hashira::Report::Text do
     within_project(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      output = capture_stdout { described_class.new(pipeline.project, pipeline.graph, screened).print }
+      output = capture_stdout { described_class.new(view_for(pipeline.project, pipeline.graph, screened)).print }
       expect(output).to eq(<<~TEXT)
         Package (layer) metrics for lib/app  (1 packages, 1 files)
 
@@ -67,6 +71,39 @@ RSpec.describe Hashira::Report::Text do
     end
   end
 
+  it "adds the complexity section and its findings when complexity is present" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+      view = view_for(pipeline.project, pipeline.graph, screened, complexity: pipeline.complexity)
+      output = capture_stdout { described_class.new(view).print }
+      expect(output).to include("Package (layer) metrics", "Cognitive complexity — worst methods",
+                                "Per-class rollup", "complexity: App::Knot::Tangle#tangled")
+    end
+  end
+
+  it "renders complexity alone when coupling is skipped (no graph)" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+      view = view_for(pipeline.project, nil, screened, complexity: pipeline.complexity)
+      output = capture_stdout { described_class.new(view).print }
+      expect(output).to include("Cognitive complexity — worst methods")
+      expect(output).not_to include("package       TC")
+    end
+  end
+
+  it "lists accepted findings with their recorded reason" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
+      screened = Hashira::CI::Accepted.new([entry]).screen(pipeline.findings)
+      view = view_for(pipeline.project, pipeline.graph, screened, complexity: pipeline.complexity)
+      output = capture_stdout { described_class.new(view).print }
+      expect(output).to include("Accepted (1):", "~ complexity/App::Knot::Tangle#tangled — legacy tangle")
+    end
+  end
+
   it "truncates long evidence lists with an overflow marker" do
     files = (1..7).to_h do |n|
       succ = (n % 7) + 1
@@ -75,7 +112,7 @@ RSpec.describe Hashira::Report::Text do
     within_project(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      output = capture_stdout { described_class.new(pipeline.project, pipeline.graph, screened).print }
+      output = capture_stdout { described_class.new(view_for(pipeline.project, pipeline.graph, screened)).print }
       expect(output).to include("· … (3 more)")
     end
   end

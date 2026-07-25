@@ -11,6 +11,30 @@ detectors:
   LongParameterList:
     max_params: 4
 
+  # The cognitive-complexity visitor is one tiny handler per AST node type,
+  # each threading (node, nesting) and switching on node kind. That is the
+  # shape of a tree walk, not a smell to refactor away.
+  DataClump:
+    exclude:
+      - "Hashira::Complexity::CognitiveScore"
+      - "Hashira::Complexity::IfChain"
+
+  # A builder that turns an AST node into a value object envies its input; the
+  # duplication kernels (an LCS DP and the AST node/tag classifiers) envy their
+  # arrays and nodes by nature.
+  FeatureEnvy:
+    exclude:
+      - "Hashira::Complexity::Analyzer#build_score"
+      - "Hashira::Duplication::Similarity#cell"
+      - "Hashira::Duplication::Delta#kind"
+      - "Hashira::Duplication::Variance#signature"
+
+  # The LCS cell compares a token against the row it's filling — the comparison is
+  # the algorithm, not a boolean flag threaded in to steer control.
+  ControlParameter:
+    exclude:
+      - "Hashira::Duplication::Similarity#cell"
+
 exclude_paths:
   - spec
   - vendor

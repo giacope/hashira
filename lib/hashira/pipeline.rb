@@ -4,20 +4,42 @@ require "prism"
 
 module Hashira
   class Pipeline
-    def initialize(project)
+    ANALYZERS = %i[coupling complexity duplication].freeze
+
+    RULES = [Analysis::CycleFindings, Analysis::SdpViolationFindings].freeze
+
+    def initialize(project, enabled: ANALYZERS)
       @project = project
-      trees = project.files.to_h { [it, parse(it)] }
-      @census = Analysis::Census.new(project, trees)
-      @graph = Analysis::Graph.new(project, trees, @census)
+      @enabled = enabled
+      @trees = project.files.to_h { [it, parse(it)] }
+      @graph = Analysis::Graph.new(project, @trees, Analysis::Census.new(project, @trees))
     end
 
     attr_reader :project, :graph
 
-    RULES = [Analysis::CycleFindings, Analysis::SdpViolationFindings].freeze
+    def complexity
+      @complexity ||= Complexity::Analyzer.new(@project, @trees) if enabled?(:complexity)
+    end
 
-    def findings = RULES.flat_map { it.new(@project, @graph).list }
+    def duplication
+      @duplication ||= Duplication::Analyzer.new(@project, @trees, churn) if enabled?(:duplication)
+    end
+
+    def hotspots
+      @hotspots ||= Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
+    end
+
+    def churn = @churn ||= Churn.from_git
+
+    def enabled?(analyzer) = @enabled.include?(analyzer)
+
+    def findings = coupling_findings + listed(complexity) + listed(duplication)
 
     private
+
+    def coupling_findings = enabled?(:coupling) ? RULES.flat_map { it.new(@project, @graph).list } : []
+
+    def listed(analyzer) = analyzer ? analyzer.findings : []
 
     def parse(path)
       Prism.parse_file(path).value

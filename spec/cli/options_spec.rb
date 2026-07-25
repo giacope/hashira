@@ -75,5 +75,20 @@ RSpec.describe Hashira::CLI::Options do
     it "tolerates redundant format flags" do
       expect(described_class.parse(%w[--json --format json]).mode).to eq(:json)
     end
+
+    it "defaults --skip to nothing and parses a comma-separated list" do
+      expect(described_class.parse(%w[lib]).skip).to eq([])
+      expect(described_class.parse(%w[lib --skip complexity]).skip).to eq([:complexity])
+    end
+
+    it "rejects an unknown --skip analyzer" do
+      expect { described_class.parse(%w[--skip typo]) }
+        .to raise_error(Hashira::Error, 'unknown --skip "typo" (use: coupling, complexity, duplication)')
+    end
+
+    it "refuses to skip every analyzer" do
+      expect { described_class.parse(%w[--skip coupling,complexity,duplication]) }
+        .to raise_error(Hashira::Error, "cannot skip every analyzer")
+    end
   end
 end

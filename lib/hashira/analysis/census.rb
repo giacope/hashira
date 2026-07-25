@@ -29,8 +29,6 @@ module Hashira
         end
       end
 
-      # Assumes each top-level name is declared by one package; if two
-      # packages declare the same name, the last file (in sort order) wins.
       def register(full, package)
         outer, inner = full.first(2)
         name = outer == root_namespace ? inner : outer

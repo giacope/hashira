@@ -40,6 +40,30 @@ module FixtureHelper
     end
   end
 
+  def analyze_complexity(files, directories: ["lib/app"])
+    within_project(files) do
+      project = Hashira::Project.new(directories)
+      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+      yield Hashira::Complexity::Analyzer.new(project, trees)
+    end
+  end
+
+  def fragments_for(sources)
+    project = Object.new
+    def project.relative(path) = path
+    sources.flat_map { |name, source| Hashira::Duplication::Extractor.new(project, { name => Prism.parse(source).value }).fragments }
+  end
+
+  def cluster_for(sources) = Hashira::Duplication::Clusterer.new(fragments_for(sources)).clusters.first
+
+  def analyze_duplication(files, directories: ["lib/app"])
+    within_project(files) do
+      project = Hashira::Project.new(directories)
+      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+      yield Hashira::Duplication::Analyzer.new(project, trees, Hashira::Churn.new({}))
+    end
+  end
+
   def capture_stdout
     original = $stdout
     $stdout = StringIO.new
@@ -75,6 +99,65 @@ module FixtureHelper
         module Core
           class Util
             def self.help = 1
+          end
+        end
+      end
+    RUBY
+  }.freeze
+
+  # A class whose `tangled` method scores 12 (four nested ifs + a mixed boolean
+  # run), alongside a trivial method and a singleton method for subject shapes.
+  COMPLEX_FILES = {
+    "lib/app/knot/tangle.rb" => <<~RUBY
+      module App
+        module Knot
+          class Tangle
+            def self.helper = 1
+
+            def simple = value
+
+            def tangled(a, b, c, d)
+              if a
+                if b
+                  if c
+                    if d
+                      e && f && g || h
+                    end
+                  end
+                end
+              end
+            end
+          end
+        end
+      end
+    RUBY
+  }.freeze
+
+  # Two methods identical but for one symbol literal (:sale vs :refund) — an
+  # exact clone the duplication analyzer should cluster and classify as literal.
+  DUPLICATION_FILES = {
+    "lib/app/orders/checkout.rb" => <<~RUBY,
+      module App
+        module Orders
+          class Checkout
+            def run(gateway)
+              gateway.configure(fetch(:host), fetch(:port))
+              gateway.connect(retries: 3, timeout: 30)
+              gateway.authorize(token: load(:tok), scope: :sale)
+            end
+          end
+        end
+      end
+    RUBY
+    "lib/app/billing/refund.rb" => <<~RUBY
+      module App
+        module Billing
+          class Refund
+            def run(gateway)
+              gateway.configure(fetch(:host), fetch(:port))
+              gateway.connect(retries: 3, timeout: 30)
+              gateway.authorize(token: load(:tok), scope: :refund)
+            end
           end
         end
       end

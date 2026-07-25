@@ -3,27 +3,37 @@
 module Hashira
   module Report
     class Text
-      def initialize(project, graph, findings, io: $stdout)
-        @project = project
-        @graph = graph
-        @findings = findings
+      def initialize(view, io: $stdout)
+        @view = view
         @io = io
       end
 
       def print
-        header
-        MetricsTable.new(@graph, io: @io).print
-        DependencyMap.new(@graph, io: @io).print
+        coupling_sections if @view.graph
+        complexity_section if @view.complexity
+        hotspot_section if @view.hotspots
         findings_section
         0
       end
 
       private
 
-      def header
-        packages = @graph.packages.size
-        @io.puts "Package (layer) metrics for #{@project.label}  " \
-                 "(#{packages} packages, #{@project.files.size} files)\n\n"
+      def coupling_sections
+        graph = @view.graph
+        header(graph)
+        MetricsTable.new(graph, io: @io).print
+        DependencyMap.new(graph, io: @io).print
+      end
+
+      def complexity_section = ComplexityTable.new(@view.complexity, io: @io).print
+
+      def hotspot_section = HotspotTable.new(@view.hotspots, io: @io).print
+
+      def header(graph)
+        project = @view.project
+        packages = graph.packages.size
+        @io.puts "Package (layer) metrics for #{project.label}  " \
+                 "(#{packages} packages, #{project.files.size} files)\n\n"
         single_package_note if packages == 1
       end
 
@@ -33,7 +43,7 @@ module Hashira
       end
 
       def findings_section
-        all = @findings.all
+        all = @view.findings.all
         @io.puts "\nFindings (#{all.size}):"
         print_findings(all)
         accepted_section
@@ -47,7 +57,7 @@ module Hashira
       end
 
       def accepted_section
-        accepted = @findings.accepted
+        accepted = @view.findings.accepted
         return if accepted.empty?
 
         @io.puts "\nAccepted (#{accepted.size}):"

@@ -18,8 +18,3 @@ gem "rubocop-thread_safety", "~> 0.7", group: :development, require: false
 gem "simplecov", "~> 1.0", group: :development, require: false
 
 gem "reek", "~> 6.5", group: :development, require: false
-
-gem "rubycritic", "~> 4.9", group: :development, require: false
-
-# rubycritic -> virtus needs ostruct, no longer a default gem in Ruby 4.0
-gem "ostruct", group: :development, require: false

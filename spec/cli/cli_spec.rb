@@ -32,6 +32,39 @@ RSpec.describe Hashira::CLI do
     end
   end
 
+  it "skips an analyzer on request" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      without_complexity = capture_stdout { expect(described_class.run(["lib/app", "--skip", "complexity"])).to eq(0) }
+      expect(without_complexity).to include("Package (layer) metrics")
+      expect(without_complexity).not_to include("Cognitive complexity")
+
+      without_coupling = capture_stdout { expect(described_class.run(["lib/app", "--skip", "coupling"])).to eq(0) }
+      expect(without_coupling).to include("Cognitive complexity")
+      expect(without_coupling).not_to include("Package (layer) metrics")
+
+      skip_dupe = capture_stdout { expect(described_class.run(["lib/app", "--skip", "duplication"])).to eq(0) }
+      expect(skip_dupe).to include("Package (layer) metrics")
+    end
+  end
+
+  it "drops the hotspot rollup when both analyzers feeding it are skipped" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      coupling_only = capture_stdout do
+        expect(described_class.run(["lib/app", "--skip", "complexity,duplication"])).to eq(0)
+      end
+
+      expect(coupling_only).to include("Package (layer) metrics")
+      expect(coupling_only).not_to include("Hotspots")
+    end
+  end
+
+  it "gates on cognitive complexity findings" do
+    within_project(FixtureHelper::COMPLEX_FILES) do
+      gate = capture_stdout { expect(described_class.run(["lib/app", "--fail-on", "complexity"])).to eq(1) }
+      expect(gate).to include("Gate FAILED")
+    end
+  end
+
   it "round-trips the ratchet: update then check" do
     within_project(FixtureHelper::CYCLIC_FILES) do
       capture_stdout do

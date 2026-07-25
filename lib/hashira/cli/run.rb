@@ -18,7 +18,7 @@ module Hashira
 
       def graph = @pipeline.graph
 
-      def ratchet = CI::Ratchet.new(graph, @options.baseline)
+      def ratchet = CI::Ratchet.new(graph, findings.all, @options.baseline)
 
       def update_baseline = ratchet.update
 
@@ -28,11 +28,17 @@ module Hashira
 
       def check_gate = CI::Gate.new(findings, @options.fail_on).check
 
-      def print_json = Report::Json.new(graph, findings).print
+      def print_json = Report::Json.new(view).print
 
       def print_diagram = Diagram::Renderer.new(graph, @options.mode).display
 
-      def print_text = Report::Text.new(@pipeline.project, graph, findings).print
+      def print_text = Report::Text.new(view).print
+
+      def view
+        Report::View.new(project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
+                         complexity: @pipeline.complexity, duplication: @pipeline.duplication,
+                         hotspots: @pipeline.hotspots, findings:)
+      end
     end
   end
 end

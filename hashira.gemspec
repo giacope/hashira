@@ -8,10 +8,12 @@ Gem::Specification.new do |spec|
   spec.authors = ["Giacomo GK"]
   spec.email = ["giaco@hey.com"]
 
-  spec.summary = "Package coupling metrics for Ruby, via Prism"
-  spec.description = "Measures package coupling in a Ruby codebase (Ca/Ce/instability, SDP " \
-                     "violations, cycles) from the AST, with findings backed by file-level " \
-                     "evidence and an edge-set ratchet for CI."
+  spec.summary = "Coupling, cognitive-complexity, and duplication metrics for Ruby, via Prism"
+  spec.description = "Measures package coupling (Ca/Ce/instability, SDP violations, cycles), " \
+                     "per-method cognitive complexity, and near-miss code duplication in a Ruby " \
+                     "codebase from the AST, then ranks files by cost against git churn. Findings " \
+                     "are backed by file-level evidence, and a baseline ratchets edges and findings " \
+                     "for CI — direction, not a score."
   spec.homepage = "https://github.com/giacope/hashira"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.4"

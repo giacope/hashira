@@ -18,7 +18,7 @@ module Hashira
 
     def initialize(options)
       @options = options
-      @pipeline = Pipeline.new(Project.detect(options.directories))
+      @pipeline = Pipeline.new(Project.detect(options.directories), enabled: Pipeline::ANALYZERS - options.skip)
     end
 
     def run = Run.new(@pipeline, @options).exit_code

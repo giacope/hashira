@@ -5,7 +5,9 @@ module Hashira
     module FailOn
       KINDS = {
         "cycles" => "cycle", "cycle" => "cycle",
-        "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation"
+        "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation",
+        "complexity" => "complexity",
+        "duplication" => "duplication", "dupe" => "duplication"
       }.freeze
 
       module_function
