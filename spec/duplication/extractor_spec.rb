@@ -30,6 +30,13 @@ RSpec.describe Hashira::Duplication::Extractor do
     expect(ranges).to be_empty
   end
 
+  it "skips the list even when a statement of another shape follows it" do
+    ranges = ranges_for("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\nmodule M\nend\n").uniq
+
+    # every window inside the requires is gone; only ones reaching the module survive
+    expect(ranges).to contain_exactly("m.rb:4-5", "m.rb:3-5", "m.rb:2-5", "m.rb:1-5")
+  end
+
   it "caps window length so the fragment count stays linear in the sequence length" do
     body = (1..40).map { |i| i.even? ? "a#{i}(#{i})" : "b#{i} = c#{i}" }.join("\n ")
     count = fragments_for("m.rb" => "def m\n #{body}\nend\n").size

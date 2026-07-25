@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Duplication: a listing interrupted by a statement of another shape is no
+  longer windowed as a clone. The rule applied only when an entire sibling run
+  was homogeneous, so one trailing `module` after a block of requires — or a
+  `banner =` before a run of `o.on` calls — put the whole list back in scope.
+  Listings are now detected as maximal same-shape stretches, and a window
+  contained in one is skipped; a window straddling the edge still counts.
+
 ## [0.2.0] - 2026-07-25
 
 ### Added
