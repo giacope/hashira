@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   statements beside it. Two files ending a require block with `module Foo` no
   longer match on the tail of the block, and a genuine clone next to a list is
   weighed on its own size rather than the list's.
+- Duplication: a near-miss neighbour no longer buries the exact clone pair
+  inside its cluster. Exact matches and near misses are unioned into one
+  cluster, which is then judged as a whole — so a single fuzzy member raised the
+  mass floor from 16 to 40 and took the exact pair down with it, and adding a
+  third, sloppier copy of a duplicated method made the finding disappear. A
+  cluster that misses the raised floor now falls back to its identically shaped
+  core and is weighed again on the floor that evidence earns.
 
 ## [0.2.0] - 2026-07-25
 

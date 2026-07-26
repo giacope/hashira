@@ -24,6 +24,16 @@ RSpec.describe Hashira::Duplication::Clusterer do
     expect(clusters.first.canonical.range).to eq("a.rb:1-5")
   end
 
+  it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
+    drifted = { "c.rb" => "def c(g)\n g.configure(fetch(:h), fetch(:p))\n g.connect(3, 30)\n g.warn(:slow)\n " \
+                          "g.finalize(:x, :y)\nend\n" }
+    cluster = clusters_for(exact_clone.merge(drifted)).first
+
+    # the merged cluster misses the near-miss floor; the exact pair still stands
+    expect(cluster.sites.map(&:file)).to contain_exactly("a.rb", "b.rb")
+    expect(cluster.mass).to eq(23)
+  end
+
   it "pulls a near-miss variant into the cluster as a distinct site" do
     cluster = clusters_for(near_clone).first
 

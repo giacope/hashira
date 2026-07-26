@@ -12,6 +12,8 @@ module Hashira
         sites.reject { |site| site.equal?(chosen) }
       end
 
+      def exact_sites = sites.select { it.types == canonical.types }
+
       def mass = canonical.mass
 
       def size = sites.size

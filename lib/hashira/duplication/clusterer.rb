@@ -24,7 +24,13 @@ module Hashira
 
       def chain(group) = group.each_cons(2) { |left, right| @sets.union(left, right) }
 
-      def sized = built.select { |cluster| cluster.mass >= floor(cluster) }
+      def sized = built.filter_map { admitted(it) }
+
+      def admitted(cluster) = [cluster, exact_core(cluster)].compact.find { fits?(it) }
+
+      def fits?(cluster) = cluster.mass >= floor(cluster)
+
+      def exact_core(cluster) = Grouping.new(cluster.exact_sites).cluster
 
       def built = @sets.clusters.filter_map { |group| Grouping.new(group).cluster }
 
