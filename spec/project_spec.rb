@@ -39,6 +39,16 @@ RSpec.describe Hashira::Project do
       end
     end
 
+    it "qualifies same-named folders from different directories with their root" do
+      files = { "app/models/x.rb" => "", "lib/models/y.rb" => "", "lib/views/z.rb" => "" }
+      within_project(files) do
+        project = described_class.new(%w[app lib])
+        expect(project.package_for("app/models/x.rb")).to eq("app/models")
+        expect(project.package_for("lib/models/y.rb")).to eq("lib/models")
+        expect(project.package_for("lib/views/z.rb")).to eq("views")
+      end
+    end
+
     it "raises for a path outside the analyzed directories" do
       within_project("lib/app/a/x.rb" => "") do
         expect { described_class.new(["lib/app"]).package_for("other/x.rb") }
@@ -73,6 +83,21 @@ RSpec.describe Hashira::Project do
     it "auto-detects a single lib/<gem> directory" do
       within_project("lib/mygem/a/x.rb" => "") do
         expect(described_class.detect([]).directories).to eq(["lib/mygem"])
+      end
+    end
+
+    it "descends a chain of single-folder wrappers to the package level" do
+      files = { "lib/mygem/core/a/x.rb" => "", "lib/mygem/core/b/y.rb" => "", "lib/mygem/core.rb" => "" }
+      within_project(files) do
+        expect(described_class.detect([]).directories).to eq(["lib/mygem/core"])
+        expect(described_class.detect(["lib"]).directories).to eq(["lib/mygem/core"])
+      end
+    end
+
+    it "stops descending at loose code files beside the single folder" do
+      files = { "src/app/a/x.rb" => "", "src/app/b/y.rb" => "", "src/loose.rb" => "" }
+      within_project(files) do
+        expect(described_class.detect(["src"]).directories).to eq(["src"])
       end
     end
 

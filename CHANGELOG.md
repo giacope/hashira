@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Package boundaries are found at any depth. Directory detection descends
+  single-folder wrapper chains (`lib` → `lib/gem` → `lib/gem/core`), so
+  `hashira`, `hashira lib`, and `hashira lib/gem/core` land on the same
+  boundaries; descent stops at loose code files. Constant resolution now
+  strips the inferred shared namespace *prefix* (majority per level across
+  packages) instead of a single root module, so analyzing a nested subtree
+  resolves cross-package references instead of silently reporting no edges.
+- With several directories, same-named subfolders no longer merge into one
+  package: a contested name is qualified by its directory (`app/models` vs
+  `lib/models`); unique names stay short.
+- Constant resolution is path-based. Each definition registers its full
+  constant path and its suffixes as shorthand; a sighting resolves by longest
+  match, and a name claimed by several packages resolves to nothing rather
+  than to the last one parsed. A namespace mirrored across layers
+  (`Admin::Account` in `app/models/admin`, `Admin::AccountsController` in
+  `app/controllers/admin`) now attributes each reference to the right side —
+  a model reaching into its controller layer shows up as an edge (and a
+  cycle) instead of vanishing as a self-reference — and a bare reference to
+  a name declared in exactly one package (`Skill.all`) now counts.
+
 ### Fixed
 
 - Duplication: a listing interrupted by a statement of another shape is no

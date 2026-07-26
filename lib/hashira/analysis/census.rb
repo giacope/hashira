@@ -6,33 +6,33 @@ module Hashira
       def initialize(project, trees)
         @definitions = Definitions.new(project, trees)
         @type_count = Hash.new(0)
-        @declaring_package = {}
-        @root_namespace = RootNamespace.infer(@definitions)
+        @registry = ConstantRegistry.new
+        @namespace_prefix = NamespacePrefix.infer(@definitions)
         take
       end
 
-      attr_reader :type_count, :declaring_package, :root_namespace
+      attr_reader :type_count, :namespace_prefix
+
+      def declaring_package = @registry.declaring_package
 
       def packages = (@type_count.keys | @definitions.packages)
 
-      def resolve(segments)
-        outer, inner = segments.first(2)
-        @declaring_package[outer == root_namespace ? inner : outer]
-      end
+      def resolve(segments) = @registry.package_for(after_prefix(segments))
 
       private
 
       def take
         @definitions.each do |node, full, package|
-          register(full, package)
+          @registry.register(after_prefix(full), package)
           @type_count[package] += 1 unless Syntax.direct_definitions(node).empty?
         end
       end
 
-      def register(full, package)
-        outer, inner = full.first(2)
-        name = outer == root_namespace ? inner : outer
-        @declaring_package[name] = package if name
+      def after_prefix(segments)
+        return [] if @namespace_prefix.first(segments.length) == segments
+
+        depth = @namespace_prefix.length.downto(0).find { segments.first(it) == @namespace_prefix.last(it) }
+        segments.drop(depth)
       end
     end
   end

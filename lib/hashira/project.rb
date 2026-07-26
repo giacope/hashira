@@ -5,16 +5,29 @@ module Hashira
     ROOT_PACKAGE = "(root)"
 
     def self.detect(directories)
-      directories.empty? ? new(default_directories) : new(directories)
+      targets = directories.empty? ? default_directories : directories
+      new(targets.map { descend(it.delete_suffix("/")) })
     end
 
     def self.default_directories
-      subdirectories = Dir["lib/*/"].map { File.basename(it) }
-      raise Error, "no lib/ directory here — pass the source directory explicitly" if subdirectories.empty?
+      raise Error, "no lib/ directory here — pass the source directory explicitly" if Dir["lib/*/"].empty?
 
-      subdirectories.size == 1 ? ["lib/#{subdirectories.first}"] : ["lib"]
+      ["lib"]
     end
     private_class_method :default_directories
+
+    def self.descend(directory)
+      child = only_subdirectory(directory)
+      return directory unless child && Dir["#{child}/*/"].any? && (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty?
+
+      descend(child)
+    end
+
+    def self.only_subdirectory(directory)
+      subdirectories = Dir["#{directory}/*/"]
+      subdirectories.size == 1 ? subdirectories.first.delete_suffix("/") : nil
+    end
+    private_class_method :descend, :only_subdirectory
 
     def initialize(directories)
       missing = directories.reject { Dir.exist?(it) }
@@ -29,7 +42,9 @@ module Hashira
 
     def package_for(path)
       first, rest = relative(path).delete_suffix(".rb").split("/", 2)
-      rest || folder?(path, first) ? first : ROOT_PACKAGE
+      return ROOT_PACKAGE unless rest || folder?(path, first)
+
+      contested.include?(first) ? "#{directory_of(path)}/#{first}" : first
     end
 
     def relative(path) = path.delete_prefix("#{directory_of(path)}/")
@@ -41,6 +56,11 @@ module Hashira
     private
 
     def folder?(path, name) = Dir.exist?("#{directory_of(path)}/#{name}")
+
+    def contested
+      @contested ||= @directories.flat_map { |directory| Dir["#{directory}/*/"].map { File.basename(it) } }
+                                 .tally.filter_map { |name, count| name if count > 1 }
+    end
 
     def directory_of(path)
       @directories.find { path.start_with?("#{it}/") } ||

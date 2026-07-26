@@ -105,6 +105,80 @@ module FixtureHelper
     RUBY
   }.freeze
 
+  # Two sub-packages of lib/app/core wrapped in a two-level namespace
+  # (App::Core), for analyzing a nested subtree as its own project.
+  NESTED_FILES = {
+    "lib/app/core/search/finder.rb" => <<~RUBY,
+      module App
+        module Core
+          module Search
+            class Finder
+              def run = Walk::Stepper.new
+            end
+          end
+        end
+      end
+    RUBY
+    "lib/app/core/walk/stepper.rb" => <<~RUBY
+      module App
+        module Core
+          module Walk
+            class Stepper
+              def step = 1
+            end
+          end
+        end
+      end
+    RUBY
+  }.freeze
+
+  # Rails-style mirrored namespaces: Admin and Agent each span a controllers
+  # package and a models package, so the outer name alone is ambiguous.
+  MIRROR_FILES = {
+    "app/controllers/admin/accounts_controller.rb" => <<~RUBY,
+      module Admin
+        class AccountsController
+          def show = Admin::Account.find(1)
+        end
+      end
+    RUBY
+    "app/controllers/agent/skills_controller.rb" => <<~RUBY,
+      module Agent
+        class SkillsController
+          def index = Skill.all
+        end
+      end
+    RUBY
+    "app/models/admin/account.rb" => <<~RUBY,
+      module Admin
+        class Account
+          def audit = Admin::AccountsController.log(self)
+        end
+      end
+    RUBY
+    "app/models/admin/settings.rb" => <<~RUBY,
+      module Admin
+        class Settings
+          def flag = 1
+        end
+      end
+    RUBY
+    "app/models/agent/skill.rb" => <<~RUBY,
+      module Agent
+        class Skill
+          def name = "skill"
+        end
+      end
+    RUBY
+    "app/models/agent/settings.rb" => <<~RUBY
+      module Agent
+        class Settings
+          def flag = 2
+        end
+      end
+    RUBY
+  }.freeze
+
   # A class whose `tangled` method scores 12 (four nested ifs + a mixed boolean
   # run), alongside a trivial method and a singleton method for subject shapes.
   COMPLEX_FILES = {

@@ -65,7 +65,9 @@ Requires Ruby 3.4 or newer.
 
 ## Getting started
 
-Point hashira at your code, or run it with no arguments to auto-detect `lib/<gem>`:
+Point hashira at your code, or run it with no arguments to auto-detect `lib/<gem>`.
+Single-folder wrapper chains are descended automatically, so `hashira`,
+`hashira lib`, and `hashira lib/gem/core` land on the same package boundaries:
 
 ```sh
 hashira                        # auto-detects lib/<gem>
@@ -264,9 +266,14 @@ letter repeated — it tells you nothing about what to open first.
 **Coupling.** A dependency edge A→B exists when a file in package A references a
 constant declared by package B. Declarations are read from the AST; strings and
 comments are invisible. A type counts toward TC only if it defines a method
-directly in its body; pure namespace wrappers don't count. The root namespace is
-inferred (the most common outermost constant), so `App::Alpha` and `Alpha` resolve
-to the same package. Each edge carries a **weight**: the number of constant
+directly in its body; pure namespace wrappers don't count. The namespace prefix
+shared by the packages is inferred (`App`, or `App::Core` when analyzing a nested
+subtree), so `App::Alpha` and `Alpha` resolve to the same package. Resolution is
+by longest constant path, so a namespace mirrored across packages
+(`Admin::Account` in models, `Admin::AccountsController` in controllers) sends
+each reference to the right side; a bare name declared in exactly one package
+resolves there, and a name several packages claim resolves to nothing rather
+than to a guess. Each edge carries a **weight**: the number of constant
 references backing it. A root-level file `x.rb` folds into package `x` when a
 sibling folder `x/` exists; everything else at the top level lands in `(root)`.
 
