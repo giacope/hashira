@@ -12,29 +12,23 @@ module Hashira
         @statements = statements
       end
 
-      def fragments = windows.reject { listed?(it) }.map { fragment(statements_in(it)) }
+      def fragments = segments.flat_map { windows(it) }
 
       private
 
-      def windows = lengths.flat_map { |length| slide(length) }
+      def segments = runs.chunk { listing?(it) }.filter_map { |listed, group| group.flatten(1) unless listed }
 
-      def lengths = MIN_STATEMENTS..[@statements.size, MAX_STATEMENTS].min
+      def listing?(run) = run.size >= LIST_RUN
 
-      def slide(length) = (0..(@statements.size - length)).map { it...(it + length) }
+      def runs = shaped.slice_when { |left, right| left.last != right.last }.map { it.map(&:first) }
 
-      def statements_in(window) = @statements.values_at(*window)
+      def shaped = @statements.map { [it, fragment([it]).types] }
 
-      def listed?(window) = listings.any? { |listing| listing.cover?(window) }
+      def windows(segment) = lengths(segment).flat_map { |length| slide(segment, length) }
 
-      def listings = @listings ||= same_shape_runs.select { |run| run.size >= LIST_RUN }
+      def lengths(segment) = MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min
 
-      def same_shape_runs = shape_changes.map { it.first...(it.last + 1) }
-
-      def shape_changes = positions.slice_when { |left, right| shapes[left] != shapes[right] }
-
-      def positions = 0...@statements.size
-
-      def shapes = @shapes ||= @statements.map { fragment([it]).types }
+      def slide(segment, length) = (0..(segment.size - length)).map { fragment(segment[it, length]) }
 
       def fragment(roots) = Fragment.new(@file, roots)
     end

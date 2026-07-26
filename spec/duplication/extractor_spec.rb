@@ -33,8 +33,20 @@ RSpec.describe Hashira::Duplication::Extractor do
   it "skips the list even when a statement of another shape follows it" do
     ranges = ranges_for("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\nmodule M\nend\n").uniq
 
-    # every window inside the requires is gone; only ones reaching the module survive
-    expect(ranges).to contain_exactly("m.rb:4-5", "m.rb:3-5", "m.rb:2-5", "m.rb:1-5")
+    # no window reaches into the list, so the module is weighed on its own mass —
+    # a list row next door is not evidence that the module is a copy
+    expect(ranges).to contain_exactly("m.rb:4-5")
+  end
+
+  it "windows each side of a list on its own, never across it" do
+    body = "def m\n a(1)\n b = 2\n c(:x)\n c(:y)\n c(:z)\n d(1, 2)\n e = f\nend\n"
+
+    # the three c calls are a list; the statements before and after it still pair
+    # up among themselves, but no window spans the list to borrow its mass
+    ranges = ranges_for("m.rb" => body).uniq
+
+    expect(ranges).to contain_exactly("m.rb:2-2", "m.rb:3-3", "m.rb:2-3",
+                                      "m.rb:7-7", "m.rb:8-8", "m.rb:7-8", "m.rb:1-9")
   end
 
   it "caps window length so the fragment count stays linear in the sequence length" do

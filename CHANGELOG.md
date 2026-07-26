@@ -13,8 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer windowed as a clone. The rule applied only when an entire sibling run
   was homogeneous, so one trailing `module` after a block of requires — or a
   `banner =` before a run of `o.on` calls — put the whole list back in scope.
-  Listings are now detected as maximal same-shape stretches, and a window
-  contained in one is skipped; a window straddling the edge still counts.
+  Listings are now the maximal same-shape stretches within a run, and they are
+  opaque: no window reaches into one, so a list row never lends its mass to the
+  statements beside it. Two files ending a require block with `module Foo` no
+  longer match on the tail of the block, and a genuine clone next to a list is
+  weighed on its own size rather than the list's.
 
 ## [0.2.0] - 2026-07-25
 
