@@ -1,40 +1,43 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Analysis
-    class ConstantRegistry
-      AMBIGUOUS = Object.new.freeze
+class Hashira::Analysis::ConstantRegistry
+  AMBIGUOUS = Object.new.freeze
 
-      def initialize
-        @declaring_package = {}
-        @shorthand = {}
-      end
+  def initialize
+    @origins = {}
+    @shorthand = {}
+  end
 
-      attr_reader :declaring_package
+  attr_reader :origins
 
-      def register(path, package)
-        return if path.empty?
+  def register(path, package)
+    return if path.empty?
+    claim(@origins, path, package)
+    (1...path.length).each { claim(@shorthand, path.drop(it), package) }
+  end
 
-        claim(@declaring_package, path, package)
-        (1...path.length).each { claim(@shorthand, path.drop(it), package) }
-      end
+  def package(path)
+    found = anchored(path) || enclosing(path)
+    found unless found == AMBIGUOUS
+  end
 
-      def package_for(path)
-        found = path.length.downto(1).filter_map { claimed(path.first(it)) }.first
-        found unless found == AMBIGUOUS
-      end
+  def exact(path) = @origins[path.join("::")]
 
-      private
+  def packages = (@origins.values.uniq - [AMBIGUOUS])
 
-      def claim(claims, path, package)
-        key = path.join("::")
-        claims[key] = claims.fetch(key, package) == package ? package : AMBIGUOUS
-      end
+  private
 
-      def claimed(path)
-        key = path.join("::")
-        @declaring_package[key] || @shorthand[key]
-      end
-    end
+  def claim(claims, path, package)
+    key = path.join("::")
+    claims[key] = claims.fetch(key, package) == package ? package : AMBIGUOUS
+  end
+
+  def anchored(path)
+    key = path.join("::")
+    @origins[key] || @shorthand[key]
+  end
+
+  def enclosing(path)
+    (path.length - 1).downto(1).filter_map { @origins[path.first(it).join("::")] }.first
   end
 end

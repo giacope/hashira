@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-RSpec.describe Hashira::Diagram::Renderer do
+RSpec.describe(Hashira::Diagram::Renderer) do
   it "renders dot with weighted labeled edges" do
     with_pipeline do |_project, graph, _findings|
-      output = capture_stdout { described_class.new(graph, :dot).display }
-      expect(output).to eq(<<~DOT)
+      output = capture { described_class.new(graph, :dot).display }
+      expect(output).to(eq(<<~DOT))
         digraph hashira {
           rankdir=LR;
           "alpha" -> "beta" [label="1"];
@@ -17,8 +17,8 @@ RSpec.describe Hashira::Diagram::Renderer do
 
   it "renders mermaid with sanitized identifiers" do
     with_pipeline do |_project, graph, _findings|
-      output = capture_stdout { described_class.new(graph, :mermaid).display }
-      expect(output).to eq(<<~MERMAID)
+      output = capture { described_class.new(graph, :mermaid).display }
+      expect(output).to(eq(<<~MERMAID))
         graph LR
           alpha["alpha"] -->|1| beta["beta"]
           alpha["alpha"] -->|1| core["core"]
@@ -33,10 +33,11 @@ RSpec.describe Hashira::Diagram::Renderer do
       "lib/app/alpha/one.rb" => "module App; module Alpha; class One; def a = 1; end; end; end\n"
     }
     analyze(files) do |_project, _census, graph|
-      output = capture_stdout do
-        described_class.new(graph, :mermaid).display
-      end
-      expect(output).to include('_root_["(root)"] -->|1| alpha["alpha"]')
+      output =
+        capture do
+          described_class.new(graph, :mermaid).display
+        end
+      expect(output).to(include('_root_["(root)"] -->|1| alpha["alpha"]'))
     end
   end
 end

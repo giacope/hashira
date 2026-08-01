@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Duplication
-    class Maximal
-      def initialize(clusters)
-        @clusters = clusters
-      end
+class Hashira::Duplication::Maximal
+  def initialize(clusters)
+    @clusters = clusters
+  end
 
-      def reduced
-        @clusters.sort_by { -it.mass }.each_with_object([]) do |cluster, kept|
-          kept << cluster unless shadowed_by?(cluster, kept.flat_map(&:sites))
-        end
-      end
-
-      private
-
-      def shadowed_by?(cluster, bigger) = cluster.sites.all? { it.overlaps_any?(bigger) }
+  def reduced
+    @clusters.sort_by { -it.mass }.each_with_object([]) do |cluster, kept|
+      kept << cluster unless within?(cluster, kept.flat_map(&:sites))
     end
   end
+
+  private
+
+  def within?(cluster, bigger) = cluster.sites.all? { it.touches?(bigger) }
 end

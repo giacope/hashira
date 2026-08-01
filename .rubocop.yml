@@ -1,4 +1,5 @@
 plugins:
+  - rubocop-elegant
   - rubocop-rspec
   - rubocop-performance
   - rubocop-packaging
@@ -41,8 +42,19 @@ RSpec/MultipleExpectations:
 RSpec/SpecFilePathFormat:
   Enabled: false
 
+# Want blank lines between examples/groups; Elegant/NoEmptyLinesInBlocks forbids them.
+RSpec/EmptyLineAfterExample:
+  Enabled: false
+
+RSpec/EmptyLineAfterExampleGroup:
+  Enabled: false
+
 Layout/LineLength:
   Max: 120
+
+# Aligned continuations violate Elegant/MonotonicIndents; indent by one step.
+Layout/LineEndStringConcatenationIndentation:
+  EnforcedStyle: indented
 
 Metrics/BlockLength:
   Exclude:
@@ -86,6 +98,30 @@ Hashira/IoDiscipline:
 Hashira/NoComments:
   Include:
     - "lib/**/*"
+
+# False positives: flags shebangs; Hashira/NoComments is the comment policy here.
+Elegant/NoComments:
+  Enabled: false
+
+# The cop (0.7.1) flags and deletes blank lines INSIDE heredoc string content,
+# corrupting verbatim report fixtures. Excluded where heredocs carry blank lines.
+Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
+  Exclude:
+    - "spec/analysis/census_spec.rb"
+    - "spec/analysis/graph_spec.rb"
+    - "spec/analysis/syntax_spec.rb"
+    - "spec/ci/gate_spec.rb"
+    - "spec/ci/ratchet_spec.rb"
+    - "spec/diagram/renderer_spec.rb"
+    - "spec/rubocop/io_discipline_spec.rb"
+    - "spec/rubocop/no_comments_spec.rb"
+    - "spec/report/text_spec.rb"
+
+Elegant/NoEmptyLinesInMethods: *heredoc_fixtures
+
+# False positive on reopened classes it only sees one file of (e.g. CLI).
+Style/StaticClass:
+  Enabled: false
 
 RSpec/VerifiedDoubles:
   Enabled: true

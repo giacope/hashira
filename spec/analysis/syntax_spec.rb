@@ -1,22 +1,38 @@
 # frozen_string_literal: true
 
-RSpec.describe Hashira::Analysis::Syntax do
+RSpec.describe(Hashira::Analysis::Syntax) do
   def parse(source) = Prism.parse(source).value
 
-  describe ".path_segments" do
+  describe ".segments" do
     it "reads simple and nested constant paths" do
       node = parse("A::B::C").statements.body.first
-      expect(described_class.path_segments(node)).to eq(%w[A B C])
+      expect(described_class.segments(node)).to(eq(%w[A B C]))
       simple = parse("Foo").statements.body.first
-      expect(described_class.path_segments(simple)).to eq(%w[Foo])
+      expect(described_class.segments(simple)).to(eq(%w[Foo]))
     end
 
     it "returns [] for non-constant nodes" do
-      expect(described_class.path_segments(nil)).to eq([])
+      expect(described_class.segments(nil)).to(eq([]))
     end
   end
 
-  describe ".direct_definitions" do
+  describe ".cbase?" do
+    it "marks ::-anchored paths absolute, plain paths not" do
+      expect(described_class.cbase?(parse("::A::B").statements.body.first)).to(be(true))
+      expect(described_class.cbase?(parse("A::B").statements.body.first)).to(be(false))
+      expect(described_class.cbase?(parse("A").statements.body.first)).to(be(false))
+    end
+  end
+
+  describe ".anchor" do
+    it "anchors compact paths at the innermost scope that defines the root, else top level, else in place" do
+      expect(described_class.anchor([%w[Baz]], %w[Baz Bar], Set[%w[Baz Baz]])).to(eq(%w[Baz Baz Bar]))
+      expect(described_class.anchor([%w[Baz]], %w[Foo Bar], Set[%w[Foo]])).to(eq(%w[Foo Bar]))
+      expect(described_class.anchor([%w[Baz]], %w[Qux Bar], Set[%w[Foo]])).to(eq(%w[Baz Qux Bar]))
+    end
+  end
+
+  describe ".direct" do
     it "finds defs directly in the body, not in nested types" do
       tree = parse(<<~RUBY)
         class Outer
@@ -29,24 +45,24 @@ RSpec.describe Hashira::Analysis::Syntax do
         end
       RUBY
       outer = tree.statements.body.first
-      expect(described_class.direct_definitions(outer).map(&:name)).to eq(%i[one two])
+      expect(described_class.direct(outer).map(&:name)).to(eq(%i[one two]))
     end
 
     it "handles a class body with a rescue clause" do
       tree = parse("class A\n  def x = 1\nrescue\n  nil\nend")
       node = tree.statements.body.first
-      expect(described_class.direct_definitions(node)).to eq([])
+      expect(described_class.direct(node)).to(eq([]))
     end
 
     it "handles a single-statement and an empty body" do
       single = parse("class A; def only = 1; end").statements.body.first
-      expect(described_class.direct_definitions(single).map(&:name)).to eq(%i[only])
+      expect(described_class.direct(single).map(&:name)).to(eq(%i[only]))
       empty = parse("class A; end").statements.body.first
-      expect(described_class.direct_definitions(empty)).to eq([])
+      expect(described_class.direct(empty)).to(eq([]))
     end
   end
 
-  describe "TypeWalk.each_definition" do
+  describe "TypeWalk.each" do
     it "yields every class/module with its fully-qualified path" do
       tree = parse(<<~RUBY)
         module App
@@ -60,8 +76,8 @@ RSpec.describe Hashira::Analysis::Syntax do
         end
       RUBY
       seen = []
-      Hashira::Analysis::TypeWalk.each_definition(tree) { |_node, full| seen << full }
-      expect(seen).to eq([%w[App], %w[App Layer], %w[App Layer Thing], %w[App App Compact]])
+      Hashira::Analysis::TypeWalk.each(tree) { |_node, full| seen << full }
+      expect(seen).to(eq([%w[App], %w[App Layer], %w[App Layer Thing], %w[App App Compact]]))
     end
   end
 
@@ -69,16 +85,16 @@ RSpec.describe Hashira::Analysis::Syntax do
     def references = Hashira::Analysis::References
 
     it "collects outermost constant paths, not their parents separately" do
-      expect(references.list(parse("x = A::B::C; y = D"))).to eq([%w[A B C], %w[D]])
+      expect(references.list(parse("x = A::B::C; y = D"))).to(eq([%w[A B C], %w[D]]))
     end
 
     it "skips the constant being defined but keeps the superclass" do
       expect(references.list(parse("class App::Child < Base::Parent; Used::Thing; end")))
-        .to eq([%w[Base Parent], %w[Used Thing]])
+        .to(eq([%w[Base Parent], %w[Used Thing]]))
     end
 
     it "ignores strings and comments" do
-      expect(references.list(parse("# Fake::Ref\nx = 'Other::Ref'"))).to eq([])
+      expect(references.list(parse("# Fake::Ref\nx = 'Other::Ref'"))).to(eq([]))
     end
   end
 end

@@ -5,14 +5,14 @@ module Hashira
     module NodeWalk
       module_function
 
-      def each_node(node, &)
+      def each(node, &)
         yield(node)
-        node.compact_child_nodes.each { each_node(it, &) }
+        node.compact_child_nodes.each { each(it, &) }
       end
 
       def collect(node)
         found = []
-        each_node(node) { found << it }
+        each(node) { found << it }
         found
       end
     end

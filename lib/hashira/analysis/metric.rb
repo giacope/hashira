@@ -2,13 +2,14 @@
 
 module Hashira
   module Analysis
-    Metric = Data.define(:type_count, :afferent, :efferent) do
-      def instability
-        total = efferent + afferent
-        total.zero? ? 0.0 : efferent.to_f / total
-      end
+    Metric =
+      Data.define(:types, :afferent, :efferent) do
+        def instability
+          total = efferent + afferent
+          total.zero? ? 0.0 : efferent.fdiv(total)
+        end
 
-      def to_h = { tc: type_count, ca: afferent, ce: efferent, i: instability }
-    end
+        def to_h = { tc: types, ca: afferent, ce: efferent, i: instability }
+      end
   end
 end

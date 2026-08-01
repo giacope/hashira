@@ -1,39 +1,46 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Analysis
-    class Census
-      def initialize(project, trees)
-        @definitions = Definitions.new(project, trees)
-        @type_count = Hash.new(0)
-        @registry = ConstantRegistry.new
-        @namespace_prefix = NamespacePrefix.infer(@definitions)
-        take
-      end
-
-      attr_reader :type_count, :namespace_prefix
-
-      def declaring_package = @registry.declaring_package
-
-      def packages = (@type_count.keys | @definitions.packages)
-
-      def resolve(segments) = @registry.package_for(after_prefix(segments))
-
-      private
-
-      def take
-        @definitions.each do |node, full, package|
-          @registry.register(after_prefix(full), package)
-          @type_count[package] += 1 unless Syntax.direct_definitions(node).empty?
-        end
-      end
-
-      def after_prefix(segments)
-        return [] if @namespace_prefix.first(segments.length) == segments
-
-        depth = @namespace_prefix.length.downto(0).find { segments.first(it) == @namespace_prefix.last(it) }
-        segments.drop(depth)
-      end
-    end
+class Hashira::Analysis::Census
+  def initialize(project, trees, packaging: :folder)
+    @catalog = Hashira::Analysis::Catalog.new(Hashira::Analysis::Definitions.new(project, trees))
+    @placement = Hashira::Analysis::Placement.build(packaging, project, @catalog)
+    @folding = Hashira::Analysis::NoFolding
+    @roster = tally
+    settle
   end
+
+  def packaging = @placement.mode
+
+  def types = @roster.types
+
+  def prefix = @catalog.prefix
+
+  def origins = @roster.origins
+
+  def roots = @catalog.roots
+
+  def packages = @roster.packages | @placement.baseline
+
+  def folds = @folding.disclosed
+
+  def resolve(segments, nesting = []) = resolver.resolve(segments, nesting)
+
+  def pinpoint(segments) = resolver.pinpoint(segments)
+
+  def charge(file, nesting) = translate(@placement.charge(file, nesting))
+
+  private
+
+  def tally
+    Hashira::Analysis::Roster.new(@placement.placed.map { |definition, package| [definition, translate(package)] })
+  end
+
+  def settle
+    @folding = @placement.folding(self)
+    @roster = tally unless @folding.map.empty?
+  end
+
+  def translate(package) = @folding.map.fetch(package, package)
+
+  def resolver = Hashira::Analysis::Resolver.new(@roster.registry, @catalog, @placement)
 end

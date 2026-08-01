@@ -1,28 +1,23 @@
 # frozen_string_literal: true
 
-module Hashira
-  class CLI
-    module FailOn
-      KINDS = {
-        "cycles" => "cycle", "cycle" => "cycle",
-        "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation",
-        "complexity" => "complexity",
-        "duplication" => "duplication", "dupe" => "duplication"
-      }.freeze
+module Hashira::CLI::FailOn
+  KINDS = {
+    "cycles" => "cycle", "cycle" => "cycle",
+    "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation",
+    "complexity" => "complexity",
+    "duplication" => "duplication", "dupe" => "duplication"
+  }.freeze
 
-      module_function
+  module_function
 
-      def parse(list)
-        return [] unless list
+  def parse(list)
+    return [] unless list
+    list.split(",").map { kind(it.strip) }.uniq
+  end
 
-        list.split(",").map { kind(it.strip) }.uniq
-      end
-
-      def kind(name)
-        KINDS.fetch(name) do
-          raise Error, "unknown --fail-on kind #{name.inspect} (use: #{KINDS.keys.join(", ")})"
-        end
-      end
+  def kind(name)
+    KINDS.fetch(name) do
+      raise(Hashira::Error, "unknown --fail-on kind #{name.inspect} (use: #{KINDS.keys.join(", ")})")
     end
   end
 end

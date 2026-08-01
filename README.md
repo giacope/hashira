@@ -39,7 +39,7 @@ A healthy project reports `Findings (0): none ✓ — structure is healthy`.
 
 ## Contents
 
-[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
+[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
 
 ## Install
 
@@ -157,6 +157,47 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
 
 Each finding comes with file-level evidence; for cycles, the shortest cycle
 path and its lightest edge. What a finding means for your design is your call.
+
+## Rails apps
+
+Rails layer folders are framework layout, not architecture: models will always
+touch jobs and mailers, so folder packages under `app/` report idioms as
+findings. When the analyzed directory contains a `config/application.rb` (the
+Rails root) or sits beside one (its `app` folder), hashira switches to
+**namespace packaging**: types group by top-level constant
+(`Billing`, `Ci`, `User`) across the layer folders, edges join domains, and the
+findings answer the question a Rails monolith actually has — does `Billing`
+reach into `Ci`?
+
+```console
+$ hashira app
+package       TC  Ca  Ce     I  Cyc
+----------------------------------------
+Account       26  21  18  0.46  YES
+Billing      116  12  11  0.48  YES
+Ci           107   9  16  0.64  YES
+...
+  cycle: Account can reach itself: Account -> User -> Account — any change
+  may ripple back around. The lightest edge on this cycle is Account -> User (1 ref).
+      · models/account.rb:36: User
+      · models/user/signup.rb:32: Account
+```
+
+Under namespace packaging, references to app-defined `Application*` base
+classes (`ApplicationRecord`, `ApplicationJob`, …) are skipped as framework
+plumbing; `--package-by folder` keeps them, so the legacy layer view stays
+complete. Constant resolution
+follows Ruby's lexical nesting everywhere — a bare `Authentication` inside
+`class User` is `User::Authentication`, not a top-level namesake in another
+package — which matters most in Rails apps, where nested concerns routinely
+shadow top-level names.
+
+Either grouping can be forced anywhere:
+
+```sh
+hashira app --package-by folder      # layer view, even in a Rails app
+hashira lib/gem --package-by namespace
+```
 
 ## Cognitive complexity
 

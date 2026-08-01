@@ -4,7 +4,7 @@ require "rubocop"
 require "rubocop/rspec/support"
 require_relative "../../.rubocop/cop/hashira/io_discipline"
 
-RSpec.describe RuboCop::Cop::Hashira::IoDiscipline, :config do
+RSpec.describe(RuboCop::Cop::Hashira::IoDiscipline, :config) do
   include RuboCop::RSpec::ExpectOffense
 
   it "flags bare output calls" do

@@ -4,16 +4,17 @@ module Hashira
   module Hotspots
     CHURN_FLOOR = 1
 
-    FileCost = Data.define(:file, :cognitive, :duplication, :churn) do
-      def cost = cognitive + duplication
+    FileCost =
+      Data.define(:file, :cognitive, :duplication, :churn) do
+        def cost = cognitive + duplication
 
-      def rank = cost * effective_churn
+        def rank = cost * heat
 
-      def effective_churn = [churn, CHURN_FLOOR].max
+        def heat = [churn, CHURN_FLOOR].max
 
-      def to_h = { file:, cognitive:, duplication:, churn:, cost:, rank: }
+        def to_h = { file:, cognitive:, duplication:, churn:, cost:, rank: }
 
-      def cells = [file, cognitive, duplication, churn, rank]
-    end
+        def cells = [file, cognitive, duplication, churn, rank]
+      end
   end
 end

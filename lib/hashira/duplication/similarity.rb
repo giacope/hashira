@@ -1,50 +1,43 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Duplication
-    class Similarity
-      def initialize(left, right)
-        @left = left
-        @right = right
-      end
+class Hashira::Duplication::Similarity
+  def initialize(left, right)
+    @left = left
+    @right = right
+  end
 
-      def ratio
-        return 0.0 if @left.empty? || @right.empty?
+  def ratio
+    return 0.0 if @left.empty? || @right.empty?
+    normalized(lcs)
+  end
 
-        normalized(lcs)
-      end
+  def meets?(threshold) = ceiling >= threshold && ratio >= threshold
 
-      def at_least?(threshold) = upper_bound >= threshold && ratio >= threshold
+  private
 
-      private
+  def ceiling = normalized(overlap)
 
-      def upper_bound = normalized(tokens_in_common)
+  def normalized(length) = (2.0 * length) / (@left.size + @right.size)
 
-      def normalized(length) = (2.0 * length) / (@left.size + @right.size)
+  def overlap
+    @left.count { taken?(@right.tally, it) }
+  end
 
-      def tokens_in_common
-        counts = @right.tally
-        @left.count { taken?(counts, it) }
-      end
+  def taken?(counts, token)
+    return false unless counts.fetch(token, 0).positive?
+    counts[token] -= 1
+    true
+  end
 
-      def taken?(counts, token)
-        return false unless counts.fetch(token, 0).positive?
+  def lcs = @left.reduce(blank) { |prev, token| advance(prev, token) }.last
 
-        counts[token] -= 1
-        true
-      end
+  def blank = Array.new(@right.size + 1, 0)
 
-      def lcs = @left.reduce(blank) { |prev, token| next_row(prev, token) }.last
+  def advance(prev, token)
+    @right.each_index.reduce([0]) { |row, index| row << cell(prev, row, token, index) }
+  end
 
-      def blank = Array.new(@right.size + 1, 0)
-
-      def next_row(prev, token)
-        @right.each_index.reduce([0]) { |row, index| row << cell(prev, row, token, index) }
-      end
-
-      def cell(prev, row, token, index)
-        @right[index] == token ? prev[index] + 1 : [prev[index + 1], row[index]].max
-      end
-    end
+  def cell(prev, row, token, index)
+    @right[index] == token ? prev[index] + 1 : [prev[index + 1], row[index]].max
   end
 end

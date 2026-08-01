@@ -1,92 +1,76 @@
 # frozen_string_literal: true
 
-module Hashira
-  class CLI
-    class CommandLine
-      DEFAULT_BASELINE = "hashira_baseline.json"
+class Hashira::CLI::CommandLine
+  DEFAULT_BASELINE = "hashira_baseline.json"
 
-      FORMATS = %w[text json dot mermaid].freeze
+  FORMATS = %w[text json dot mermaid].freeze
 
-      CI_FLAGS = { "--update-baseline" => :update_baseline, "--ratchet" => :ratchet }.freeze
+  CI_FLAGS = { "--update-baseline" => :update, "--ratchet" => :ratchet }.freeze
 
-      def initialize(argv)
-        @arguments = argv.dup
-      end
+  def initialize(argv)
+    @arguments = Hashira::CLI::Arguments.new(argv)
+  end
 
-      def options = usage_options || parsed_options
+  def options = shortcuts || parsed
 
-      private
+  private
 
-      def usage_options
-        return usage(:help) if delete("--help") || delete("-h")
+  def shortcuts
+    return usage(:help) if delete("--help") || delete("-h")
+    usage(:version) if delete("--version")
+  end
 
-        usage(:version) if delete("--version")
-      end
+  def usage(mode)
+    Hashira::CLI::Options.new(directories: [], mode:, baseline: nil, fail_on: [], skip: [], packaging: :auto)
+  end
 
-      def usage(mode) = Options.new(directories: [], mode:, baseline: nil, fail_on: [], skip: [])
+  def parsed
+    values = flags
+    values[:mode] = mode(values[:fail_on])
+    Hashira::CLI::Options.new(directories: @arguments.rest, **values)
+  end
 
-      def parsed_options
-        values = flag_values
-        mode = parse_mode(values[:fail_on])
-        reject_unknown_flags
-        Options.new(directories: @arguments, mode:, **values)
-      end
+  def flags
+    {
+      skip: Hashira::CLI::Skip.parse(take("--skip", "")),
+      fail_on: Hashira::CLI::FailOn.parse(take("--fail-on", "")),
+      baseline: take("--baseline", DEFAULT_BASELINE), packaging: grouping
+    }
+  end
 
-      def flag_values
-        { skip: Skip.parse(take_value("--skip")),
-          fail_on: FailOn.parse(take_value("--fail-on")),
-          baseline: take_value("--baseline") || DEFAULT_BASELINE }
-      end
+  def grouping = Hashira::CLI::PackageBy.parse(take("--package-by", ""))
 
-      def parse_mode(fail_on)
-        case (requested = requested_modes(fail_on).uniq(&:last))
-        in [] then :text
-        in [[_flag, mode]] then mode
-        else conflict(requested)
-        end
-      end
-
-      def conflict(requested)
-        raise Error, "conflicting options: #{requested.map(&:first).join(" and ")}"
-      end
-
-      def requested_modes(fail_on)
-        ci = CI_FLAGS.filter_map { |flag, mode| [flag, mode] if delete(flag) }
-        ci + fail_on_mode(fail_on) + format_modes
-      end
-
-      def fail_on_mode(fail_on) = fail_on.empty? ? [] : [["--fail-on", :fail_on]]
-
-      def format_modes
-        format = take_format
-        modes = format ? [["--format #{format}", format.to_sym]] : []
-        delete("--json") ? modes + [["--json", :json]] : modes
-      end
-
-      def take_format
-        format = take_value("--format")
-        return format unless format
-        raise Error, "unknown --format #{format.inspect} (use: #{FORMATS.join(", ")})" unless FORMATS.include?(format)
-
-        format
-      end
-
-      def take_value(flag)
-        position = @arguments.index(flag)
-        return nil unless position
-
-        _flag, value = @arguments.slice!(position, 2)
-        raise Error, "#{flag} needs a value" unless value
-
-        value
-      end
-
-      def delete(flag) = @arguments.delete(flag)
-
-      def reject_unknown_flags
-        stray = @arguments.find { it.start_with?("-") }
-        raise Error, "unknown option #{stray}" if stray
-      end
+  def mode(fail_on)
+    case (asked = requested(fail_on).uniq(&:last))
+    in [] then :text
+    in [[_flag, mode]] then mode
+    else conflict(asked)
     end
   end
+
+  def conflict(asked)
+    raise(Hashira::Error, "conflicting options: #{asked.map(&:first).join(" and ")}")
+  end
+
+  def requested(fail_on)
+    CI_FLAGS.filter_map { |flag, mode| [flag, mode] if delete(flag) } + gate(fail_on) + formats
+  end
+
+  def gate(fail_on) = fail_on.empty? ? [] : [["--fail-on", :fail_on]]
+
+  def formats
+    chosen = format
+    modes = chosen.empty? ? [] : [["--format #{chosen}", chosen.to_sym]]
+    delete("--json") ? modes + [["--json", :json]] : modes
+  end
+
+  def format
+    wanted = take("--format", "")
+    return wanted if wanted.empty? || FORMATS.include?(wanted)
+    raise(Hashira::Error.unknown("--format", wanted, FORMATS))
+  end
+
+  def take(flag, default) = @arguments.take(flag, default)
+
+  def delete(flag) = @arguments.delete(flag)
 end

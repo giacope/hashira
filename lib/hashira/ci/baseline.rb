@@ -2,39 +2,37 @@
 
 require "json"
 
-module Hashira
-  module CI
-    class Baseline
-      SCHEMA_VERSION = 2
+class Hashira::CI::Baseline
+  SCHEMA_VERSION = 3
 
-      def self.load(path) = new(path, File.exist?(path) ? JSON.parse(File.read(path)) : {})
+  def self.load(path) = new(path, File.exist?(path) ? JSON.parse(File.read(path)) : {})
 
-      def initialize(path, recorded)
-        @path = path
-        @recorded = recorded
-      end
+  def initialize(path, recorded)
+    @path = path
+    @recorded = recorded
+  end
 
-      attr_reader :path
+  attr_reader :path
 
-      def exist? = File.exist?(@path)
+  def exist? = File.exist?(@path)
 
-      def edges = @recorded.fetch("edges", [])
+  def edges = @recorded.fetch("edges", [])
 
-      def findings = @recorded.fetch("findings", [])
+  def findings = @recorded.fetch("findings", [])
 
-      def ratchets_findings? = @recorded.key?("findings")
+  def findings? = @recorded.key?("findings")
 
-      def write(edges, findings)
-        File.write(@path, JSON.pretty_generate(payload(edges, findings)) << "\n")
-      end
+  def packaging = @recorded.fetch("packaging", "folder")
 
-      private
+  def write(edges, findings, packaging:)
+    File.write(@path, JSON.pretty_generate(payload(edges, findings, packaging)) << "\n")
+  end
 
-      def payload(edges, findings)
-        base = { version: SCHEMA_VERSION, edges:, findings: }
-        accepted = Accepted.new(@recorded.fetch("accepted", [])).entries
-        accepted.empty? ? base : base.merge(accepted:)
-      end
-    end
+  private
+
+  def payload(edges, findings, packaging)
+    base = { version: SCHEMA_VERSION, packaging:, edges:, findings: }
+    accepted = Hashira::CI::Accepted.new(@recorded.fetch("accepted", [])).entries
+    accepted.empty? ? base : base.merge(accepted:)
   end
 end

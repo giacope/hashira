@@ -16,11 +16,5 @@
     "report -> duplication"
   ],
   "findings": [],
-  "accepted": [
-    {
-      "kind": "duplication",
-      "digest": "8bbddea787bc",
-      "reason": "CLI::Run mode delegators; one line per MODES entry is the dispatch table, not a copy"
-    }
-  ]
+  "accepted": []
 }

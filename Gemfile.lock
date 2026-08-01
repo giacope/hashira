@@ -85,6 +85,9 @@ GEM
     rubocop-ast (1.50.0)
       parser (>= 3.3.7.2)
       prism (~> 1.7)
+    rubocop-elegant (0.7.1)
+      lint_roller (~> 1.1)
+      rubocop (~> 1.75)
     rubocop-packaging (0.6.0)
       lint_roller (~> 1.1.0)
       rubocop (>= 1.72.1, < 2.0)
@@ -116,6 +119,7 @@ DEPENDENCIES
   reek (~> 6.5)
   rspec (~> 3.13)
   rubocop (~> 1.75)
+  rubocop-elegant (~> 0.7)
   rubocop-packaging (~> 0.6)
   rubocop-performance (~> 1.25)
   rubocop-rspec (~> 3.6)
@@ -155,6 +159,7 @@ CHECKSUMS
   rspec-support (3.13.7) sha256=0640e5570872aafefd79867901deeeeb40b0c9875a36b983d85f54fb7381c47c
   rubocop (1.88.2) sha256=8def251c90cd955feb4daa3edc0ab56893250c4ce90ef81e6c80c03f9a939bbf
   rubocop-ast (1.50.0) sha256=b9ca88300da0803ee222ad20cdb30494c0a784eed06fdc35d254b06d662788db
+  rubocop-elegant (0.7.1) sha256=7712ce9bb21daeee721b179457040caee33b8fd4556560c6ac5ace8496a1bd0d
   rubocop-packaging (0.6.0) sha256=fb92bd0fb48e6f8cdb1648d2249b0cd51c2497dcc87340132d22f01edbf558a7
   rubocop-performance (1.26.1) sha256=cd19b936ff196df85829d264b522fd4f98b6c89ad271fa52744a8c11b8f71834
   rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2

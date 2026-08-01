@@ -2,49 +2,54 @@
 
 require "prism"
 
-module Hashira
-  class Pipeline
-    ANALYZERS = %i[coupling complexity duplication].freeze
+class Hashira::Pipeline
+  ANALYZERS = %i[coupling complexity duplication].freeze
 
-    RULES = [Analysis::CycleFindings, Analysis::SdpViolationFindings].freeze
+  RULES = [Hashira::Analysis::CycleFindings, Hashira::Analysis::SdpViolationFindings].freeze
 
-    def initialize(project, enabled: ANALYZERS)
-      @project = project
-      @enabled = enabled
-      @trees = project.files.to_h { [it, parse(it)] }
-      @graph = Analysis::Graph.new(project, @trees, Analysis::Census.new(project, @trees))
-    end
+  def initialize(project, enabled: ANALYZERS, packaging: :auto)
+    @project = project
+    @enabled = enabled
+    @trees = project.files.to_h { [it, parse(it)] }
+    @graph = Hashira::Analysis::Graph.new(project, @trees, census(settle(packaging)))
+  end
 
-    attr_reader :project, :graph
+  attr_reader :project, :graph
 
-    def complexity
-      @complexity ||= Complexity::Analyzer.new(@project, @trees) if enabled?(:complexity)
-    end
+  def complexity
+    @complexity ||= Hashira::Complexity::Analyzer.new(@project, @trees) if enabled?(:complexity)
+  end
 
-    def duplication
-      @duplication ||= Duplication::Analyzer.new(@project, @trees, churn) if enabled?(:duplication)
-    end
+  def duplication
+    @duplication ||= Hashira::Duplication::Analyzer.new(@project, @trees, churn) if enabled?(:duplication)
+  end
 
-    def hotspots
-      @hotspots ||= Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
-    end
+  def hotspots
+    @hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
+  end
 
-    def churn = @churn ||= Churn.from_git
+  def churn = @churn ||= Hashira::Churn.scan
 
-    def enabled?(analyzer) = @enabled.include?(analyzer)
+  def enabled?(analyzer) = @enabled.include?(analyzer)
 
-    def findings = coupling_findings + listed(complexity) + listed(duplication)
+  def findings = structural + listed(complexity) + listed(duplication)
 
-    private
+  private
 
-    def coupling_findings = enabled?(:coupling) ? RULES.flat_map { it.new(@project, @graph).list } : []
+  def census(packaging) = Hashira::Analysis::Census.new(@project, @trees, packaging:)
 
-    def listed(analyzer) = analyzer ? analyzer.findings : []
+  def settle(packaging)
+    return packaging unless packaging == :auto
+    @project.rails? ? :namespace : :folder
+  end
 
-    def parse(path)
-      Prism.parse_file(path).value
-    rescue SystemCallError => error
-      raise Error, "cannot read #{path} (#{error.message})"
-    end
+  def structural = enabled?(:coupling) ? RULES.flat_map { it.new(@project, @graph).list } : []
+
+  def listed(analyzer) = analyzer ? analyzer.findings : []
+
+  def parse(path)
+    Prism.parse_file(path).value
+  rescue SystemCallError => error
+    raise(Hashira::Error, "cannot read #{path} (#{error.message})")
   end
 end

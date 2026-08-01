@@ -7,19 +7,17 @@ module Hashira
     module TypeWalk
       module_function
 
-      def each_definition(node, prefix = [], &)
-        return each_child_definition(node, prefix, &) unless type_node?(node)
-
-        full = prefix + Syntax.path_segments(node.constant_path)
+      def each(node, stack = [], roots: nil, &)
+        return descend(node, stack, roots, &) unless type?(node)
+        full = Syntax.anchor(stack, Syntax.segments(node.constant_path), roots)
         yield(node, full)
-        each_child_definition(node.body, full, &)
+        descend(node.body, stack + [full], roots, &)
       end
 
-      def type_node?(node) = node.is_a?(Prism::ClassNode) || node.is_a?(Prism::ModuleNode)
+      def type?(node) = node.is_a?(Prism::ClassNode) || node.is_a?(Prism::ModuleNode)
 
-      def each_child_definition(node, prefix, &)
-        children = node ? node.compact_child_nodes : []
-        children.each { each_definition(it, prefix, &) }
+      def descend(node, stack, roots, &)
+        (node ? node.compact_child_nodes : []).each { each(it, stack, roots:, &) }
       end
     end
   end

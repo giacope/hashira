@@ -1,16 +1,13 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Diagram
-    class Dot
-      def initialize(edges)
-        @edges = edges
-      end
+class Hashira::Diagram::Dot
+  def initialize(edges)
+    @edges = edges
+  end
 
-      def source
-        lines = @edges.map { |from, to, weight| %(  "#{from}" -> "#{to}" [label="#{weight}"];) }
-        "digraph hashira {\n  rankdir=LR;\n#{lines.join("\n")}\n}"
-      end
-    end
+  def source
+    "digraph hashira {\n  rankdir=LR;\n#{@edges.map do |from, to, weight|
+      %(  "#{from}" -> "#{to}" [label="#{weight}"];)
+    end.join("\n")}\n}"
   end
 end

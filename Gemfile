@@ -11,6 +11,8 @@ gem "rubocop-rspec", "~> 3.6", group: :development, require: false
 
 gem "rubocop-performance", "~> 1.25", group: :development, require: false
 
+gem "rubocop-elegant", "~> 0.7", group: :development, require: false
+
 gem "rubocop-packaging", "~> 0.6", group: :development, require: false
 
 gem "rubocop-thread_safety", "~> 0.7", group: :development, require: false

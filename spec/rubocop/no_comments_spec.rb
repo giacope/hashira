@@ -4,7 +4,7 @@ require "rubocop"
 require "rubocop/rspec/support"
 require_relative "../../.rubocop/cop/hashira/no_comments"
 
-RSpec.describe RuboCop::Cop::Hashira::NoComments, :config do
+RSpec.describe(RuboCop::Cop::Hashira::NoComments, :config) do
   include RuboCop::RSpec::ExpectOffense
 
   let(:ruby_version) { 3.4 }

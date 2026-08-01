@@ -8,31 +8,32 @@ module Hashira
       module_function
 
       def list(tree)
-        each_sighting(tree).map(&:first)
+        sightings(tree).map(&:first)
       end
 
-      def each_sighting(tree)
-        [].tap { collect(tree, it) }
+      def sightings(tree, roots = nil)
+        [].tap { collect(tree, [], it, roots) }
       end
 
-      def collect(node, accumulator)
+      def collect(node, nesting, accumulator, roots, home = nesting)
         return unless node
-        return accumulator << [Syntax.path_segments(node), node.location.start_line] if constant?(node)
+        return accumulator << sighting(node, nesting, home) if constant?(node)
+        return enter(node, nesting, accumulator, roots) if definition?(node)
+        node.compact_child_nodes.each { collect(it, nesting, accumulator, roots, home) }
+      end
 
-        branches(node).each { collect(it, accumulator) }
+      def sighting(node, nesting, home)
+        [Syntax.segments(node), node.location.start_line, Syntax.cbase?(node) ? nil : nesting, home]
       end
 
       def constant?(node) = node.is_a?(Prism::ConstantPathNode) || node.is_a?(Prism::ConstantReadNode)
 
-      def branches(node)
-        definition?(node) ? definition_branches(node) : node.compact_child_nodes
-      end
-
       def definition?(node) = node.is_a?(Prism::ClassNode) || node.is_a?(Prism::ModuleNode)
 
-      def definition_branches(node)
-        superclass = node.is_a?(Prism::ClassNode) ? node.superclass : nil
-        [superclass, node.body]
+      def enter(node, nesting, accumulator, roots)
+        opened = nesting + [Syntax.anchor(nesting, Syntax.segments(node.constant_path), roots)]
+        collect(node.superclass, nesting, accumulator, roots, opened) if node.is_a?(Prism::ClassNode)
+        collect(node.body, opened, accumulator, roots)
       end
     end
   end

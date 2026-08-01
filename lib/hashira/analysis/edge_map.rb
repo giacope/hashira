@@ -1,36 +1,33 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Analysis
-    class EdgeMap
-      def initialize(project, census)
-        @project = project
-        @census = census
-        @dependencies = empty_sets
-        @evidence = empty_sets
-      end
+class Hashira::Analysis::EdgeMap
+  def initialize(project, census)
+    @project = project
+    @census = census
+    @dependencies = sets
+    @evidence = sets
+  end
 
-      attr_reader :dependencies, :evidence
+  attr_reader :dependencies, :evidence
 
-      def record(file, tree)
-        from = @project.package_for(file)
-        source = @project.relative(file)
-        References.each_sighting(tree).each do |segments, line|
-          record_reference(from, source, segments, line)
-        end
-      end
-
-      private
-
-      def empty_sets = Hash.new { |hash, key| hash[key] = Set.new }
-
-      def record_reference(from, source, segments, line)
-        to = @census.resolve(segments)
-        return unless to && to != from
-
-        @dependencies[from] << to
-        @evidence[[from, to]] << "#{source}:#{line}: #{segments.join("::")}"
-      end
+  def record(file, tree)
+    source = @project.relative(file)
+    Hashira::Analysis::References.sightings(tree, @census.roots).each do |segments, line, nesting, home|
+      note(@census.charge(file, home), locate(segments, nesting), "#{source}:#{line}: #{segments.join("::")}")
     end
+  end
+
+  private
+
+  def sets = Hash.new { |hash, key| hash[key] = Set.new }
+
+  def locate(segments, nesting)
+    nesting ? @census.resolve(segments, nesting) : @census.pinpoint(segments)
+  end
+
+  def note(from, to, sighting)
+    return unless to && to != from
+    @dependencies[from] << to
+    @evidence[[from, to]] << sighting
   end
 end

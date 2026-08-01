@@ -1,68 +1,75 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Report
-    class Text
-      def initialize(view, io: $stdout)
-        @view = view
-        @io = io
-      end
+class Hashira::Report::Text
+  def initialize(view, io: $stdout)
+    @view = view
+    @io = io
+  end
 
-      def print
-        coupling_sections if @view.graph
-        complexity_section if @view.complexity
-        hotspot_section if @view.hotspots
-        findings_section
-        0
-      end
+  def print
+    coupling if @view.graph
+    complexity if @view.complexity
+    hotspots if @view.hotspots
+    findings
+    0
+  end
 
-      private
+  private
 
-      def coupling_sections
-        graph = @view.graph
-        header(graph)
-        MetricsTable.new(graph, io: @io).print
-        DependencyMap.new(graph, io: @io).print
-      end
+  def coupling
+    graph = @view.graph
+    header(graph)
+    Hashira::Report::MetricsTable.new(graph, io: @io).print
+    Hashira::Report::DependencyMap.new(graph, io: @io).print
+    folded(graph.folds)
+  end
 
-      def complexity_section = ComplexityTable.new(@view.complexity, io: @io).print
+  def folded(folds)
+    return if folds.empty?
+    @io.puts("\nFolded (single-type classes joined to their base or domain):")
+    folds.each { @io.puts("  #{it[:from]} -> #{it[:to]} (#{it[:via]})") }
+  end
 
-      def hotspot_section = HotspotTable.new(@view.hotspots, io: @io).print
+  def complexity = Hashira::Report::ComplexityTable.new(@view.complexity, io: @io).print
 
-      def header(graph)
-        project = @view.project
-        packages = graph.packages.size
-        @io.puts "Package (layer) metrics for #{project.label}  " \
-                 "(#{packages} packages, #{project.files.size} files)\n\n"
-        single_package_note if packages == 1
-      end
+  def hotspots = Hashira::Report::HotspotTable.new(@view.hotspots, io: @io).print
 
-      def single_package_note
-        @io.puts "Only one package found — there are no boundaries to analyze. " \
-                 "Pass subdirectories to set them (e.g. hashira lib/gem/*/).\n\n"
-      end
+  def header(graph)
+    packages = graph.packages.size
+    @io.puts(banner(packages))
+    caveat if packages == 1
+  end
 
-      def findings_section
-        all = @view.findings.all
-        @io.puts "\nFindings (#{all.size}):"
-        print_findings(all)
-        accepted_section
-        @io.puts "\n  Full evidence + machine format: hashira --json" unless all.empty?
-      end
+  def banner(packages)
+    "Package (layer) metrics for #{@view.project.label}  (#{packages} packages, #{total} files)\n\n"
+  end
 
-      def print_findings(all)
-        return @io.puts "  none ✓ — structure is healthy" if all.empty?
+  def total = @view.project.files.size
 
-        all.each { FindingLines.new(it, indent: "  ", io: @io).print_with_overflow }
-      end
+  def caveat
+    @io.puts(
+      "Only one package found — there are no boundaries to analyze. " \
+        "Pass subdirectories to set them (e.g. hashira lib/gem/*/).\n\n"
+    )
+  end
 
-      def accepted_section
-        accepted = @view.findings.accepted
-        return if accepted.empty?
+  def findings
+    all = @view.findings.all
+    @io.puts("\nFindings (#{all.size}):")
+    list(all)
+    accepted
+    @io.puts("\n  Full evidence + machine format: hashira --json") unless all.empty?
+  end
 
-        @io.puts "\nAccepted (#{accepted.size}):"
-        accepted.each { |finding, reason| @io.puts "  ~ #{finding.kind}/#{finding.package} — #{reason}" }
-      end
-    end
+  def list(all)
+    return @io.puts("  none ✓ — structure is healthy") if all.empty?
+    all.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
+  end
+
+  def accepted
+    accepted = @view.findings.accepted
+    return if accepted.empty?
+    @io.puts("\nAccepted (#{accepted.size}):")
+    accepted.each { |finding, reason| @io.puts("  ~ #{finding.kind}/#{finding.package} — #{reason}") }
   end
 end

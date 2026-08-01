@@ -11,7 +11,7 @@ require "hashira"
 require "tmpdir"
 
 module FixtureHelper
-  def within_project(files, &)
+  def within(files, &)
     Dir.mktmpdir do |dir|
       files.each do |path, source|
         full = File.join(dir, path)
@@ -22,49 +22,47 @@ module FixtureHelper
     end
   end
 
-  def build_pipeline(directories)
+  def pipeline(directories, packaging: :folder)
     project = Hashira::Project.new(directories)
     trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-    census = Hashira::Analysis::Census.new(project, trees)
+    census = Hashira::Analysis::Census.new(project, trees, packaging:)
     [project, census, Hashira::Analysis::Graph.new(project, trees, census)]
   end
 
-  def analyze(files, directories: ["lib/app"])
-    within_project(files) { yield(*build_pipeline(directories)) }
+  def analyze(files, directories: ["lib/app"], packaging: :folder)
+    within(files) { yield(*pipeline(directories, packaging:)) }
   end
 
   def with_pipeline(&)
-    within_project(FixtureHelper::CYCLIC_FILES) do
+    within(FixtureHelper::CYCLIC_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
     end
   end
 
-  def analyze_complexity(files, directories: ["lib/app"])
-    within_project(files) do
+  def complexity(files, directories: ["lib/app"])
+    within(files) do
       project = Hashira::Project.new(directories)
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      yield Hashira::Complexity::Analyzer.new(project, trees)
+      yield(Hashira::Complexity::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
     end
   end
 
-  def fragments_for(sources)
+  def fragments(sources)
     project = Object.new
     def project.relative(path) = path
     sources.flat_map { |name, source| Hashira::Duplication::Extractor.new(project, { name => Prism.parse(source).value }).fragments }
   end
 
-  def cluster_for(sources) = Hashira::Duplication::Clusterer.new(fragments_for(sources)).clusters.first
+  def cluster(sources) = Hashira::Duplication::Clusterer.new(fragments(sources)).clusters.first
 
-  def analyze_duplication(files, directories: ["lib/app"])
-    within_project(files) do
+  def duplication(files, directories: ["lib/app"])
+    within(files) do
       project = Hashira::Project.new(directories)
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      yield Hashira::Duplication::Analyzer.new(project, trees, Hashira::Churn.new({}))
+      yield(Hashira::Duplication::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
     end
   end
 
-  def capture_stdout
+  def capture
     original = $stdout
     $stdout = StringIO.new
     yield
@@ -130,6 +128,32 @@ module FixtureHelper
         end
       end
     RUBY
+  }.freeze
+
+  # A Rails-shaped app: domains (Billing, Ci) cut across layer folders.
+  RAILS_FILES = {
+    "config/application.rb" => "module Sample; class Application; end; end\n",
+    "app/models/billing/invoice.rb" => "module Billing\n  class Invoice\n    def pay = Ci::Runner.new\n  end\nend\n",
+    "app/models/user.rb" => "class User < ApplicationRecord\n  def bill = Billing::Invoice.new\nend\n",
+    "app/models/application_record.rb" => "class ApplicationRecord\n  def self.abstract = true\nend\n",
+    "app/jobs/ci/runner.rb" => "module Ci\n  class Runner\n    def go = 1\n  end\nend\n"
+  }.freeze
+
+  # A domain plus a top-level Alba-style resource named by suffix convention.
+  SANDBOX_FILES = {
+    "app/models/sandbox.rb" => "class Sandbox\n  def run = 1\nend\n",
+    "app/models/sandbox/lifecycle.rb" => "module Sandbox::Lifecycle\n  def cycle = 1\nend\n",
+    "app/resources/sandbox_resource.rb" =>
+      "class SandboxResource < ApplicationResource\n  attributes :name\nend\n"
+  }.freeze
+
+  # A Rails notification family: top-level subclasses of one base class.
+  NOTIFY_FILES = {
+    "app/models/notification.rb" => "class Notification\n  def read = 1\nend\n",
+    "app/notifications/account_notification.rb" =>
+      "class AccountNotification < Notification\n  def deliver = Billing::Invoice.new\nend\n",
+    "app/notifications/grace_notification.rb" =>
+      "class GraceNotification < AccountNotification\n  def deliver = 2\nend\n"
   }.freeze
 
   # Rails-style mirrored namespaces: Admin and Agent each span a controllers
@@ -240,7 +264,7 @@ module FixtureHelper
 end
 
 RSpec.configure do |config|
-  config.include FixtureHelper
+  config.include(FixtureHelper)
   config.disable_monkey_patching!
   config.order = :random
 end

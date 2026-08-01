@@ -1,23 +1,18 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Diagram
-    class Mermaid
-      def initialize(edges)
-        @edges = edges
-        @nodes = {}
-      end
+class Hashira::Diagram::Mermaid
+  def initialize(edges)
+    @edges = edges
+    @nodes = {}
+  end
 
-      def source
-        lines = @edges.map { |from, to, weight| "  #{node(from)} -->|#{weight}| #{node(to)}" }
-        "graph LR\n#{lines.join("\n")}"
-      end
+  def source
+    "graph LR\n#{@edges.map { |from, to, weight| "  #{node(from)} -->|#{weight}| #{node(to)}" }.join("\n")}"
+  end
 
-      private
+  private
 
-      def node(package)
-        @nodes[package] ||= "#{package.gsub(/\W/, "_")}[\"#{package}\"]"
-      end
-    end
+  def node(package)
+    @nodes[package] ||= "#{package.gsub(/\W/, "_")}[\"#{package}\"]"
   end
 end

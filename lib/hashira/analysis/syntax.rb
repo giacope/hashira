@@ -7,20 +7,35 @@ module Hashira
     module Syntax
       module_function
 
-      def path_segments(node)
+      def segments(node)
         case node
         when Prism::ConstantReadNode then [node.name.to_s]
-        when Prism::ConstantPathNode then path_segments(node.parent) + name_of(node)
+        when Prism::ConstantPathNode then segments(node.parent) + label(node)
         else []
         end
       end
 
-      def name_of(node) = [node.name.to_s]
+      def label(node) = [node.name.to_s]
 
-      def direct_definitions(type_node)
+      def cbase?(node)
+        return false unless node.is_a?(Prism::ConstantPathNode)
+        parent = node.parent
+        !parent || cbase?(parent)
+      end
+
+      def anchor(stack, segments, roots)
+        return (stack.last || []) + segments if segments.length < 2 || !roots
+        base = stack.reverse_each.find { roots.include?(it + segments.first(1)) }
+        base ? base + segments : hoist(stack, segments, roots)
+      end
+
+      def hoist(stack, segments, roots)
+        roots.include?(segments.first(1)) ? segments : (stack.last || []) + segments
+      end
+
+      def direct(type_node)
         body = type_node.body
-        statements = body.is_a?(Prism::StatementsNode) ? body.body : [body]
-        statements.grep(Prism::DefNode)
+        (body.is_a?(Prism::StatementsNode) ? body.body : [body]).grep(Prism::DefNode)
       end
     end
   end

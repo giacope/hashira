@@ -1,33 +1,38 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Analysis
-    class CycleFindings < Rule
-      KIND = "cycle"
+require_relative "rule"
 
-      def list
-        graph.packages.select { graph.cyclic?(it) }.sort.map { cycle_finding(it) }
-      end
+class Hashira::Analysis::CycleFindings < Hashira::Analysis::Rule
+  KIND = "cycle"
 
-      private
+  def list
+    loops.map { entry(it) }
+  end
 
-      def cycle_finding(package)
-        path = graph.cycle_path(package)
-        finding(package:, cycle: path, evidence: evidence(path),
-                message: message(package, path, graph.weakest_edge(path)))
-      end
+  private
 
-      def message(package, path, weak_edge)
-        weak_from, weak_to = weak_edge
-        weight = graph.weight(weak_from, weak_to)
-        "#{package} can reach itself: #{path.join(" -> ")} — any change may ripple back " \
-          "around. The lightest edge on this cycle is #{weak_from} -> #{weak_to} " \
-          "(#{weight} ref#{"s" unless weight == 1})."
-      end
+  def loops
+    cycles = graph.cycles
+    graph.packages.select { cycles.through?(it) }.sort.map { cycles.path(it) }.uniq { it[..-2].sort }
+  end
 
-      def evidence(path)
-        path.each_cons(2).flat_map { |from, to| graph.evidence_for(from, to).to_a.first(2) }
-      end
-    end
+  def entry(path)
+    package = path.first
+    finding(
+      package:, cycle: path, evidence: evidence(path),
+      message: message(package, path, graph.cycles.weakest(path))
+    )
+  end
+
+  def message(package, path, weak_edge)
+    from, to = weak_edge
+    weight = graph.weight(from, to)
+    "#{package} can reach itself: #{path.join(" -> ")} — any change may ripple back " \
+      "around. The lightest edge on this cycle is #{from} -> #{to} " \
+      "(#{weight} ref#{"s" unless weight == 1})."
+  end
+
+  def evidence(path)
+    path.each_cons(2).flat_map { |from, to| graph.evidence(from, to).to_a.first(2) }
   end
 end

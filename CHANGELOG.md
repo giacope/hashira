@@ -5,6 +5,95 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Rails awareness. A directory with `config/application.rb` inside it (the
+  Rails root) or beside it (its `app` folder) is detected as a Rails app:
+  coupling defaults to namespace packaging, and under namespace packaging
+  references to app-defined `Application*` base classes (`ApplicationRecord`,
+  `ApplicationJob`, `ApplicationSerializer`, `ApplicationPolicy`, …) are
+  skipped as framework plumbing. An explicit `--package-by folder` keeps the
+  full legacy edge set, `Application*` references included.
+- Baselines record their packaging mode (schema v3; older baselines read as
+  folder). `--ratchet` refuses a baseline recorded under another mode with
+  instructions to rerun with `--package-by <recorded>` or refresh via
+  `--update-baseline`, instead of failing every edge as drift after the
+  Rails default flips packaging.
+- `--package-by folder|namespace`. Namespace packaging groups types by
+  top-level constant (`Billing`, `Ci`, `User`) across layer folders, so the
+  coupling tables and findings answer the domain question — does `Billing`
+  reach into `Ci`? — instead of restating Rails layout (`models -> jobs`).
+  Folder packaging stays the default outside Rails and remains available
+  everywhere via the flag.
+
+### Changed
+
+- One cycle finding per distinct loop, reported from its smallest member,
+  instead of one per participating package.
+- Under namespace packaging, a top-level class that anchors no namespace of
+  its own and inherits from an app-defined class folds into its base's
+  package, transitively — a flat family of notification subclasses reports
+  as one package, not twenty.
+- Past 25 rows, the metrics table hides single-type packages with no
+  outgoing edges and at most one incoming behind a count line; they stay in
+  the graph, so their afferent weight still counts. A heavily depended-upon
+  package (high Ca) always keeps its row — its stability is the point of
+  the table.
+
+- Under namespace packaging in a Rails app, a singleton class named by
+  convention (`SandboxResource`, `UserSerializer`, `AccountPolicy`,
+  `PlanDecorator`) folds into its domain's package when that package exists;
+  an app-defined superclass still takes precedence over the name.
+- Every fold is disclosed: a `Folded` list under the coupling tables and a
+  `folds` array in `--json`, each entry naming the fold and whether it came
+  from a base class or a naming suffix.
+- Classes count toward TC even when their body is pure DSL (Alba resources,
+  notifiers); only modules still need a directly defined method.
+
+### Fixed
+
+- References into `Application*` namespaces (`ApplicationCable::Channel`)
+  are skipped in Rails apps like the bases themselves, and no longer pull
+  channels into a plumbing package.
+- A proper prefix of a reference only matches exact definition paths: with
+  an app-defined `Billing::Stripe`, the gem constant `Stripe::RateLimitError`
+  no longer resolves to `Billing` when `RateLimitError` is unknown.
+  Whole-reference suffix shorthand is untouched.
+- Constants resolve through their lexical nesting, like Ruby. A bare
+  `Authentication` inside `class User` now resolves to `User::Authentication`
+  before a top-level `Authentication` in another package, superclasses
+  resolve in the enclosing scope (but are charged to the class they define),
+  and a scoped hit claimed by several packages resolves to nothing rather
+  than falling through to a namesake. Kills phantom cross-package edges in
+  Rails apps, where nested concerns routinely shadow top-level names.
+- `::`-anchored references resolve at top level only, like Ruby: `::User`
+  inside `module Admin` binds to the top-level `User`, never a nested
+  `Admin::User` namesake.
+- A constant under a namespaced class (`Invoice::STATES` with
+  `Admin::Invoice` defined, referenced inside `Admin`) resolves through the
+  enclosing scope by longest registered prefix, so the edge to the class's
+  package is kept.
+- A compact reopen (`class Foo::Bar` inside `module Baz`) anchors its root
+  like Ruby — innermost enclosing scope that defines it, else top level —
+  so its types and references are charged to `Foo`, not `Baz`.
+- A class reopened across files counts once toward TC, and a lone subclass
+  reopened in a later-sorting file keeps its base fold; fold results no
+  longer depend on file order.
+- Mutually-linked folds (a base fold one way, a suffix fold the other)
+  merge into one package instead of swapping the two packages' identities,
+  and a fold link from a package to itself is dropped instead of being
+  disclosed as `X -> X`.
+- A superclass resolves only against registered definition paths: a bare
+  `Base` no longer folds its subclass into an unrelated `Admin::Base`
+  matched by suffix shorthand.
+- Namespace-prefix inference votes with every distinct definition path and
+  requires a wrapper to enclose all of them, so a domain namespace sharing
+  a single folder with top-level classes is kept as a package instead of
+  being stripped as a gem wrapper.
+- `--package-by auto` is accepted as the explicit spelling of the default.
+
 ## [0.3.0] - 2026-07-26
 
 ### Changed

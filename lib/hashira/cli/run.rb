@@ -1,44 +1,46 @@
 # frozen_string_literal: true
 
-module Hashira
-  class CLI
-    class Run
-      MODES = { update_baseline: :update_baseline, ratchet: :check_ratchet,
-                fail_on: :check_gate, json: :print_json,
-                dot: :print_diagram, mermaid: :print_diagram }.freeze
+class Hashira::CLI::Run
+  MODES = { update: :update, ratchet: :check, fail_on: :guard, json: :json, dot: :diagram, mermaid: :diagram }.freeze
 
-      def initialize(pipeline, options)
-        @pipeline = pipeline
-        @options = options
-      end
+  def initialize(pipeline, options)
+    @pipeline = pipeline
+    @options = options
+  end
 
-      def exit_code = send(MODES.fetch(@options.mode, :print_text))
+  def status = __send__(MODES.fetch(@options.mode, :text))
 
-      private
+  private
 
-      def graph = @pipeline.graph
+  def graph = @pipeline.graph
 
-      def ratchet = CI::Ratchet.new(graph, findings.all, @options.baseline)
+  def findings = @findings ||= Hashira::CI::Accepted.load(@options.baseline).screen(@pipeline.findings)
 
-      def update_baseline = ratchet.update
+  def update = ratchet.update
 
-      def check_ratchet = ratchet.check
+  def check = ratchet.check
 
-      def findings = @findings ||= CI::Accepted.load(@options.baseline).screen(@pipeline.findings)
+  def guard = gate.check
 
-      def check_gate = CI::Gate.new(findings, @options.fail_on).check
+  def diagram = renderer.display
 
-      def print_json = Report::Json.new(view).print
+  def json = report(Hashira::Report::Json)
 
-      def print_diagram = Diagram::Renderer.new(graph, @options.mode).display
+  def text = report(Hashira::Report::Text)
 
-      def print_text = Report::Text.new(view).print
+  def report(kind) = kind.new(view).print
 
-      def view
-        Report::View.new(project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
-                         complexity: @pipeline.complexity, duplication: @pipeline.duplication,
-                         hotspots: @pipeline.hotspots, findings:)
-      end
-    end
+  def ratchet = Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)
+
+  def gate = Hashira::CI::Gate.new(findings, @options.fail_on)
+
+  def renderer = Hashira::Diagram::Renderer.new(graph, @options.mode)
+
+  def view
+    Hashira::Report::View.new(
+      project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
+      complexity: @pipeline.complexity, duplication: @pipeline.duplication,
+      hotspots: @pipeline.hotspots, findings:
+    )
   end
 end

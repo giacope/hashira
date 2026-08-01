@@ -7,9 +7,13 @@ detectors:
   UtilityFunction:
     public_methods_only: true
 
-  # Match RuboCop Metrics/ParameterLists.
+  # Match RuboCop Metrics/ParameterLists. The reference walker threads
+  # (node, nesting, accumulator, roots, home) through its recursion — the
+  # shape of a tree walk, like the visitors excluded below.
   LongParameterList:
     max_params: 4
+    exclude:
+      - "Hashira::Analysis::References#collect"
 
   # The cognitive-complexity visitor is one tiny handler per AST node type,
   # each threading (node, nesting) and switching on node kind. That is the
@@ -18,13 +22,14 @@ detectors:
     exclude:
       - "Hashira::Complexity::CognitiveScore"
       - "Hashira::Complexity::IfChain"
+      - "Hashira::Analysis::References"
 
   # A builder that turns an AST node into a value object envies its input; the
   # duplication kernels (an LCS DP and the AST node/tag classifiers) envy their
   # arrays and nodes by nature.
   FeatureEnvy:
     exclude:
-      - "Hashira::Complexity::Analyzer#build_score"
+      - "Hashira::Complexity::Analyzer#score"
       - "Hashira::Duplication::Similarity#cell"
       - "Hashira::Duplication::Delta#kind"
       - "Hashira::Duplication::Variance#signature"

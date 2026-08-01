@@ -1,29 +1,23 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Report
-    class GraphPayload
-      def initialize(graph)
-        @graph = graph
-      end
+class Hashira::Report::GraphPayload
+  def initialize(graph)
+    @graph = graph
+  end
 
-      def to_h = { packages:, edges: }
+  def to_h = { packages:, edges:, folds: @graph.folds }
 
-      private
+  private
 
-      def packages
-        @graph.metrics.sort_by { |_package, metric| metric.instability }
-                      .to_h do |package, metric|
-          [package,
-           metric.to_h.merge(cyclic: @graph.cyclic?(package))]
-        end
-      end
+  def packages
+    ranked.to_h { |package, metric| [package, metric.to_h.merge(cyclic: @graph.cycles.through?(package))] }
+  end
 
-      def edges
-        @graph.weighted_edges.map do |from, to, weight|
-          { from:, to:, weight:, refs: @graph.evidence_for(from, to).to_a.sort }
-        end
-      end
+  def ranked = @graph.metrics.sort_by { |_package, metric| metric.instability }
+
+  def edges
+    @graph.weighted.map do |from, to, weight|
+      { from:, to:, weight:, refs: @graph.evidence(from, to).to_a.sort }
     end
   end
 end
