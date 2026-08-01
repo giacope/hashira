@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.0] - 2026-08-02
 
 ### Added
 
@@ -30,6 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking (Ruby API only; the CLI is unchanged.)** Names throughout the
+  library are now single-word, following rubocop-elegant: `Graph#dependents_of`
+  is `#incoming`, `Graph#edge_list` is `#edges`, `Project#package_for` is
+  `#package`, `Churn.from_git` is `Churn.scan`, and `Similarity#at_least?` is
+  `#meets?`. Cycle queries moved off `Graph` onto `Graph#cycles`:
+  `graph.cyclic?(p)`, `graph.cycle(p)`, and `graph.weakest(path)` are now
+  `graph.cycles.through?(p)`, `graph.cycles.path(p)`, and
+  `graph.cycles.weakest(path)`.
 - One cycle finding per distinct loop, reported from its smallest member,
   instead of one per participating package.
 - Under namespace packaging, a top-level class that anchors no namespace of
@@ -41,7 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the graph, so their afferent weight still counts. A heavily depended-upon
   package (high Ca) always keeps its row — its stability is the point of
   the table.
-
 - Under namespace packaging in a Rails app, a singleton class named by
   convention (`SandboxResource`, `UserSerializer`, `AccountPolicy`,
   `PlanDecorator`) folds into its domain's package when that package exists;
@@ -202,6 +209,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Output formats: text, JSON, Graphviz dot, Mermaid (`--format`, `--json`).
 - `--help` and `--version`.
 
+[0.4.0]: https://github.com/giacope/hashira/releases/tag/v0.4.0
 [0.3.0]: https://github.com/giacope/hashira/releases/tag/v0.3.0
 [0.2.0]: https://github.com/giacope/hashira/releases/tag/v0.2.0
 [0.1.0]: https://github.com/giacope/hashira/releases/tag/v0.1.0
