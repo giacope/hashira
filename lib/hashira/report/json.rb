@@ -38,7 +38,7 @@ class Hashira::Report::Json
 
   def complexity = { methods: the_methods, classes: the_classes }
 
-  def the_methods = @view.complexity.methods.map(&:to_h)
+  def the_methods = @view.complexity.ranked.map(&:to_h)
 
   def the_classes = @view.complexity.classes.map(&:to_h)
 

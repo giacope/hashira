@@ -2,7 +2,7 @@
 
 require "prism"
 
-class Hashira::Smells::Builder
+class Hashira::Smells::Census
   def initialize(project, trees)
     @project = project
     @trees = trees

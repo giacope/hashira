@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::Duplication::Clusterer
+class Hashira::Duplication::Clusters
   PREFILTER = 12
   BASE_MASS = 16
   NEAR_MASS = 40
@@ -12,10 +12,10 @@ class Hashira::Duplication::Clusterer
     @sets = Hashira::Duplication::UnionFind.new
   end
 
-  def clusters
+  def sorted
     @fragments.group_by(&:types).each_value { |group| chain(group) }
     Hashira::Duplication::NearMiss.new(@fragments).pairs.each { |left, right| @sets.union(left, right) }
-    Hashira::Duplication::Maximal.new(sized).reduced
+    Hashira::Duplication::Maximal.new(sized).reduced.sort_by { -it.mass }
   end
 
   private

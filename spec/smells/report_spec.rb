@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::Analyzer) do
+RSpec.describe(Hashira::Smells::Report) do
   it "runs inside the pipeline by default and steps aside when skipped" do
     within(FixtureHelper::CYCLIC_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))

@@ -6,6 +6,7 @@ plugins:
   - rubocop-thread_safety
 
 require:
+  - ./.rubocop/cop/hashira/agent_noun.rb
   - ./.rubocop/cop/hashira/io_discipline.rb
   - ./.rubocop/cop/hashira/no_comments.rb
 
@@ -82,6 +83,15 @@ Style/EndlessMethod:
 Naming/RescuedExceptionsVariableName:
   PreferredName: error
 
+Hashira/AgentNoun:
+  Include:
+    - "lib/**/*"
+  AllowedNames:
+    - Cluster
+    - ControlParameter
+    - Error
+    - Roster
+
 Hashira/IoDiscipline:
   Include:
     - "lib/hashira/report/**/*"
@@ -101,7 +111,8 @@ Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
     - "spec/analysis/syntax_spec.rb"
     - "spec/ci/gate_spec.rb"
     - "spec/ci/ratchet_spec.rb"
-    - "spec/diagram/renderer_spec.rb"
+    - "spec/diagram/source_spec.rb"
+    - "spec/rubocop/agent_noun_spec.rb"
     - "spec/rubocop/io_discipline_spec.rb"
     - "spec/rubocop/no_comments_spec.rb"
     - "spec/report/text_spec.rb"

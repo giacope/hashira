@@ -9,9 +9,9 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     instance_double(Hashira::Duplication::Cluster, masses: files.map { [it, mass] })
   end
 
-  def complexity(scores) = instance_double(Hashira::Complexity::Analyzer, methods: scores)
+  def complexity(scores) = instance_double(Hashira::Complexity::Scores, ranked: scores)
 
-  def duplication(clusters) = instance_double(Hashira::Duplication::Analyzer, clusters:)
+  def duplication(clusters) = instance_double(Hashira::Duplication::Clones, clusters:)
 
   def rollup(scores: [], clusters: [], churn: {})
     described_class.new(complexity(scores), duplication(clusters), Hashira::Churn.new(churn))

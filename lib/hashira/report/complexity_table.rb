@@ -13,7 +13,7 @@ class Hashira::Report::ComplexityTable
   end
 
   def print
-    section(@complexity.methods, METHOD_ROW, %w[method Cog Calls Loc], METHOD_TITLE)
+    section(@complexity.ranked, METHOD_ROW, %w[method Cog Calls Loc], METHOD_TITLE)
     section(@complexity.classes, CLASS_ROW, %w[class Cog Methods Peak], CLASS_TITLE)
   end
 

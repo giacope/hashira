@@ -19,7 +19,7 @@ class Hashira::Hotspots::Rollup
     )
   end
 
-  def scores = @complexity ? @complexity.methods : []
+  def scores = @complexity ? @complexity.ranked : []
 
   def clusters = @duplication ? @duplication.clusters : []
 

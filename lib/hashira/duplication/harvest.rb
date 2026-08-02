@@ -2,7 +2,7 @@
 
 require "prism"
 
-class Hashira::Duplication::Extractor
+class Hashira::Duplication::Harvest
   WHOLE = [Prism::DefNode, Prism::WhenNode, Prism::RescueNode].freeze
 
   def initialize(project, trees)

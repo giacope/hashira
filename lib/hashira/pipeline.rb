@@ -17,15 +17,15 @@ class Hashira::Pipeline
   attr_reader :project, :graph
 
   def complexity
-    @complexity ||= Hashira::Complexity::Analyzer.new(@project, @trees) if enabled?(:complexity)
+    @complexity ||= Hashira::Complexity::Scores.new(@project, @trees) if enabled?(:complexity)
   end
 
   def duplication
-    @duplication ||= Hashira::Duplication::Analyzer.new(@project, @trees, churn) if enabled?(:duplication)
+    @duplication ||= Hashira::Duplication::Clones.new(@project, @trees, churn) if enabled?(:duplication)
   end
 
   def smells
-    @smells ||= Hashira::Smells::Analyzer.new(@project, @trees) if enabled?(:smells)
+    @smells ||= Hashira::Smells::Report.new(@project, @trees) if enabled?(:smells)
   end
 
   def hotspots

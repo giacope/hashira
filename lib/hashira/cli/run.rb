@@ -26,7 +26,7 @@ class Hashira::CLI::Run
 
   def guard = gate.check
 
-  def diagram = renderer.display
+  def diagram = source.print
 
   def json = report(Hashira::Report::Json)
 
@@ -38,7 +38,7 @@ class Hashira::CLI::Run
 
   def gate = Hashira::CI::Gate.new(findings, @options.fail_on)
 
-  def renderer = Hashira::Diagram::Renderer.new(graph, @options.mode)
+  def source = Hashira::Diagram::Source.new(graph, @options.mode)
 
   def view
     Hashira::Report::View.new(

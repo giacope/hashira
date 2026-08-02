@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class Hashira::Smells::Analyzer
+class Hashira::Smells::Report
   def initialize(project, trees)
-    @types = Hashira::Smells::Builder.new(project, trees).types
+    @types = Hashira::Smells::Census.new(project, trees).types
   end
 
   def findings = @findings ||= sniff(@types, judges) + sniff(@types.flat_map(&:defs), probes)

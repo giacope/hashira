@@ -23,9 +23,9 @@ class Hashira::Analysis::Census
 
   def folds = @folding.disclosed
 
-  def resolve(segments, nesting = []) = resolver.resolve(segments, nesting)
+  def resolve(segments, nesting = []) = scope.resolve(segments, nesting)
 
-  def pinpoint(segments) = resolver.pinpoint(segments)
+  def pinpoint(segments) = scope.pinpoint(segments)
 
   def charge(file, nesting) = translate(@placement.charge(file, nesting))
 
@@ -42,5 +42,5 @@ class Hashira::Analysis::Census
 
   def translate(package) = @folding.map.fetch(package, package)
 
-  def resolver = Hashira::Analysis::Resolver.new(@roster.registry, @catalog, @placement)
+  def scope = Hashira::Analysis::Scope.new(@roster.registry, @catalog, @placement)
 end

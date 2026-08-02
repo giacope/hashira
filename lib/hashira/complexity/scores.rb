@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::Complexity::Analyzer
+class Hashira::Complexity::Scores
   THRESHOLD = 10
 
   def initialize(project, trees)
@@ -8,7 +8,7 @@ class Hashira::Complexity::Analyzer
     @scores = trees.flat_map { |path, tree| harvest(path, tree) }
   end
 
-  def methods = @scores.sort_by { -it.cognitive }
+  def ranked = @scores.sort_by { -it.cognitive }
 
   def classes = Hashira::Complexity::Rollup.new(@scores).classes.sort_by { -it.cognitive }
 
@@ -16,7 +16,7 @@ class Hashira::Complexity::Analyzer
 
   private
 
-  def flagged = methods.select { it.cognitive >= THRESHOLD }
+  def flagged = ranked.select { it.cognitive >= THRESHOLD }
 
   def harvest(path, tree)
     rel = @project.relative(path)

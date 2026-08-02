@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Duplication::Extractor) do
+RSpec.describe(Hashira::Duplication::Harvest) do
   def ranges(sources) = fragments(sources).map(&:range)
   it "extracts every contiguous run of sibling statements, down to one" do
     ranges = ranges("m.rb" => "def m\n a\n b(1)\n c\nend\n").uniq

@@ -43,33 +43,33 @@ module FixtureHelper
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Complexity::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
     end
   end
 
   def smells(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Smells::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      yield(Hashira::Smells::Report.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
     end
   end
 
   def sniffed(files, kind)
-    smells(files) { |analyzer| return analyzer.findings.select { it.kind == kind } }
+    smells(files) { |report| return report.findings.select { it.kind == kind } }
   end
 
   def fragments(sources)
     project = Object.new
     def project.relative(path) = path
-    sources.flat_map { |name, source| Hashira::Duplication::Extractor.new(project, { name => Prism.parse(source).value }).fragments }
+    sources.flat_map { |name, source| Hashira::Duplication::Harvest.new(project, { name => Prism.parse(source).value }).fragments }
   end
 
-  def cluster(sources) = Hashira::Duplication::Clusterer.new(fragments(sources)).clusters.first
+  def cluster(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted.first
 
   def duplication(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Duplication::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
+      yield(Hashira::Duplication::Clones.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
     end
   end
 

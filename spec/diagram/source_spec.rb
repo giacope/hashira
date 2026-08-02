@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Diagram::Renderer) do
+RSpec.describe(Hashira::Diagram::Source) do
   it "renders dot with weighted labeled edges" do
     with_pipeline do |_project, graph, _findings|
-      output = capture { described_class.new(graph, :dot).display }
+      output = capture { described_class.new(graph, :dot).print }
       expect(output).to(eq(<<~DOT))
         digraph hashira {
           rankdir=LR;
@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Diagram::Renderer) do
 
   it "renders mermaid with sanitized identifiers" do
     with_pipeline do |_project, graph, _findings|
-      output = capture { described_class.new(graph, :mermaid).display }
+      output = capture { described_class.new(graph, :mermaid).print }
       expect(output).to(eq(<<~MERMAID))
         graph LR
           alpha["alpha"] -->|1| beta["beta"]
@@ -35,7 +35,7 @@ RSpec.describe(Hashira::Diagram::Renderer) do
     analyze(files) do |_project, _census, graph|
       output =
         capture do
-          described_class.new(graph, :mermaid).display
+          described_class.new(graph, :mermaid).print
         end
       expect(output).to(include('_root_["(root)"] -->|1| alpha["alpha"]'))
     end

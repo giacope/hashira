@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Duplication::Clusterer) do
-  def clusters(sources) = described_class.new(fragments(sources)).clusters
+RSpec.describe(Hashira::Duplication::Clusters) do
+  def clusters(sources) = described_class.new(fragments(sources)).sorted
 
   def exact
     {

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::Analysis::Resolver
+class Hashira::Analysis::Scope
   def initialize(registry, catalog, placement)
     @registry = registry
     @catalog = catalog
