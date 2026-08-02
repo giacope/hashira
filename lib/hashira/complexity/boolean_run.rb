@@ -13,6 +13,8 @@ class Hashira::Complexity::BooleanRun
   private
 
   def operands(node)
-    node.compact_child_nodes.flat_map { it.instance_of?(node.class) ? operands(it) : [it] }
+    node.compact_child_nodes.flat_map { kin?(it, node) ? operands(it) : [it] }
   end
+
+  def kin?(child, node) = child.instance_of?(node.class)
 end

@@ -26,7 +26,9 @@ class Hashira::Duplication::Sequence
 
   def lengths(segment) = MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min
 
-  def slide(segment, length) = (0..(segment.size - length)).map { fragment(segment[it, length]) }
+  def slide(segment, length) = spans(segment, length).map { fragment(segment[it, length]) }
+
+  def spans(segment, length) = 0..(segment.size - length)
 
   def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots)
 end

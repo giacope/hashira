@@ -38,6 +38,10 @@ class Hashira::Analysis::ConstantRegistry
   end
 
   def enclosing(path)
-    (path.length - 1).downto(1).filter_map { @origins[path.first(it).join("::")] }.first
+    prefixes(path).filter_map { @origins[it] }.first
+  end
+
+  def prefixes(path)
+    (path.length - 1).downto(1).map { path.first(it).join("::") }
   end
 end

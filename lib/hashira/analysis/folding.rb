@@ -32,9 +32,11 @@ class Hashira::Analysis::Folding
   def pair(name, stem) = ([name, stem] if stem && @census.packages.include?(stem))
 
   def crop(name)
-    suffix = @suffixes.find { name.end_with?(it) && name != it }
+    suffix = @suffixes.find { trims?(name, it) }
     suffix && name.delete_suffix(suffix)
   end
+
+  def trims?(name, suffix) = name.end_with?(suffix) && name != suffix
 
   def singles = @singles ||= lone.group_by(&:name).transform_values { it.find(&:superclass) || it.last }
 

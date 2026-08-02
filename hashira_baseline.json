@@ -18,12 +18,7 @@
     "report -> duplication",
     "smells -> analysis"
   ],
-  "findings": [
-    "feature_envy:Hashira::Analysis::ConstantRegistry#enclosing",
-    "feature_envy:Hashira::Analysis::Folding#crop",
-    "feature_envy:Hashira::Complexity::BooleanRun#operands",
-    "feature_envy:Hashira::Duplication::Sequence#slide"
-  ],
+  "findings": [],
   "accepted": [
     {
       "kind": "sdp_violation",
