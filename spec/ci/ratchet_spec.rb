@@ -135,9 +135,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "refuses to ratchet a folder-mode baseline against a namespace run" do
     analyze(FixtureHelper::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       seed(findings: [])
-      expect { ratchet(graph).check }.to(
-        raise_error(Hashira::Error, /recorded with --package-by folder.*rerun with --package-by folder/)
-      )
+      expect(ratchet(graph).blocker).to(match(/recorded with --package-by folder.*rerun with --package-by folder/))
     end
   end
 
@@ -150,10 +148,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
     end
   end
 
-  it "raises without a baseline" do
+  it "blocks without a baseline and stands aside with one" do
     with_graph do |graph|
-      expect { described_class.new(graph, [], "missing.json").check }
-        .to(raise_error(Hashira::Error, "no baseline at missing.json — run --update-baseline first"))
+      expect(described_class.new(graph, [], "missing.json").blocker)
+        .to(eq("no baseline at missing.json — run --update-baseline first"))
+      seed(findings: [])
+      expect(ratchet(graph).blocker).to(be_nil)
     end
   end
 end

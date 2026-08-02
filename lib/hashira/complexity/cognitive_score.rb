@@ -27,41 +27,48 @@ class Hashira::Complexity::CognitiveScore
   def initialize(def_node)
     @increments = []
     @calls = 0
-    visit(def_node.body, 0)
+    @nesting = 0
+    visit(def_node.body)
   end
 
-  attr_reader :increments, :calls
+  attr_reader :increments, :calls, :nesting
 
   def total = @increments.sum(&:cost)
 
-  def visit(node, nesting)
+  def visit(node)
     return unless node
-    __send__(HANDLERS.fetch(node.class, :descend), node, nesting)
+    __send__(HANDLERS.fetch(node.class, :descend), node)
   end
 
   def add(node, cost, label)
     @increments << Hashira::Complexity::Increment.new(line: node.location.start_line, cost:, label:)
   end
 
+  def deeper
+    @nesting += 1
+    yield
+    @nesting -= 1
+  end
+
   private
 
-  def descend(node, nesting) = node.compact_child_nodes.each { visit(it, nesting) }
+  def descend(node) = node.compact_child_nodes.each { visit(it) }
 
-  def on_call(node, nesting)
+  def on_call(node)
     @calls += 1
-    descend(node, nesting)
+    descend(node)
   end
 
-  def on_block(node, nesting) = node.compact_child_nodes.each { visit(it, nesting + 1) }
+  def on_block(node) = deeper { descend(node) }
 
-  def on_nester(node, nesting)
-    add(node, 1 + nesting, LABELS.fetch(node.class))
-    node.compact_child_nodes.each { visit(it, nesting + 1) }
+  def on_nester(node)
+    add(node, 1 + @nesting, LABELS.fetch(node.class))
+    deeper { descend(node) }
   end
 
-  def on_if(node, nesting) = Hashira::Complexity::IfChain.new(self).apply(node, nesting)
+  def on_if(node) = Hashira::Complexity::IfChain.new(self).apply(node)
 
-  def on_begin(node, nesting) = Hashira::Complexity::RescueScan.new(self).apply(node, nesting)
+  def on_begin(node) = Hashira::Complexity::RescueScan.new(self).apply(node)
 
-  def on_boolean(node, nesting) = Hashira::Complexity::BooleanRun.new(self).apply(node, nesting)
+  def on_boolean(node) = Hashira::Complexity::BooleanRun.new(self).apply(node)
 end

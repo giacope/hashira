@@ -18,9 +18,7 @@ class Hashira::Duplication::Delta
 
   def kind
     tags = kinds
-    return :identical if tags.empty?
-    return :structure if tags.include?(:structure)
-    tags.size == 1 ? tags.first : :mixed
+    tags.empty? ? :identical : label(tags)
   end
 
   def to_h
@@ -31,6 +29,11 @@ class Hashira::Duplication::Delta
   end
 
   private
+
+  def label(tags)
+    return :structure if tags.include?(:structure)
+    tags.size == 1 ? tags.first : :mixed
+  end
 
   def kinds
     @cluster.others.flat_map { |other| Hashira::Duplication::Variance.new(@cluster.canonical, other).kinds }.uniq

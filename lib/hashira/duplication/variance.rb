@@ -40,10 +40,10 @@ class Hashira::Duplication::Variance
   end
 
   def signature(node)
-    type = node.type
-    return literal(node) if LITERALS.include?(type)
-    node.name if NAMED.include?(type)
+    LITERALS.include?(node.type) ? literal(node) : label(node)
   end
+
+  def label(node) = (node.name if NAMED.include?(node.type))
 
   def literal(node) = VALUED.include?(node.type) ? node.value : node.unescaped
 end

@@ -47,6 +47,8 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
         module Zone
           class Thing
             class << self
+              LIMIT = 3
+
               def scrub(text) = text.strip
             end
           end

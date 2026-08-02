@@ -7,34 +7,34 @@ class Hashira::Complexity::IfChain
     @scorer = scorer
   end
 
-  def apply(node, nesting)
-    return ternary(node, nesting) unless node.if_keyword
-    branch(node, 1 + nesting, nesting, "if")
+  def apply(node)
+    return ternary(node) unless node.if_keyword
+    branch(node, 1 + @scorer.nesting, "if")
   end
 
   private
 
-  def branch(node, cost, nesting, label)
+  def branch(node, cost, label)
     @scorer.add(node, cost, label)
-    @scorer.visit(node.predicate, nesting)
-    @scorer.visit(node.statements, nesting + 1)
-    tail(node.subsequent, nesting)
+    @scorer.visit(node.predicate)
+    @scorer.deeper { @scorer.visit(node.statements) }
+    tail(node.subsequent)
   end
 
-  def tail(node, nesting)
+  def tail(node)
     case node
-    when Prism::IfNode then branch(node, 1, nesting, "elsif")
-    when Prism::ElseNode then otherwise(node, nesting)
+    when Prism::IfNode then branch(node, 1, "elsif")
+    when Prism::ElseNode then otherwise(node)
     end
   end
 
-  def otherwise(node, nesting)
+  def otherwise(node)
     @scorer.add(node, 1, "else")
-    @scorer.visit(node.statements, nesting + 1)
+    @scorer.deeper { @scorer.visit(node.statements) }
   end
 
-  def ternary(node, nesting)
+  def ternary(node)
     @scorer.add(node, 1, "ternary")
-    node.compact_child_nodes.each { @scorer.visit(it, nesting) }
+    node.compact_child_nodes.each { @scorer.visit(it) }
   end
 end

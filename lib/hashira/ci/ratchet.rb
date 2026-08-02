@@ -14,20 +14,16 @@ class Hashira::CI::Ratchet
     0
   end
 
-  def check
-    raise(Hashira::Error, "no baseline at #{@baseline.path} — run --update-baseline first") unless @baseline.exist?
-    vet
-    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(drift, delta)
+  def check = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(drift, delta)
+
+  def blocker
+    return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?
+    mismatch unless @baseline.packaging == packaging
   end
 
   private
 
   def packaging = @graph.packaging.to_s
-
-  def vet
-    return if @baseline.packaging == packaging
-    raise(Hashira::Error, mismatch)
-  end
 
   def mismatch
     recorded = @baseline.packaging

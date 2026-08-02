@@ -5,19 +5,19 @@ class Hashira::Complexity::RescueScan
     @scorer = scorer
   end
 
-  def apply(node, nesting)
-    @scorer.visit(node.statements, nesting)
-    clauses(node.rescue_clause, nesting)
-    @scorer.visit(node.else_clause, nesting)
-    @scorer.visit(node.ensure_clause, nesting)
+  def apply(node)
+    @scorer.visit(node.statements)
+    clauses(node.rescue_clause)
+    @scorer.visit(node.else_clause)
+    @scorer.visit(node.ensure_clause)
   end
 
   private
 
-  def clauses(node, nesting)
+  def clauses(node)
     return unless node
-    @scorer.add(node, 1 + nesting, "rescue")
-    @scorer.visit(node.statements, nesting + 1)
-    clauses(node.subsequent, nesting)
+    @scorer.add(node, 1 + @scorer.nesting, "rescue")
+    @scorer.deeper { @scorer.visit(node.statements) }
+    clauses(node.subsequent)
   end
 end

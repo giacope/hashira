@@ -2,39 +2,54 @@
 
 require "prism"
 
-module Hashira
-  module Analysis
-    module References
-      module_function
+class Hashira::Analysis::References
+  def self.list(tree) = new.sightings(tree).map(&:first)
 
-      def list(tree)
-        sightings(tree).map(&:first)
-      end
+  def self.sightings(tree, roots = nil) = new(roots).sightings(tree)
 
-      def sightings(tree, roots = nil)
-        [].tap { collect(tree, [], it, roots) }
-      end
+  def initialize(roots = nil)
+    @roots = roots
+    @found = []
+    @scopes = [[]]
+  end
 
-      def collect(node, nesting, accumulator, roots, home = nesting)
-        return unless node
-        return accumulator << sighting(node, nesting, home) if constant?(node)
-        return enter(node, nesting, accumulator, roots) if definition?(node)
-        node.compact_child_nodes.each { collect(it, nesting, accumulator, roots, home) }
-      end
+  def sightings(tree)
+    collect(tree)
+    @found
+  end
 
-      def sighting(node, nesting, home)
-        [Syntax.segments(node), node.location.start_line, Syntax.cbase?(node) ? nil : nesting, home]
-      end
+  private
 
-      def constant?(node) = node.is_a?(Prism::ConstantPathNode) || node.is_a?(Prism::ConstantReadNode)
+  def nesting = @scopes.last
 
-      def definition?(node) = node.is_a?(Prism::ClassNode) || node.is_a?(Prism::ModuleNode)
+  def collect(node, home = nesting)
+    return unless node
+    return @found << sighting(node, home) if constant?(node)
+    return enter(node) if definition?(node)
+    node.compact_child_nodes.each { collect(it, home) }
+  end
 
-      def enter(node, nesting, accumulator, roots)
-        opened = nesting + [Syntax.anchor(nesting, Syntax.segments(node.constant_path), roots)]
-        collect(node.superclass, nesting, accumulator, roots, opened) if node.is_a?(Prism::ClassNode)
-        collect(node.body, opened, accumulator, roots)
-      end
-    end
+  def sighting(node, home)
+    [syntax.segments(node), node.location.start_line, syntax.cbase?(node) ? nil : nesting, home]
+  end
+
+  def syntax = Hashira::Analysis::Syntax
+
+  def constant?(node) = node.is_a?(Prism::ConstantPathNode) || node.is_a?(Prism::ConstantReadNode)
+
+  def definition?(node) = node.is_a?(Prism::ClassNode) || node.is_a?(Prism::ModuleNode)
+
+  def enter(node)
+    opened = nesting + [anchor(node)]
+    collect(node.superclass, opened) if node.is_a?(Prism::ClassNode)
+    inside(opened) { collect(node.body) }
+  end
+
+  def anchor(node) = syntax.anchor(nesting, syntax.segments(node.constant_path), @roots)
+
+  def inside(scope)
+    @scopes << scope
+    yield
+    @scopes.pop
   end
 end

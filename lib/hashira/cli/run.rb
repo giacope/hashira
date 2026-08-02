@@ -18,7 +18,11 @@ class Hashira::CLI::Run
 
   def update = ratchet.update
 
-  def check = ratchet.check
+  def check
+    stop = ratchet.blocker
+    raise(Hashira::Error, stop) if stop
+    ratchet.check
+  end
 
   def guard = gate.check
 
@@ -30,7 +34,7 @@ class Hashira::CLI::Run
 
   def report(kind) = kind.new(view).print
 
-  def ratchet = Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)
+  def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)
 
   def gate = Hashira::CI::Gate.new(findings, @options.fail_on)
 

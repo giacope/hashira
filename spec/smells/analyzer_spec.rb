@@ -79,6 +79,8 @@ RSpec.describe(Hashira::Smells::Analyzer) do
 
               def anonymous(*, **) = @io.flush
 
+              def forward(...) = @io.call(...)
+
               def sneaky(flag)
                 def helper = 1
                 @done = true if flag

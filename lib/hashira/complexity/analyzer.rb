@@ -32,12 +32,13 @@ class Hashira::Complexity::Analyzer
   end
 
   def score(rel, full, node)
-    score = Hashira::Complexity::CognitiveScore.new(node)
     Hashira::Complexity::MethodScore.new(
       subject: subject(full, node), file: rel, line: node.location.start_line,
-      cognitive: score.total, calls: score.calls, increments: score.increments
+      **tallies(Hashira::Complexity::CognitiveScore.new(node))
     )
   end
+
+  def tallies(score) = { cognitive: score.total, calls: score.calls, increments: score.increments }
 
   def subject(full, node) = "#{full.join("::")}#{node.receiver ? "." : "#"}#{node.name}"
 end

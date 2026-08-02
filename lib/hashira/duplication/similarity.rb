@@ -38,6 +38,10 @@ class Hashira::Duplication::Similarity
   end
 
   def cell(prev, row, token, index)
-    @right[index] == token ? prev[index] + 1 : [prev[index + 1], row[index]].max
+    match?(token, index) ? prev[index] + 1 : carry(prev, row, index)
   end
+
+  def match?(token, index) = @right[index] == token
+
+  def carry(prev, row, index) = [prev[index + 1], row[index]].max
 end

@@ -5,9 +5,9 @@ class Hashira::Complexity::BooleanRun
     @scorer = scorer
   end
 
-  def apply(node, nesting)
+  def apply(node)
     @scorer.add(node, 1, "boolean")
-    operands(node).each { @scorer.visit(it, nesting) }
+    operands(node).each { @scorer.visit(it) }
   end
 
   private
