@@ -28,7 +28,6 @@ RSpec.describe(Hashira::CI::Accepted) do
   it "keeps a clone accepted by digest when its lines move" do
     entry = { "kind" => "duplication", "digest" => "a3f9c1", "reason" => "generated, both sides regenerate" }
     moved = finding(kind: "duplication", package: "orders.rb:91", digest: "a3f9c1")
-    # recorded when the clone sat at orders.rb:4 — the position is not the identity
     expect(accepting(entry).screen([moved]).all).to(be_empty)
   end
   it "refuses to accept a clone named by position, since the position is not its identity" do

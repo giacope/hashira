@@ -10,7 +10,6 @@ RSpec.describe(Hashira::Duplication::Similarity) do
     expect(ratio(%i[a b], [])).to(eq(0.0))
   end
   it "scores a one-token drift by the length-normalized LCS" do
-    # LCS(a b c d, a b x d) = 3 → 2*3 / (4 + 4) = 0.75
     expect(ratio(%i[a b c d], %i[a b x d])).to(eq(0.75))
   end
   it "accepts a pair that clears the threshold" do
@@ -20,7 +19,6 @@ RSpec.describe(Hashira::Duplication::Similarity) do
     expect(described_class.new(%i[a b c d], %i[a x y z]).meets?(0.8)).to(be(false))
   end
   it "still runs the full comparison when the bound alone would pass" do
-    # Same tokens, reversed: the multiset bound says 1.0, the real LCS says 0.25.
     expect(described_class.new(%i[a b c d], %i[d c b a]).meets?(0.8)).to(be(false))
   end
   it "counts a repeated token only as often as both sides carry it" do

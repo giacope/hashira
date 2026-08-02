@@ -24,15 +24,12 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
-# Prefer `it` over `_1` (Ruby 3.4+); named parameters stay allowed.
 Style/ItBlockParameter:
   EnforcedStyle: only_numbered_parameters
 
-# Report tables use positional printf tokens (%-12s); annotations add noise.
 Style/FormatStringToken:
   EnforcedStyle: unannotated
 
-# Specs are integration-flavoured and organised by area, not by class path.
 RSpec/ExampleLength:
   Enabled: false
 
@@ -42,7 +39,6 @@ RSpec/MultipleExpectations:
 RSpec/SpecFilePathFormat:
   Enabled: false
 
-# Want blank lines between examples/groups; Elegant/NoEmptyLinesInBlocks forbids them.
 RSpec/EmptyLineAfterExample:
   Enabled: false
 
@@ -52,7 +48,6 @@ RSpec/EmptyLineAfterExampleGroup:
 Layout/LineLength:
   Max: 120
 
-# Aligned continuations violate Elegant/MonotonicIndents; indent by one step.
 Layout/LineEndStringConcatenationIndentation:
   EnforcedStyle: indented
 
@@ -61,8 +56,6 @@ Metrics/BlockLength:
     - "spec/**/*"
     - "hashira.gemspec"
 
-# --- Sandi Metz rules: class <= 100 lines, method <= 5 lines, <= 4 params.
-# Broken only where a named exclude says why.
 
 Metrics/ClassLength:
   Max: 100
@@ -70,12 +63,12 @@ Metrics/ClassLength:
 Metrics/ModuleLength:
   Max: 100
   Exclude:
-    - "spec/**/*"   # fixture modules mirror multi-field data objects
+    - "spec/**/*"
 
 Metrics/MethodLength:
   Max: 5
   Exclude:
-    - "spec/**/*"   # fixture-builder helpers; the rule targets production code
+    - "spec/**/*"
 
 Metrics/ParameterLists:
   Max: 4
@@ -89,7 +82,6 @@ Style/EndlessMethod:
 Naming/RescuedExceptionsVariableName:
   PreferredName: error
 
-# Printers and CI reporters write only through their injected IO.
 Hashira/IoDiscipline:
   Include:
     - "lib/hashira/report/**/*"
@@ -99,12 +91,9 @@ Hashira/NoComments:
   Include:
     - "lib/**/*"
 
-# False positives: flags shebangs; Hashira/NoComments is the comment policy here.
 Elegant/NoComments:
   Enabled: false
 
-# The cop (0.7.1) flags and deletes blank lines INSIDE heredoc string content,
-# corrupting verbatim report fixtures. Excluded where heredocs carry blank lines.
 Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
   Exclude:
     - "spec/analysis/census_spec.rb"
@@ -116,17 +105,16 @@ Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
     - "spec/rubocop/io_discipline_spec.rb"
     - "spec/rubocop/no_comments_spec.rb"
     - "spec/report/text_spec.rb"
+    - "spec/smells/*_spec.rb"
 
 Elegant/NoEmptyLinesInMethods: *heredoc_fixtures
 
-# False positive on reopened classes it only sees one file of (e.g. CLI).
 Style/StaticClass:
   Enabled: false
 
 RSpec/VerifiedDoubles:
   Enabled: true
 
-# Specs chdir into a private tmpdir per example; RSpec here is single-threaded.
 ThreadSafety/DirChdir:
   Exclude:
     - "spec/**/*"

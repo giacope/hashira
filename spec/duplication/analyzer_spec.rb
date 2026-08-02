@@ -7,7 +7,6 @@ RSpec.describe(Hashira::Duplication::Analyzer) do
       expect(analyzer.findings.size).to(eq(1))
       expect(finding.kind).to(eq("duplication"))
       expect(finding.message).to(include("2 similar fragments"))
-      # the whole class matches, not just the run of statements inside it
       expect(finding.evidence).to(
         include(
           a_string_matching(%r{orders/checkout\.rb:1-11}),

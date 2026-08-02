@@ -22,7 +22,7 @@ RSpec.describe(Hashira::Duplication::Clusterer) do
     clusters = clusters(exact)
     expect(clusters.size).to(eq(1))
     expect(clusters.first.size).to(eq(2))
-    expect(clusters.first.mass).to(eq(23)) # the whole method, not just its body
+    expect(clusters.first.mass).to(eq(23))
     expect(clusters.first.canonical.range).to(eq("a.rb:1-5"))
   end
   it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
@@ -31,7 +31,6 @@ RSpec.describe(Hashira::Duplication::Clusterer) do
         "g.finalize(:x, :y)\nend\n"
     }
     cluster = clusters(exact.merge(drifted)).first
-    # the merged cluster misses the near-miss floor; the exact pair still stands
     expect(cluster.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
     expect(cluster.mass).to(eq(23))
   end

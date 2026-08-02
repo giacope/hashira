@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Pipeline
-  ANALYZERS = %i[coupling complexity duplication].freeze
+  ANALYZERS = %i[coupling complexity duplication smells].freeze
 
   RULES = [Hashira::Analysis::CycleFindings, Hashira::Analysis::SdpViolationFindings].freeze
 
@@ -24,6 +24,10 @@ class Hashira::Pipeline
     @duplication ||= Hashira::Duplication::Analyzer.new(@project, @trees, churn) if enabled?(:duplication)
   end
 
+  def smells
+    @smells ||= Hashira::Smells::Analyzer.new(@project, @trees) if enabled?(:smells)
+  end
+
   def hotspots
     @hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
   end
@@ -32,7 +36,7 @@ class Hashira::Pipeline
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
 
-  def findings = structural + listed(complexity) + listed(duplication)
+  def findings = structural + listed(complexity) + listed(duplication) + listed(smells)
 
   private
 

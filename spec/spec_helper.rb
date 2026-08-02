@@ -47,6 +47,17 @@ module FixtureHelper
     end
   end
 
+  def smells(files, directories: ["lib/app"])
+    within(files) do
+      project = Hashira::Project.new(directories)
+      yield(Hashira::Smells::Analyzer.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+    end
+  end
+
+  def sniffed(files, kind)
+    smells(files) { |analyzer| return analyzer.findings.select { it.kind == kind } }
+  end
+
   def fragments(sources)
     project = Object.new
     def project.relative(path) = path
@@ -103,8 +114,6 @@ module FixtureHelper
     RUBY
   }.freeze
 
-  # Two sub-packages of lib/app/core wrapped in a two-level namespace
-  # (App::Core), for analyzing a nested subtree as its own project.
   NESTED_FILES = {
     "lib/app/core/search/finder.rb" => <<~RUBY,
       module App
@@ -130,7 +139,6 @@ module FixtureHelper
     RUBY
   }.freeze
 
-  # A Rails-shaped app: domains (Billing, Ci) cut across layer folders.
   RAILS_FILES = {
     "config/application.rb" => "module Sample; class Application; end; end\n",
     "app/models/billing/invoice.rb" => "module Billing\n  class Invoice\n    def pay = Ci::Runner.new\n  end\nend\n",
@@ -139,7 +147,6 @@ module FixtureHelper
     "app/jobs/ci/runner.rb" => "module Ci\n  class Runner\n    def go = 1\n  end\nend\n"
   }.freeze
 
-  # A domain plus a top-level Alba-style resource named by suffix convention.
   SANDBOX_FILES = {
     "app/models/sandbox.rb" => "class Sandbox\n  def run = 1\nend\n",
     "app/models/sandbox/lifecycle.rb" => "module Sandbox::Lifecycle\n  def cycle = 1\nend\n",
@@ -147,7 +154,6 @@ module FixtureHelper
       "class SandboxResource < ApplicationResource\n  attributes :name\nend\n"
   }.freeze
 
-  # A Rails notification family: top-level subclasses of one base class.
   NOTIFY_FILES = {
     "app/models/notification.rb" => "class Notification\n  def read = 1\nend\n",
     "app/notifications/account_notification.rb" =>
@@ -156,8 +162,6 @@ module FixtureHelper
       "class GraceNotification < AccountNotification\n  def deliver = 2\nend\n"
   }.freeze
 
-  # Rails-style mirrored namespaces: Admin and Agent each span a controllers
-  # package and a models package, so the outer name alone is ambiguous.
   MIRROR_FILES = {
     "app/controllers/admin/accounts_controller.rb" => <<~RUBY,
       module Admin
@@ -203,8 +207,6 @@ module FixtureHelper
     RUBY
   }.freeze
 
-  # A class whose `tangled` method scores 12 (four nested ifs + a mixed boolean
-  # run), alongside a trivial method and a singleton method for subject shapes.
   COMPLEX_FILES = {
     "lib/app/knot/tangle.rb" => <<~RUBY
       module App
@@ -231,8 +233,6 @@ module FixtureHelper
     RUBY
   }.freeze
 
-  # Two methods identical but for one symbol literal (:sale vs :refund) — an
-  # exact clone the duplication analyzer should cluster and classify as literal.
   DUPLICATION_FILES = {
     "lib/app/orders/checkout.rb" => <<~RUBY,
       module App

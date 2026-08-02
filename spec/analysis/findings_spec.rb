@@ -46,7 +46,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
   it "lists findings in rule order" do
     verdicts(FixtureHelper::CYCLIC_FILES) do |all|
-      expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation]))
+      expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation utility_function]))
     end
   end
 end

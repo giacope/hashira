@@ -3,7 +3,6 @@
 RSpec.describe(Hashira::Duplication::Delta) do
   def kind(sources) = described_class.new(cluster(sources)).kind
 
-  # Three near-identical statements, so the exact-clone mass clears the floor.
   def clone(first, second)
     body = ->(name, recv) { "def #{name}\n #{recv}\n #{recv}\n #{recv}\nend\n" }
     { "a.rb" => body.call("a", first), "b.rb" => body.call("b", second) }

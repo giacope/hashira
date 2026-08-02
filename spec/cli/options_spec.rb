@@ -70,16 +70,25 @@ RSpec.describe(Hashira::CLI::Options) do
     it "tolerates redundant format flags" do
       expect(described_class.parse(%w[--json --format json]).mode).to(eq(:json))
     end
+    it "treats a missing list as nothing to gate or skip" do
+      expect(Hashira::CLI::FailOn.parse(nil)).to(eq([]))
+      expect(Hashira::CLI::Skip.parse(nil)).to(eq([]))
+    end
+    it "expands --fail-on smells into every smell kind" do
+      parsed = described_class.parse(%w[lib --fail-on cycles,smells])
+      expect(parsed.fail_on).to(include("cycle", "feature_envy", "nil_check", "utility_function"))
+      expect(described_class.parse(%w[lib --fail-on feature_envy]).fail_on).to(eq(%w[feature_envy]))
+    end
     it "defaults --skip to nothing and parses a comma-separated list" do
       expect(described_class.parse(%w[lib]).skip).to(eq([]))
       expect(described_class.parse(%w[lib --skip complexity]).skip).to(eq([:complexity]))
     end
     it "rejects an unknown --skip analyzer" do
       expect { described_class.parse(%w[--skip typo]) }
-        .to(raise_error(Hashira::Error, 'unknown --skip "typo" (use: coupling, complexity, duplication)'))
+        .to(raise_error(Hashira::Error, 'unknown --skip "typo" (use: coupling, complexity, duplication, smells)'))
     end
     it "refuses to skip every analyzer" do
-      expect { described_class.parse(%w[--skip coupling,complexity,duplication]) }
+      expect { described_class.parse(%w[--skip coupling,complexity,duplication,smells]) }
         .to(raise_error(Hashira::Error, "cannot skip every analyzer"))
     end
   end

@@ -17,7 +17,8 @@ RSpec.describe(Hashira::Report::Json) do
           "from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]
         )
       )
-      expect(report["findings"].map { it["kind"] }).to(eq(%w[cycle sdp_violation]))
+      kinds = %w[cycle sdp_violation] + (["utility_function"] * 4)
+      expect(report["findings"].map { it["kind"] }).to(eq(kinds))
     end
   end
   it "lists folds when packaging folded packages, and an empty list otherwise" do

@@ -26,7 +26,7 @@ RSpec.describe(Hashira::Report::Text) do
           beta         -> alpha(2)                         <- alpha
           core         -> (none)                           <- alpha
 
-        Findings (2):
+        Findings (6):
           cycle: alpha can reach itself: alpha -> beta -> alpha — any change may ripple back around. The lightest edge on this cycle is alpha -> beta (1 ref).
               · alpha/one.rb:4: Beta::Two
               · beta/two.rb:4: Alpha::One
@@ -34,6 +34,10 @@ RSpec.describe(Hashira::Report::Text) do
           sdp_violation: beta (I=0.50) depends on the LESS stable alpha (I=0.67) — churn in alpha will force churn in beta. Invert the edge or extract the stable part of alpha that beta needs.
               · beta/two.rb:4: Alpha::One
               · beta/two.rb:5: App::Alpha::One
+          utility_function: App::Alpha::One#call touches no instance state (alpha/one.rb:4). Move it onto the object it serves, or make it a module function.
+          utility_function: App::Alpha::One#support touches no instance state (alpha/one.rb:5). Move it onto the object it serves, or make it a module function.
+          utility_function: App::Beta::Two#call touches no instance state (beta/two.rb:4). Move it onto the object it serves, or make it a module function.
+          utility_function: App::Beta::Two#other touches no instance state (beta/two.rb:5). Move it onto the object it serves, or make it a module function.
 
           Full evidence + machine format: hashira --json
       TEXT

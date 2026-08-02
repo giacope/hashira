@@ -104,7 +104,6 @@ RSpec.describe(Hashira::CI::Ratchet) do
       File.write("baseline.json", JSON.generate(version: 1, edges:))
       io = StringIO.new
 
-      # a finding the old baseline never recorded must not read as a regression
       expect(ratchet(graph, [finding("cycle", "alpha")], io:).check).to(eq(0))
       expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
     end

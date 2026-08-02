@@ -1,10 +1,12 @@
 {
-  "version": 2,
+  "version": 3,
+  "packaging": "folder",
   "edges": [
     "(root) -> analysis",
     "(root) -> complexity",
     "(root) -> duplication",
     "(root) -> hotspots",
+    "(root) -> smells",
     "ci -> (root)",
     "ci -> report",
     "cli -> (root)",
@@ -13,8 +15,60 @@
     "cli -> report",
     "complexity -> analysis",
     "duplication -> analysis",
-    "report -> duplication"
+    "report -> duplication",
+    "smells -> analysis"
   ],
-  "findings": [],
-  "accepted": []
+  "findings": [
+    "feature_envy:Hashira::Analysis::ConstantRegistry#enclosing",
+    "feature_envy:Hashira::Analysis::Folding#crop",
+    "feature_envy:Hashira::Complexity::BooleanRun#operands",
+    "feature_envy:Hashira::Duplication::Sequence#slide"
+  ],
+  "accepted": [
+    {
+      "kind": "sdp_violation",
+      "package": "ci",
+      "reason": "ci reaches (root) only for Hashira::Error; Pipeline's analyzer fan-out inflates (root) instability"
+    },
+    {
+      "kind": "feature_envy",
+      "package": "Hashira::Complexity::Analyzer#score",
+      "reason": "a builder that turns an AST node into a value object envies its input"
+    },
+    {
+      "kind": "feature_envy",
+      "package": "Hashira::Duplication::Similarity#cell",
+      "reason": "the LCS kernel envies its arrays by nature"
+    },
+    {
+      "kind": "feature_envy",
+      "package": "Hashira::Duplication::Delta#kind",
+      "reason": "the AST tag classifier envies its tags by nature"
+    },
+    {
+      "kind": "feature_envy",
+      "package": "Hashira::Duplication::Variance#signature",
+      "reason": "the AST node classifier envies its node by nature"
+    },
+    {
+      "kind": "control_parameter",
+      "package": "Hashira::Duplication::Similarity#cell",
+      "reason": "the LCS cell compares a token against the row it fills — the comparison is the algorithm"
+    },
+    {
+      "kind": "data_clump",
+      "package": "Hashira::Complexity::CognitiveScore",
+      "reason": "one tiny handler per AST node type threading (node, nesting) — the shape of a tree walk"
+    },
+    {
+      "kind": "data_clump",
+      "package": "Hashira::Complexity::IfChain",
+      "reason": "one tiny handler per AST node type threading (node, nesting) — the shape of a tree walk"
+    },
+    {
+      "kind": "data_clump",
+      "package": "Hashira::Analysis::References",
+      "reason": "reference collection threads (nesting, node) — the shape of a tree walk"
+    }
+  ]
 }

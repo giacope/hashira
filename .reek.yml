@@ -1,32 +1,21 @@
-# Documentation comments are off by choice (see .rubocop.yml Style/Documentation).
 detectors:
   IrresponsibleModule:
     enabled: false
 
-  # Private helpers may be stateless; the smell targets public API design.
   UtilityFunction:
     public_methods_only: true
 
-  # Match RuboCop Metrics/ParameterLists. The reference walker threads
-  # (node, nesting, accumulator, roots, home) through its recursion — the
-  # shape of a tree walk, like the visitors excluded below.
   LongParameterList:
     max_params: 4
     exclude:
       - "Hashira::Analysis::References#collect"
 
-  # The cognitive-complexity visitor is one tiny handler per AST node type,
-  # each threading (node, nesting) and switching on node kind. That is the
-  # shape of a tree walk, not a smell to refactor away.
   DataClump:
     exclude:
       - "Hashira::Complexity::CognitiveScore"
       - "Hashira::Complexity::IfChain"
       - "Hashira::Analysis::References"
 
-  # A builder that turns an AST node into a value object envies its input; the
-  # duplication kernels (an LCS DP and the AST node/tag classifiers) envy their
-  # arrays and nodes by nature.
   FeatureEnvy:
     exclude:
       - "Hashira::Complexity::Analyzer#score"
@@ -34,8 +23,6 @@ detectors:
       - "Hashira::Duplication::Delta#kind"
       - "Hashira::Duplication::Variance#signature"
 
-  # The LCS cell compares a token against the row it's filling — the comparison is
-  # the algorithm, not a boolean flag threaded in to steer control.
   ControlParameter:
     exclude:
       - "Hashira::Duplication::Similarity#cell"

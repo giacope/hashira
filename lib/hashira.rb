@@ -21,6 +21,9 @@ module Hashira
 
   module Report
   end
+
+  module Smells
+  end
 end
 
 require_relative "hashira/analysis/catalog"
@@ -111,4 +114,24 @@ require_relative "hashira/report/json"
 require_relative "hashira/report/metrics_table"
 require_relative "hashira/report/text"
 require_relative "hashira/report/view"
+require_relative "hashira/smells/analyzer"
+require_relative "hashira/smells/builder"
+require_relative "hashira/smells/check"
+require_relative "hashira/smells/conditions"
+require_relative "hashira/smells/contexts"
+require_relative "hashira/smells/control_parameter"
+require_relative "hashira/smells/data_clump"
+require_relative "hashira/smells/duplicate_method_call"
+require_relative "hashira/smells/feature_envy"
+require_relative "hashira/smells/instance_variable_assumption"
+require_relative "hashira/smells/manual_dispatch"
+require_relative "hashira/smells/module_initialize"
+require_relative "hashira/smells/nil_check"
+require_relative "hashira/smells/param_check"
+require_relative "hashira/smells/refs"
+require_relative "hashira/smells/repeated_conditional"
+require_relative "hashira/smells/scope"
+require_relative "hashira/smells/too_many_instance_variables"
+require_relative "hashira/smells/utility_function"
+require_relative "hashira/smells/visibility"
 require_relative "hashira/version"

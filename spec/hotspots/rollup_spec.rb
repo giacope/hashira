@@ -21,7 +21,6 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     expect(files.files.map { [it.file, it.cognitive] }).to(eq([["a.rb", 7], ["b.rb", 2]]))
   end
   it "charges a file the mass of every clone site it holds" do
-    # both sites sit in a.rb, so a.rb carries the clone twice over
     files = rollup(clusters: [cluster(10, "a.rb", "a.rb"), cluster(6, "a.rb", "b.rb")]).files
     expect(files.map { [it.file, it.duplication] }).to(contain_exactly(["a.rb", 26], ["b.rb", 6]))
   end

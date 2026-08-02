@@ -1,17 +1,17 @@
 # hashira
 
-🏛️ **Coupling, cognitive-complexity and duplication metrics for Ruby, read straight from the AST via [Prism](https://github.com/ruby/prism).**
+🏛️ **Coupling, cognitive-complexity, duplication and code-smell metrics for Ruby, read straight from the AST via [Prism](https://github.com/ruby/prism).**
 
-hashira tells you which file to open first. It reads a Ruby codebase three ways —
-which packages depend on which, how hard each method is to follow, and what has been
-copy-pasted — then ranks every file by what it costs you against how often you
-actually change it. Every finding names the file and line behind it, and a committed
+hashira tells you which file to open first. It reads a Ruby codebase four ways —
+which packages depend on which, how hard each method is to follow, what has been
+copy-pasted, and which objects handle each other's data — then ranks every file by
+what it costs you against how often you actually change it. Every finding names the file and line behind it, and a committed
 baseline ratchets the whole set in CI, so the build fails on what *this commit* made
 worse rather than on a score nobody agrees on.
 
 - **Zero runtime dependencies.** Prism ships with Ruby 3.4+; nothing else to install.
 - **Reads the AST, never strings.** Every signal comes from the parse tree. Comments and string literals are invisible.
-- **Three analyzers, opt-out.** Coupling, complexity, and duplication run together by default; `--skip` drops any.
+- **Four analyzers, opt-out.** Coupling, complexity, duplication, and smells run together by default; `--skip` drops any.
 - **Ranked, not graded.** The hotspot rollup orders files by cost × churn — a work queue, not a letter that reads the same on every healthy repo.
 - **Findings, not just a dashboard.** Cycles, SDP violations, complexity hotspots, and clone clusters — each backed by file-level evidence and a plain-language fix.
 - **Made for CI.** Ratchet edges *and* findings against a baseline, so no clean slate is required. Or gate outright with `--fail-on`.
@@ -39,7 +39,7 @@ A healthy project reports `Findings (0): none ✓ — structure is healthy`.
 
 ## Contents
 
-[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
+[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Code smells](#code-smells) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
 
 ## Install
 
@@ -277,10 +277,57 @@ it does inside Ruby:
   are called out — that's where one copy gets fixed and the other silently
   drifts. Silent when git isn't there; no configuration either way.
 
+## Code smells
+
+RuboCop counts lines and branches inside one method; design smells are about how
+objects treat each other, and no line count sees that. hashira ships the eleven
+reek smells that carry that design signal — the object-relationship kinds, not
+the naming, size, and style checks a linter already argues about — read from the
+same parse trees the other analyzers already built:
+
+```console
+Findings (2):
+  feature_envy: Cart#price refers to 'item' more than to self (cart.rb:12). The behavior may belong on item.
+      · item (lines 13, 14)
+  control_parameter: Report#write is steered by 'quoted' (report.rb:31). Split the method, or pass a strategy instead of a flag.
+      · quoted (line 32)
+```
+
+What each one catches:
+
+- **feature_envy** — a method refers to another object more than to itself; the
+  behavior probably belongs over there.
+- **utility_function** — a public instance method that touches no instance state;
+  it isn't really a method of this class. Private stateless helpers are fine, and
+  `module_function` modules are exempt — that's what they're for.
+- **control_parameter** — an argument used only to pick an execution path; the
+  caller already knew which branch it wanted.
+- **data_clump** — the same two-plus parameters travel through three or more
+  methods; a value object is missing.
+- **duplicate_method_call** — the identical receiver-and-arguments call repeated
+  inside one method; name the result once.
+- **repeated_conditional** — one class testing the same condition in three or
+  more places; polymorphism is overdue.
+- **too_many_instance_variables** — more than four per class. Memoization
+  (`@x ||=`) doesn't count as state.
+- **instance_variable_assumption** — an ivar read that no `initialize` ever
+  assigns; the reader is assuming another method ran first.
+- **manual_dispatch** — `respond_to?` then send: a type check wearing a duck
+  costume.
+- **module_initialize** — `initialize` in a mixin; construction order becomes
+  anyone's guess.
+- **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
+  cheapest type there is.
+
+Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
+all eleven, or name one (`--fail-on feature_envy`); `--skip smells` drops the
+analyzer entirely. Thresholds and exemptions match reek's defaults, with one
+deliberate divergence: `utility_function` flags public methods only.
+
 ## Hotspots
 
-The three analyzers each answer a different question. The rollup joins them per
-file and adds the one signal that isn't in the AST — how often the file actually
+Each analyzer answers a different question. The hotspot rollup joins the cost
+signals — complexity and duplication — per file and adds the one signal that isn't in the AST — how often the file actually
 changes — because cost you never pay isn't worth paying down:
 
 ```console
@@ -340,7 +387,7 @@ it. Git is asked once, lazily, and only if something needs churn.
 at all. It only works on a codebase that starts clean.
 
 ```sh
-hashira --fail-on cycles,sdp,complexity,duplication   # any subset, comma-separated
+hashira --fail-on cycles,sdp,complexity,duplication,smells   # any subset, comma-separated
 ```
 
 The ratchet is the one you can adopt today. Commit a baseline of what's true now
