@@ -9,20 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Code smells analyzer: the eleven design smells from reek's catalog — the
-  object-relationship kinds no line count sees —
+- Code smells analyzer: eleven design smells — the object-relationship kinds
+  no line count sees —
   `control_parameter`, `data_clump`, `duplicate_method_call`, `feature_envy`,
   `instance_variable_assumption`, `manual_dispatch`, `module_initialize`,
   `nil_check`, `repeated_conditional`, `too_many_instance_variables`, and
   `utility_function` — reported as findings with file:line evidence, gated and
   ratcheted like every other kind. On by default; `--skip smells` drops the
   analyzer; `--fail-on smells` gates all eleven, or name a single kind
-  (`--fail-on feature_envy`). Thresholds and exemptions follow reek's defaults
-  (`@x ||=` memoization counts neither as class state nor as an ivar
-  assumption, `module_function` methods are exempt), with one deliberate
-  divergence: `utility_function` flags public instance methods only. Methods
-  born inside blocks or `class << self` are seen like any other, and safe
-  navigation counts wherever a plain call would.
+  (`--fail-on feature_envy`). `@x ||=` memoization counts neither as class
+  state nor as an ivar assumption, `module_function` methods are exempt, and
+  `utility_function` flags public instance methods only. Methods born inside
+  blocks or `class << self` are seen like any other, and safe navigation
+  counts wherever a plain call would.
 
 - Rails awareness. A directory with `config/application.rb` inside it (the
   Rails root) or beside it (its `app` folder) is detected as a Rails app:

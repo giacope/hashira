@@ -76,7 +76,7 @@ RSpec.describe(RuboCop::Cop::Hashira::NoComments, :config) do
     expect_no_offenses(<<~RUBY)
       # frozen_string_literal: true
       # rubocop:disable Metrics/AbcSize
-      # reek:TooManyStatements
+      # typed: strict
       def total = lines.sum
       # rubocop:enable Metrics/AbcSize
     RUBY

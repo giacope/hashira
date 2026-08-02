@@ -4,7 +4,6 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 bundle exec rubocop
-bundle exec reek lib
 bundle exec rspec # spec_helper enforces the coverage floor (99% line and branch)
 bundle exec exe/hashira --fail-on cycles,sdp
 bundle exec exe/hashira --ratchet # direction, not level: no score to pad

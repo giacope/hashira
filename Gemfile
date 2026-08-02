@@ -18,5 +18,3 @@ gem "rubocop-packaging", "~> 0.6", group: :development, require: false
 gem "rubocop-thread_safety", "~> 0.7", group: :development, require: false
 
 gem "simplecov", "~> 1.0", group: :development, require: false
-
-gem "reek", "~> 6.5", group: :development, require: false

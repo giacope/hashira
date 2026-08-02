@@ -9,7 +9,7 @@ module RuboCop
         MSG = "Say it in the code: rename it, extract it, or name the constant."
 
         MAGIC = /\A#\s*(frozen_string_literal|encoding|coding|warn_indent|shareable_constant_value):/
-        DIRECTIVE = /\A#\s*(rubocop|reek|simplecov|rbs|steep|sorbet|typed):/
+        DIRECTIVE = /\A#\s*(rubocop|simplecov|rbs|steep|sorbet|typed):/
         NOTICE = /^#\s*(copyright\b|\(c\)\s*\d|spdx-|licen[sc]ed under\b|licen[sc]e:|all rights reserved)/i
 
         def on_new_investigation

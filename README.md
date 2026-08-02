@@ -281,8 +281,8 @@ it does inside Ruby:
 
 RuboCop counts lines and branches inside one method; design smells are about how
 objects treat each other, and no line count sees that. hashira ships the eleven
-reek smells that carry that design signal — the object-relationship kinds, not
-the naming, size, and style checks a linter already argues about — read from the
+smells that carry that design signal — the object-relationship kinds, not the
+naming, size, and style checks a linter already argues about — read from the
 same parse trees the other analyzers already built:
 
 ```console
@@ -321,8 +321,7 @@ What each one catches:
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all eleven, or name one (`--fail-on feature_envy`); `--skip smells` drops the
-analyzer entirely. Thresholds and exemptions match reek's defaults, with one
-deliberate divergence: `utility_function` flags public methods only.
+analyzer entirely.
 
 ## Hotspots
 

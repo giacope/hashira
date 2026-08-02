@@ -19,7 +19,7 @@ Requires Ruby 3.4+.
 bin/ci
 ```
 
-That's exactly what CI runs: rubocop, reek, rspec (with a coverage floor), and
+That's exactly what CI runs: rubocop, rspec (with a coverage floor), and
 hashira's own gate and ratchet on itself. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
