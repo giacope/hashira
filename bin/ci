@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 bundle exec rubocop
 bundle exec rspec # spec_helper enforces the coverage floor (99% line and branch)
-bundle exec exe/hashira --fail-on cycles,sdp
+bundle exec exe/hashira --fail-on cycles,sdp,mixed_audience
 bundle exec exe/hashira --ratchet # direction, not level: no score to pad
 
 echo "bin/ci: all checks passed ✓"

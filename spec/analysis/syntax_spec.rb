@@ -82,7 +82,7 @@ RSpec.describe(Hashira::Analysis::Syntax) do
   end
 
   describe "References.list" do
-    def references = Hashira::Analysis::References
+    def references = Hashira::Coupling::References
 
     it "collects outermost constant paths, not their parents separately" do
       expect(references.list(parse("x = A::B::C; y = D"))).to(eq([%w[A B C], %w[D]]))

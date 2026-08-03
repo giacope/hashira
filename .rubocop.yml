@@ -106,8 +106,8 @@ Elegant/NoComments:
 
 Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
   Exclude:
-    - "spec/analysis/census_spec.rb"
-    - "spec/analysis/graph_spec.rb"
+    - "spec/coupling/census_spec.rb"
+    - "spec/coupling/graph_spec.rb"
     - "spec/analysis/syntax_spec.rb"
     - "spec/ci/gate_spec.rb"
     - "spec/ci/ratchet_spec.rb"

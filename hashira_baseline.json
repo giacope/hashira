@@ -2,8 +2,8 @@
   "version": 3,
   "packaging": "folder",
   "edges": [
-    "(root) -> analysis",
     "(root) -> complexity",
+    "(root) -> coupling",
     "(root) -> duplication",
     "(root) -> hotspots",
     "(root) -> smells",
@@ -13,6 +13,7 @@
     "cli -> diagram",
     "cli -> report",
     "complexity -> analysis",
+    "coupling -> analysis",
     "duplication -> analysis",
     "report -> duplication",
     "smells -> analysis"

@@ -25,8 +25,8 @@ module FixtureHelper
   def pipeline(directories, packaging: :folder)
     project = Hashira::Project.new(directories)
     trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-    census = Hashira::Analysis::Census.new(project, trees, packaging:)
-    [project, census, Hashira::Analysis::Graph.new(project, trees, census)]
+    census = Hashira::Coupling::Census.new(project, trees, packaging:)
+    [project, census, Hashira::Coupling::Graph.new(project, trees, census)]
   end
 
   def analyze(files, directories: ["lib/app"], packaging: :folder)

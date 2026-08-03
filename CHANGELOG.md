@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `mixed_audience` coupling finding: a package whose constants split into
+  parts with disjoint client bases — one set of packages leaning on one slice,
+  another set on another — is separate packages in disguise. Detected from
+  constant-level inbound references: clients whose touched constants overlap
+  merge into one audience; constants used by a strict majority of clients are
+  set aside as the shared base layer; two or more remaining parts of at least
+  two constants each name the seam. Gate with `--fail-on mixed_audience`.
+  Hashira's first run on itself flagged its own oldest namespace, `analysis` —
+  and the split below dissolved it.
+
+### Changed
+
+- **Breaking:** the coupling machinery moved out of `Hashira::Analysis` into
+  `Hashira::Coupling` (`Graph`, `Census`, `Cycles`, the structural findings,
+  packaging and resolution), matching the `--skip coupling` analyzer name.
+  `Hashira::Analysis` now holds only the substrate every analyzer shares:
+  `Syntax`, `NodeWalk`, `TypeWalk`, and `Finding`. Exactly the seam the new
+  `mixed_audience` finding pointed at; hashira now gates itself with
+  `--fail-on cycles,sdp,mixed_audience` and an empty-findings baseline.
+
 ## [0.4.0] - 2026-08-02
 
 ### Added

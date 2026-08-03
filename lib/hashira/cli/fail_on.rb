@@ -12,6 +12,7 @@ module Hashira::CLI::FailOn
     "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation",
     "complexity" => "complexity",
     "duplication" => "duplication", "dupe" => "duplication",
+    "mixed_audience" => "mixed_audience",
     "smells" => SMELLS, **SMELLS.to_h { [it, it] }
   }.freeze
 

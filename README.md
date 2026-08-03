@@ -83,25 +83,28 @@ hashira's own source:
 
 ```console
 $ hashira
-Package (layer) metrics for lib/hashira  (9 packages, 75 files)
+Package (layer) metrics for lib/hashira  (11 packages, 111 files)
 
 package       TC  Ca  Ce     I  Cyc
 ----------------------------------------
-analysis      14   3   0  0.00  -
+analysis       3   4   0  0.00  -
 diagram        3   1   0  0.00  -
 hotspots       1   1   0  0.00  -
 duplication   14   2   1  0.33  -
 report         8   2   1  0.33  -
+ci             8   1   1  0.50  -
 complexity     7   1   1  0.50  -
-(root)         3   2   4  0.67  -
-ci             8   1   2  0.67  -
-cli            6   0   4  1.00  -
+coupling      24   1   1  0.50  -
+smells        21   1   1  0.50  -
+(root)         4   1   5  0.83  -
+cli            8   0   4  1.00  -
 
 Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
 Dependencies (DependsUpon(refs) -> | <- UsedBy):
-  (root)       -> analysis(4), complexity(1), duplication(1), hotspots(1) <- ci, cli
+  (root)       -> complexity(1), coupling(5), duplication(1), hotspots(1), smells(1) <- cli
+  analysis     -> (none)                           <- complexity, coupling, duplication, smells
   duplication  -> analysis(3)                      <- (root), report
   ...
 
@@ -109,27 +112,27 @@ Cognitive complexity — worst methods (Cog = how hard to read, Calls = message 
 
 method                                        Cog  Calls  Loc
 -------------------------------------------------------------
-Hashira::Report::Text#print                     3      7  report/text.rb:11
-Hashira::Analysis::CycleSearch#cycle?           3      3  analysis/cycle_search.rb:19
-Hashira::CLI::CommandLine#usage_options         3      5  cli/command_line.rb:20
-Hashira::Duplication::Delta#kind                3      6  duplication/delta.rb:21
+Hashira::Coupling::NamespacePrefix#wrapper      4      8  coupling/namespace_prefix.rb:19
+Hashira::Analysis::Syntax#anchor                4     12  analysis/syntax.rb:26
+Hashira::Smells::Conditions#branches            4     10  smells/conditions.rb:23
+Hashira::Coupling::Roster#admit                 3      4  coupling/roster.rb:19
 ...
 
 Per-class rollup (Cog total survives extract-method; Peak is the worst method it hides):
 
 class                              Cog  Methods   Peak
 ------------------------------------------------------
-Hashira::CLI::CommandLine           16       15      3
-Hashira::Analysis::CycleSearch       8        5      3
+Hashira::Project                    12       15      3
+Hashira::CLI::CommandLine           12       15      3
 ...
 
 Hotspots — cost × churn (where refactoring pays the most):
 
 file                                             Cog   Dup  Churn    Rank
 -------------------------------------------------------------------------
-cli/run.rb                                         1    36      2      74
-cli/command_line.rb                               16     0      3      48
-pipeline.rb                                        7     0      3      21
+pipeline.rb                                       10     0      6      60
+cli/command_line.rb                               12     0      4      48
+project.rb                                        12     0      4      48
 ...
 
 Findings (0):
@@ -154,6 +157,12 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   Stable Dependencies Principle ("depend in the direction of stability"), one of
   Robert C. Martin's [package principles](https://en.wikipedia.org/wiki/Package_principles).
 - **Cycle** — packages depending on each other in a loop.
+- **Mixed audience** — the constants of one package split into parts with
+  separate client bases: one set of packages leans on one slice, another set on
+  a disjoint slice. Each part is a separate package in disguise; the finding
+  names the seam, and — when most clients also share a few constants — the
+  shared base layer to extract. Composition roots blur the picture only if they
+  touch a constant some other client also touches, which facades avoid.
 
 Each finding comes with file-level evidence; for cycles, the shortest cycle
 path and its lightest edge. What a finding means for your design is your call.
@@ -386,7 +395,7 @@ it. Git is asked once, lazily, and only if something needs churn.
 at all. It only works on a codebase that starts clean.
 
 ```sh
-hashira --fail-on cycles,sdp,complexity,duplication,smells   # any subset, comma-separated
+hashira --fail-on cycles,sdp,mixed_audience,complexity,duplication,smells   # any subset
 ```
 
 The ratchet is the one you can adopt today. Commit a baseline of what's true now

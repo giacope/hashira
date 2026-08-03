@@ -5,13 +5,16 @@ require "prism"
 class Hashira::Pipeline
   ANALYZERS = %i[coupling complexity duplication smells].freeze
 
-  RULES = [Hashira::Analysis::CycleFindings, Hashira::Analysis::SdpViolationFindings].freeze
+  RULES = [
+    Hashira::Coupling::CycleFindings, Hashira::Coupling::SdpViolationFindings,
+    Hashira::Coupling::MixedAudienceFindings
+  ].freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto)
     @project = project
     @enabled = enabled
     @trees = project.files.to_h { [it, parse(it)] }
-    @graph = Hashira::Analysis::Graph.new(project, @trees, census(settle(packaging)))
+    @graph = Hashira::Coupling::Graph.new(project, @trees, census(settle(packaging)))
   end
 
   attr_reader :project, :graph
@@ -40,7 +43,7 @@ class Hashira::Pipeline
 
   private
 
-  def census(packaging) = Hashira::Analysis::Census.new(@project, @trees, packaging:)
+  def census(packaging) = Hashira::Coupling::Census.new(@project, @trees, packaging:)
 
   def settle(packaging)
     return packaging unless packaging == :auto
