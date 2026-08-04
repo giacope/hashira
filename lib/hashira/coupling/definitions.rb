@@ -26,6 +26,9 @@ class Hashira::Coupling::Definitions
 
   def scan(file, tree)
     package = @project.package(file)
-    Hashira::Analysis::TypeWalk.each(tree, roots: roots) { |node, full| yield(node, full, package) }
+    Hashira::Analysis::TypeWalk.each(tree, roots: roots) do |node, full|
+      yield(node, full, package)
+      Hashira::Analysis::Syntax.constants(node).each { yield(it, full + [it.name.to_s], package) }
+    end
   end
 end

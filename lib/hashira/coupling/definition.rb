@@ -16,7 +16,11 @@ module Hashira
 
         def superclass = node.superclass
 
-        def counted? = klass? || !Hashira::Analysis::Syntax.direct(node).empty?
+        def module? = node.is_a?(Prism::ModuleNode)
+
+        def type? = klass? || module?
+
+        def counted? = klass? || (module? && !Hashira::Analysis::Syntax.direct(node).empty?)
       end
   end
 end

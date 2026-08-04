@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Constants assigned in a class body (`Node = Struct.new(:path)`) now join the
+  census as definitions, so a bare reference resolves to the local constant
+  instead of a foreign package's namesake — a karat run had minted two phantom
+  edges this way. For usage counts they still collapse into their enclosing
+  type: `wide_edge` measures classes, not the constants they carry.
+
 ## [0.5.0] - 2026-08-04
 
 ### Added

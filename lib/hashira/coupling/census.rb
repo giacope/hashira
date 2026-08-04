@@ -38,7 +38,7 @@ class Hashira::Coupling::Census
 
   private
 
-  def type?(segments) = @roster.origins.key?(segments.join("::"))
+  def type?(segments) = @roster.type?(segments)
 
   def tally
     Hashira::Coupling::Roster.new(@placement.placed.map { |definition, package| [definition, translate(package)] })

@@ -94,6 +94,34 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(census.origins).to(have_key("Core::Thing"))
     end
   end
+  it "resolves a constant assigned in the enclosing class, not a foreign namesake" do
+    files = {
+      "lib/app/session/lineage.rb" => <<~RUBY,
+        module App
+          module Session
+            class Lineage
+              Node = Struct.new(:path)
+              def branch = Node.new
+            end
+          end
+        end
+      RUBY
+      "lib/app/usage/kdl.rb" => <<~RUBY
+        module App
+          module Usage
+            class Kdl
+              class Node
+                def n = 1
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    analyze(files) do |_project, _census, graph|
+      expect(graph.edges).to(be_empty)
+    end
+  end
   it "does not pin an unknown path to a namespace known only by suffix" do
     files = {
       "app/models/billing/stripe/client.rb" =>
