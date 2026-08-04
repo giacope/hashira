@@ -28,8 +28,5 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def sides(node) = [node.receiver] + (node.arguments&.arguments || [])
 
-  def message
-    "#{label} checks for nil (#{subject.file}:#{checks.map { it.location.start_line }.uniq.join(", ")}). " \
-      "Prefer a default, a null object, or polymorphism."
-  end
+  def detail = { site: spots(checks) }
 end

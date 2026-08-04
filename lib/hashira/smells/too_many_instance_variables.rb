@@ -18,10 +18,7 @@ class Hashira::Smells::TooManyInstanceVariables < Hashira::Smells::Check
     @names ||= Hashira::Smells::Scope.sweep(subject.node).select { COUNTED.include?(it.class) }.map(&:name).uniq.sort
   end
 
-  def message
-    "#{label} holds #{names.size} instance variables (#{site}). " \
-      "Split the class, or gather related fields into value objects."
-  end
+  def detail = { site:, count: names.size }
 
   def evidence = names.map(&:to_s)
 end

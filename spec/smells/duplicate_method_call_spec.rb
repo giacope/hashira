@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing#double"))
-    expect(finding.message).to(include("repeats identical calls", "zone/thing.rb:4"))
+    expect(message(finding)).to(include("repeats identical calls", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["@other.thing(1) × 2 (line 5)"]))
   end
   it "tracks safe navigation, receiverless argument calls, and block passes" do

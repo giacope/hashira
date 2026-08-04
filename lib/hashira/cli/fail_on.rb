@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative "../pipeline"
+
 module Hashira::CLI::FailOn
   SMELLS = %w[
     control_parameter data_clump duplicate_method_call feature_envy instance_variable_assumption
@@ -7,12 +9,12 @@ module Hashira::CLI::FailOn
     utility_function
   ].freeze
 
+  MEASURES = (Hashira::Pipeline::ANALYZERS - %i[coupling smells]).map(&:to_s).freeze
+
   KINDS = {
-    "cycles" => "cycle", "cycle" => "cycle",
-    "sdp" => "sdp_violation", "sdp_violation" => "sdp_violation",
-    "complexity" => "complexity",
-    "duplication" => "duplication", "dupe" => "duplication",
-    "mixed_audience" => "mixed_audience",
+    "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication",
+    **Hashira::Pipeline::STRUCTURAL.to_h { [it, it] },
+    **MEASURES.to_h { [it, it] },
     "smells" => SMELLS, **SMELLS.to_h { [it, it] }
   }.freeze
 

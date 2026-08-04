@@ -11,10 +11,7 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def envied = @envied ||= refs.envious
 
-  def message
-    "#{label} refers to #{envied.map { "'#{it}'" }.join(", ")} more than to self (#{site}). " \
-      "The behavior may belong on #{envied.first}."
-  end
+  def detail = { site:, names: envied }
 
   def evidence = envied.map { |name| tally(name, refs.lines(name).uniq) }
 end

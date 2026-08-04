@@ -26,6 +26,13 @@ RSpec.describe(Hashira::CLI) do
       expect(gate).to(include("Gate FAILED"))
     end
   end
+  it "refuses to ratchet without a baseline" do
+    within(FixtureHelper::CYCLIC_FILES) do
+      status = nil
+      expect { status = described_class.run(["lib/app", "--ratchet"]) }.to(output(/no baseline at/).to_stderr)
+      expect(status).to(eq(1))
+    end
+  end
   it "skips an analyzer on request" do
     within(FixtureHelper::COMPLEX_FILES) do
       slim = capture { expect(described_class.run(["lib/app", "--skip", "complexity"])).to(eq(0)) }

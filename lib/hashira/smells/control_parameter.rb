@@ -16,10 +16,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     Hashira::Smells::ParamCheck.new(subject.node, name).matches.map { it.location.start_line }
   end
 
-  def message
-    "#{label} is steered by #{culprits.map { |name, _lines| "'#{name}'" }.join(", ")} (#{site}). " \
-      "Split the method, or pass a strategy instead of a flag."
-  end
+  def detail = { site:, names: culprits.map { |name, _lines| name } }
 
   def evidence = culprits.map { |name, lines| tally(name, lines) }
 end

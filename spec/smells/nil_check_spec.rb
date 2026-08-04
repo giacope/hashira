@@ -26,7 +26,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map(&:package)).to(
       eq(%w[App::Zone::Thing#query App::Zone::Thing#compare App::Zone::Thing#strict App::Zone::Thing#branch])
     )
-    expect(findings.first.message).to(include("checks for nil", "zone/thing.rb:4"))
+    expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:4"))
   end
   it "reaches methods defined inside blocks and class << self" do
     findings = checked(<<~RUBY)

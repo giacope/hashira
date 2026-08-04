@@ -17,7 +17,9 @@ class Hashira::Report::Json
 
   def payload = base.merge(coupling).merge(sections.compact)
 
-  def base = { findings: @view.findings.all.map(&:to_h), accepted: accepted }
+  def base = { findings: @view.findings.all.map { rendered(it) }, accepted: accepted }
+
+  def rendered(finding) = finding.to_h.merge(message: Hashira::Report::Phrases.message(finding))
 
   def coupling
     graph = @view.graph
@@ -33,7 +35,7 @@ class Hashira::Report::Json
   end
 
   def accepted
-    @view.findings.accepted.map { |finding, reason| finding.to_h.merge(reason:) }
+    @view.findings.accepted.map { |finding, reason| rendered(finding).merge(reason:) }
   end
 
   def complexity = { methods: the_methods, classes: the_classes }

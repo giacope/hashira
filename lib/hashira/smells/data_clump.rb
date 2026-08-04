@@ -22,10 +22,6 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def holders(clump) = candidates.filter_map { |method, names| method if (clump - names).empty? }
 
-  def message
-    "#{label} passes the same parameters between methods (#{site}). Introduce a parameter object."
-  end
-
   def evidence = clumps.map { |clump, holders| row(clump, holders) }
 
   def row(clump, holders)

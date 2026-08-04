@@ -6,7 +6,10 @@ RSpec.describe(Hashira::CI::Ratchet) do
   end
 
   def finding(kind, package, digest: nil)
-    Hashira::Analysis::Finding.new(kind:, package:, digest:, message: "#{package} is #{kind}", evidence: ["a.rb:1"])
+    Hashira::Analysis::Finding.new(
+      kind:, package:, digest:, evidence: ["a.rb:1"],
+      detail: { size: 2, mass: 30, kind: :identical, hot: false }
+    )
   end
 
   def ratchet(graph, findings = [], path = "baseline.json", io: StringIO.new)
@@ -61,7 +64,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
 
       expect(output).to(
         include(
-          "NEW FINDING:", "duplication: orders.rb:4 is duplication", "· a.rb:1",
+          "NEW FINDING:", "duplication: 2 similar fragments (mass 30)", "· a.rb:1",
           "Ratchet FAILED"
         )
       )

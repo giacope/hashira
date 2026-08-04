@@ -21,6 +21,6 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = sniffed(files, "manual_dispatch")
     expect(findings.size).to(eq(1))
     expect(findings.first.package).to(eq("App::Zone::Thing#poke"))
-    expect(findings.first.message).to(include("dispatches manually via respond_to?", "zone/thing.rb:5, 6"))
+    expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:5, 6"))
   end
 end

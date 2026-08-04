@@ -12,9 +12,9 @@ module Hashira::CLI::Usage
       --format FORMAT      text (default), json, dot, or mermaid
       --json               shorthand for --format json
       --fail-on KINDS      exit 1 if findings exist; comma-separated
-                           kinds: cycles, sdp, mixed_audience, complexity,
-                           duplication, smells (all of them), or one smell
-                           kind such as feature_envy or control_parameter
+                           kinds: cycles, sdp, mixed_audience, wide_edge,
+                           roll_call, complexity, duplication, smells (all
+                           of them), or one smell kind such as feature_envy
       --skip ANALYZERS     drop an analyzer; comma-separated: coupling,
                            complexity, duplication, smells
       --package-by WHAT    group coupling by: auto, folder, or namespace

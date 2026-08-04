@@ -14,16 +14,12 @@ class Hashira::Coupling::SdpViolationFindings < Hashira::Coupling::Rule
   def ranked = graph.violations.sort_by { |from, to| instability(from) - instability(to) }
 
   def violation(from, to)
-    finding(package: from, evidence: graph.evidence(from, to).to_a.first(5), message: message(from, to))
+    finding(package: from, evidence: graph.evidence(from, to).to_a.first(5), detail: detail(from, to))
   end
 
-  def message(from, to)
-    "#{from} (I=#{label(from)}) depends on the LESS stable #{to} " \
-      "(I=#{label(to)}) — churn in #{to} will force churn in #{from}. " \
-      "Invert the edge or extract the stable part of #{to} that #{from} needs."
+  def detail(from, to)
+    { from:, to:, from_instability: instability(from), to_instability: instability(to) }
   end
 
   def instability(package) = metrics[package].instability
-
-  def label(package) = format("%.2f", instability(package))
 end

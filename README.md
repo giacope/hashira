@@ -163,6 +163,12 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   names the seam, and — when most clients also share a few constants — the
   shared base layer to extract. Composition roots blur the picture only if they
   touch a constant some other client also touches, which facades avoid.
+- **Wide edge** — one package reaches into another through five or more
+  distinct constants. Every constant on the edge is a reason for the client to
+  change; a facade narrows the interface to one.
+- **Roll call** — the same list of three or more words (symbols, string keys)
+  is maintained by hand in three or more files across packages. The list wants
+  to be data with a single owner — a registry the other sites derive from.
 
 Each finding comes with file-level evidence; for cycles, the shortest cycle
 path and its lightest edge. What a finding means for your design is your call.
@@ -395,7 +401,7 @@ it. Git is asked once, lazily, and only if something needs churn.
 at all. It only works on a codebase that starts clean.
 
 ```sh
-hashira --fail-on cycles,sdp,mixed_audience,complexity,duplication,smells   # any subset
+hashira --fail-on cycles,sdp,mixed_audience,wide_edge,roll_call,smells   # any subset
 ```
 
 The ratchet is the one you can adopt today. Commit a baseline of what's true now

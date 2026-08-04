@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing#shout"))
-    expect(finding.message).to(include("touches no instance state", "zone/thing.rb:4"))
+    expect(message(finding)).to(include("touches no instance state", "zone/thing.rb:4"))
   end
   it "leaves private helpers, module functions, and singleton methods alone" do
     findings = utility(<<~RUBY)

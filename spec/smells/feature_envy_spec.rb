@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing#total"))
-    expect(finding.message).to(include("refers to 'order' more than to self", "zone/thing.rb:4"))
+    expect(message(finding)).to(include("refers to 'order' more than to self", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["order (line 5)"]))
   end
   it "counts compound assignments against the assigned name" do
@@ -53,7 +53,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         end
       end
     RUBY
-    expect(findings.first.message).to(include("'left', 'right'"))
+    expect(message(findings.first)).to(include("'left', 'right'"))
     expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)"]))
   end
   it "stays quiet when self is referenced at least as often" do

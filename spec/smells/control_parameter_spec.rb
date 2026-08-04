@@ -21,7 +21,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing#write"))
-    expect(finding.message).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
+    expect(message(finding)).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["quoted (line 5)"]))
   end
   it "flags comparisons, unless, case, and boolean guards on the parameter" do

@@ -27,7 +27,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(finding.message).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
+    expect(message(finding)).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["@mode == :x × 3 (lines 4, 7, 12)"]))
   end
   it "tolerates two repeats, block_given?, and predicateless cases" do

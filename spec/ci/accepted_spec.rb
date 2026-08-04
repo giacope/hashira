@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::CI::Accepted) do
   def finding(kind: "cycle", package: "app", digest: nil)
-    Hashira::Analysis::Finding.new(kind:, package:, digest:, message: "m", evidence: [])
+    Hashira::Analysis::Finding.new(kind:, package:, digest:, evidence: [])
   end
 
   def accepting(entry) = described_class.new([entry])

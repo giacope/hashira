@@ -21,7 +21,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(finding.message).to(include("passes the same parameters", "zone/thing.rb:3"))
+    expect(message(finding)).to(include("passes the same parameters", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["(alfa, bravo) → 3 methods: one, two, three"]))
   end
   it "counts keyword parameters and ignores singleton methods" do

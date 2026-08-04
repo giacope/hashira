@@ -17,19 +17,11 @@ class Hashira::Coupling::MixedAudienceFindings < Hashira::Coupling::Rule
   end
 
   def detail(package, parts)
-    finding(package:, evidence: parts.flat_map { sightings(package, it).first(2) }, message: message(package, parts))
-  end
-
-  def message(package, parts)
-    "#{package} splits #{parts.size} ways: #{clauses(parts)} — " \
-      "parts with separate client bases are separate packages in disguise. " \
-      "Split #{package} along that seam#{advice(parts)}."
-  end
-
-  def clauses(parts) = parts.map(&:label).join("; ")
-
-  def advice(parts)
-    parts.any?(&:shared) ? ", keeping the shared constants as the base layer the rest builds on" : ""
+    finding(
+      package:, evidence: parts.flat_map do
+        sightings(package, it).first(2)
+      end, detail: { parts: parts.map(&:to_h) }
+    )
   end
 
   def sightings(package, part)

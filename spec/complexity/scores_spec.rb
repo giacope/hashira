@@ -27,7 +27,7 @@ RSpec.describe(Hashira::Complexity::Scores) do
       expect(scores.findings.size).to(eq(1))
       expect(finding.kind).to(eq("complexity"))
       expect(finding.package).to(eq("App::Knot::Tangle#tangled"))
-      expect(finding.message).to(include("cognitive 12, 4 calls", "guard clauses"))
+      expect(message(finding)).to(include("cognitive 12, 4 calls", "guard clauses"))
       expect(finding.evidence).to(include("if +10 (lines 9, 10, 11, 12)", "boolean +2 (line 13)"))
     end
   end

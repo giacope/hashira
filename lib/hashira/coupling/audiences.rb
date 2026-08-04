@@ -3,15 +3,7 @@
 class Hashira::Coupling::Audiences
   MIN = 2
 
-  Part =
-    Data.define(:users, :constants, :shared) do
-      def label = "#{users.join(", ")} #{verb} #{constants.join(", ")}"
-
-      def verb
-        return "share" if shared
-        users.size == 1 ? "alone uses" : "use"
-      end
-    end
+  Part = Data.define(:users, :constants, :shared)
 
   def initialize(usage)
     @usage = usage

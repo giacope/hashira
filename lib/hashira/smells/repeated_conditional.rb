@@ -19,10 +19,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
     node.predicate if node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode) || node.is_a?(Prism::CaseNode)
   end
 
-  def message
-    "#{label} branches on the same test #{repeats.values.map(&:size).max} times (#{site}). " \
-      "Replace the scattered checks with polymorphism."
-  end
+  def detail = { site:, count: repeats.values.map(&:size).max }
 
   def evidence = repeats.map { |test, nodes| row(test, nodes) }
 

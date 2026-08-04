@@ -9,6 +9,7 @@ require:
   - ./.rubocop/cop/hashira/agent_noun.rb
   - ./.rubocop/cop/hashira/io_discipline.rb
   - ./.rubocop/cop/hashira/no_comments.rb
+  - ./.rubocop/cop/hashira/prose_placement.rb
 
 AllCops:
   TargetRubyVersion: 3.4
@@ -101,6 +102,14 @@ Hashira/NoComments:
   Include:
     - "lib/**/*"
 
+Hashira/ProsePlacement:
+  Include:
+    - "lib/**/*"
+  Exclude:
+    - "lib/hashira/report/**/*"
+    - "lib/hashira/ci/**/*"
+    - "lib/hashira/cli/usage.rb"
+
 Elegant/NoComments:
   Enabled: false
 
@@ -115,6 +124,7 @@ Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
     - "spec/rubocop/agent_noun_spec.rb"
     - "spec/rubocop/io_discipline_spec.rb"
     - "spec/rubocop/no_comments_spec.rb"
+    - "spec/rubocop/prose_placement_spec.rb"
     - "spec/report/text_spec.rb"
     - "spec/smells/*_spec.rb"
 

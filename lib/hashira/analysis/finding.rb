@@ -3,8 +3,8 @@
 module Hashira
   module Analysis
     Finding =
-      Data.define(:kind, :package, :message, :evidence, :cycle, :digest) do
-        def initialize(cycle: nil, digest: nil, **rest) = super
+      Data.define(:kind, :package, :detail, :evidence, :cycle, :digest) do
+        def initialize(cycle: nil, digest: nil, detail: nil, **rest) = super
 
         def signature = "#{kind}:#{identity}"
 

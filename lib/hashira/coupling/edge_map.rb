@@ -28,6 +28,6 @@ class Hashira::Coupling::EdgeMap
     return unless to && to != from
     @dependencies[from] << to
     @evidence[[from, to]] << "#{site}: #{segments.join("::")}"
-    @usage[[from, to]] << @census.strip(segments).join("::")
+    @usage[[from, to]] << @census.holder(segments)
   end
 end

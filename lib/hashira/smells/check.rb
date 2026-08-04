@@ -7,7 +7,7 @@ class Hashira::Smells::Check
 
   def finding
     return unless smelly?
-    Hashira::Analysis::Finding.new(kind:, package: label, message:, evidence:)
+    Hashira::Analysis::Finding.new(kind:, package: label, detail:, evidence:)
   end
 
   private
@@ -19,6 +19,10 @@ class Hashira::Smells::Check
   def label = subject.subject
 
   def site = subject.site
+
+  def detail = { site: }
+
+  def spots(nodes) = "#{subject.file}:#{nodes.map { it.location.start_line }.uniq.join(", ")}"
 
   def evidence = []
 

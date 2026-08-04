@@ -1,23 +1,23 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "coupling/report"
 
 class Hashira::Pipeline
   ANALYZERS = %i[coupling complexity duplication smells].freeze
 
-  RULES = [
-    Hashira::Coupling::CycleFindings, Hashira::Coupling::SdpViolationFindings,
-    Hashira::Coupling::MixedAudienceFindings
-  ].freeze
+  STRUCTURAL = Hashira::Coupling::Report::RULES.map { it::KIND }.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto)
     @project = project
     @enabled = enabled
     @trees = project.files.to_h { [it, parse(it)] }
-    @graph = Hashira::Coupling::Graph.new(project, @trees, census(settle(packaging)))
+    @coupling = Hashira::Coupling::Report.new(project, @trees, packaging: settle(packaging))
   end
 
-  attr_reader :project, :graph
+  attr_reader :project
+
+  def graph = @coupling.graph
 
   def complexity
     @complexity ||= Hashira::Complexity::Scores.new(@project, @trees) if enabled?(:complexity)
@@ -43,14 +43,12 @@ class Hashira::Pipeline
 
   private
 
-  def census(packaging) = Hashira::Coupling::Census.new(@project, @trees, packaging:)
-
   def settle(packaging)
     return packaging unless packaging == :auto
     @project.rails? ? :namespace : :folder
   end
 
-  def structural = enabled?(:coupling) ? RULES.flat_map { it.new(@project, @graph).list } : []
+  def structural = enabled?(:coupling) ? @coupling.findings : []
 
   def listed(analyzer) = analyzer ? analyzer.findings : []
 

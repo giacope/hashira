@@ -9,6 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `wide_edge` coupling finding: an edge carrying five or more distinct
+  constants is an interface with that many reasons to change — front the
+  target with one facade. Found from the same constant-level usage data as
+  `mixed_audience`. Its first run flagged the pipeline's own five-constant
+  reach into `coupling`, dissolved by the new `Coupling::Report` facade.
+- `roll_call` coupling finding: a list of three or more words (symbols or
+  string keys in array and hash literals) maintained by hand in three or more
+  files across two or more packages is a registry in disguise. Its first run
+  flagged the analyzer names synced between the pipeline, `--fail-on`, and the
+  JSON report — dissolved by deriving `--fail-on` kinds from
+  `Pipeline::ANALYZERS` and the coupling rule roster.
+- `Hashira/ProsePlacement` cop: sentence-length string literals are presentation
+  and belong under `report/` or `ci/` — domain classes pass data. All finding
+  messages now render in `Report::Phrases` from structured `Finding#detail`;
+  `Finding` no longer carries a `message` member (the JSON report still emits
+  a phrased `message` per finding).
+- Coverage floors raised to 100% line and 100% branch — and CI now gates
+  `wide_edge` and `roll_call` alongside cycles, SDP, and mixed audiences.
+
 - `mixed_audience` coupling finding: a package whose constants split into
   parts with disjoint client bases — one set of packages leaning on one slice,
   another set on another — is separate packages in disguise. Detected from

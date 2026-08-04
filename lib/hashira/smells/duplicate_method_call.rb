@@ -44,10 +44,6 @@ class Hashira::Smells::DuplicateMethodCall < Hashira::Smells::Check
 
   def wrap(parts) = parts.empty? ? "" : "(#{parts.join(", ")})"
 
-  def message
-    "#{label} repeats identical calls (#{site}). Name the result in a local variable."
-  end
-
   def evidence
     repeats.map { |handle, nodes| "#{handle} × #{nodes.size} (#{stamp(lines(nodes))})" }
   end

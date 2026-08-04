@@ -32,9 +32,9 @@ RSpec.describe(Hashira::Duplication::Delta) do
     }
     expect(kind(near)).to(eq(:structure))
   end
-  it "serializes to a hash and maps the kind to a refactoring summary" do
+  it "serializes to a hash whose kind selects the refactoring advice" do
     delta = described_class.new(cluster(clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")))
     expect(delta.to_h).to(include(sites: 2, kind: :literal))
-    expect(delta.summary).to(include("extract a method"))
+    expect(Hashira::Report::Phrases::DUPLICATION_ADVICE.fetch(delta.kind)).to(include("extract a method"))
   end
 end

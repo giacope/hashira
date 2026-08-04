@@ -25,6 +25,11 @@ class Hashira::Coupling::Census
 
   def strip(segments) = @catalog.strip(segments)
 
+  def holder(segments)
+    path = strip(segments)
+    (path.length.downto(1).map { path.first(it) }.find { type?(it) } || path).join("::")
+  end
+
   def resolve(segments, nesting = []) = scope.resolve(segments, nesting)
 
   def pinpoint(segments) = scope.pinpoint(segments)
@@ -32,6 +37,8 @@ class Hashira::Coupling::Census
   def charge(file, nesting) = translate(@placement.charge(file, nesting))
 
   private
+
+  def type?(segments) = @roster.origins.key?(segments.join("::"))
 
   def tally
     Hashira::Coupling::Roster.new(@placement.placed.map { |definition, package| [definition, translate(package)] })

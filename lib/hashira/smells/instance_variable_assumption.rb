@@ -40,10 +40,5 @@ class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
 
   def starters = subject.owned.select { it.node.name == :initialize }
 
-  def message
-    "#{label} reads instance variables never set in initialize (#{site}). " \
-      "Assign them in initialize, or pass the data explicitly."
-  end
-
   def evidence = assumed.map(&:to_s)
 end

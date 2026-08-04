@@ -17,19 +17,12 @@ class Hashira::Coupling::CycleFindings < Hashira::Coupling::Rule
   end
 
   def entry(path)
-    package = path.first
-    finding(
-      package:, cycle: path, evidence: evidence(path),
-      message: message(package, path, graph.cycles.weakest(path))
-    )
+    finding(package: path.first, cycle: path, evidence: evidence(path), detail: detail(graph.cycles.weakest(path)))
   end
 
-  def message(package, path, weak_edge)
-    from, to = weak_edge
-    weight = graph.weight(from, to)
-    "#{package} can reach itself: #{path.join(" -> ")} — any change may ripple back " \
-      "around. The lightest edge on this cycle is #{from} -> #{to} " \
-      "(#{weight} ref#{"s" unless weight == 1})."
+  def detail(weak)
+    from, to = weak
+    { weak:, weight: graph.weight(from, to) }
   end
 
   def evidence(path)

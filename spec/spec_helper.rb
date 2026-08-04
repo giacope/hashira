@@ -4,7 +4,7 @@ require "simplecov"
 SimpleCov.start do
   enable_coverage :branch
   add_filter "/spec/"
-  minimum_coverage line: 99, branch: 99
+  minimum_coverage line: 100, branch: 100
 end
 
 require "hashira"
@@ -72,6 +72,8 @@ module FixtureHelper
       yield(Hashira::Duplication::Clones.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
     end
   end
+
+  def message(finding) = Hashira::Report::Phrases.message(finding)
 
   def capture
     original = $stdout

@@ -19,7 +19,7 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(finding.message).to(include("reads instance variables never set in initialize", "zone/thing.rb:3"))
+    expect(message(finding)).to(include("reads instance variables never set in initialize", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["@late"]))
   end
   it "treats every read as an assumption when initialize is missing" do

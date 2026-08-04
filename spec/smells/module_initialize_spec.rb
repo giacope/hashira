@@ -30,7 +30,7 @@ RSpec.describe(Hashira::Smells::ModuleInitialize) do
     findings = sniffed(files, "module_initialize")
     expect(findings.size).to(eq(1))
     expect(findings.first.package).to(eq("App::Zone::Mixin"))
-    expect(findings.first.message).to(include("defines initialize in a module", "zone/thing.rb:3"))
+    expect(message(findings.first)).to(include("defines initialize in a module", "zone/thing.rb:3"))
   end
   it "flags block-born initializers but not those owned by an assigned constant" do
     files = {

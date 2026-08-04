@@ -6,7 +6,7 @@ RSpec.describe(Hashira::Duplication::Clones) do
       finding = clones.findings.first
       expect(clones.findings.size).to(eq(1))
       expect(finding.kind).to(eq("duplication"))
-      expect(finding.message).to(include("2 similar fragments"))
+      expect(message(finding)).to(include("2 similar fragments"))
       expect(finding.evidence).to(
         include(
           a_string_matching(%r{orders/checkout\.rb:1-11}),
@@ -23,7 +23,7 @@ RSpec.describe(Hashira::Duplication::Clones) do
     duplication(FixtureHelper::DUPLICATION_FILES) do |clones|
       churn = Hashira::Churn.new("orders/checkout.rb" => 5, "billing/refund.rb" => 4)
       finding = Hashira::Duplication::DuplicationFinding.new(clones.clusters.first, churn).to_finding
-      expect(finding.message).to(include("Both sites change often"))
+      expect(message(finding)).to(include("Both sites change often"))
     end
   end
 end
