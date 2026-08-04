@@ -26,6 +26,8 @@ class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
     end
   end
 
+  def self.judge? = true
+
   private
 
   def smelly? = subject.kind == :class && assumed.any?

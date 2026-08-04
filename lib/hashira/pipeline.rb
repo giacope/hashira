@@ -2,11 +2,14 @@
 
 require "prism"
 require_relative "coupling/report"
+require_relative "smells/report"
 
 class Hashira::Pipeline
   ANALYZERS = %i[coupling complexity duplication smells].freeze
 
   STRUCTURAL = Hashira::Coupling::Report::RULES.map { it::KIND }.freeze
+
+  SMELLS = Hashira::Smells::Report::CHECKS.map(&:kind).sort.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto)
     @project = project

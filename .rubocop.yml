@@ -108,6 +108,7 @@ Hashira/ProsePlacement:
   Exclude:
     - "lib/hashira/report/**/*"
     - "lib/hashira/ci/**/*"
+    - "lib/hashira/cli/flags.rb"
     - "lib/hashira/cli/usage.rb"
 
 Elegant/NoComments:
@@ -125,6 +126,7 @@ Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
     - "spec/rubocop/io_discipline_spec.rb"
     - "spec/rubocop/no_comments_spec.rb"
     - "spec/rubocop/prose_placement_spec.rb"
+    - "spec/readme_spec.rb"
     - "spec/report/text_spec.rb"
     - "spec/smells/*_spec.rb"
 

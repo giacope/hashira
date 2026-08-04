@@ -26,11 +26,10 @@ package       TC  Ca  Ce     I  Cyc
 billing        1   1   1  0.50  YES
 shipping       1   1   1  0.50  YES
 
-Findings (2):
-  cycle: billing can reach itself: billing -> shipping -> billing — any change
-  may ripple back around. The lightest edge on this cycle is billing -> shipping (1 ref).
-      · billing/client.rb:3: Shipping::Rate
-      · shipping/rate.rb:3: Billing::Client
+Findings (1):
+  cycle: billing can reach itself: billing -> shipping -> billing — any change may ripple back around. The lightest edge on this cycle is billing -> shipping (1 ref).
+      · billing/client.rb:5: Shipping::Rate
+      · shipping/rate.rb:8: Billing::Client
 ```
 
 A healthy project reports `Findings (0): none ✓ — structure is healthy`.

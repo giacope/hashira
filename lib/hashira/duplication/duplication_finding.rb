@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Duplication::DuplicationFinding
+  KIND = "duplication"
+
   def initialize(cluster, churn)
     @cluster = cluster
     @churn = churn
@@ -8,7 +10,7 @@ class Hashira::Duplication::DuplicationFinding
 
   def to_finding
     site = @cluster.canonical
-    Hashira::Analysis::Finding.new(kind: "duplication", package: site.location, digest: site.digest, detail:, evidence:)
+    Hashira::Analysis::Finding.new(kind: KIND, package: site.location, digest: site.digest, detail:, evidence:)
   end
 
   private

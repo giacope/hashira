@@ -10,6 +10,8 @@ class Hashira::Smells::TooManyInstanceVariables < Hashira::Smells::Check
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
+  def self.judge? = true
+
   private
 
   def smelly? = subject.kind == :class && names.size > LIMIT

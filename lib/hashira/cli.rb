@@ -8,7 +8,7 @@ class Hashira::CLI
     failure(error)
   end
 
-  def self.usage?(options) = %i[help version].include?(options.mode)
+  def self.usage?(options) = Usage::PAGES.include?(options.mode)
 
   def self.failure(error)
     warn("hashira: #{error.message}")

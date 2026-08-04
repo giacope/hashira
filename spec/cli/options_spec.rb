@@ -61,11 +61,11 @@ RSpec.describe(Hashira::CLI::Options) do
     end
     it "rejects conflicting mode flags" do
       expect { described_class.parse(%w[--ratchet --format dot]) }
-        .to(raise_error(Hashira::Error, "conflicting options: --ratchet and --format dot"))
+        .to(raise_error(Hashira::Error, "conflicting options: --format dot and --ratchet"))
       expect { described_class.parse(%w[--json --format dot]) }
         .to(raise_error(Hashira::Error, "conflicting options: --format dot and --json"))
       expect { described_class.parse(%w[--ratchet --fail-on cycles]) }
-        .to(raise_error(Hashira::Error, "conflicting options: --ratchet and --fail-on"))
+        .to(raise_error(Hashira::Error, "conflicting options: --fail-on and --ratchet"))
     end
     it "tolerates redundant format flags" do
       expect(described_class.parse(%w[--json --format json]).mode).to(eq(:json))

@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::MethodFinding
+  KIND = "complexity"
+
   def initialize(score)
     @score = score
   end
 
   def to_finding
-    Hashira::Analysis::Finding.new(kind: "complexity", package: @score.subject, detail:, evidence:)
+    Hashira::Analysis::Finding.new(kind: KIND, package: @score.subject, detail:, evidence:)
   end
 
   private

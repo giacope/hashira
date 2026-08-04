@@ -1,7 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "flags"
+
 module Hashira::CLI::Usage
-  TEXT = <<~HELP
+  PAGES = %i[help version].freeze
+
+  HEADER = <<~TEXT
     Usage: hashira [DIRECTORY ...] [options]
 
     Coupling, cognitive-complexity, duplication, and code-smell metrics
@@ -9,37 +13,29 @@ module Hashira::CLI::Usage
     With no directory, auto-detects lib/<gem>.
 
     Options:
-      --format FORMAT      text (default), json, dot, or mermaid
-      --json               shorthand for --format json
-      --fail-on KINDS      exit 1 if findings exist; comma-separated
-                           kinds: cycles, sdp, mixed_audience, wide_edge,
-                           roll_call, complexity, duplication, smells (all
-                           of them), or one smell kind such as feature_envy
-      --skip ANALYZERS     drop an analyzer; comma-separated: coupling,
-                           complexity, duplication, smells
-      --package-by WHAT    group coupling by: auto, folder, or namespace
-                           (top-level constant). Default auto: namespace for
-                           Rails apps (config/application.rb in or beside the
-                           analyzed directory), folder otherwise
-      --ratchet            fail when edges or findings appear that the
-                           baseline lacks
-      --update-baseline    record the current edges and findings
-      --baseline PATH      baseline file (default: hashira_baseline.json)
-      -h, --help           print this help
-      --version            print the version
+  TEXT
+
+  FOOTER = <<~TEXT
 
     Findings accepted by design can be recorded in the baseline as
       "accepted": [{"kind": "...", "package": "...", "reason": "..."}]
     — they leave reports and gates, keeping a one-line reminder each.
     Clones are named by "digest" instead of "package", so an acceptance
     survives the lines above it moving. Read digests from --json.
-  HELP
+  TEXT
 
   module_function
 
-  def help = emit(TEXT)
+  def help = emit(HEADER + options + FOOTER)
 
   def version = emit("hashira #{Hashira::VERSION}")
+
+  def options = Hashira::CLI::FLAGS.map { rows(it) }.join
+
+  def rows(flag)
+    first, *rest = flag.text
+    ["  #{flag.label.ljust(21)}#{first}\n", *rest.map { "#{" " * 23}#{it}\n" }].join
+  end
 
   def emit(output)
     puts(output)
