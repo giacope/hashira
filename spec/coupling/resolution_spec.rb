@@ -122,6 +122,33 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+  it "leaves a bare core constant to Ruby, not a namespaced namesake" do
+    files = {
+      "app/models/tracker.rb" => "class Tracker\n  def pattern = Regexp\nend\n",
+      "app/nodes/sql/regexp.rb" => "module Sql\n  class Regexp\n    def r = 1\n  end\nend\n"
+    }
+    analyze(files, directories: ["app"]) do |_project, _census, graph|
+      expect(graph.edges).to(be_empty)
+    end
+  end
+  it "still couples to a core class the project reopens at top level" do
+    files = {
+      "app/ext/string.rb" => "class String\n  def shout = upcase\nend\n",
+      "app/models/note.rb" => "class Note\n  def s = String\nend\n"
+    }
+    analyze(files, directories: ["app"]) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(eq(["models -> ext"]))
+    end
+  end
+  it "lets a lexical namesake shadow a core constant, as Ruby does" do
+    files = {
+      "app/nodes/sql/regexp.rb" => "module Sql\n  class Regexp\n    def r = 1\n  end\nend\n",
+      "app/visitors/sql/to_sql.rb" => "module Sql\n  class ToSql\n    def r = Regexp\n  end\nend\n"
+    }
+    analyze(files, directories: ["app"]) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(eq(["visitors -> nodes"]))
+    end
+  end
   it "does not pin an unknown path to a namespace known only by suffix" do
     files = {
       "app/models/billing/stripe/client.rb" =>

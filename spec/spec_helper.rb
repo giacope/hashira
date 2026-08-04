@@ -22,6 +22,8 @@ module FixtureHelper
     end
   end
 
+  def git(*) = system("git", *, exception: true)
+
   def pipeline(directories, packaging: :folder)
     project = Hashira::Project.new(directories)
     trees = project.files.to_h { [it, Prism.parse_file(it).value] }

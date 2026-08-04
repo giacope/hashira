@@ -9,6 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The churn scan passes `--no-renames` to `git log`, counting a move as a
+  delete plus an add. Rename detection needs blob contents, so on a partial
+  clone (`--filter=blob:none`) the old command lazy-fetched objects from the
+  network one at a time — on a long history the scan stalled for minutes and
+  looked like a hang. It also made the tally depend on which blobs git could
+  see, so the same tree could report different churn (and different
+  findings) run to run. A dogfood run against a large open-source app fell
+  from 3m39s to under 9 seconds.
+- A bare reference to a Ruby core constant (`String`, `Regexp`, `File`, …)
+  no longer couples to whichever package defines a namespaced namesake such
+  as `Sql::Nodes::Regexp` — Ruby would resolve it to the core class, so
+  hashira now drops the edge. The registry answers these through `rooted`,
+  which skips the shorthand tails: a lexical namesake still shadows the core
+  name as Ruby's own lookup does, and a project that reopens the class at
+  top level still owns it. Dogfooding against a large open-source library,
+  this deleted a phantom `mixed_audience` finding built entirely on `Array`,
+  `String`, and `File`.
 - Constants assigned in a class body (`Node = Struct.new(:path)`) now join the
   census as definitions, so a bare reference resolves to the local constant
   instead of a foreign package's namesake — a karat run had minted two phantom

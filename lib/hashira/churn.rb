@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Churn
-  LOG = "git log --name-only --format= 2>/dev/null"
+  LOG = "git log --no-renames --name-only --format= 2>/dev/null"
   SITES_THAT_DRIFT_APART = 2
 
   def self.scan = new(tally(`#{LOG}`))

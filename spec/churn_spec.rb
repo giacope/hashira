@@ -9,6 +9,19 @@ RSpec.describe(Hashira::Churn) do
     expect(churn.hits("foo.rb")).to(eq(3))
     expect(churn.hits("missing.rb")).to(eq(0))
   end
+  it "tallies a rename as a delete and an add, never following the move" do
+    within("a.rb" => "class A\nend\n") do
+      git("init", "-q")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      File.rename("a.rb", "b.rb")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "y")
+      churn = described_class.scan
+      expect(churn.hits("a.rb")).to(eq(2))
+      expect(churn.hits("b.rb")).to(eq(1))
+    end
+  end
   it "is hot only when at least two sites sit in changed files" do
     churn = described_class.new("a.rb" => 5, "b.rb" => 2)
     sites = [

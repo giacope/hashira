@@ -16,10 +16,9 @@ class Hashira::Coupling::ConstantRegistry
     (1...path.length).each { claim(@shorthand, path.drop(it), package) }
   end
 
-  def package(path)
-    found = anchored(path) || enclosing(path)
-    found unless found == AMBIGUOUS
-  end
+  def package(path) = settle(anchored(path) || enclosing(path))
+
+  def rooted(path) = settle(@origins[path.join("::")] || enclosing(path))
 
   def exact(path) = @origins[path.join("::")]
 
@@ -31,6 +30,8 @@ class Hashira::Coupling::ConstantRegistry
     key = path.join("::")
     claims[key] = claims.fetch(key, package) == package ? package : AMBIGUOUS
   end
+
+  def settle(found) = (found unless found == AMBIGUOUS)
 
   def anchored(path)
     key = path.join("::")
