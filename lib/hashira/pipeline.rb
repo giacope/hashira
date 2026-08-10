@@ -40,7 +40,7 @@ class Hashira::Pipeline
     @hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
   end
 
-  def churn = @churn ||= Hashira::Churn.scan
+  def churn = @churn ||= Hashira::Churn.scan(@project.directories.first)
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
 

@@ -14,9 +14,20 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @findings ||= Hashira::CI::Accepted.load(@options.baseline).screen(@pipeline.findings)
+  def findings = @findings ||= accepted.screen(@pipeline.findings)
 
-  def update = ratchet.update
+  def accepted
+    path = @options.baseline
+    stop = Hashira::CI::Baseline.trouble(path)
+    raise(Hashira::Error, stop) if stop
+    Hashira::CI::Accepted.load(path)
+  end
+
+  def update
+    ratchet.update
+  rescue SystemCallError => error
+    raise(Hashira::Error, "cannot write #{@options.baseline} (#{error.message})")
+  end
 
   def check
     stop = ratchet.blocker
@@ -32,7 +43,10 @@ class Hashira::CLI::Run
 
   def text = report(Hashira::Report::Text)
 
-  def report(kind) = kind.new(view).print
+  def report(kind)
+    Hashira::Report::Notices.new(@pipeline).print
+    kind.new(view).print
+  end
 
   def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)
 

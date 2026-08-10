@@ -20,10 +20,7 @@ class Hashira::CI::Accepted
       def to_h = { kind:, package:, digest:, reason: }.compact
     end
 
-  def self.load(path)
-    return new([]) unless path && File.exist?(path)
-    new(JSON.parse(File.read(path)).fetch("accepted", []))
-  end
+  def self.load(path) = new(Hashira::CI::Baseline.read(path).fetch("accepted", []))
 
   def initialize(entries)
     @entries = entries.map { Entry.from(it) }

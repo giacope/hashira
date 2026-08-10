@@ -17,9 +17,18 @@ RSpec.describe(Hashira::Churn) do
       File.rename("a.rb", "b.rb")
       git("add", "-A")
       git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "y")
-      churn = described_class.scan
+      churn = described_class.scan(".")
       expect(churn.hits("a.rb")).to(eq(2))
       expect(churn.hits("b.rb")).to(eq(1))
+    end
+  end
+  it "reads the history of the analyzed directory, not the working directory" do
+    within("repo/a.rb" => "class A\nend\n") do
+      git("-C", "repo", "init", "-q")
+      git("-C", "repo", "add", "-A")
+      git("-C", "repo", "-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      expect(described_class.scan("repo").hits("a.rb")).to(eq(1))
+      expect(described_class.scan(".").history?).to(be(false))
     end
   end
   it "is hot only when at least two sites sit in changed files" do
