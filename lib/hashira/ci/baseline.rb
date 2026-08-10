@@ -3,7 +3,7 @@
 require "json"
 
 class Hashira::CI::Baseline
-  SCHEMA_VERSION = 3
+  SCHEMA_VERSION = 4
 
   def self.load(path) = new(path, read(path))
 
@@ -30,7 +30,9 @@ class Hashira::CI::Baseline
 
   def edges = @recorded.fetch("edges", [])
 
-  def findings = @recorded.fetch("findings", [])
+  def findings = self.class.scored(@recorded.fetch("findings", {}))
+
+  def self.scored(recorded) = recorded.is_a?(Array) ? recorded.to_h { [it, nil] } : recorded
 
   def findings? = @recorded.key?("findings")
 

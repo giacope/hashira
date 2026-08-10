@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "packaging": "folder",
   "edges": [
     "(root) -> complexity",
@@ -18,7 +18,7 @@
     "report -> duplication",
     "smells -> analysis"
   ],
-  "findings": [],
+  "findings": {},
   "accepted": [
     {
       "kind": "boundary_sprawl",

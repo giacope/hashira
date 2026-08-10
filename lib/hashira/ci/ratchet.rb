@@ -9,9 +9,9 @@ class Hashira::CI::Ratchet
   end
 
   def update
-    @baseline.write(edges, digests, packaging:)
+    @baseline.write(edges, scored, packaging:)
     @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
-    0
+    Hashira::CI::Status::CLEAN
   end
 
   def check = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(drift, delta)
@@ -25,7 +25,7 @@ class Hashira::CI::Ratchet
 
   def packaging = @graph.packaging.to_s
 
-  def recorded = collapsed(@findings.size, digests.size)
+  def recorded = collapsed(@findings.size, scored.size)
 
   def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
 
@@ -37,13 +37,15 @@ class Hashira::CI::Ratchet
 
   def edges = @graph.edges.map(&:to_s)
 
-  def digests = @findings.map(&:signature).uniq.sort
+  def scored
+    @scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, group.filter_map(&:magnitude).max] }
+  end
 
   def drift = Hashira::CI::Diff.new(added: fresh, removed: @baseline.edges - edges)
 
   def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
 
   def delta
-    Hashira::CI::Diff.between(digests, @baseline.findings) if @baseline.findings?
+    Hashira::CI::Diff.between(scored, @baseline.findings) if @baseline.findings?
   end
 end

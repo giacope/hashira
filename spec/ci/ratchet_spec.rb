@@ -16,7 +16,9 @@ RSpec.describe(Hashira::CI::Ratchet) do
     described_class.new(graph, findings, path, io:)
   end
 
-  def seed(findings:, edges: ["alpha -> beta", "alpha -> core", "beta -> alpha"])
+  def edges = ["alpha -> beta", "alpha -> core", "beta -> alpha"]
+
+  def seed(findings:, edges: self.edges)
     File.write("baseline.json", JSON.generate(version: 2, edges:, findings:))
   end
 
@@ -29,7 +31,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       saved = JSON.parse(File.read("baseline.json"))
       expect(saved).to(
         eq(
-          "version" => 3, "packaging" => "folder", "findings" => ["cycle:alpha"],
+          "version" => 4, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
           "edges" => ["alpha -> beta", "alpha -> core", "beta -> alpha"]
         )
       )
@@ -77,6 +79,47 @@ RSpec.describe(Hashira::CI::Ratchet) do
           "Ratchet FAILED"
         )
       )
+    end
+  end
+
+  def scored(kind, package, value)
+    Hashira::Analysis::Finding.new(
+      kind:, package:, evidence: ["a.rb:1"],
+      detail: { cognitive: value, calls: 3, site: "a.rb:1", dominant: "if" }
+    )
+  end
+
+  it "fails when a baselined finding gets worse, not only when a new one appears" do
+    with_graph do |graph|
+      File.write("baseline.json", JSON.generate(version: 4, edges:, findings: { "complexity:App#run" => 10 }))
+      io = StringIO.new
+      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json", io:).check).to(eq(1))
+      expect(io.string).to(include("WORSE FINDING (was 10, now 54):", "complexity: App#run"))
+      expect(io.string).to(include("Ratchet FAILED"))
+    end
+  end
+
+  it "stays quiet when a baselined finding gets better or holds still" do
+    with_graph do |graph|
+      File.write("baseline.json", JSON.generate(version: 4, edges:, findings: { "complexity:App#run" => 10 }))
+      expect(ratchet(graph, [scored("complexity", "App#run", 10)], "baseline.json").check).to(eq(0))
+      expect(ratchet(graph, [scored("complexity", "App#run", 4)], "baseline.json").check).to(eq(0))
+    end
+  end
+
+  it "reads a baseline recorded before magnitudes as identity-only, without crying regression" do
+    with_graph do |graph|
+      seed(findings: ["complexity:App#run"])
+      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json").check).to(eq(0))
+    end
+  end
+
+  it "records the magnitude of every finding that has one" do
+    with_graph do |graph|
+      findings = [scored("complexity", "App#run", 12), finding("cycle", "alpha")]
+      ratchet(graph, findings).update
+      saved = JSON.parse(File.read("baseline.json"))
+      expect(saved["findings"]).to(eq("complexity:App#run" => 12, "cycle:alpha" => nil))
     end
   end
 

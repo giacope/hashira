@@ -2,11 +2,15 @@
 
 module Hashira
   module Analysis
+    MAGNITUDES = { "complexity" => :cognitive, "duplication" => :mass, "boundary_sprawl" => :count }.freeze
+
     Finding =
       Data.define(:kind, :package, :detail, :evidence, :cycle, :digest) do
         def initialize(cycle: nil, digest: nil, detail: nil, **rest) = super
 
         def signature = "#{kind}:#{identity}"
+
+        def magnitude = detail.to_h[MAGNITUDES[kind]]
 
         def identity = digest || package
 

@@ -438,6 +438,22 @@ hashira --ratchet                # fail if either set grew
 hashira --ratchet --baseline PATH
 ```
 
+The baseline records more than which findings exist: where a finding has a
+magnitude — cognitive complexity, clone mass, sprawl count — it records that too.
+So a method already in the baseline going from 10 to 54 is a regression, not
+"unchanged". On a legacy codebase, where most hot methods are baselined on day
+one, that is where the work actually happens:
+
+```console
+$ hashira --ratchet
+WORSE FINDING (was 13, now 24):
+  complexity: App::Core::Knot#tangle — cognitive 24, 1 calls (core/knot.rb:4).
+  flatten the branching — guard clauses, early returns, or polymorphism.
+```
+
+Baselines written by earlier versions still work: they record identity only, so
+they ratchet on appearance until the next `--update-baseline` records magnitudes.
+
 A regression prints in full, with the evidence that introduced it:
 
 ```console
