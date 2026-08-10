@@ -7,12 +7,12 @@ Gem::Specification.new do |spec|
   spec.version = Hashira::VERSION
   spec.authors = ["Giacomo GK"]
   spec.email = ["giaco@hey.com"]
-  spec.summary = "Coupling, cognitive-complexity, and duplication metrics for Ruby, via Prism"
+  spec.summary = "Coupling, cognitive-complexity, duplication and code-smell metrics for Ruby, via Prism"
   spec.description = "Measures package coupling (Ca/Ce/instability, SDP violations, cycles), " \
-    "per-method cognitive complexity, and near-miss code duplication in a Ruby " \
-    "codebase from the AST, then ranks files by cost against git churn. Findings " \
-    "are backed by file-level evidence, and a baseline ratchets edges and findings " \
-    "for CI — direction, not a score."
+    "per-method cognitive complexity, near-miss code duplication, and twelve design " \
+    "smells in a Ruby codebase from the AST, then ranks files by cost against git " \
+    "churn. Findings are backed by file-level evidence, and a baseline ratchets edges " \
+    "and findings for CI — direction, not a score."
   spec.homepage = "https://github.com/giacope/hashira"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.4"

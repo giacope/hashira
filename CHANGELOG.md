@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-08-05
+
+### Changed
+
+- **feature_envy now respects ownership.** The classic remedy — move the
+  method onto the envied object — assumes the envied class is yours to edit.
+  The smell now stays quiet when the method body itself proves otherwise:
+  the name is type-guarded only against constants the analyzed code never
+  defines (`node.is_a?(Prism::CallNode)`); every call on it is a literal-key
+  read (`msg["id"]`, `values_at`, `dig`, `key?` — wire data, not an object);
+  it was built from a literal in the method itself (`options = { ... }`); it
+  was derived by calling a foreign name or foreign constant
+  (`value = node.unescaped`, `app = Rails.application`); it was rescued from
+  a foreign or implied error class (`rescue => e`); the method dispatches on
+  it through a constant table keyed entirely by foreign classes
+  (`TABLE[node.class]`); or the method is a stateless converter whose last
+  act is building a typed object. Guards against types the codebase does
+  define — including by suffix, and including subclasses of gem classes —
+  still flag, as do rescues from error classes the codebase defines and
+  tables keyed by owned classes, so anemic-model envy in Rails apps is
+  untouched.
+
+### Added
+
+- **boundary_sprawl** — the aggregate the suppression above makes room for:
+  when 12+ methods across 3+ files each type-guard against the same foreign
+  root (`Prism`, `ActiveRecord`, ...), one finding proposes fronting that
+  boundary with an adapter. One method inspecting a foreign type is a fact of
+  life; a codebase-wide sprawl of them is a missing seam.
+
 ## [0.5.1] - 2026-08-05
 
 ### Fixed
