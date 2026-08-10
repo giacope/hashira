@@ -9,6 +9,8 @@ class Hashira::Smells::Census
     @ownership = Hashira::Smells::Ownership.new(trees.values)
   end
 
+  attr_reader :ownership
+
   def types = @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 
   private

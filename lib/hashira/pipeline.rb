@@ -9,7 +9,9 @@ class Hashira::Pipeline
 
   STRUCTURAL = Hashira::Coupling::Report::RULES.map { it::KIND }.freeze
 
-  SMELLS = Hashira::Smells::Report::CHECKS.map(&:kind).sort.freeze
+  SMELLS = (
+    Hashira::Smells::Report::CHECKS.map(&:kind) + [Hashira::Smells::BoundarySprawl::KIND]
+  ).sort.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto)
     @project = project

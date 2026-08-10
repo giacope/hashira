@@ -19,6 +19,12 @@ module Hashira::Report::Phrases
       "Name the result in a local variable."
   end
 
+  def on_boundary_sprawl(finding)
+    detail = finding.detail
+    "#{detail[:count]} methods across #{detail[:files]} files each pick apart #{finding.package}'s " \
+      "internals. Front the boundary with one adapter the rest can lean on."
+  end
+
   def on_feature_envy(finding)
     detail = finding.detail
     names = detail[:names]

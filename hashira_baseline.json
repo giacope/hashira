@@ -18,5 +18,12 @@
     "report -> duplication",
     "smells -> analysis"
   ],
-  "findings": []
+  "findings": [],
+  "accepted": [
+    {
+      "kind": "boundary_sprawl",
+      "package": "Prism",
+      "reason": "hashira IS a Prism adapter: reading Prism's AST across every analyzer is the product, and analysis/ is that boundary"
+    }
+  ]
 }

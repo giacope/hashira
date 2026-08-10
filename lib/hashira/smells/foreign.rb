@@ -29,6 +29,10 @@ class Hashira::Smells::Foreign
       derived?(name) || rescued?(name)
   end
 
+  def reaches
+    tests { true }.reject { @ownership.owned?(it) }.map(&:first).uniq
+  end
+
   private
 
   def convert?

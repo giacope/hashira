@@ -294,7 +294,7 @@ it does inside Ruby:
 ## Code smells
 
 RuboCop counts lines and branches inside one method; design smells are about how
-objects treat each other, and no line count sees that. hashira ships the eleven
+objects treat each other, and no line count sees that. hashira ships the twelve
 smells that carry that design signal — the object-relationship kinds, not the
 naming, size, and style checks a linter already argues about — read from the
 same parse trees the other analyzers already built:
@@ -317,6 +317,9 @@ What each one catches:
   the method itself, rescued from a foreign error class, or consumed by a
   stateless converter that ends by building a typed object — because "move
   the method" needs a destination you own.
+- **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
+  same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
+  foreign type is a fact of life; a sprawl of them is a missing adapter.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.
@@ -340,7 +343,7 @@ What each one catches:
   cheapest type there is.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
-all eleven, or name one (`--fail-on feature_envy`); `--skip smells` drops the
+all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the
 analyzer entirely.
 
 ## Hotspots

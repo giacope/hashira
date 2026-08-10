@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "boundary_sprawl"
 require_relative "check"
 require_relative "control_parameter"
 require_relative "data_clump"
@@ -23,12 +24,17 @@ class Hashira::Smells::Report
   PROBES = CHECKS.reject(&:judge?).freeze
 
   def initialize(project, trees)
-    @types = Hashira::Smells::Census.new(project, trees).types
+    @census = Hashira::Smells::Census.new(project, trees)
+    @types = @census.types
   end
 
-  def findings = @findings ||= sniff(@types, JUDGES) + sniff(@types.flat_map(&:defs), PROBES)
+  def findings = @findings ||= sniff(@types, JUDGES) + sniff(methods, PROBES) + sprawl
 
   private
+
+  def methods = @types.flat_map(&:defs)
+
+  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, @census.ownership).findings
 
   def sniff(subjects, checks) = subjects.flat_map { |subject| verdicts(subject, checks) }
 
