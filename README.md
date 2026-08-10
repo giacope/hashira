@@ -481,11 +481,23 @@ sentence turns every exception into a decision somebody reviewed.
 ## Other formats
 
 ```sh
-hashira --json            # machine format: findings (with digests), accepted, packages,
-                          # edges, complexity, duplication, hotspots
+hashira --json            # machine format, never capped by --top
+hashira --json --compact  # the same on one line, for piping
 hashira --format dot      # Graphviz digraph
 hashira --format mermaid  # Mermaid diagram
 ```
+
+`--json` opens with what produced it — `version` (the schema, bumped when the
+shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
+`digest`), `accepted`, `packages`, `edges`, `folds` (single-type classes joined
+to a base or domain, `{from, to, via}`), `complexity`, `duplication`, and
+`hotspots`. A package with no edges at all reports `"i": null` rather than
+pretending 0/0 is maximally stable.
+
+Both diagrams declare every package before the arrows, so a package nothing
+depends on still appears. Mermaid node ids are generated (`p0`, `p1`, …) with
+the real name in the label, so `my-pkg` and `my_pkg` stay two nodes and a
+package called `end` does not break the graph.
 
 ## Why cognitive complexity
 

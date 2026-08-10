@@ -8,9 +8,15 @@ module Hashira::CLI::Needs
   module_function
 
   def check(options)
+    mode = options.mode
     skip = options.skip
-    drawing(options.mode, skip)
+    drawing(mode, skip)
     gate(options.fail_on, skip)
+    shaping(mode) if options.compact
+  end
+
+  def shaping(mode)
+    raise(Hashira::Error, "--compact shapes JSON, but this run emits #{mode}") unless mode == :json
   end
 
   def drawing(mode, skip)

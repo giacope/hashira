@@ -1,11 +1,27 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Json) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:)
+  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil)
+    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:)
   end
 
   def emit(view) = JSON.parse(capture { described_class.new(view).print })
+  it "says what produced it: schema version, packaging, targets, and file count" do
+    with_pipeline do |project, graph, findings|
+      report = emit(view(project, graph, findings))
+      expect(report["version"]).to(eq(Hashira::Report::Json::SCHEMA))
+      expect(report["packaging"]).to(eq("folder"))
+      expect(report["targets"]).to(eq(["lib/app"]))
+      expect(report["files"]).to(eq(3))
+    end
+  end
+  it "emits one line under --compact, and the same data either way" do
+    with_pipeline do |project, graph, findings|
+      dense = capture { described_class.new(view(project, graph, findings, compact: true)).print }
+      expect(dense.lines.size).to(eq(1))
+      expect(JSON.parse(dense)).to(eq(emit(view(project, graph, findings))))
+    end
+  end
   it "emits packages sorted by instability, edges with evidence, and findings" do
     with_pipeline do |project, graph, findings|
       report = emit(view(project, graph, findings))

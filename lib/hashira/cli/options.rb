@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::CLI
-  PAGE = { directories: [], baseline: "", fail_on: [], skip: [], packaging: :auto, top: nil }.freeze
+  PAGE = { directories: [], baseline: "", fail_on: [], skip: [], packaging: :auto, top: nil, compact: nil }.freeze
 
   Options =
-    Data.define(:directories, :mode, :baseline, :fail_on, :skip, :packaging, :top) do
+    Data.define(:directories, :mode, :baseline, :fail_on, :skip, :packaging, :top, :compact) do
       def self.parse(argv) = CommandLine.new(argv).options
 
       def self.page(mode) = new(**PAGE, mode:)

@@ -77,6 +77,13 @@ RSpec.describe(Hashira::CLI::Options) do
         .to(raise_error(Hashira::Error, "--format dot draws the coupling graph, but --skip coupling drops it"))
       expect(described_class.parse(%w[lib --format dot --skip smells]).mode).to(eq(:dot))
     end
+    it "refuses --compact for output that is not JSON" do
+      expect(described_class.parse(%w[lib --json --compact]).compact).to(be_truthy)
+      expect { described_class.parse(%w[lib --compact]) }
+        .to(raise_error(Hashira::Error, "--compact shapes JSON, but this run emits text"))
+      expect { described_class.parse(%w[lib --format dot --compact]) }
+        .to(raise_error(Hashira::Error, "--compact shapes JSON, but this run emits dot"))
+    end
     it "rejects stray unknown flags, single-dash included" do
       expect { described_class.parse(%w[lib --verbose]) }.to(raise_error(Hashira::Error, "unknown option --verbose"))
       expect { described_class.parse(%w[lib -x]) }.to(raise_error(Hashira::Error, "unknown option -x"))

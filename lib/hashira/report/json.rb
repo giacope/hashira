@@ -8,14 +8,21 @@ class Hashira::Report::Json
     @io = io
   end
 
+  SCHEMA = 1
+
   def print
-    @io.puts(JSON.pretty_generate(payload))
+    @io.puts(@view.compact ? JSON.generate(payload) : JSON.pretty_generate(payload))
     0
   end
 
   private
 
-  def payload = base.merge(coupling).merge(sections.compact)
+  def payload = about.merge(base).merge(coupling).merge(sections.compact)
+
+  def about
+    project = @view.project
+    { version: SCHEMA, packaging: @view.graph&.packaging, targets: project.directories, files: project.files.size }
+  end
 
   def base = { findings: @view.findings.all.map { rendered(it) }, accepted: accepted }
 

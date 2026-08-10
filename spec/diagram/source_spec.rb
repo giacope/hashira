@@ -1,12 +1,15 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Diagram::Source) do
-  it "renders dot with weighted labeled edges" do
+  it "renders dot with weighted labeled edges, declaring every package first" do
     with_pipeline do |_project, graph, _findings|
       output = capture { described_class.new(graph, :dot).print }
       expect(output).to(eq(<<~DOT))
         digraph hashira {
           rankdir=LR;
+          "alpha";
+          "beta";
+          "core";
           "alpha" -> "beta" [label="1"];
           "alpha" -> "core" [label="1"];
           "beta" -> "alpha" [label="2"];
@@ -15,29 +18,43 @@ RSpec.describe(Hashira::Diagram::Source) do
     end
   end
 
-  it "renders mermaid with sanitized identifiers" do
+  it "renders mermaid with generated identifiers, declaring every package first" do
     with_pipeline do |_project, graph, _findings|
       output = capture { described_class.new(graph, :mermaid).print }
       expect(output).to(eq(<<~MERMAID))
         graph LR
-          alpha["alpha"] -->|1| beta["beta"]
-          alpha["alpha"] -->|1| core["core"]
-          beta["beta"] -->|2| alpha["alpha"]
+          p0["alpha"]
+          p1["beta"]
+          p2["core"]
+          p0 -->|1| p1
+          p0 -->|1| p2
+          p1 -->|2| p0
       MERMAID
     end
   end
 
-  it "sanitizes non-word characters in mermaid identifiers" do
+  it "keeps a package that has no edges at all, which the picture used to lose" do
     files = {
-      "lib/app/loose.rb" => "module App; class Loose; def c = Alpha::One; end; end\n",
-      "lib/app/alpha/one.rb" => "module App; module Alpha; class One; def a = 1; end; end; end\n"
+      "lib/app/alpha/one.rb" => "module App; module Alpha; class One; def a = Beta::Two; end; end; end\n",
+      "lib/app/beta/two.rb" => "module App; module Beta; class Two; def b = 1; end; end; end\n",
+      "lib/app/lonely/x.rb" => "module App; module Lonely; class X; def c = 1; end; end; end\n"
     }
     analyze(files) do |_project, _census, graph|
-      output =
-        capture do
-          described_class.new(graph, :mermaid).print
-        end
-      expect(output).to(include('_root_["(root)"] -->|1| alpha["alpha"]'))
+      expect(capture { described_class.new(graph, :dot).print }).to(include(%(  "lonely";)))
+      expect(capture { described_class.new(graph, :mermaid).print }).to(include(%(["lonely"])))
+    end
+  end
+
+  it "never collides two packages onto one node, whatever they are called" do
+    files = {
+      "lib/app/my-pkg/a.rb" => "module App; class A; def a = 1; end; end\n",
+      "lib/app/my_pkg/b.rb" => "module App; class B; def b = 1; end; end\n",
+      "lib/app/end/c.rb" => "module App; class C; def c = 1; end; end\n"
+    }
+    analyze(files) do |_project, _census, graph|
+      ids = capture { described_class.new(graph, :mermaid).print }.scan(/^  (p\d+)\[/)
+      expect(ids.flatten).to(eq(ids.flatten.uniq))
+      expect(ids.size).to(eq(graph.packages.size))
     end
   end
 end

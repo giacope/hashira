@@ -15,6 +15,10 @@ class Hashira::CLI
     ),
     Flag.new(name: "--json", mode: :json, text: ["shorthand for --format json"]),
     Flag.new(
+      name: "--compact", field: :compact,
+      text: ["emit JSON on one line, without the indentation", "meant for reading"]
+    ),
+    Flag.new(
       name: "--fail-on", arg: "KINDS", field: :fail_on, parse: FailOn, mode: :fail_on,
       text: [
         "exit 1 if findings exist; comma-separated",

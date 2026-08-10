@@ -65,7 +65,7 @@ class Hashira::CLI::Run
     Hashira::Report::View.new(
       project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
       complexity: @pipeline.complexity, duplication: @pipeline.duplication,
-      hotspots: @pipeline.hotspots, findings:, top: @options.top
+      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact
     )
   end
 end
