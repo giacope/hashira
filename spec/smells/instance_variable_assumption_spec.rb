@@ -22,6 +22,7 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     expect(message(finding)).to(include("reads instance variables never set in initialize", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["@late"]))
   end
+
   it "treats every read as an assumption when initialize is missing" do
     findings = assumed(<<~RUBY)
       module App
@@ -34,6 +35,7 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     RUBY
     expect(findings.first.evidence).to(eq(["@late"]))
   end
+
   it "excuses reads sheltered under any conditional assignment" do
     findings = assumed(<<~RUBY)
       module App
@@ -55,6 +57,7 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "excuses memoized reads, initialized writes, and module mixins" do
     findings = assumed(<<~RUBY)
       module App

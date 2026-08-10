@@ -15,10 +15,12 @@ RSpec.describe(Hashira::Duplication::Clones) do
       )
     end
   end
+
   it "finds no duplication in code that has none" do
     files = { "lib/app/solo/x.rb" => "module App\n module Solo\n class X\n def a = 1\n end\n end\n end\n" }
     duplication(files) { |clones| expect(clones.findings).to(be_empty) }
   end
+
   it "warns, via churn, when both sites of a clone change often" do
     duplication(FixtureHelper::DUPLICATION_FILES) do |clones|
       churn = Hashira::Churn.new("orders/checkout.rb" => 5, "billing/refund.rb" => 4)

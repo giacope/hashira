@@ -20,10 +20,12 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     files = rollup(scores: [score("a.rb", 3), score("a.rb", 4), score("b.rb", 2)], churn: { "a.rb" => 1, "b.rb" => 1 })
     expect(files.files.map { [it.file, it.cognitive] }).to(eq([["a.rb", 7], ["b.rb", 2]]))
   end
+
   it "charges a file the mass of every clone site it holds" do
     files = rollup(clusters: [cluster(10, "a.rb", "a.rb"), cluster(6, "a.rb", "b.rb")]).files
     expect(files.map { [it.file, it.duplication] }).to(contain_exactly(["a.rb", 26], ["b.rb", 6]))
   end
+
   it "ranks by cost times churn, so a cheap file edited constantly outranks a knot nobody opens" do
     knot = score("knot.rb", 20)
     busy = score("busy.rb", 5)
@@ -31,13 +33,16 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     expect(ranked.map(&:file)).to(eq(["busy.rb", "knot.rb"]))
     expect(ranked.map(&:rank)).to(eq([45, 20]))
   end
+
   it "falls back to ranking by cost alone when git tells it nothing" do
     ranked = rollup(scores: [score("a.rb", 2), score("b.rb", 9)], churn: {}).files
     expect(ranked.map { [it.file, it.churn, it.rank] }).to(eq([["b.rb", 0, 9], ["a.rb", 0, 2]]))
   end
+
   it "leaves out files that cost nothing" do
     expect(rollup(scores: [score("a.rb", 0)], churn: { "a.rb" => 7 }).files).to(be_empty)
   end
+
   it "zeroes the column of a skipped analyzer rather than breaking" do
     dupes = described_class.new(nil, duplication([cluster(9, "a.rb")]), Hashira::Churn.new({}))
     expect(dupes.files.map { [it.file, it.cognitive, it.duplication] }).to(eq([["a.rb", 0, 9]]))

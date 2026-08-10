@@ -11,6 +11,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+
   it "resolves through the enclosing namespace when the bare name is globally ambiguous" do
     files = {
       "app/controllers/admin/dashboard.rb" => "module Admin\n  class Dashboard\n    def s = Settings\n  end\nend\n",
@@ -21,6 +22,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
     end
   end
+
   it "refuses to guess when the nested candidate is claimed by several packages" do
     files = {
       "app/controllers/admin/dashboard.rb" => "module Admin\n  class Dashboard\n    def s = Settings\n  end\nend\n",
@@ -31,6 +33,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+
   it "walks outward through enclosing namespaces before falling back to top level" do
     files = {
       "lib/app/alpha/one.rb" => "module App\n  module Alpha\n    class One\n      def a = Helper\n    end\n  end\nend",
@@ -40,6 +43,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["alpha -> beta"]))
     end
   end
+
   it "resolves a superclass outside the scope the class itself opens" do
     files = {
       "app/one/child.rb" => "class Child < Base\n  def a = 1\nend\n",
@@ -50,6 +54,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["one -> two"]))
     end
   end
+
   it "resolves a ::-anchored reference at top level, not through nesting" do
     files = {
       "app/models/user.rb" => "class User\n  def u = 1\nend\n",
@@ -61,6 +66,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
     end
   end
+
   it "resolves a constant under a namespaced class through the enclosing scope" do
     files = {
       "app/controllers/admin/dashboard.rb" =>
@@ -73,6 +79,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
     end
   end
+
   it "anchors a compact reopen of a top-level class at top level" do
     files = {
       "app/models/foo.rb" => "class Foo\n  def f = 1\nend\n",
@@ -84,6 +91,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["Foo -> Helper"]))
     end
   end
+
   it "keeps a compact definition under an enclosing namespace that defines it" do
     files = {
       "lib/app/core.rb" => "module App\n  module Core\n    def self.c = 1\n  end\nend\n",
@@ -94,6 +102,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(census.origins).to(have_key("Core::Thing"))
     end
   end
+
   it "resolves a constant assigned in the enclosing class, not a foreign namesake" do
     files = {
       "lib/app/session/lineage.rb" => <<~RUBY,
@@ -122,6 +131,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+
   it "leaves a bare core constant to Ruby, not a namespaced namesake" do
     files = {
       "app/models/tracker.rb" => "class Tracker\n  def pattern = Regexp\nend\n",
@@ -131,6 +141,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+
   it "still couples to a core class the project reopens at top level" do
     files = {
       "app/ext/string.rb" => "class String\n  def shout = upcase\nend\n",
@@ -140,6 +151,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["models -> ext"]))
     end
   end
+
   it "lets a lexical namesake shadow a core constant, as Ruby does" do
     files = {
       "app/nodes/sql/regexp.rb" => "module Sql\n  class Regexp\n    def r = 1\n  end\nend\n",
@@ -149,6 +161,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["visitors -> nodes"]))
     end
   end
+
   it "does not pin an unknown path to a namespace known only by suffix" do
     files = {
       "app/models/billing/stripe/client.rb" =>

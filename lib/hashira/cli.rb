@@ -17,7 +17,7 @@ class Hashira::CLI
   def self.usage?(options) = Usage::PAGES.include?(options.mode)
 
   def self.failure(error)
-    warn("hashira: #{error.message}")
+    Kernel.warn("hashira: #{error.message}")
     MISUSE
   end
 

@@ -25,6 +25,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters.first.mass).to(eq(23))
     expect(clusters.first.canonical.range).to(eq("a.rb:1-5"))
   end
+
   it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
     drifted = {
       "c.rb" => "def c(g)\n g.configure(fetch(:h), fetch(:p))\n g.connect(3, 30)\n g.warn(:slow)\n " \
@@ -34,11 +35,13 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(cluster.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
     expect(cluster.mass).to(eq(23))
   end
+
   it "pulls a near-miss variant into the cluster as a distinct site" do
     cluster = clusters(near).first
     expect(cluster.size).to(eq(2))
     expect(cluster.sites.map(&:types).uniq.size).to(eq(2))
   end
+
   it "suppresses a near-miss below the raised near-miss floor" do
     small = {
       "e.rb" => "def a(r)\n r.setup(fetch(:h))\n r.run(fetch(:p))\n r.close(:done)\nend\n",
@@ -46,6 +49,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     }
     expect(clusters(small)).to(be_empty)
   end
+
   it "clusters a lone expression big enough to stand on its own" do
     body =
       lambda do |icon, label|
@@ -57,6 +61,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     }
     expect(clusters(helper).first.sites.map(&:range)).to(contain_exactly("a.rb:3-3", "b.rb:3-3"))
   end
+
   it "holds a match that shares nothing but its shape to the near-miss floor" do
     coincidence = {
       "i.rb" => "def a(path)\n path.each_cons(2).min_by { |from, to| weight(from, to) }\nend\n",
@@ -64,10 +69,12 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     }
     expect(clusters(coincidence)).to(be_empty)
   end
+
   it "ignores trivial fragments below the mass floor" do
     tiny = { "g.rb" => "def a\n x\n y\nend\n", "h.rb" => "def b\n x\n y\nend\n" }
     expect(clusters(tiny)).to(be_empty)
   end
+
   it "does not report a single method's own overlapping windows as duplication" do
     solo = {
       "s.rb" => "def m(g)\n g.a(fetch(:x), fetch(:y))\n g.b(fetch(:x), fetch(:y))\n " \

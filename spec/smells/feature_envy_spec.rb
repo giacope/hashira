@@ -20,6 +20,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(message(finding)).to(include("refers to 'order' more than to self", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["order (line 5)"]))
   end
+
   it "counts compound assignments against the assigned name" do
     findings = envy(<<~RUBY)
       module App
@@ -37,6 +38,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#bump"]))
     expect(findings.flat_map(&:evidence)).to(eq(["count (lines 5, 6)"]))
   end
+
   it "lists every equally envied receiver with plural line evidence" do
     findings = envy(<<~RUBY)
       module App
@@ -56,6 +58,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(message(findings.first)).to(include("'left', 'right'"))
     expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)"]))
   end
+
   it "stays quiet when self is referenced at least as often" do
     findings = envy(<<~RUBY)
       module App
@@ -70,6 +73,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "skips singleton methods, module functions, and methods with no self reference" do
     findings = envy(<<~RUBY)
       module App
@@ -93,6 +97,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "counts self, super, and explicit self receivers as self references" do
     findings = envy(<<~RUBY)
       module App
@@ -109,6 +114,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "does not count constructor calls against the receiver" do
     findings = envy(<<~RUBY)
       module App
@@ -123,6 +129,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "stays quiet about a name type-guarded against constants the codebase does not define" do
     findings = envy(<<~RUBY)
       module App
@@ -139,6 +146,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags a name guarded against a class the codebase defines, even by suffix" do
     findings = sniffed(
       {
@@ -168,6 +176,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     )
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#widen"]))
   end
+
   it "reads case/when type dispatch as a guard too" do
     findings = envy(<<~RUBY)
       module App
@@ -186,6 +195,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "stays quiet about wire data read only through literal keys" do
     findings = envy(<<~RUBY)
       module App
@@ -201,6 +211,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags hash-like access once a key is computed or the name is reassigned" do
     findings = envy(<<~RUBY)
       module App
@@ -227,6 +238,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick", "App::Zone::Thing#bump", "App::Zone::Thing#scoop"]))
   end
+
   it "stays quiet about a stateless converter that ends by building a typed object" do
     findings = envy(<<~RUBY)
       module App
@@ -241,6 +253,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags a constructor tail once the method touches instance state" do
     findings = envy(<<~RUBY)
       module App
@@ -256,6 +269,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#absorb"]))
   end
+
   it "stays quiet about a structure the method itself builds from a literal" do
     findings = envy(<<~RUBY)
       module App
@@ -274,6 +288,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags a name loaded from elsewhere and leaned on" do
     findings = envy(<<~RUBY)
       module App
@@ -290,6 +305,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#sweep"]))
   end
+
   it "reads values_at and dig with literal keys as wire access" do
     findings = envy(<<~RUBY)
       module App
@@ -305,6 +321,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "treats a value derived from a foreign name or constant as foreign too" do
     findings = envy(<<~RUBY)
       module App
@@ -328,6 +345,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags a value built by a class the codebase defines" do
     findings = sniffed(
       {
@@ -357,6 +375,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     )
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#wield"]))
   end
+
   it "stays quiet about an exception rescued from foreign or implied classes" do
     findings = envy(<<~RUBY)
       module App
@@ -376,6 +395,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "still flags an exception rescued from a class the codebase defines" do
     findings = envy(<<~RUBY)
       module App
@@ -396,6 +416,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#guard"]))
   end
+
   it "reads dispatch through a table keyed by foreign classes as a guard" do
     findings = envy(<<~RUBY)
       module App
@@ -413,6 +434,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "keeps flagging when the table's keys are owned, mixed, absent, or not a table at all" do
     findings = envy(<<~RUBY)
       module App

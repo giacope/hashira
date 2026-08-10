@@ -19,6 +19,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     expect(finding.package).to(eq("App::Zone::Thing#shout"))
     expect(message(finding)).to(include("touches no instance state", "zone/thing.rb:4"))
   end
+
   it "leaves private helpers, module functions, and singleton methods alone" do
     findings = utility(<<~RUBY)
       module App
@@ -41,6 +42,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "exempts methods defined inside class << self" do
     findings = utility(<<~RUBY)
       module App
@@ -57,6 +59,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "requires at least one call and zero self references" do
     findings = utility(<<~RUBY)
       module App

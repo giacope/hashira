@@ -20,6 +20,7 @@ RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
     expect(message(finding)).to(include("repeats identical calls", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["@other.thing(1) × 2 (line 5)"]))
   end
+
   it "tracks safe navigation, receiverless argument calls, and block passes" do
     findings = repeated(<<~RUBY)
       module App
@@ -54,6 +55,7 @@ RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
       )
     )
   end
+
   it "flags identical literal blocks once, and shared calls whose blocks differ" do
     findings = repeated(<<~RUBY)
       module App
@@ -87,6 +89,7 @@ RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
       )
     )
   end
+
   it "excuses constructors, bare calls, and calls that differ in arguments" do
     findings = repeated(<<~RUBY)
       module App

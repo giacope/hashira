@@ -30,6 +30,7 @@ RSpec.describe(Hashira::Smells::TooManyInstanceVariables) do
     expect(message(finding)).to(include("holds 5 instance variables", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(%w[@a @b @c @d @e]))
   end
+
   it "does not count memoization, repeats, or module state" do
     findings = crowded(<<~RUBY)
       module App

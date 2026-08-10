@@ -30,6 +30,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
     expect(message(finding)).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["@mode == :x × 3 (lines 4, 7, 12)"]))
   end
+
   it "tolerates two repeats, block_given?, and predicateless cases" do
     findings = branchy(<<~RUBY)
       module App
@@ -57,6 +58,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "skips modules and nested classes it does not own" do
     findings = branchy(<<~RUBY)
       module App

@@ -10,12 +10,14 @@ RSpec.describe(Hashira::CLI) do
       expect(output).to(include("Package (folder) metrics for lib/app"))
     end
   end
+
   it "prints help and version without analysing anything" do
     help = capture { expect(described_class.run(["--help"])).to(eq(0)) }
     expect(help).to(include("Usage: hashira"))
     version = capture { expect(described_class.run(["--version"])).to(eq(0)) }
     expect(version).to(eq("hashira #{Hashira::VERSION}\n"))
   end
+
   it "dispatches --json, --format dot, and --fail-on" do
     within(FixtureHelper::CYCLIC_FILES) do
       json = capture { expect(described_class.run(["lib/app", "--json"])).to(eq(0)) }
@@ -26,6 +28,7 @@ RSpec.describe(Hashira::CLI) do
       expect(gate).to(include("Gate FAILED"))
     end
   end
+
   it "refuses to ratchet without a baseline" do
     within(FixtureHelper::CYCLIC_FILES) do
       status = nil
@@ -33,6 +36,7 @@ RSpec.describe(Hashira::CLI) do
       expect(status).to(eq(2))
     end
   end
+
   it "skips an analyzer on request" do
     within(FixtureHelper::COMPLEX_FILES) do
       slim = capture { expect(described_class.run(["lib/app", "--skip", "complexity"])).to(eq(0)) }
@@ -45,6 +49,7 @@ RSpec.describe(Hashira::CLI) do
       expect(pruned).to(include("Package (folder) metrics"))
     end
   end
+
   it "drops the hotspot rollup when both analyzers feeding it are skipped" do
     within(FixtureHelper::COMPLEX_FILES) do
       lone =
@@ -55,12 +60,14 @@ RSpec.describe(Hashira::CLI) do
       expect(lone).not_to(include("Hotspots"))
     end
   end
+
   it "gates on cognitive complexity findings" do
     within(FixtureHelper::COMPLEX_FILES) do
       gate = capture { expect(described_class.run(["lib/app", "--fail-on", "complexity"])).to(eq(1)) }
       expect(gate).to(include("Gate FAILED"))
     end
   end
+
   it "round-trips the ratchet: update then check" do
     within(FixtureHelper::CYCLIC_FILES) do
       capture do
@@ -70,6 +77,7 @@ RSpec.describe(Hashira::CLI) do
       expect(File).to(exist("hashira_baseline.json"))
     end
   end
+
   it "reports unreadable files as a friendly error" do
     within("lib/app/thing.rb" => "class Thing; def x = 1; end") do
       File.chmod(0o000, "lib/app/thing.rb")
@@ -80,6 +88,7 @@ RSpec.describe(Hashira::CLI) do
       File.chmod(0o644, "lib/app/thing.rb")
     end
   end
+
   it "points a bare run in a Rails root at app, without changing what it analyzes" do
     files = { "lib/mygem/x.rb" => "class X; def a = 1; end\n", "config/application.rb" => "" }
     within(files) do
@@ -89,6 +98,7 @@ RSpec.describe(Hashira::CLI) do
       end
     end
   end
+
   it "says nothing about churn when the analyzed repo has history" do
     within("lib/app/x.rb" => "class X; def a = 1; end\n") do
       git("init", "-q")
@@ -99,6 +109,7 @@ RSpec.describe(Hashira::CLI) do
       end
     end
   end
+
   it "says when a file did not parse, instead of quietly analyzing a partial tree" do
     files = {
       "lib/app/good.rb" => "class Good; def a = 1; end\n",
@@ -111,6 +122,7 @@ RSpec.describe(Hashira::CLI) do
       end
     end
   end
+
   it "refuses a baseline it cannot read, and an unwritable one" do
     within("lib/app/x.rb" => "class X; def a = 1; end\n", "b.json" => "{ oops") do
       expect { expect(described_class.run(["lib/app", "--baseline", "b.json"])).to(eq(2)) }
@@ -119,11 +131,13 @@ RSpec.describe(Hashira::CLI) do
         .to(output(%r{cannot write nope/b\.json}).to_stderr)
     end
   end
+
   it "prints user-facing errors to stderr and exits 2 for misuse" do
     expect do
       expect(described_class.run(["missing_directory"])).to(eq(2))
     end.to(output("hashira: no such directory: missing_directory\n").to_stderr)
   end
+
   it "turns an unexpected failure into an exit 70 and a line worth reporting" do
     expect do
       expect(described_class.run([nil])).to(eq(70))

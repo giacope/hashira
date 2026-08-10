@@ -28,6 +28,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     )
     expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:4"))
   end
+
   it "reaches methods defined inside blocks and class << self" do
     findings = checked(<<~RUBY)
       module App
@@ -46,6 +47,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#check", "App::Zone::Thing.peek"]))
   end
+
   it "ignores comparisons that never involve nil" do
     findings = checked(<<~RUBY)
       module App

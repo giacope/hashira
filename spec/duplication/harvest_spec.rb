@@ -11,23 +11,28 @@ RSpec.describe(Hashira::Duplication::Harvest) do
       )
     )
   end
+
   it "extracts a one-line method, which has no statement run of its own" do
     fragment = fragments("m.rb" => "def m = a\n").find { it.types.first == :def_node }
     expect(fragment.range).to(eq("m.rb:1-1"))
     expect(fragment.types).to(eq(%i[def_node statements_node call_node]))
   end
+
   it "extracts a when arm and a rescue clause as whole nodes" do
     ranges = ranges("m.rb" => "case x\nwhen 1 then a\nend\nbegin\n b\nrescue Foo\n c\nend\n")
     expect(ranges).to(include("m.rb:2-2", "m.rb:6-7"))
   end
+
   it "skips a sequence of identically shaped statements — a list, not a clone" do
     ranges = ranges("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\nrequire \"d\"\n")
     expect(ranges).to(be_empty)
   end
+
   it "skips the list even when a statement of another shape follows it" do
     ranges = ranges("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\nmodule M\nend\n").uniq
     expect(ranges).to(contain_exactly("m.rb:4-5"))
   end
+
   it "windows each side of a list on its own, never across it" do
     body = "def m\n a(1)\n b = 2\n c(:x)\n c(:y)\n c(:z)\n d(1, 2)\n e = f\nend\n"
     ranges = ranges("m.rb" => body).uniq
@@ -38,11 +43,13 @@ RSpec.describe(Hashira::Duplication::Harvest) do
       )
     )
   end
+
   it "caps window length so the fragment count stays linear in the sequence length" do
     body = (1..40).map { |i| i.even? ? "a#{i}(#{i})" : "b#{i} = c#{i}" }.join("\n ")
     count = fragments("m.rb" => "def m\n #{body}\nend\n").size
     expect(count).to(be < 450)
   end
+
   it "exposes a fragment's type sequence, location, and range" do
     fragment = fragments("m.rb" => "def m\n a\n b(1)\nend\n").find { it.range == "m.rb:2-3" }
     expect(fragment.types).to(eq(%i[call_node call_node arguments_node integer_node]))
@@ -50,10 +57,12 @@ RSpec.describe(Hashira::Duplication::Harvest) do
     expect(fragment.range).to(eq("m.rb:2-3"))
     expect(fragment.rank).to(eq(["m.rb", 2]))
   end
+
   it "knows when two fragments overlap within the same file" do
     early, late = fragments("m.rb" => "def m\n a\n b(1)\n c\nend\n").select { |f| f.mass == 4 }.sort_by(&:line)
     expect(early.overlaps?(late)).to(be(true))
   end
+
   it "treats fragments in different files as non-overlapping" do
     here = fragments("a.rb" => "def m\n a\n b(1)\nend\n").first
     there = fragments("b.rb" => "def m\n a\n b(1)\nend\n").first

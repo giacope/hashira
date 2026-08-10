@@ -13,6 +13,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       expect(output).to(include("+ 26 single-type leaf packages"))
     end
   end
+
   it "keeps a depended-upon single-type package visible past the limit" do
     files = hub(26).merge(
       "app/models/shared.rb" => "class Shared\n  def s = 1\nend\n",
@@ -26,6 +27,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       expect(output).not_to(include("Leaf3 "))
     end
   end
+
   def chain(count)
     (1..count).to_h do |n|
       ["app/models/p#{n}.rb", "class P#{n}\n  def go = P#{(n % count) + 1}.new\nend\n"]
@@ -38,11 +40,13 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       expect(output.lines.count { it.match?(/^P\d/) }).to(eq(2))
     end
   end
+
   it "says nothing about withheld rows when every row fits" do
     analyze(hub(3), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       expect(capture { described_class.new(graph).print }).not_to(include("more —"))
     end
   end
+
   it "keeps every row while the table fits" do
     analyze(hub(3), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       output = capture { described_class.new(graph).print }
@@ -50,6 +54,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       expect(output).not_to(include("leaf packages"))
     end
   end
+
   it "prints each fold under the coupling section" do
     files = FixtureHelper::RAILS_FILES.merge(FixtureHelper::SANDBOX_FILES)
     within(files) do

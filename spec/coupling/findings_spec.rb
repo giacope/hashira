@@ -17,6 +17,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(finding.evidence).to(include("alpha/one.rb:4: Beta::Two"))
     end
   end
+
   it "reports each distinct loop once, from its smallest member" do
     verdicts(FixtureHelper::CYCLIC_FILES) do |all|
       cycles = all.select { it.kind == "cycle" }
@@ -24,6 +25,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(cycles.first.package).to(eq("alpha"))
     end
   end
+
   it "pluralizes a multi-ref weakest edge" do
     files = {
       "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
@@ -34,6 +36,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(message(cycle)).to(include("(2 refs)."))
     end
   end
+
   it "reports SDP violations with instabilities and evidence" do
     verdicts(FixtureHelper::CYCLIC_FILES) do |all|
       violations = all.select { it.kind == "sdp_violation" }
@@ -44,6 +47,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(finding.evidence).to(include("beta/two.rb:4: Alpha::One"))
     end
   end
+
   it "reports a package whose clients split into audiences, naming the seam" do
     files = {
       "lib/app/core/walk.rb" => "module App; module Core; class Walk; def a = 1; end; end; end\n",
@@ -68,6 +72,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(finding.evidence.size).to(eq(4))
     end
   end
+
   it "reports disjoint audiences without a shared base layer" do
     files = {
       "lib/app/core/walk.rb" => "module App; module Core; class Walk; def a = 1; end; end; end\n",
@@ -89,6 +94,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(message(finding)).to(eq(message))
     end
   end
+
   it "reports an edge too wide for one interface" do
     files = {
       "lib/app/core/a.rb" => "module App; module Core; class A; def a = 1; end; end; end\n",
@@ -110,6 +116,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(finding.evidence.size).to(eq(4))
     end
   end
+
   it "reports a roll-call of words kept in sync across packages" do
     files = {
       "lib/app/one/a.rb" => "module One; class A; KINDS = %w[red blue lime]; def a = KINDS; end; end\n",
@@ -127,6 +134,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       expect(finding.evidence).to(eq(["one/a.rb", "three/c.rb", "two/b.rb"]))
     end
   end
+
   it "lists findings in rule order" do
     verdicts(FixtureHelper::CYCLIC_FILES) do |all|
       expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation utility_function]))

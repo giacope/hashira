@@ -10,6 +10,7 @@ RSpec.describe(Hashira::Report::ComplexityTable) do
       expect(output).to(match(/App::Knot::Tangle\s+12\s+3\s+12/))
     end
   end
+
   it "omits methods and classes that score zero" do
     complexity(FixtureHelper::COMPLEX_FILES) do |scores|
       output = capture { described_class.new(scores).print }

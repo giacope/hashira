@@ -15,6 +15,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(report["files"]).to(eq(3))
     end
   end
+
   it "emits one line under --compact, and the same data either way" do
     with_pipeline do |project, graph, findings|
       dense = capture { described_class.new(view(project, graph, findings, compact: true)).print }
@@ -22,6 +23,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(JSON.parse(dense)).to(eq(emit(view(project, graph, findings))))
     end
   end
+
   it "emits packages sorted by instability, edges with evidence, and findings" do
     with_pipeline do |project, graph, findings|
       report = emit(view(project, graph, findings))
@@ -37,6 +39,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(report["findings"].map { it["kind"] }).to(eq(kinds))
     end
   end
+
   it "lists folds when packaging folded packages, and an empty list otherwise" do
     with_pipeline do |project, graph, findings|
       expect(emit(view(project, graph, findings))["folds"]).to(eq([]))
@@ -48,6 +51,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(report["folds"]).to(include("from" => "SandboxResource", "to" => "Sandbox", "via" => "suffix"))
     end
   end
+
   it "omits analyzer keys that were skipped" do
     with_pipeline do |project, graph, findings|
       report = emit(view(project, graph, findings))
@@ -55,6 +59,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(report).not_to(have_key("duplication"))
     end
   end
+
   it "omits coupling keys when no graph is present" do
     within(FixtureHelper::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
@@ -64,6 +69,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
     end
   end
+
   it "includes duplication clusters when supplied" do
     within(FixtureHelper::DUPLICATION_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))

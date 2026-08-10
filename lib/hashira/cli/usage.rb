@@ -42,7 +42,7 @@ module Hashira::CLI::Usage
   end
 
   def emit(output)
-    puts(output)
+    $stdout.puts(output)
     0
   end
 end

@@ -1,108 +1,20 @@
-plugins:
-  - rubocop-elegant
-  - rubocop-rspec
-  - rubocop-performance
-  - rubocop-packaging
-  - rubocop-thread_safety
+inherit_from: .rubocop_todo.yml
 
-require:
-  - ./.rubocop/cop/hashira/agent_noun.rb
-  - ./.rubocop/cop/hashira/io_discipline.rb
-  - ./.rubocop/cop/hashira/no_comments.rb
-  - ./.rubocop/cop/hashira/prose_placement.rb
+plugins:
+  - rubocop-kata
 
 AllCops:
   TargetRubyVersion: 3.4
-  NewCops: enable
-  Exclude:
-    - "vendor/**/*"
 
-Style/Documentation:
-  Enabled: false
-
-Style/StringLiterals:
-  EnforcedStyle: double_quotes
-
-Style/StringLiteralsInInterpolation:
-  EnforcedStyle: double_quotes
-
-Style/ItBlockParameter:
-  EnforcedStyle: only_numbered_parameters
-
-Style/FormatStringToken:
-  EnforcedStyle: unannotated
-
-RSpec/ExampleLength:
-  Enabled: false
-
-RSpec/MultipleExpectations:
-  Enabled: false
-
-RSpec/SpecFilePathFormat:
-  Enabled: false
-
-RSpec/EmptyLineAfterExample:
-  Enabled: false
-
-RSpec/EmptyLineAfterExampleGroup:
-  Enabled: false
-
-Layout/LineLength:
-  Max: 120
-
-Layout/LineEndStringConcatenationIndentation:
-  EnforcedStyle: indented
-
-Metrics/BlockLength:
-  Exclude:
-    - "spec/**/*"
-    - "hashira.gemspec"
-
-
-Metrics/ClassLength:
-  Max: 100
-
-Metrics/ModuleLength:
-  Max: 100
-  Exclude:
-    - "spec/**/*"
-
-Metrics/MethodLength:
-  Max: 5
-  Exclude:
-    - "spec/**/*"
-
-Metrics/ParameterLists:
-  Max: 4
-  CountKeywordArgs: true
-  Exclude:
-    - "spec/**/*"
-
-Style/EndlessMethod:
-  EnforcedStyle: allow_single_line
-
-Naming/RescuedExceptionsVariableName:
-  PreferredName: error
-
-Hashira/AgentNoun:
-  Include:
-    - "lib/**/*"
+Kata/AgentNoun:
   AllowedNames:
     - Cluster
     - ControlParameter
     - Error
     - Roster
 
-Hashira/IoDiscipline:
-  Include:
-    - "lib/hashira/report/**/*"
-    - "lib/hashira/ci/**/*"
-
-Hashira/NoComments:
-  Include:
-    - "lib/**/*"
-
-Hashira/ProsePlacement:
+Kata/ProsePlacement:
+  Enabled: true
   Include:
     - "lib/**/*"
   Exclude:
@@ -110,34 +22,3 @@ Hashira/ProsePlacement:
     - "lib/hashira/ci/**/*"
     - "lib/hashira/cli/flags.rb"
     - "lib/hashira/cli/usage.rb"
-
-Elegant/NoComments:
-  Enabled: false
-
-Elegant/NoEmptyLinesInBlocks: &heredoc_fixtures
-  Exclude:
-    - "spec/coupling/census_spec.rb"
-    - "spec/coupling/graph_spec.rb"
-    - "spec/analysis/syntax_spec.rb"
-    - "spec/ci/gate_spec.rb"
-    - "spec/ci/ratchet_spec.rb"
-    - "spec/diagram/source_spec.rb"
-    - "spec/rubocop/agent_noun_spec.rb"
-    - "spec/rubocop/io_discipline_spec.rb"
-    - "spec/rubocop/no_comments_spec.rb"
-    - "spec/rubocop/prose_placement_spec.rb"
-    - "spec/readme_spec.rb"
-    - "spec/report/text_spec.rb"
-    - "spec/smells/*_spec.rb"
-
-Elegant/NoEmptyLinesInMethods: *heredoc_fixtures
-
-Style/StaticClass:
-  Enabled: false
-
-RSpec/VerifiedDoubles:
-  Enabled: true
-
-ThreadSafety/DirChdir:
-  Exclude:
-    - "spec/**/*"

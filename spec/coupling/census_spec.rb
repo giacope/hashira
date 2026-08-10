@@ -50,6 +50,7 @@ RSpec.describe(Hashira::Coupling::Census) do
       expect(census.types["alpha"]).to(eq(2))
     end
   end
+
   it "counts every class but only def-bearing modules as types" do
     files = {
       "lib/app/alpha/one.rb" => <<~RUBY,

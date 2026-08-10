@@ -24,6 +24,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
     expect(message(finding)).to(include("passes the same parameters", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["(alfa, bravo) → 3 methods: one, two, three"]))
   end
+
   it "counts keyword parameters and ignores singleton methods" do
     findings = clumped(<<~RUBY)
       module App
@@ -42,6 +43,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
     RUBY
     expect(findings.first.evidence).to(eq(["(alfa, bravo) → 3 methods: one, two, three"]))
   end
+
   it "ignores block parameters but counts destructured components" do
     findings = clumped(<<~RUBY)
       module App
@@ -64,6 +66,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
     RUBY
     expect(findings.flat_map(&:evidence)).to(eq(["(echo, foxtrot) → 3 methods: four, five, six"]))
   end
+
   it "needs at least two shared names in at least three methods" do
     findings = clumped(<<~RUBY)
       module App

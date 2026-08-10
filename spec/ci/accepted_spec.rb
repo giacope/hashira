@@ -21,25 +21,30 @@ RSpec.describe(Hashira::CI::Accepted) do
       expect(screened.accepted).to(eq([[finding, "usage conformance-tests the CLI"]]))
     end
   end
+
   it "supplies a placeholder reason when none is recorded" do
     screened = described_class.new([{ "kind" => "cycle", "package" => "app" }]).screen([finding])
     expect(screened.accepted.first.last).to(eq("accepted (no reason recorded)"))
   end
+
   it "keeps a clone accepted by digest when its lines move" do
     entry = { "kind" => "duplication", "digest" => "a3f9c1", "reason" => "generated, both sides regenerate" }
     moved = finding(kind: "duplication", package: "orders.rb:91", digest: "a3f9c1")
     expect(accepting(entry).screen([moved]).all).to(be_empty)
   end
+
   it "refuses to accept a clone named by position, since the position is not its identity" do
     entry = { "kind" => "duplication", "package" => "orders.rb:4", "reason" => "generated" }
     clone = finding(kind: "duplication", package: "orders.rb:4", digest: "a3f9c1")
     expect(accepting(entry).screen([clone]).all.size).to(eq(1))
   end
+
   it "does not accept a different clone that happens to sit where an accepted one did" do
     entry = { "kind" => "duplication", "digest" => "a3f9c1", "reason" => "generated" }
     other = finding(kind: "duplication", package: "orders.rb:4", digest: "ffffff")
     expect(accepting(entry).screen([other]).all.size).to(eq(1))
   end
+
   it "screens nothing without a baseline file" do
     screened = described_class.load("nope.json").screen([finding])
     expect(screened.all.size).to(eq(1))

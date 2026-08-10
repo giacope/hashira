@@ -11,6 +11,7 @@ RSpec.describe(Hashira::Smells::Report) do
       expect(trimmed.findings.map(&:kind)).not_to(include("utility_function"))
     end
   end
+
   it "honours visibility markers in all their spellings" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY
@@ -45,6 +46,7 @@ RSpec.describe(Hashira::Smells::Report) do
     findings = sniffed(files, "utility_function")
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#open"]))
   end
+
   it "names singleton subjects with a dot and instance subjects with a hash" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY
@@ -66,6 +68,7 @@ RSpec.describe(Hashira::Smells::Report) do
     findings = sniffed(files, "manual_dispatch")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing.probe App::Zone::Thing#poke]))
   end
+
   it "handles every parameter shape when hunting control parameters" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY

@@ -16,10 +16,12 @@ RSpec.describe(Hashira::Smells::BoundarySprawl) do
       )
     )
   end
+
   it "stays quiet below the method floor or when the sprawl sits in too few files" do
     expect(sniffed(spread(methods: 11, files: 3), "boundary_sprawl")).to(be_empty)
     expect(sniffed(spread(methods: 12, files: 2), "boundary_sprawl")).to(be_empty)
   end
+
   it "never counts a type the codebase defines" do
     files = spread(methods: 12, files: 3, tested: "Zone::Probe0")
     expect(sniffed(files, "boundary_sprawl")).to(be_empty)

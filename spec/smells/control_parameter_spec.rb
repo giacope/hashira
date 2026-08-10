@@ -24,6 +24,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(message(finding)).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
     expect(finding.evidence).to(eq(["quoted (line 5)"]))
   end
+
   it "flags comparisons, unless, case, and boolean guards on the parameter" do
     findings = steered(<<~RUBY)
       module App
@@ -56,6 +57,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
       eq(%w[App::Zone::Thing#pick App::Zone::Thing#veto App::Zone::Thing#sort App::Zone::Thing#bump])
     )
   end
+
   it "sees destructured parameters" do
     findings = steered(<<~RUBY)
       module App
@@ -74,6 +76,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     RUBY
     expect(findings.flat_map(&:evidence)).to(eq(["mode (line 5)"]))
   end
+
   it "accepts parameters that also do real work" do
     findings = steered(<<~RUBY)
       module App
@@ -103,6 +106,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     RUBY
     expect(findings).to(be_empty)
   end
+
   it "reports each controlling parameter with every deciding line" do
     findings = steered(<<~RUBY)
       module App
