@@ -5,6 +5,74 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-08-10
+
+### Added
+
+- **The ratchet compares magnitudes, not just identities.** The baseline now
+  records a value beside each finding's signature — cognitive complexity,
+  clone-cluster mass — so a baselined method that gets measurably worse fails
+  the build instead of hiding behind set membership. On a legacy codebase this
+  is the case the ratchet exists for: everything hot is already baselined on
+  day one.
+- **Exit codes stop meaning six different things.** 0 clean, 1 findings or a
+  caught regression, 2 misuse, 3 an improvement the baseline has not recorded,
+  70 internal error. Failing on 1 while treating 3 as a nudge blocks
+  regressions without blocking progress. Unexpected exceptions now print the
+  class, message, origin frame, and where to report — not a backtrace.
+- **The report says what produced it.** The heading names the packaging mode,
+  files Ruby itself rejects are counted and named on stderr instead of
+  contributing half-parsed trees silently, and a terminal run shows a sign of
+  life before the parse and a timing line after (never when stderr is not a
+  tty — stdout stays byte-identical).
+- `--top N` caps every list at once; the package table and findings list gain
+  a default cap of 25 with a note saying what was withheld. `--json` is never
+  capped.
+- `--compact` emits `--json` on one line instead of pretty-printed
+  indentation, and `--json` now opens with schema version, packaging, targets,
+  and file count.
+
+### Fixed
+
+- **Green no longer means unchecked.** `--fail-on ""` armed nothing and
+  passed; `--fail-on cycles --skip coupling` switched off the only analyzer
+  that finds cycles and announced there were none; a directory with no Ruby
+  files was congratulated on its healthy structure. All three now fail
+  loudly.
+- **The baseline guards the whole scope it was recorded under.** A baseline
+  recorded over four analyzers, compared against a run with `--skip smells`,
+  reported every smell finding as an improvement and suggested locking it in.
+  Schema 4 records analyzers and target directories, and the ratchet refuses
+  a mismatched run the same way the packaging guard already did.
+- Churn runs `git -C <directory>` instead of reading the working directory,
+  so analyzing a repo from anywhere else no longer zeroes every count and
+  silently reorders the hotspot queue. A run with no history says so; an
+  unreadable baseline is a one-line error, not nine frames of Ruby.
+- Five CLI misreadings: a file argument is named as a file (with the
+  directory to try), duplicate directories are deduplicated by realpath, a
+  gem whose lib holds only loose files is accepted, a value flag given twice
+  is not "unknown", and a diagram whose analyzer is skipped is refused
+  instead of drawn anyway.
+- Diagrams stop losing packages: mermaid/dot ids are generated so `my-pkg`
+  and `my_pkg` no longer merge (and a package named `end` no longer breaks
+  the grammar), and isolated packages appear instead of vanishing.
+- `Gate FAILED` names the kinds that actually fired, worst first, mirrored to
+  stderr; `--update-baseline` and `--ratchet` no longer report contradictory
+  totals for the same run.
+- Tables size their columns to their contents: long names clip in the middle
+  instead of pushing rows into ribbons, numeric columns right-align, and
+  trailing whitespace is gone.
+- An edgeless package prints "—" and sorts last instead of claiming I=0.00
+  beside genuine foundations.
+
+### Changed
+
+- The four house cops and shared style defaults moved to the published
+  `rubocop-kata` gem; `.rubocop.yml` keeps only project-specific config.
+- Docs: the `--fail-on` shorthands (`cycles`, `sdp`, `dupe`) are documented,
+  and a bare `hashira` in a Rails root notes once on stderr that `hashira app`
+  reads the application.
+
 ## [0.6.0] - 2026-08-05
 
 ### Changed
