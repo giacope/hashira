@@ -32,7 +32,7 @@ module Hashira
     end
 
     MethodContext =
-      Data.define(:owner, :node, :file, :section) do
+      Data.define(:owner, :node, :file, :section, :ownership) do
         def subject = "#{owner}#{singleton? ? "." : "#"}#{node.name}"
 
         def line = node.location.start_line

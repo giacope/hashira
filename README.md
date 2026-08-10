@@ -310,7 +310,13 @@ Findings (2):
 What each one catches:
 
 - **feature_envy** — a method refers to another object more than to itself; the
-  behavior probably belongs over there.
+  behavior probably belongs over there. Stays quiet when the method's own body
+  proves the envied thing is foreign — type-guarded (or table-dispatched) only
+  against constants the codebase never defines, read purely through literal
+  keys (`msg["id"]`), built from a literal or derived from a foreign call in
+  the method itself, rescued from a foreign error class, or consumed by a
+  stateless converter that ends by building a typed object — because "move
+  the method" needs a destination you own.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.

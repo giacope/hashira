@@ -9,7 +9,9 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def refs = @refs ||= Hashira::Smells::Refs.new(subject.node)
 
-  def envied = @envied ||= refs.envious
+  def envied = @envied ||= refs.envious.reject { foreign.dismiss?(it) }
+
+  def foreign = @foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
   def detail = { site:, names: envied }
 
