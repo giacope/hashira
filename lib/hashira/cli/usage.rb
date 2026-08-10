@@ -17,6 +17,10 @@ module Hashira::CLI::Usage
 
   FOOTER = <<~TEXT
 
+    Exit codes: 0 clean · 1 findings or a regression · 2 misuse
+    (bad flags, missing directory, unusable baseline) · 3 an
+    improvement the baseline has not recorded · 70 internal error.
+
     Findings accepted by design can be recorded in the baseline as
       "accepted": [{"kind": "...", "package": "...", "reason": "..."}]
     — they leave reports and gates, keeping a one-line reminder each.

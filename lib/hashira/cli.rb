@@ -1,18 +1,29 @@
 # frozen_string_literal: true
 
 class Hashira::CLI
+  MISUSE = 2
+  BROKEN = 70
+
   def self.run(argv)
-    options = Options.parse(argv)
-    usage?(options) ? Usage.public_send(options.mode) : new(options).run
+    dispatch(Options.parse(argv))
   rescue Hashira::Error => error
     failure(error)
+  rescue StandardError => error
+    crash(error)
   end
+
+  def self.dispatch(options) = usage?(options) ? Usage.public_send(options.mode) : new(options).run
 
   def self.usage?(options) = Usage::PAGES.include?(options.mode)
 
   def self.failure(error)
     warn("hashira: #{error.message}")
-    1
+    MISUSE
+  end
+
+  def self.crash(error)
+    Hashira::Report::Notices.new.crashed(error)
+    BROKEN
   end
 
   def initialize(options)

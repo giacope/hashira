@@ -454,6 +454,23 @@ record the decision: update the baseline, or accept it with a reason.
 Improvements fail the build too, and say so cheerfully — an unrecorded gain is one
 the next commit can quietly undo. Re-run `--update-baseline` to lock it in.
 
+### Exit codes
+
+A build step should be able to tell a regression from a typo without grepping
+English, so the codes are distinct:
+
+| code | meaning |
+| ---- | ------- |
+| `0`  | clean — nothing found, or nothing worse than the baseline |
+| `1`  | findings, or the ratchet found a regression |
+| `2`  | misuse — bad flags, missing directory, unusable baseline |
+| `3`  | an improvement the baseline has not recorded yet |
+| `70` | internal error, worth reporting |
+
+`3` is the one worth wiring specially: it means the code got better and only the
+baseline is stale. Failing on `1` while treating `3` as a nudge lets a build
+block regressions without blocking progress.
+
 ### Accepting by design
 
 Anything deliberate goes in the baseline with a reason. It leaves reports and

@@ -11,7 +11,7 @@ class Hashira::CI::RatchetReport
     return unchanged if quiet?(edges, findings)
     details(edges, findings)
     advice(edges, findings)
-    1
+    verdict(edges, findings)
   end
 
   private
@@ -20,8 +20,10 @@ class Hashira::CI::RatchetReport
 
   def unchanged
     @io.puts("Ratchet OK: #{@graph.edges.size} edges, #{@findings.size} findings, unchanged.")
-    0
+    Hashira::CI::Status::CLEAN
   end
+
+  def verdict(*diffs) = diffs.compact.any?(&:worse?) ? Hashira::CI::Status::WORSE : Hashira::CI::Status::BETTER
 
   def details(edges, findings)
     Hashira::CI::EdgeDiffReport.new(@graph, io: @io).print(edges)

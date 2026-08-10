@@ -93,7 +93,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
     with_graph do |graph|
       seed(findings: ["complexity:App::Knot#tangled"])
 
-      output = capture { expect(ratchet(graph, [], "baseline.json", io: $stdout).check).to(eq(1)) }
+      output = capture { expect(ratchet(graph, [], "baseline.json", io: $stdout).check).to(eq(3)) }
 
       expect(output).to(include("Findings resolved (improvement!): complexity:App::Knot#tangled"))
       expect(output).not_to(include("Ratchet FAILED"))
@@ -103,7 +103,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "fails but celebrates removed edges" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core", "beta -> alpha", "core -> alpha"], findings: [])
-      output = capture { expect(described_class.new(graph, [], "baseline.json").check).to(eq(1)) }
+      output = capture { expect(described_class.new(graph, [], "baseline.json").check).to(eq(3)) }
       expect(output).to(include("Edges removed (improvement!): core -> alpha"))
       expect(output).to(include("Lock it in: re-run this command with --update-baseline"))
       expect(output).not_to(include("Ratchet FAILED"))

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Notices
+  ISSUES = "https://github.com/giacope/hashira/issues"
+
   def initialize(io: $stderr)
     @io = io
   end
@@ -11,6 +13,12 @@ class Hashira::Report::Notices
 
   def churn(label)
     @io.puts("hashira: no git history for #{label} — hotspots are ranked by cost alone")
+  end
+
+  def crashed(error)
+    @io.puts("hashira: internal error — #{error.class}: #{error.message}")
+    @io.puts("  at #{error.backtrace.first}")
+    @io.puts("  this is a bug in hashira — please report it at #{ISSUES}")
   end
 
   def unparsed(count, sample)
