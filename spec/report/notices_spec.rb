@@ -9,6 +9,11 @@ RSpec.describe(Hashira::Report::Notices) do
     described_class.new(io:).churn("lib/app")
     expect(io.string).to(eq("hashira: no git history for lib/app — hotspots are ranked by cost alone\n"))
   end
+  it "points a bare run in a Rails root at the application" do
+    io = piped
+    described_class.new(io:).rails
+    expect(io.string).to(include("this looks like a Rails root", "hashira app"))
+  end
   it "names the files Prism could not parse, and how many there were" do
     io = piped
     described_class.new(io:).unparsed(4, "a.rb, b.rb, c.rb")

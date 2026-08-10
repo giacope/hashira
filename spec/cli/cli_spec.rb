@@ -80,6 +80,15 @@ RSpec.describe(Hashira::CLI) do
       File.chmod(0o644, "lib/app/thing.rb")
     end
   end
+  it "points a bare run in a Rails root at app, without changing what it analyzes" do
+    files = { "lib/mygem/x.rb" => "class X; def a = 1; end\n", "config/application.rb" => "" }
+    within(files) do
+      capture do
+        expect { expect(described_class.run([])).to(eq(0)) }.to(output(/looks like a Rails root/).to_stderr)
+        expect { expect(described_class.run(["lib"])).to(eq(0)) }.not_to(output(/Rails root/).to_stderr)
+      end
+    end
+  end
   it "says nothing about churn when the analyzed repo has history" do
     within("lib/app/x.rb" => "class X; def a = 1; end\n") do
       git("init", "-q")

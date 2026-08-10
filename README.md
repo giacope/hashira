@@ -427,6 +427,12 @@ at all. It only works on a codebase that starts clean.
 hashira --fail-on cycles,sdp,mixed_audience,wide_edge,roll_call,smells   # any subset
 ```
 
+Kinds are named as the reports name them, plus three shorthands: `cycles` for
+`cycle`, `sdp` for `sdp_violation`, and `dupe` for `duplication`. `smells`
+expands to every smell kind; a single smell can be named on its own
+(`--fail-on feature_envy`). An unknown kind lists the valid ones rather than
+guessing.
+
 The ratchet is the one you can adopt today. Commit a baseline of what's true now
 — which edges exist, which findings stand — and the build fails when that set
 *grows*. It never asks whether the code is good, only whether this commit made it

@@ -16,7 +16,9 @@ class Hashira::CLI
 
       def pipeline
         chosen = Hashira::Project.detect(directories)
-        Hashira::Report::Notices.new.scanning(chosen.files.size)
+        told = Hashira::Report::Notices.new
+        told.scanning(chosen.files.size)
+        told.rails if directories.empty? && File.exist?("config/application.rb")
         Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:)
       end
 

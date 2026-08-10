@@ -11,6 +11,10 @@ class Hashira::Report::Notices
 
   def finished(files, seconds) = interactive { @io.puts("hashira: #{files} files in #{seconds}s") }
 
+  def rails
+    @io.puts("hashira: this looks like a Rails root — `hashira app` reads the application, not just lib/")
+  end
+
   def churn(label)
     @io.puts("hashira: no git history for #{label} — hotspots are ranked by cost alone")
   end
