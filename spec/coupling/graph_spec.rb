@@ -79,10 +79,12 @@ RSpec.describe(Hashira::Coupling::Graph) do
       end
     end
 
-    it "gives instability 0.0 to an unconnected package" do
+    it "leaves instability unset for an unconnected package, rather than calling it maximally stable" do
       files = { "lib/app/solo/x.rb" => "module App; module Solo; class X; def a = 1; end; end; end\n" }
       analyze(files) do |_project, _census, graph|
-        expect(graph.metric("solo").to_h).to(eq(tc: 1, ca: 0, ce: 0, i: 0.0))
+        expect(graph.metric("solo").to_h).to(eq(tc: 1, ca: 0, ce: 0, i: nil))
+        expect(graph.metric("solo")).to(be_isolated)
+        expect(graph.metric("solo").cells).to(eq([1, 0, 0, "—"]))
       end
     end
   end

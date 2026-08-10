@@ -7,7 +7,7 @@ RSpec.describe(Hashira::CLI) do
       status = nil
       output = capture { status = described_class.run(["lib/app"]) }
       expect(status).to(eq(0))
-      expect(output).to(include("Package (layer) metrics for lib/app"))
+      expect(output).to(include("Package (folder) metrics for lib/app"))
     end
   end
   it "prints help and version without analysing anything" do
@@ -36,13 +36,13 @@ RSpec.describe(Hashira::CLI) do
   it "skips an analyzer on request" do
     within(FixtureHelper::COMPLEX_FILES) do
       slim = capture { expect(described_class.run(["lib/app", "--skip", "complexity"])).to(eq(0)) }
-      expect(slim).to(include("Package (layer) metrics"))
+      expect(slim).to(include("Package (folder) metrics"))
       expect(slim).not_to(include("Cognitive complexity"))
       bare = capture { expect(described_class.run(["lib/app", "--skip", "coupling"])).to(eq(0)) }
       expect(bare).to(include("Cognitive complexity"))
-      expect(bare).not_to(include("Package (layer) metrics"))
+      expect(bare).not_to(include("Package (folder) metrics"))
       pruned = capture { expect(described_class.run(["lib/app", "--skip", "duplication"])).to(eq(0)) }
-      expect(pruned).to(include("Package (layer) metrics"))
+      expect(pruned).to(include("Package (folder) metrics"))
     end
   end
   it "drops the hotspot rollup when both analyzers feeding it are skipped" do
@@ -51,7 +51,7 @@ RSpec.describe(Hashira::CLI) do
         capture do
           expect(described_class.run(["lib/app", "--skip", "complexity,duplication"])).to(eq(0))
         end
-      expect(lone).to(include("Package (layer) metrics"))
+      expect(lone).to(include("Package (folder) metrics"))
       expect(lone).not_to(include("Hotspots"))
     end
   end
@@ -78,6 +78,28 @@ RSpec.describe(Hashira::CLI) do
       end.to(output(%r{hashira: cannot read lib/app/thing\.rb}).to_stderr)
     ensure
       File.chmod(0o644, "lib/app/thing.rb")
+    end
+  end
+  it "says nothing about churn when the analyzed repo has history" do
+    within("lib/app/x.rb" => "class X; def a = 1; end\n") do
+      git("init", "-q")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      capture do
+        expect { expect(described_class.run(["lib/app"])).to(eq(0)) }.not_to(output(/no git history/).to_stderr)
+      end
+    end
+  end
+  it "says when a file did not parse, instead of quietly analyzing a partial tree" do
+    files = {
+      "lib/app/good.rb" => "class Good; def a = 1; end\n",
+      "lib/app/broken.rb" => "class Broken\n  def (\nend\n"
+    }
+    within(files) do
+      capture do
+        expect { expect(described_class.run(["lib/app"])).to(eq(0)) }
+          .to(output(%r{hashira: 1 of the files did not parse — lib/app/broken\.rb}).to_stderr)
+      end
     end
   end
   it "refuses a baseline it cannot read, and an unwritable one" do

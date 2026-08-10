@@ -15,7 +15,9 @@ class Hashira::CLI
       end
 
       def pipeline
-        Hashira::Pipeline.new(Hashira::Project.detect(directories), enabled: analyzers, packaging:)
+        chosen = Hashira::Project.detect(directories)
+        Hashira::Report::Notices.new.scanning(chosen.files.size)
+        Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:)
       end
 
       def analyzers = Hashira::Pipeline::ANALYZERS - skip

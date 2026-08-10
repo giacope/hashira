@@ -9,9 +9,13 @@ module Hashira
           total.zero? ? 0.0 : efferent.fdiv(total)
         end
 
-        def to_h = { tc: types, ca: afferent, ce: efferent, i: instability }
+        def isolated? = (efferent + afferent).zero?
 
-        def cells = [types, afferent, efferent, format("%.2f", instability)]
+        def order = [isolated? ? 1 : 0, instability]
+
+        def to_h = { tc: types, ca: afferent, ce: efferent, i: (instability unless isolated?) }
+
+        def cells = [types, afferent, efferent, isolated? ? "—" : format("%.2f", instability)]
       end
   end
 end

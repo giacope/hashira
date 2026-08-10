@@ -44,8 +44,15 @@ class Hashira::CLI::Run
   def text = report(Hashira::Report::Text)
 
   def report(kind)
-    Hashira::Report::Notices.new(@pipeline).print
+    notices
     kind.new(view).print
+  end
+
+  def notices
+    told = Hashira::Report::Notices.new
+    told.churn(@pipeline.project.label) unless @pipeline.churn.history?
+    broken = @pipeline.unparsed
+    told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
   end
 
   def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)

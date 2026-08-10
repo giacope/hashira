@@ -16,9 +16,17 @@ class Hashira::CLI
   end
 
   def initialize(options)
+    @started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     @options = options
+    @notices = Hashira::Report::Notices.new
     @pipeline = options.pipeline
   end
 
-  def run = Run.new(@pipeline, @options).status
+  def run
+    Run.new(@pipeline, @options).status.tap { @notices.finished(@pipeline.project.files.size, elapsed) }
+  end
+
+  private
+
+  def elapsed = format("%.1f", Process.clock_gettime(Process::CLOCK_MONOTONIC) - @started)
 end

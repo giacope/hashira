@@ -21,6 +21,8 @@ the cycle and to the cheapest edge to cut:
 
 ```console
 $ hashira app
+Package (folder) metrics for app  (2 packages, 2 files)
+
 package   TC  Ca  Ce     I  Cyc
 -------------------------------
 billing    1   1   1  0.50  YES
@@ -81,25 +83,32 @@ The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
 so a large codebase stays readable — 25 packages and findings, 10 methods and
 files — and every list says how many rows it withheld. `--top N` moves all of
-them at once; `--json` is never capped. Here it is on hashira's own source:
+them at once; `--json` is never capped.
+
+The heading names the packaging that ran (`folder` or `namespace`), since the
+baseline is recorded per mode. Anything hashira had to work around goes to
+stderr, never stdout: a directory with no git history (churn reads as zero, so
+hotspots rank by cost alone), and files Prism could not parse. On a terminal
+you also get a progress line before the parse and a timing line after; piped or
+in CI, stdout is byte-identical either way. Here it is on hashira's own source:
 
 ```console
 $ hashira
-Package (layer) metrics for lib/hashira  (11 packages, 127 files)
+Package (folder) metrics for lib/hashira  (11 packages, 129 files)
 
 package      TC  Ca  Ce     I  Cyc
 ----------------------------------
-analysis      3   4   0  0.00  -
 diagram       3   1   0  0.00  -
 hotspots      1   1   0  0.00  -
-duplication  14   2   1  0.33  -
+analysis      3   4   0  0.00  -
 report       11   2   1  0.33  -
+duplication  14   2   1  0.33  -
+smells       24   1   1  0.50  -
 ci            8   1   1  0.50  -
 complexity    7   1   1  0.50  -
 coupling     29   1   1  0.50  -
-smells       24   1   1  0.50  -
-(root)        4   1   5  0.83  -
-cli           9   0   4  1.00  -
+(root)        5   1   5  0.83  -
+cli          11   0   4  1.00  -
 
 Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
@@ -189,6 +198,8 @@ reach into `Ci`?
 
 ```console
 $ hashira app
+Package (namespace) metrics for app  (442 packages, 3222 files)
+
 package   TC  Ca  Ce     I  Cyc
 -------------------------------
 Account   26  21  18  0.46  YES

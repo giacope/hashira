@@ -41,12 +41,13 @@ class Hashira::Report::Text
 
   def header(graph)
     packages = graph.packages.size
-    @io.puts(banner(packages))
+    @io.puts(banner(graph.packaging, packages))
     caveat if packages == 1
   end
 
-  def banner(packages)
-    "Package (layer) metrics for #{@view.project.label}  (#{count(packages, "package")}, #{count(total, "file")})\n\n"
+  def banner(grouping, packages)
+    "Package (#{grouping}) metrics for #{@view.project.label}  " \
+      "(#{count(packages, "package")}, #{count(total, "file")})\n\n"
   end
 
   def count(number, noun) = Hashira::Report::Phrases.count(number, noun)

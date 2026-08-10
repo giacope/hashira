@@ -18,7 +18,7 @@ RSpec.describe(Hashira::Report::Text) do
       output = capture { described_class.new(view(project, graph, findings)).print }
 
       expect(output).to(eq(<<~TEXT))
-        Package (layer) metrics for lib/app  (3 packages, 3 files)
+        Package (folder) metrics for lib/app  (3 packages, 3 files)
 
         package  TC  Ca  Ce     I  Cyc
         ------------------------------
@@ -59,13 +59,13 @@ RSpec.describe(Hashira::Report::Text) do
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       output = capture { described_class.new(view(pipeline.project, pipeline.graph, screened)).print }
       expect(output).to(eq(<<~TEXT))
-        Package (layer) metrics for lib/app  (1 package, 1 file)
+        Package (folder) metrics for lib/app  (1 package, 1 file)
 
         Only one package found — there are no boundaries to analyze. Pass subdirectories to set them (e.g. hashira lib/gem/*/).
 
-        package  TC  Ca  Ce     I  Cyc
-        ------------------------------
-        solo      1   0   0  0.00  -
+        package  TC  Ca  Ce  I  Cyc
+        ---------------------------
+        solo      1   0   0  —  -
 
         Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
                 I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
@@ -87,7 +87,7 @@ RSpec.describe(Hashira::Report::Text) do
       output = capture { described_class.new(view).print }
       expect(output).to(
         include(
-          "Package (layer) metrics", "Cognitive complexity — worst methods",
+          "Package (folder) metrics", "Cognitive complexity — worst methods",
           "Per-class rollup", "complexity: App::Knot::Tangle#tangled"
         )
       )
