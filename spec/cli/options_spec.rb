@@ -54,6 +54,19 @@ RSpec.describe(Hashira::CLI::Options) do
     end
     it "requires a value after a value flag" do
       expect { described_class.parse(%w[lib --baseline]) }.to(raise_error(Hashira::Error, "--baseline needs a value"))
+      expect { described_class.parse(["lib", "--fail-on", ""]) }
+        .to(raise_error(Hashira::Error, "--fail-on needs a value"))
+    end
+    it "refuses a --fail-on list that names no kind" do
+      expect { described_class.parse(["lib", "--fail-on", ","]) }
+        .to(raise_error(Hashira::Error, "--fail-on needs at least one kind"))
+    end
+    it "refuses to gate on a kind whose analyzer is skipped" do
+      expect { described_class.parse(%w[lib --fail-on cycles --skip coupling]) }
+        .to(raise_error(Hashira::Error, "--fail-on cycle needs the coupling analyzer, but --skip drops it"))
+      expect { described_class.parse(%w[lib --fail-on feature_envy --skip smells]) }
+        .to(raise_error(Hashira::Error, "--fail-on feature_envy needs the smells analyzer, but --skip drops it"))
+      expect(described_class.parse(%w[lib --fail-on cycles --skip complexity]).fail_on).to(eq(%w[cycle]))
     end
     it "rejects stray unknown flags, single-dash included" do
       expect { described_class.parse(%w[lib --verbose]) }.to(raise_error(Hashira::Error, "unknown option --verbose"))

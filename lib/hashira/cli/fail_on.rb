@@ -12,12 +12,28 @@ module Hashira::CLI::FailOn
     "smells" => Hashira::Pipeline::SMELLS, **Hashira::Pipeline::SMELLS.to_h { [it, it] }
   }.freeze
 
+  OWNERS = {
+    **Hashira::Pipeline::STRUCTURAL.to_h { [it, :coupling] },
+    **MEASURES.to_h { [it, it.to_sym] },
+    **Hashira::Pipeline::SMELLS.to_h { [it, :smells] }
+  }.freeze
+
   module_function
 
   def parse(list)
-    return [] unless list
-    list.split(",").flat_map { Array(kind(it.strip)) }.uniq
+    return [] if list.to_s.empty?
+    kinds = list.split(",").flat_map { Array(kind(it.strip)) }.uniq
+    raise(Hashira::Error, "--fail-on needs at least one kind") if kinds.empty?
+    kinds
   end
+
+  def armed(kinds, skipped)
+    blind = kinds.find { skipped.include?(owner(it)) }
+    return unless blind
+    raise(Hashira::Error, "--fail-on #{blind} needs the #{owner(blind)} analyzer, but --skip drops it")
+  end
+
+  def owner(kind) = OWNERS.fetch(kind)
 
   def kind(name)
     KINDS.fetch(name) do

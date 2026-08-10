@@ -9,7 +9,7 @@ class Hashira::CLI::Arguments
     position = @argv.index(flag)
     return default unless position
     _flag, value = @argv.slice!(position, 2)
-    raise(Hashira::Error, "#{flag} needs a value") unless value
+    raise(Hashira::Error, "#{flag} needs a value") if value.to_s.strip.empty?
     value
   end
 

@@ -4,6 +4,11 @@ RSpec.describe(Hashira::Project) do
   it "raises for a missing directory" do
     expect { described_class.new(["nope"]) }.to(raise_error(Hashira::Error, "no such directory: nope"))
   end
+  it "raises for a directory holding no Ruby files" do
+    within("lib/app/README.md" => "") do
+      expect { described_class.new(["lib/app"]) }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
+    end
+  end
   it "strips trailing slashes from directories" do
     within("lib/app/a/x.rb" => "") do
       expect(described_class.new(["lib/app/"]).directories).to(eq(["lib/app"]))

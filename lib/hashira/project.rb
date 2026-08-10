@@ -29,6 +29,7 @@ class Hashira::Project
     missing = directories.reject { Dir.exist?(it) }
     raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
     @directories = directories.map { it.delete_suffix("/") }
+    raise(Hashira::Error, "no Ruby files under #{label}") if files.empty?
     @rails = @directories.any? { config?(File.expand_path(it)) }
   end
 
