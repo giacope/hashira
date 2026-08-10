@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::CI::Ratchet
-  def initialize(graph, findings, baseline_path, io: $stdout)
+  def initialize(graph, findings, baseline, io: $stdout)
     @graph = graph
     @findings = findings
-    @baseline = Hashira::CI::Baseline.load(baseline_path)
+    @baseline = baseline
     @io = io
   end
 
@@ -18,10 +18,29 @@ class Hashira::CI::Ratchet
 
   def blocker
     return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?
-    mismatch unless @baseline.packaging == packaging
+    drifted.first
   end
 
   private
+
+  def drifted = [(mismatch unless @baseline.packaging == packaging), *narrowed(@baseline.wanted)].compact
+
+  def narrowed(wanted)
+    [
+      widened("the analyzers", @baseline.analyzers, wanted[:analyzers]),
+      widened("the directories", @baseline.targets, wanted[:targets])
+    ]
+  end
+
+  def widened(flag, was, now)
+    return if was == now
+    phrase(flag, was, now)
+  end
+
+  def phrase(flag, was, now)
+    "baseline #{@baseline.path} was recorded with #{flag} #{was.join(", ")}, but this run " \
+      "uses #{now.join(", ")} — rerun the recorded way, or refresh it with --update-baseline"
+  end
 
   def packaging = @graph.packaging.to_s
 

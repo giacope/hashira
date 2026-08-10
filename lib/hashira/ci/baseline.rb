@@ -5,7 +5,9 @@ require "json"
 class Hashira::CI::Baseline
   SCHEMA_VERSION = 4
 
-  def self.load(path) = new(path, read(path))
+  def self.load(path, analyzers: [], targets: [])
+    new(path, read(path), Hashira::CI::Scope.new(analyzers:, targets:))
+  end
 
   def self.read(path)
     return {} unless path && File.exist?(path)
@@ -19,9 +21,10 @@ class Hashira::CI::Baseline
     "#{path} is not a usable baseline — #{error.message.lines.first.strip}. Re-record it with --update-baseline"
   end
 
-  def initialize(path, recorded)
+  def initialize(path, recorded, scope = Hashira::CI::Scope.none)
     @path = path
     @recorded = recorded
+    @scope = scope
   end
 
   attr_reader :path
@@ -38,6 +41,12 @@ class Hashira::CI::Baseline
 
   def packaging = @recorded.fetch("packaging", "folder")
 
+  def analyzers = @recorded.fetch("analyzers", wanted[:analyzers])
+
+  def targets = @recorded.fetch("targets", wanted[:targets])
+
+  def wanted = @scope.to_h
+
   def write(edges, findings, packaging:)
     File.write(@path, JSON.pretty_generate(payload(edges, findings, packaging)) << "\n")
   end
@@ -45,7 +54,7 @@ class Hashira::CI::Baseline
   private
 
   def payload(edges, findings, packaging)
-    base = { version: SCHEMA_VERSION, packaging:, edges:, findings: }
+    base = { version: SCHEMA_VERSION, packaging:, **@scope.to_h, edges:, findings: }
     accepted = Hashira::CI::Accepted.new(@recorded.fetch("accepted", [])).entries
     accepted.empty? ? base : base.merge(accepted:)
   end

@@ -55,7 +55,13 @@ class Hashira::CLI::Run
     told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
   end
 
-  def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, @options.baseline)
+  def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
+
+  def baseline
+    Hashira::CI::Baseline.load(@options.baseline, analyzers: @options.analyzers, targets:)
+  end
+
+  def targets = @pipeline.project.directories
 
   def gate = Hashira::CI::Gate.new(findings, @options.fail_on)
 
