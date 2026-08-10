@@ -4,6 +4,24 @@ RSpec.describe(Hashira::Project) do
   it "raises for a missing directory" do
     expect { described_class.new(["nope"]) }.to(raise_error(Hashira::Error, "no such directory: nope"))
   end
+  it "points at the parent directory when handed a file" do
+    within("lib/app/a/x.rb" => "") do
+      expect { described_class.new(["lib/app/a/x.rb"]) }
+        .to(raise_error(Hashira::Error, %r{\Alib/app/a/x\.rb is a file .+try: hashira lib/app/a\)\z}))
+    end
+  end
+  it "counts a directory named twice, or by two spellings, only once" do
+    within("lib/app/a/x.rb" => "") do
+      expect(described_class.new(%w[lib/app lib/app]).directories).to(eq(["lib/app"]))
+      expect(described_class.new(["lib/app", "./lib/app"]).directories).to(eq(["lib/app"]))
+      expect(described_class.new(%w[lib/app lib/app]).files).to(eq(["lib/app/a/x.rb"]))
+    end
+  end
+  it "drops a directory already covered by another argument" do
+    within("lib/app/a/x.rb" => "") do
+      expect(described_class.new(%w[lib/app lib/app/a]).directories).to(eq(["lib/app"]))
+    end
+  end
   it "raises for a directory holding no Ruby files" do
     within("lib/app/README.md" => "") do
       expect { described_class.new(["lib/app"]) }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
@@ -99,6 +117,11 @@ RSpec.describe(Hashira::Project) do
     it "raises without a lib directory" do
       within({}) do
         expect { described_class.detect([]) }.to(raise_error(Hashira::Error, %r{no lib/ directory here}))
+      end
+    end
+    it "accepts a lib holding only loose files, as every gem does on day one" do
+      within("lib/solo.rb" => "class Solo; def a = 1; end\n") do
+        expect(described_class.detect([]).directories).to(eq(["lib"]))
       end
     end
   end

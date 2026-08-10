@@ -8,8 +8,8 @@ class Hashira::Project
   end
 
   def self.defaults
-    raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly") if Dir["lib/*/"].empty?
-    ["lib"]
+    return ["lib"] if Dir["lib/*/"].any? || Dir["lib/*.rb"].any?
+    raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly")
   end
   private_class_method :defaults
 
@@ -26,9 +26,8 @@ class Hashira::Project
   private_class_method :descend, :sole
 
   def initialize(directories)
-    missing = directories.reject { Dir.exist?(it) }
-    raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
-    @directories = directories.map { it.delete_suffix("/") }
+    vet(directories)
+    @directories = distinct(directories.map { it.delete_suffix("/") })
     raise(Hashira::Error, "no Ruby files under #{label}") if files.empty?
     @rails = @directories.any? { config?(File.expand_path(it)) }
   end
@@ -52,6 +51,20 @@ class Hashira::Project
   def root = ROOT_PACKAGE
 
   private
+
+  def vet(directories)
+    file = directories.find { File.file?(it) }
+    raise(Hashira::Error, "#{file} is a file — hashira takes directories (try: hashira #{File.dirname(file)})") if file
+    missing = directories.reject { Dir.exist?(it) }
+    raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
+  end
+
+  def distinct(directories)
+    pairs = directories.map { [it, File.realpath(it)] }.uniq(&:last)
+    pairs.filter_map { |dir, path| dir unless nested?(path, pairs) }
+  end
+
+  def nested?(path, pairs) = pairs.any? { path.start_with?("#{it.last}/") }
 
   def config?(directory)
     ["config/application.rb", "../config/application.rb"].any? { File.exist?(File.expand_path(it, directory)) }

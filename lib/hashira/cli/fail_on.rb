@@ -27,12 +27,6 @@ module Hashira::CLI::FailOn
     kinds
   end
 
-  def armed(kinds, skipped)
-    blind = kinds.find { skipped.include?(owner(it)) }
-    return unless blind
-    raise(Hashira::Error, "--fail-on #{blind} needs the #{owner(blind)} analyzer, but --skip drops it")
-  end
-
   def owner(kind) = OWNERS.fetch(kind)
 
   def kind(name)

@@ -11,7 +11,7 @@ class Hashira::CLI
 
       def initialize(**attributes)
         super
-        FailOn.armed(fail_on, skip)
+        Needs.check(self)
       end
 
       def pipeline

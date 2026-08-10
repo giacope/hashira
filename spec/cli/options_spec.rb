@@ -68,6 +68,15 @@ RSpec.describe(Hashira::CLI::Options) do
         .to(raise_error(Hashira::Error, "--fail-on feature_envy needs the smells analyzer, but --skip drops it"))
       expect(described_class.parse(%w[lib --fail-on cycles --skip complexity]).fail_on).to(eq(%w[cycle]))
     end
+    it "names a repeated value flag instead of calling it unknown" do
+      expect { described_class.parse(%w[lib --format json --format dot]) }
+        .to(raise_error(Hashira::Error, "--format given more than once"))
+    end
+    it "refuses to draw a diagram whose analyzer is skipped" do
+      expect { described_class.parse(%w[lib --format dot --skip coupling]) }
+        .to(raise_error(Hashira::Error, "--format dot draws the coupling graph, but --skip coupling drops it"))
+      expect(described_class.parse(%w[lib --format dot --skip smells]).mode).to(eq(:dot))
+    end
     it "rejects stray unknown flags, single-dash included" do
       expect { described_class.parse(%w[lib --verbose]) }.to(raise_error(Hashira::Error, "unknown option --verbose"))
       expect { described_class.parse(%w[lib -x]) }.to(raise_error(Hashira::Error, "unknown option -x"))

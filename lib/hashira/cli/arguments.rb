@@ -9,7 +9,12 @@ class Hashira::CLI::Arguments
     position = @argv.index(flag)
     return default unless position
     _flag, value = @argv.slice!(position, 2)
+    vet(flag, value)
+  end
+
+  def vet(flag, value)
     raise(Hashira::Error, "#{flag} needs a value") if value.to_s.strip.empty?
+    raise(Hashira::Error, "#{flag} given more than once") if @argv.include?(flag)
     value
   end
 
