@@ -1,8 +1,16 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Text) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:)
+  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
+    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:)
+  end
+
+  it "caps the findings list at --top and counts what it withheld" do
+    with_pipeline do |project, graph, findings|
+      output = capture { described_class.new(view(project, graph, findings, top: 2)).print }
+      expect(output).to(include("Findings (6):"))
+      expect(output).to(include("… and 4 more — raise the cap with --top, or read them all with --json"))
+    end
   end
 
   it "prints the full report verbatim" do
@@ -51,7 +59,7 @@ RSpec.describe(Hashira::Report::Text) do
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       output = capture { described_class.new(view(pipeline.project, pipeline.graph, screened)).print }
       expect(output).to(eq(<<~TEXT))
-        Package (layer) metrics for lib/app  (1 packages, 1 files)
+        Package (layer) metrics for lib/app  (1 package, 1 file)
 
         Only one package found — there are no boundaries to analyze. Pass subdirectories to set them (e.g. hashira lib/gem/*/).
 

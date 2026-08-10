@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Text
+  FINDINGS = 25
+
   def initialize(view, io: $stdout)
     @view = view
     @io = io
@@ -19,7 +21,7 @@ class Hashira::Report::Text
   def coupling
     graph = @view.graph
     header(graph)
-    Hashira::Report::MetricsTable.new(graph, io: @io).print
+    table(Hashira::Report::MetricsTable, graph)
     Hashira::Report::DependencyMap.new(graph, io: @io).print
     folded(graph.folds)
   end
@@ -31,9 +33,11 @@ class Hashira::Report::Text
     @io.puts
   end
 
-  def complexity = Hashira::Report::ComplexityTable.new(@view.complexity, io: @io).print
+  def table(kind, subject) = kind.new(subject, top: @view.top || kind::TOP, io: @io).print
 
-  def hotspots = Hashira::Report::HotspotTable.new(@view.hotspots, io: @io).print
+  def complexity = table(Hashira::Report::ComplexityTable, @view.complexity)
+
+  def hotspots = table(Hashira::Report::HotspotTable, @view.hotspots)
 
   def header(graph)
     packages = graph.packages.size
@@ -42,8 +46,10 @@ class Hashira::Report::Text
   end
 
   def banner(packages)
-    "Package (layer) metrics for #{@view.project.label}  (#{packages} packages, #{total} files)\n\n"
+    "Package (layer) metrics for #{@view.project.label}  (#{count(packages, "package")}, #{count(total, "file")})\n\n"
   end
+
+  def count(number, noun) = Hashira::Report::Phrases.count(number, noun)
 
   def total = @view.project.files.size
 
@@ -64,7 +70,14 @@ class Hashira::Report::Text
 
   def list(all)
     return @io.puts("  none ✓ — structure is healthy") if all.empty?
-    all.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
+    shown = all.first(@view.top || FINDINGS)
+    shown.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
+    elided(all.size - shown.size)
+  end
+
+  def elided(rest)
+    return if rest.zero?
+    @io.puts("  … and #{rest} more — raise the cap with --top, or read them all with --json")
   end
 
   def accepted

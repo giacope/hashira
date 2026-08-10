@@ -80,6 +80,14 @@ RSpec.describe(Hashira::CLI) do
       File.chmod(0o644, "lib/app/thing.rb")
     end
   end
+  it "refuses a baseline it cannot read, and an unwritable one" do
+    within("lib/app/x.rb" => "class X; def a = 1; end\n", "b.json" => "{ oops") do
+      expect { expect(described_class.run(["lib/app", "--baseline", "b.json"])).to(eq(1)) }
+        .to(output(/b\.json is not a usable baseline/).to_stderr)
+      expect { expect(described_class.run(%w[lib/app --update-baseline --baseline nope/b.json])).to(eq(1)) }
+        .to(output(%r{cannot write nope/b\.json}).to_stderr)
+    end
+  end
   it "prints user-facing errors to stderr and returns 1" do
     expect do
       expect(described_class.run(["missing_directory"])).to(eq(1))

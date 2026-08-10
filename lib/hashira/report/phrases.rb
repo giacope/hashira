@@ -81,6 +81,8 @@ module Hashira::Report::Phrases
 
   def score(value) = format("%.2f", value)
 
+  def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"
+
   def clause(part) = "#{part[:users].join(", ")} #{verb(part)} #{part[:constants].join(", ")}"
 
   def verb(part)

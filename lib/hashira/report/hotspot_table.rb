@@ -4,8 +4,9 @@ class Hashira::Report::HotspotTable
   TOP = 10
   HEADERS = %w[file Cog Dup Churn Rank].freeze
 
-  def initialize(hotspots, io: $stdout)
+  def initialize(hotspots, top: TOP, io: $stdout)
     @hotspots = hotspots
+    @top = top
     @io = io
   end
 
@@ -18,7 +19,7 @@ class Hashira::Report::HotspotTable
 
   private
 
-  def ranked = @ranked ||= @hotspots.files.first(TOP)
+  def ranked = @ranked ||= @hotspots.files.first(@top)
 
   def legend
     @io.puts("\nLegend: Cog cognitive complexity, Dup mass of the clones the file carries,")

@@ -96,6 +96,16 @@ RSpec.describe(Hashira::CLI::Options) do
       expect(described_class.parse(%w[lib]).skip).to(eq([]))
       expect(described_class.parse(%w[lib --skip complexity]).skip).to(eq([:complexity]))
     end
+    it "leaves --top unset so each table keeps its own default" do
+      expect(described_class.parse(%w[lib]).top).to(be_nil)
+      expect(described_class.parse(%w[lib --top 40]).top).to(eq(40))
+    end
+    it "rejects a --top that is not a positive whole number" do
+      %w[0 -1 abc 3.5].each do |value|
+        expect { described_class.parse(["lib", "--top", value]) }
+          .to(raise_error(Hashira::Error, "--top #{value.inspect} is not a positive whole number"))
+      end
+    end
     it "rejects an unknown --skip analyzer" do
       expect { described_class.parse(%w[--skip typo]) }
         .to(raise_error(Hashira::Error, 'unknown --skip "typo" (use: coupling, complexity, duplication, smells)'))

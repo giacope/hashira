@@ -78,12 +78,13 @@ module FixtureHelper
   def message(finding) = Hashira::Report::Phrases.message(finding)
 
   def capture
-    original = $stdout
+    original = [$stdout, $stderr]
     $stdout = StringIO.new
+    $stderr = StringIO.new
     yield
     $stdout.string
   ensure
-    $stdout = original
+    $stdout, $stderr = original
   end
 
   CYCLIC_FILES = {

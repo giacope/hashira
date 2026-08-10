@@ -31,6 +31,15 @@ RSpec.describe(Hashira::Churn) do
       expect(described_class.scan(".").history?).to(be(false))
     end
   end
+  it "reports no history rather than crashing when git is not on PATH" do
+    within("a.rb" => "class A\nend\n") do
+      path = ENV.fetch("PATH", nil)
+      ENV["PATH"] = ""
+      expect(described_class.scan(".").history?).to(be(false))
+    ensure
+      ENV["PATH"] = path
+    end
+  end
   it "is hot only when at least two sites sit in changed files" do
     churn = described_class.new("a.rb" => 5, "b.rb" => 2)
     sites = [

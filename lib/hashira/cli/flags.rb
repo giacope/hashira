@@ -5,6 +5,7 @@ require_relative "flag"
 require_relative "format"
 require_relative "package_by"
 require_relative "skip"
+require_relative "top"
 
 class Hashira::CLI
   FLAGS = [
@@ -25,6 +26,14 @@ class Hashira::CLI
     Flag.new(
       name: "--skip", arg: "ANALYZERS", field: :skip, parse: Skip,
       text: ["drop an analyzer; comma-separated: coupling,", "complexity, duplication, smells"]
+    ),
+    Flag.new(
+      name: "--top", arg: "N", field: :top, parse: Top,
+      text: [
+        "show at most N rows in each table and N",
+        "findings (default: 25 packages and findings,",
+        "10 methods and files)"
+      ]
     ),
     Flag.new(
       name: "--package-by", arg: "WHAT", field: :packaging, parse: PackageBy,

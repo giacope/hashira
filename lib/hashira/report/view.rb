@@ -2,6 +2,9 @@
 
 module Hashira
   module Report
-    View = Data.define(:project, :graph, :complexity, :duplication, :hotspots, :findings)
+    View =
+      Data.define(:project, :graph, :complexity, :duplication, :hotspots, :findings, :top) do
+        def initialize(top: nil, **) = super
+      end
   end
 end

@@ -26,6 +26,23 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       expect(output).not_to(include("Leaf3 "))
     end
   end
+  def chain(count)
+    (1..count).to_h do |n|
+      ["app/models/p#{n}.rb", "class P#{n}\n  def go = P#{(n % count) + 1}.new\nend\n"]
+    end
+  end
+  it "caps the rows at --top and says how many it withheld" do
+    analyze(chain(5), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      output = capture { described_class.new(graph, top: 2).print }
+      expect(output).to(include("… and 3 more — raise the cap with --top, or read them all with --json"))
+      expect(output.lines.count { it.match?(/^P\d/) }).to(eq(2))
+    end
+  end
+  it "says nothing about withheld rows when every row fits" do
+    analyze(hub(3), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      expect(capture { described_class.new(graph).print }).not_to(include("more —"))
+    end
+  end
   it "keeps every row while the table fits" do
     analyze(hub(3), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       output = capture { described_class.new(graph).print }

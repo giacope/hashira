@@ -72,17 +72,20 @@ Single-folder wrapper chains are descended automatically, so `hashira`,
 hashira                        # auto-detects lib/<gem>
 hashira lib/myapp              # or point it at a directory
 hashira app lib                # or several — one shared graph
-hashira --skip complexity,duplication   # coupling only
-hashira --skip coupling                 # complexity + duplication
+hashira --skip complexity,duplication   # coupling + smells only
+hashira --skip coupling                 # complexity + duplication + smells
+hashira --top 50                        # longer tables and findings list
 ```
 
 The full text report is the coupling tables, the complexity tables, the hotspot
-rollup, and the findings (which include any duplication clusters). Here it is on
-hashira's own source:
+rollup, and the findings (which include any duplication clusters). It is capped
+so a large codebase stays readable — 25 packages and findings, 10 methods and
+files — and every list says how many rows it withheld. `--top N` moves all of
+them at once; `--json` is never capped. Here it is on hashira's own source:
 
 ```console
 $ hashira
-Package (layer) metrics for lib/hashira  (11 packages, 126 files)
+Package (layer) metrics for lib/hashira  (11 packages, 127 files)
 
 package      TC  Ca  Ce     I  Cyc
 ----------------------------------

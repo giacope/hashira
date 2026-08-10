@@ -7,8 +7,9 @@ class Hashira::Report::ComplexityTable
   METHOD_TITLE = "Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends)"
   CLASS_TITLE = "Per-class rollup (Cog total survives extract-method; Peak is the worst method it hides)"
 
-  def initialize(complexity, io: $stdout)
+  def initialize(complexity, top: TOP, io: $stdout)
     @complexity = complexity
+    @top = top
     @io = io
   end
 
@@ -27,5 +28,5 @@ class Hashira::Report::ComplexityTable
     @io.puts
   end
 
-  def ranked(scores) = scores.select { it.cognitive.positive? }.first(TOP)
+  def ranked(scores) = scores.select { it.cognitive.positive? }.first(@top)
 end
