@@ -10,6 +10,8 @@ module Hashira
         end
 
         def to_h = { tc: types, ca: afferent, ce: efferent, i: instability }
+
+        def cells = [types, afferent, efferent, format("%.2f", instability)]
       end
   end
 end

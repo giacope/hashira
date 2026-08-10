@@ -7,10 +7,10 @@ class Hashira::Report::MetricsTable
   end
 
   LIMIT = 25
+  HEADERS = %w[package TC Ca Ce I Cyc].freeze
 
   def print
-    heading
-    kept.each { |package, metric| @io.puts(row(package, metric)) }
+    Hashira::Report::Columns.new(HEADERS, kept.map { |package, metric| row(package, metric) }, io: @io).print
     note unless spared.empty?
     legend
   end
@@ -31,17 +31,9 @@ class Hashira::Report::MetricsTable
     @io.puts("  + #{spared.size} single-type leaf packages (TC ≤ 1, Ca ≤ 1, Ce = 0) — hidden for brevity")
   end
 
-  def heading
-    @io.puts(format("%-12s %3s %3s %3s %5s  %-3s", *%w[package TC Ca Ce I Cyc]))
-    @io.puts("-" * 40)
-  end
+  def row(package, metric) = [package, *metric.cells, cyc(package)]
 
-  def row(package, metric)
-    format(
-      "%-12s %3d %3d %3d %5.2f  %-3s", package, *metric.to_h.values,
-      (@graph.cycles.through?(package) ? "YES" : "-")
-    )
-  end
+  def cyc(package) = @graph.cycles.through?(package) ? "YES" : "-"
 
   def legend
     @io.puts("\nLegend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),")

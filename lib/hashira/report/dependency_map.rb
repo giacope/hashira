@@ -9,6 +9,7 @@ class Hashira::Report::DependencyMap
   def print
     @io.puts("Dependencies (DependsUpon(refs) -> | <- UsedBy):")
     @graph.packages.sort.each { @io.puts(row(it)) }
+    @io.puts
   end
 
   private

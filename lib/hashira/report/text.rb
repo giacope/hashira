@@ -26,8 +26,9 @@ class Hashira::Report::Text
 
   def folded(folds)
     return if folds.empty?
-    @io.puts("\nFolded (single-type classes joined to their base or domain):")
+    @io.puts("Folded (single-type classes joined to their base or domain):")
     folds.each { @io.puts("  #{it[:from]} -> #{it[:to]} (#{it[:via]})") }
+    @io.puts
   end
 
   def complexity = Hashira::Report::ComplexityTable.new(@view.complexity, io: @io).print
@@ -55,7 +56,7 @@ class Hashira::Report::Text
 
   def findings
     all = @view.findings.all
-    @io.puts("\nFindings (#{all.size}):")
+    @io.puts("Findings (#{all.size}):")
     list(all)
     accepted
     @io.puts("\n  Full evidence + machine format: hashira --json") unless all.empty?

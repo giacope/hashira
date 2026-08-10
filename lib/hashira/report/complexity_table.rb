@@ -2,8 +2,8 @@
 
 class Hashira::Report::ComplexityTable
   TOP = 10
-  METHOD_ROW = "%-44s %4s %6s  %s"
-  CLASS_ROW = "%-32s %5s %8s %6s"
+  METHOD_HEADERS = %w[method Cog Calls Loc].freeze
+  CLASS_HEADERS = %w[class Cog Methods Peak].freeze
   METHOD_TITLE = "Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends)"
   CLASS_TITLE = "Per-class rollup (Cog total survives extract-method; Peak is the worst method it hides)"
 
@@ -13,23 +13,18 @@ class Hashira::Report::ComplexityTable
   end
 
   def print
-    section(@complexity.ranked, METHOD_ROW, %w[method Cog Calls Loc], METHOD_TITLE)
-    section(@complexity.classes, CLASS_ROW, %w[class Cog Methods Peak], CLASS_TITLE)
+    section(@complexity.ranked, METHOD_HEADERS, METHOD_TITLE)
+    section(@complexity.classes, CLASS_HEADERS, CLASS_TITLE)
   end
 
   private
 
-  def section(scores, row_format, columns, title)
-    heading(row_format, columns, title)
-    ranked(scores).each { @io.puts(format(row_format, *it.cells)) }
-    @io.puts
-  end
-
-  def heading(row_format, columns, title)
-    header = format(row_format, *columns)
+  def section(scores, headers, title)
+    rows = ranked(scores)
+    return if rows.empty?
     @io.puts("#{title}:\n\n")
-    @io.puts(header)
-    @io.puts("-" * header.length)
+    Hashira::Report::Columns.new(headers, rows.map(&:cells), io: @io).print
+    @io.puts
   end
 
   def ranked(scores) = scores.select { it.cognitive.positive? }.first(TOP)

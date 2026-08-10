@@ -21,10 +21,10 @@ the cycle and to the cheapest edge to cut:
 
 ```console
 $ hashira app
-package       TC  Ca  Ce     I  Cyc
-----------------------------------------
-billing        1   1   1  0.50  YES
-shipping       1   1   1  0.50  YES
+package   TC  Ca  Ce     I  Cyc
+-------------------------------
+billing    1   1   1  0.50  YES
+shipping   1   1   1  0.50  YES
 
 Findings (1):
   cycle: billing can reach itself: billing -> shipping -> billing — any change may ripple back around. The lightest edge on this cycle is billing -> shipping (1 ref).
@@ -82,56 +82,57 @@ hashira's own source:
 
 ```console
 $ hashira
-Package (layer) metrics for lib/hashira  (11 packages, 111 files)
+Package (layer) metrics for lib/hashira  (11 packages, 126 files)
 
-package       TC  Ca  Ce     I  Cyc
-----------------------------------------
-analysis       3   4   0  0.00  -
-diagram        3   1   0  0.00  -
-hotspots       1   1   0  0.00  -
-duplication   14   2   1  0.33  -
-report         8   2   1  0.33  -
-ci             8   1   1  0.50  -
-complexity     7   1   1  0.50  -
-coupling      24   1   1  0.50  -
-smells        21   1   1  0.50  -
-(root)         4   1   5  0.83  -
-cli            8   0   4  1.00  -
+package      TC  Ca  Ce     I  Cyc
+----------------------------------
+analysis      3   4   0  0.00  -
+diagram       3   1   0  0.00  -
+hotspots      1   1   0  0.00  -
+duplication  14   2   1  0.33  -
+report       11   2   1  0.33  -
+ci            8   1   1  0.50  -
+complexity    7   1   1  0.50  -
+coupling     29   1   1  0.50  -
+smells       24   1   1  0.50  -
+(root)        4   1   5  0.83  -
+cli           9   0   4  1.00  -
 
 Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
 Dependencies (DependsUpon(refs) -> | <- UsedBy):
-  (root)       -> complexity(1), coupling(5), duplication(1), hotspots(1), smells(1) <- cli
+  (root)       -> complexity(1), coupling(2), duplication(1), hotspots(1), smells(3) <- cli
   analysis     -> (none)                           <- complexity, coupling, duplication, smells
   duplication  -> analysis(3)                      <- (root), report
   ...
 
 Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends):
 
-method                                        Cog  Calls  Loc
--------------------------------------------------------------
-Hashira::Coupling::NamespacePrefix#wrapper      4      8  coupling/namespace_prefix.rb:19
-Hashira::Analysis::Syntax#anchor                4     12  analysis/syntax.rb:26
-Hashira::Smells::Conditions#branches            4     10  smells/conditions.rb:23
-Hashira::Coupling::Roster#admit                 3      4  coupling/roster.rb:19
+method                                      Cog  Calls  Loc
+---------------------------------------------------------------------------------------
+Hashira::Coupling::NamespacePrefix#wrapper    4      8  coupling/namespace_prefix.rb:19
+Hashira::Analysis::Syntax#anchor              4     12  analysis/syntax.rb:26
+Hashira::Smells::Conditions#branches          4     10  smells/conditions.rb:23
+Hashira::Coupling::Roster#admit               4      6  coupling/roster.rb:22
 ...
 
 Per-class rollup (Cog total survives extract-method; Peak is the worst method it hides):
 
-class                              Cog  Methods   Peak
-------------------------------------------------------
-Hashira::Project                    12       15      3
-Hashira::CLI::CommandLine           12       15      3
+class                           Cog  Methods  Peak
+--------------------------------------------------
+Hashira::Project                 13       15     3
+Hashira::Smells::Conditions      11        9     4
+Hashira::Smells::Foreign         11       27     1
 ...
 
 Hotspots — cost × churn (where refactoring pays the most):
 
-file                                             Cog   Dup  Churn    Rank
--------------------------------------------------------------------------
-pipeline.rb                                       10     0      6      60
-cli/command_line.rb                               12     0      4      48
-project.rb                                        12     0      4      48
+file                     Cog  Dup  Churn  Rank
+----------------------------------------------
+pipeline.rb               10    0     11   110
+project.rb                13    0      5    65
+report/text.rb             8    0      4    32
 ...
 
 Findings (0):
@@ -185,11 +186,11 @@ reach into `Ci`?
 
 ```console
 $ hashira app
-package       TC  Ca  Ce     I  Cyc
-----------------------------------------
-Account       26  21  18  0.46  YES
-Billing      116  12  11  0.48  YES
-Ci           107   9  16  0.64  YES
+package   TC  Ca  Ce     I  Cyc
+-------------------------------
+Account   26  21  18  0.46  YES
+Billing  116  12  11  0.48  YES
+Ci       107   9  16  0.64  YES
 ...
   cycle: Account can reach itself: Account -> User -> Account — any change
   may ripple back around. The lightest edge on this cycle is Account -> User (1 ref).
@@ -355,13 +356,13 @@ changes — because cost you never pay isn't worth paying down:
 ```console
 Hotspots — cost × churn (where refactoring pays the most):
 
-file                                             Cog   Dup  Churn    Rank
--------------------------------------------------------------------------
-controllers/orders/refunds_controller.rb           0    67      4     268
-controllers/orders/returns_controller.rb           0    67      4     268
-models/invoice.rb                                  8    34      3     126
-models/shipping/label.rb                           9   100      1     109
-controllers/orders_controller.rb                   8     0      7      56
+file                                      Cog  Dup  Churn  Rank
+---------------------------------------------------------------
+controllers/orders/refunds_controller.rb    0   67      4   268
+controllers/orders/returns_controller.rb    0   67      4   268
+models/invoice.rb                           8   34      3   126
+models/shipping/label.rb                    9  100      1   109
+controllers/orders_controller.rb            8    0      7    56
 ```
 
 Read it as a work queue: the top row is where a day of refactoring buys the most.
