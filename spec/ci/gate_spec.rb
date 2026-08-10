@@ -28,7 +28,19 @@ RSpec.describe(Hashira::CI::Gate) do
           · e3
           · e4
 
-      Gate FAILED: 1 finding(s) of kind cycle, sdp_violation.
+      Gate FAILED: 1 finding(s) — cycle 1.
     TEXT
+  end
+
+  it "names only the kinds that fired, worst first, and mirrors the verdict to stderr" do
+    nils = Array.new(2) { finding(kind: "nil_check", evidence: []) }
+    all = nils.unshift(finding(kind: "cycle", evidence: []))
+    io = StringIO.new
+    err = StringIO.new
+    expect(described_class.new(findings(all), %w[cycle nil_check sdp_violation utility_function], io:, err:).check)
+      .to(eq(1))
+    expect(io.string).to(include("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1."))
+    expect(io.string).not_to(include("sdp_violation"))
+    expect(err.string).to(eq("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.\n"))
   end
 end

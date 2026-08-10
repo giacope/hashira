@@ -40,6 +40,15 @@ RSpec.describe(Hashira::CI::Ratchet) do
     end
   end
 
+  it "counts the findings it was handed, noting how many keys they collapse to" do
+    with_graph do |graph|
+      io = StringIO.new
+      twins = [finding("cycle", "alpha"), finding("cycle", "alpha")]
+      expect(ratchet(graph, twins, io:).update).to(eq(0))
+      expect(io.string).to(eq("Baseline updated: 3 edges, 2 findings (1 distinct).\n"))
+    end
+  end
+
   it "fails with evidence when an edge is new" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core"], findings: [])
@@ -96,7 +105,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       seed(edges: ["alpha -> beta", "alpha -> core", "beta -> alpha", "core -> alpha"], findings: [])
       output = capture { expect(described_class.new(graph, [], "baseline.json").check).to(eq(1)) }
       expect(output).to(include("Edges removed (improvement!): core -> alpha"))
-      expect(output).to(include("Lock it in: hashira --update-baseline"))
+      expect(output).to(include("Lock it in: re-run this command with --update-baseline"))
       expect(output).not_to(include("Ratchet FAILED"))
     end
   end

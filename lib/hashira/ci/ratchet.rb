@@ -10,7 +10,7 @@ class Hashira::CI::Ratchet
 
   def update
     @baseline.write(edges, digests, packaging:)
-    @io.puts("Baseline updated: #{edges.size} edges, #{digests.size} findings.")
+    @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
     0
   end
 
@@ -24,6 +24,10 @@ class Hashira::CI::Ratchet
   private
 
   def packaging = @graph.packaging.to_s
+
+  def recorded = collapsed(@findings.size, digests.size)
+
+  def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
 
   def mismatch
     recorded = @baseline.packaging

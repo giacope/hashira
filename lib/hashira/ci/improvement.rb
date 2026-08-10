@@ -9,6 +9,6 @@ class Hashira::CI::Improvement
   def print(removed)
     return if removed.empty?
     @io.puts("#{@label} (improvement!): #{removed.join(", ")}")
-    @io.puts("Lock it in: hashira --update-baseline")
+    @io.puts("Lock it in: re-run this command with --update-baseline")
   end
 end
