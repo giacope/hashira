@@ -33,13 +33,13 @@ class Hashira::Smells::Report
     @trees = trees
   end
 
-  def findings = @findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
+  def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
 
   private
 
-  def census = @census ||= Hashira::Smells::Census.new(@project, @trees)
+  def census = @_census ||= Hashira::Smells::Census.new(@project, @trees)
 
-  def types = @types ||= census.types
+  def types = @_types ||= census.types
 
   def methods = types.flat_map(&:defs)
 

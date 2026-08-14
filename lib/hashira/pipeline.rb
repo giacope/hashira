@@ -25,17 +25,17 @@ class Hashira::Pipeline
 
   def graph = coupling.graph
 
-  def complexity = @complexity ||= analyzed(:complexity, Hashira::Complexity::Scores)
+  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores)
 
-  def duplication = @duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
+  def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 
-  def smells = @smells ||= analyzed(:smells, Hashira::Smells::Report)
+  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report)
 
   def hotspots
-    @hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
+    @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
   end
 
-  def churn = @churn ||= Hashira::Churn.build(@project.directories.first)
+  def churn = @_churn ||= Hashira::Churn.build(@project.directories.first)
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
 
@@ -47,10 +47,10 @@ class Hashira::Pipeline
 
   private
 
-  def parsed = @parsed ||= Hashira::Trees.new(@project)
+  def parsed = @_parsed ||= Hashira::Trees.new(@project)
 
   def coupling
-    @coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))
+    @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))
   end
 
   def settle(packaging)

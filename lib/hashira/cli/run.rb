@@ -15,7 +15,7 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @findings ||= accepted.screen(@pipeline.findings)
+  def findings = @_findings ||= accepted.screen(@pipeline.findings)
 
   def accepted
     path = @options.baseline
@@ -56,7 +56,7 @@ class Hashira::CLI::Run
     told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
   end
 
-  def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
+  def ratchet = @_ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
 
   def baseline
     Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:)

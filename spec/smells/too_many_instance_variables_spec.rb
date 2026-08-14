@@ -61,4 +61,29 @@ RSpec.describe(Hashira::Smells::TooManyInstanceVariables) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "does not count underscore-prefixed memoization caches as state" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def initialize
+              @a = 1
+              @b = 2
+              @c, @d = 3, 4
+            end
+
+            def wide
+              @_wide = @a + @b
+            end
+
+            def deep
+              @_deep = @c + @d
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end

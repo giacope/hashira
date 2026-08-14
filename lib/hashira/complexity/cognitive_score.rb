@@ -18,17 +18,17 @@ class Hashira::Complexity::CognitiveScore
 
   def increments
     walked
-    @increments
+    @_increments
   end
 
   def calls
     walked
-    @calls
+    @_calls
   end
 
   def nesting
     walked
-    @nesting
+    @_nesting
   end
 
   def total = increments.sum(&:cost)
@@ -39,41 +39,41 @@ class Hashira::Complexity::CognitiveScore
   end
 
   def add(node, cost, label)
-    @increments << Hashira::Complexity::Increment.new(line: node.location.start_line, cost:, label:)
+    @_increments << Hashira::Complexity::Increment.new(line: node.location.start_line, cost:, label:)
   end
 
   def deeper
-    @nesting += 1
+    @_nesting += 1
     yield
-    @nesting -= 1
+    @_nesting -= 1
   end
 
   private
 
   def walked
-    return if @walked
-    @walked = true
+    return if @_walked
+    @_walked = true
     blank
     visit(@node.body)
   end
 
   def blank
-    @increments = []
-    @calls = 0
-    @nesting = 0
+    @_increments = []
+    @_calls = 0
+    @_nesting = 0
   end
 
   def descend(node) = node.compact_child_nodes.each { visit(it) }
 
   def on_call(node)
-    @calls += 1
+    @_calls += 1
     descend(node)
   end
 
   def on_block(node) = deeper { descend(node) }
 
   def on_nester(node)
-    add(node, 1 + @nesting, LABELS.fetch(node.class))
+    add(node, 1 + @_nesting, LABELS.fetch(node.class))
     deeper { descend(node) }
   end
 

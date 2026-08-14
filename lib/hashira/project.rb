@@ -7,7 +7,7 @@ class Hashira::Project
     @requested = requested
   end
 
-  def directories = @directories ||= resolved
+  def directories = @_directories ||= resolved
 
   def rails? = directories.any? { config?(File.expand_path(it)) }
 
@@ -74,7 +74,7 @@ class Hashira::Project
   def folder?(path, name) = Dir.exist?("#{parent(path)}/#{name}")
 
   def contested
-    @contested ||=
+    @_contested ||=
       directories.flat_map { |directory| Dir["#{directory}/*/"].map { File.basename(it) } }
         .tally.filter_map { |name, count| name if count > 1 }
   end

@@ -12,7 +12,7 @@ class Hashira::Duplication::Index
 
   private
 
-  def frequency = @frequency ||= frequencies(@fragments)
+  def frequency = @_frequency ||= frequencies(@fragments)
 
   def frequencies(fragments)
     fragments.each_with_object(Hash.new(0)) { |fragment, counts| tally(counts, fragment) }

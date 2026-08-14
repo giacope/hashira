@@ -27,10 +27,10 @@ class Hashira::Smells::Refs
   private
 
   def tallies
-    return @tallies if @tallies
-    @tallies = {}
+    return @_tallies if @_tallies
+    @_tallies = {}
     Hashira::Smells::Scope.inside(@node).each { record(it) }
-    @tallies
+    @_tallies
   end
 
   def record(node)
@@ -55,5 +55,5 @@ class Hashira::Smells::Refs
     end
   end
 
-  def note(name, node) = (@tallies[name] ||= []) << node.location.start_line
+  def note(name, node) = (@_tallies[name] ||= []) << node.location.start_line
 end

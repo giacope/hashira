@@ -13,13 +13,13 @@ class Hashira::Coupling::CycleSearch
   private
 
   def prepare
-    @predecessor = {}
-    @queue = @dependencies[@package].to_a.each { @predecessor[it] = @package }
+    @_predecessor = {}
+    @_queue = @dependencies[@package].to_a.each { @_predecessor[it] = @package }
   end
 
   def cycle?
     prepare
-    while (node = @queue.shift)
+    while (node = @_queue.shift)
       return true if node == @package
       visit(node)
     end
@@ -27,15 +27,15 @@ class Hashira::Coupling::CycleSearch
 
   def visit(node)
     @dependencies[node].each do |neighbor|
-      next if @predecessor.key?(neighbor)
-      @predecessor[neighbor] = node
-      @queue << neighbor
+      next if @_predecessor.key?(neighbor)
+      @_predecessor[neighbor] = node
+      @_queue << neighbor
     end
   end
 
   def unwind(path)
     first = path.first
     return path if first == @package && path.size > 1
-    unwind(path.unshift(@predecessor[first]))
+    unwind(path.unshift(@_predecessor[first]))
   end
 end

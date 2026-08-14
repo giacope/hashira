@@ -36,31 +36,31 @@ class Hashira::Coupling::Census
 
   private
 
-  def catalog = @catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
+  def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
 
-  def placement = @placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
+  def placement = @_placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
 
   def roster
     settled
-    @roster
+    @_roster
   end
 
   def folding
     settled
-    @folding
+    @_folding
   end
 
   def settled
-    return if @settled
-    @settled = true
-    @folding = Hashira::Coupling::NoFolding
-    @roster = tally
+    return if @_settled
+    @_settled = true
+    @_folding = Hashira::Coupling::NoFolding
+    @_roster = tally
     refold
   end
 
   def refold
-    @folding = placement.folding(self)
-    @roster = tally unless @folding.map.empty?
+    @_folding = placement.folding(self)
+    @_roster = tally unless @_folding.map.empty?
   end
 
   def type?(segments) = roster.type?(segments)

@@ -19,9 +19,9 @@ class Hashira::Duplication::Clusters
 
   private
 
-  def fragments = @fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }
+  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }
 
-  def sets = @sets ||= Hashira::Duplication::UnionFind.new
+  def sets = @_sets ||= Hashira::Duplication::UnionFind.new
 
   def chain(group) = group.each_cons(2) { |left, right| sets.union(left, right) }
 

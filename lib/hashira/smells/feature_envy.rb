@@ -7,11 +7,11 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
     !subject.singleton? && !subject.mixin? && refs.ego.positive? && envied.any?
   end
 
-  def refs = @refs ||= Hashira::Smells::Refs.new(subject.node)
+  def refs = @_refs ||= Hashira::Smells::Refs.new(subject.node)
 
-  def envied = @envied ||= refs.envious.reject { foreign.dismiss?(it) }
+  def envied = @_envied ||= refs.envious.reject { foreign.dismiss?(it) }
 
-  def foreign = @foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
+  def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
   def detail = { site:, names: envied }
 

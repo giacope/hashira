@@ -16,7 +16,7 @@ class Hashira::Complexity::Scores
 
   private
 
-  def scores = @scores ||= @trees.flat_map { |path, tree| harvest(path, tree) }
+  def scores = @_scores ||= @trees.flat_map { |path, tree| harvest(path, tree) }
 
   def flagged = ranked.select { it.cognitive >= THRESHOLD }
 

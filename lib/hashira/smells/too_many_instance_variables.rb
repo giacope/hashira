@@ -15,7 +15,9 @@ class Hashira::Smells::TooManyInstanceVariables < Hashira::Smells::Check
   def smelly? = subject.kind == :class && names.size > LIMIT
 
   def names
-    @names ||= Hashira::Smells::Scope.sweep(subject.node).select { COUNTED.include?(it.class) }.map(&:name).uniq.sort
+    @_names ||=
+      Hashira::Smells::Scope.sweep(subject.node).select { COUNTED.include?(it.class) }
+        .map(&:name).reject { it.start_with?("@_") }.uniq.sort
   end
 
   def detail = { site:, count: names.size }

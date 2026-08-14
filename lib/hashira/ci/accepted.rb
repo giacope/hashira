@@ -35,7 +35,7 @@ class Hashira::CI::Accepted
 
   private
 
-  def records = @records ||= @list.map { Entry.build(it) }
+  def records = @_records ||= @list.map { Entry.build(it) }
 
   def reason(finding)
     records.find { it.matches?(finding) }&.label

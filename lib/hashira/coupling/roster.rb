@@ -7,19 +7,19 @@ class Hashira::Coupling::Roster
 
   def registry
     admitted
-    @registry
+    @_registry
   end
 
   def types
     admitted
-    @types
+    @_types
   end
 
   def origins = registry.origins
 
   def type?(path)
     admitted
-    @typed.include?(path)
+    @_typed.include?(path)
   end
 
   def packages = types.keys | registry.packages
@@ -27,16 +27,16 @@ class Hashira::Coupling::Roster
   private
 
   def admitted
-    return if @admitted
-    @admitted = true
+    return if @_admitted
+    @_admitted = true
     blank
     fill
   end
 
   def blank
-    @registry = Hashira::Coupling::ConstantRegistry.new
-    @types = Hash.new(0)
-    @typed = Set.new
+    @_registry = Hashira::Coupling::ConstantRegistry.new
+    @_types = Hash.new(0)
+    @_typed = Set.new
   end
 
   def fill
@@ -47,8 +47,8 @@ class Hashira::Coupling::Roster
   def admit(definition, package, counted)
     return unless package
     path = definition.path
-    @registry.register(path, package)
-    @typed << path if definition.type?
-    @types[package] += 1 if definition.counted? && counted.add?(path)
+    @_registry.register(path, package)
+    @_typed << path if definition.type?
+    @_types[package] += 1 if definition.counted? && counted.add?(path)
   end
 end

@@ -19,7 +19,7 @@ class Hashira::Coupling::Report
     @packaging = packaging
   end
 
-  def graph = @graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
+  def graph = @_graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
 
   def findings = RULES.flat_map { it.new(@project, graph).list }
 

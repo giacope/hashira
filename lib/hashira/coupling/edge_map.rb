@@ -5,11 +5,11 @@ class Hashira::Coupling::EdgeMap
     @census = census
   end
 
-  def dependencies = @dependencies ||= sets
+  def dependencies = @_dependencies ||= sets
 
-  def evidence = @evidence ||= sets
+  def evidence = @_evidence ||= sets
 
-  def usage = @usage ||= sets
+  def usage = @_usage ||= sets
 
   def record(source, file, tree)
     Hashira::Coupling::References.new(@census.roots).sightings(tree).each do |segments, line, nesting, home|

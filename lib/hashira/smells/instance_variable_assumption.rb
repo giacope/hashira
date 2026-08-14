@@ -30,7 +30,9 @@ class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
 
   def smelly? = subject.kind == :class && assumed.any?
 
-  def assumed = @assumed ||= (read - prepared).uniq.sort
+  def assumed = @_assumed ||= (read - prepared).uniq.sort.reject { cache?(it) }
+
+  def cache?(name) = name.start_with?("@_")
 
   def read = subject.owned.flat_map { Harvest.reads(it.node) }
 

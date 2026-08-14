@@ -18,7 +18,7 @@ class Hashira::Coupling::RollCall
 
   private
 
-  def files = @files ||= @lists.keys.sort
+  def files = @_files ||= @lists.keys.sort
 
   def candidates
     files.combination(2).map { |one, two| @lists[one] & @lists[two] }.select { it.size >= MIN_WORDS }.uniq

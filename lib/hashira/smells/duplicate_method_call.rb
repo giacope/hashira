@@ -9,14 +9,14 @@ class Hashira::Smells::DuplicateMethodCall < Hashira::Smells::Check
 
   def smelly? = repeats.any?
 
-  def calls = @calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode)
+  def calls = @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode)
 
   def plain?(node)
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
   end
 
   def repeats
-    @repeats ||= usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole)
+    @_repeats ||= usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole)
   end
 
   def usual
@@ -25,7 +25,7 @@ class Hashira::Smells::DuplicateMethodCall < Hashira::Smells::Check
   end
 
   def whole
-    @whole ||=
+    @_whole ||=
       calls.select { it.block.is_a?(Prism::BlockNode) }
         .group_by { it.slice.gsub(/\s+/, " ") }.select { |_handle, group| group.size > LIMIT }
   end

@@ -9,7 +9,7 @@ class Hashira::CLI::CommandLine
 
   private
 
-  def arguments = @arguments ||= Hashira::CLI::Arguments.new(@argv)
+  def arguments = @_arguments ||= Hashira::CLI::Arguments.new(@argv)
 
   def page
     flag = Hashira::CLI::FLAGS.select(&:page?).find { seen?(it) }

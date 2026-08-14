@@ -19,9 +19,9 @@ class Hashira::Coupling::Catalog
 
   private
 
-  def naming = @naming ||= Hashira::Coupling::Naming.new(@definitions)
+  def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)
 
-  def entries = @entries ||= @definitions.map { |node, full, folder| entry(node, full, folder) }
+  def entries = @_entries ||= @definitions.map { |node, full, folder| entry(node, full, folder) }
 
   def entry(node, full, folder)
     Hashira::Coupling::Definition.new(node:, path: naming.strip(full), folder:)

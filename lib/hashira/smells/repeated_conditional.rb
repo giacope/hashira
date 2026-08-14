@@ -10,7 +10,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
   def smelly? = subject.kind == :class && repeats.any?
 
   def repeats
-    @repeats ||= predicates.group_by(&:slice).except("block_given?").select { |_test, nodes| nodes.size > LIMIT }
+    @_repeats ||= predicates.group_by(&:slice).except("block_given?").select { |_test, nodes| nodes.size > LIMIT }
   end
 
   def predicates = Hashira::Smells::Scope.sweep(subject.node).filter_map { predicate(it) }

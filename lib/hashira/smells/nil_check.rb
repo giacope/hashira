@@ -9,7 +9,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def smelly? = checks.any?
 
-  def checks = @checks ||= Hashira::Smells::Scope.inside(subject.node).select { check?(it) }
+  def checks = @_checks ||= Hashira::Smells::Scope.inside(subject.node).select { check?(it) }
 
   def check?(node)
     case node

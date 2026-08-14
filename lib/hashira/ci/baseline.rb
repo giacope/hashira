@@ -44,7 +44,7 @@ class Hashira::CI::Baseline
   private
 
   def recorded
-    @recorded ||= read
+    @_recorded ||= read
   end
 
   def read

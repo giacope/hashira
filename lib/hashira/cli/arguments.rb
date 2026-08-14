@@ -28,5 +28,5 @@ class Hashira::CLI::Arguments
 
   private
 
-  def argv = @argv ||= @given.dup
+  def argv = @_argv ||= @given.dup
 end

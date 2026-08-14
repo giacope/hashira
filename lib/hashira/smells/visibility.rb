@@ -12,15 +12,15 @@ class Hashira::Smells::Visibility
   def entries
     blank
     scan(statements(@node))
-    @found.map { |node, section| [node, @overrides.fetch(node.name, section)] }
+    @_found.map { |node, section| [node, @_overrides.fetch(node.name, section)] }
   end
 
   private
 
   def blank
-    @section = :public
-    @overrides = {}
-    @found = []
+    @_section = :public
+    @_overrides = {}
+    @_found = []
   end
 
   def statements(node)
@@ -32,7 +32,7 @@ class Hashira::Smells::Visibility
 
   def classify(node)
     case node
-    when Prism::DefNode then @found << [node, @section]
+    when Prism::DefNode then @_found << [node, @_section]
     when Prism::CallNode then heed(node)
     else descend(node)
     end
@@ -53,19 +53,19 @@ class Hashira::Smells::Visibility
   def bare?(node) = MARKERS.include?(node.name) && !node.receiver
 
   def switch(name, arguments)
-    arguments ? tag(name, arguments.arguments) : (@section = name)
+    arguments ? tag(name, arguments.arguments) : (@_section = name)
   end
 
   def tag(section, arguments) = arguments.each { note(it, section) }
 
   def note(argument, section)
     case argument
-    when Prism::DefNode then @found << [argument, section]
-    when Prism::SymbolNode then @overrides[argument.unescaped.to_sym] = section
+    when Prism::DefNode then @_found << [argument, section]
+    when Prism::SymbolNode then @_overrides[argument.unescaped.to_sym] = section
     end
   end
 
   def shadow(node)
-    statements(node).each { @found << [it, :singleton] if it.is_a?(Prism::DefNode) }
+    statements(node).each { @_found << [it, :singleton] if it.is_a?(Prism::DefNode) }
   end
 end

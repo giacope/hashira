@@ -25,7 +25,7 @@ class Hashira::Report::Columns
 
   private
 
-  def clipped = @clipped ||= @raw.map { |cells| cells.map { clip(it) } }
+  def clipped = @_clipped ||= @raw.map { |cells| cells.map { clip(it) } }
 
   def headers = clipped.first
 
@@ -38,9 +38,9 @@ class Hashira::Report::Columns
     numeric[column] ? cell.rjust(width) : cell.ljust(width)
   end
 
-  def widths = @widths ||= headers.each_index.map { |column| down(column).map(&:length).max }
+  def widths = @_widths ||= headers.each_index.map { |column| down(column).map(&:length).max }
 
-  def numeric = @numeric ||= headers.each_index.map { |column| rows.any? && counted?(column) }
+  def numeric = @_numeric ||= headers.each_index.map { |column| rows.any? && counted?(column) }
 
   def counted?(column) = rows.all? { NUMBER.match?(it[column]) }
 

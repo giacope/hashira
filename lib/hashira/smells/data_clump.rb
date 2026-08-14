@@ -9,9 +9,9 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def smelly? = clumps.any?
 
-  def candidates = @candidates ||= subject.owned.map { [it, it.arguments.sort] }
+  def candidates = @_candidates ||= subject.owned.map { [it, it.arguments.sort] }
 
-  def clumps = @clumps ||= shared.map { |clump| [clump, holders(clump)] }
+  def clumps = @_clumps ||= shared.map { |clump| [clump, holders(clump)] }
 
   def shared = candidates.combination(MAX_COPIES + 1).filter_map { |group| clump(group) }.uniq
 

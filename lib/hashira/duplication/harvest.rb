@@ -10,7 +10,7 @@ class Hashira::Duplication::Harvest
     @trees = trees
   end
 
-  def fragments = @fragments ||= @trees.flat_map { |path, tree| scan(@project.relative(path), tree) }
+  def fragments = @_fragments ||= @trees.flat_map { |path, tree| scan(@project.relative(path), tree) }
 
   private
 

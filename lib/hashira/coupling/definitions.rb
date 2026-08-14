@@ -15,7 +15,7 @@ class Hashira::Coupling::Definitions
   def packages = @trees.keys.map { @project.package(it) }.uniq
 
   def roots
-    @roots ||= @trees.each_value.with_object(Set.new) { |tree, set| survey(tree, set) }
+    @_roots ||= @trees.each_value.with_object(Set.new) { |tree, set| survey(tree, set) }
   end
 
   private

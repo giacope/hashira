@@ -16,9 +16,9 @@ class Hashira::Coupling::References
 
   private
 
-  def found = @found ||= []
+  def found = @_found ||= []
 
-  def scopes = @scopes ||= [[]]
+  def scopes = @_scopes ||= [[]]
 
   def nesting = scopes.last
 

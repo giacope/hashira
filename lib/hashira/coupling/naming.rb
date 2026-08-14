@@ -5,7 +5,7 @@ class Hashira::Coupling::Naming
     @definitions = definitions
   end
 
-  def segments = @segments ||= Hashira::Coupling::NamespacePrefix.infer(@definitions)
+  def segments = @_segments ||= Hashira::Coupling::NamespacePrefix.infer(@definitions)
 
   def strip(path)
     return [] if segments.first(path.length) == path

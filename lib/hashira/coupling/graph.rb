@@ -9,7 +9,7 @@ class Hashira::Coupling::Graph
 
   attr_reader :trees
 
-  def cycles = @cycles ||= Hashira::Coupling::Cycles.new(map.dependencies, self)
+  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(map.dependencies, self)
 
   def charge(file) = @census.charge(file, [])
 
@@ -60,7 +60,7 @@ class Hashira::Coupling::Graph
   private
 
   def map
-    @map ||=
+    @_map ||=
       Hashira::Coupling::EdgeMap.new(@census).tap do |edges|
         @trees.each { |file, tree| edges.record(@project.relative(file), file, tree) }
       end

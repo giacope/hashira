@@ -28,17 +28,7 @@
     "smells -> analysis"
   ],
   "findings": {
-    "duplication:45473fba11d0": 18,
-    "instance_variable_assumption:Hashira::Complexity::CognitiveScore": null,
-    "instance_variable_assumption:Hashira::Coupling::Census": null,
-    "instance_variable_assumption:Hashira::Coupling::CycleSearch": null,
-    "instance_variable_assumption:Hashira::Coupling::Roster": null,
-    "instance_variable_assumption:Hashira::Smells::Ownership": null,
-    "instance_variable_assumption:Hashira::Smells::Refs": null,
-    "instance_variable_assumption:Hashira::Smells::Visibility": null,
-    "too_many_instance_variables:Hashira::Complexity::CognitiveScore": null,
-    "too_many_instance_variables:Hashira::Coupling::Census": null,
-    "too_many_instance_variables:Hashira::Coupling::Roster": null
+    "duplication:45473fba11d0": 18
   },
   "accepted": [
     {

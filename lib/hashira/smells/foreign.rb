@@ -33,9 +33,9 @@ class Hashira::Smells::Foreign
 
   private
 
-  def body = @body ||= Hashira::Smells::Scope.inside(@subject.node)
+  def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
 
-  def tail = @tail ||= Hashira::Analysis::Syntax.statements(@subject.node).compact.last
+  def tail = @_tail ||= Hashira::Analysis::Syntax.statements(@subject.node).compact.last
 
   def convert?
     tail.is_a?(Prism::CallNode) && tail.name == :new &&

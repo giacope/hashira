@@ -22,7 +22,7 @@ class Hashira::Report::MetricsTable
 
   def ranked = @graph.metrics.sort_by { |_package, metric| metric.order }
 
-  def split = @split ||= (ranked.size > @top ? ranked.partition { |_package, metric| !leaf?(metric) } : [ranked, []])
+  def split = @_split ||= (ranked.size > @top ? ranked.partition { |_package, metric| !leaf?(metric) } : [ranked, []])
 
   def kept = split.first.first(@top)
 

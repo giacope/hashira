@@ -10,7 +10,7 @@ class Hashira::Coupling::Rule
 
   attr_reader :project, :graph
 
-  def metrics = @metrics ||= graph.metrics
+  def metrics = @_metrics ||= graph.metrics
 
   def finding(**attributes)
     Hashira::Analysis::Finding.new(kind: self.class::KIND, cycle: nil, **attributes)

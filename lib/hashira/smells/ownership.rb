@@ -7,21 +7,21 @@ class Hashira::Smells::Ownership
 
   def owned?(segments)
     surveyed
-    @suffixes.include?(segments.join("::"))
+    @_suffixes.include?(segments.join("::"))
   end
 
   def keys(segments)
     surveyed
-    @tables.fetch(segments.join("::"), [])
+    @_tables.fetch(segments.join("::"), [])
   end
 
   private
 
   def surveyed
-    return if @surveyed
-    @surveyed = true
-    @suffixes = Set.new
-    @tables = {}
+    return if @_surveyed
+    @_surveyed = true
+    @_suffixes = Set.new
+    @_tables = {}
     @trees.each { survey(it) }
   end
 
@@ -39,14 +39,14 @@ class Hashira::Smells::Ownership
   end
 
   def absorb(path)
-    @suffixes.merge(suffixes(path))
+    @_suffixes.merge(suffixes(path))
   end
 
   def chart(path, value)
     return unless value.is_a?(Prism::HashNode)
     keys = value.elements.map { spine(it) }
     return if keys.empty? || keys.any?(&:nil?)
-    suffixes(path).each { @tables[it] = keys }
+    suffixes(path).each { @_tables[it] = keys }
   end
 
   def thaw(value)
