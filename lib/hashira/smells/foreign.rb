@@ -18,9 +18,7 @@ class Hashira::Smells::Foreign
   ].freeze
 
   def initialize(subject, ownership)
-    node = subject.node
-    @body = Hashira::Smells::Scope.inside(node)
-    @tail = tail(node)
+    @subject = subject
     @ownership = ownership
   end
 
@@ -35,12 +33,16 @@ class Hashira::Smells::Foreign
 
   private
 
+  def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
+
+  def tail = @_tail ||= Hashira::Analysis::Syntax.statements(@subject.node).compact.last
+
   def convert?
-    @tail.is_a?(Prism::CallNode) && @tail.name == :new &&
-      Hashira::Analysis::Syntax.segments(@tail.receiver).any? && stateless?
+    tail.is_a?(Prism::CallNode) && tail.name == :new &&
+      Hashira::Analysis::Syntax.segments(tail.receiver).any? && stateless?
   end
 
-  def stateless? = @body.none? { STATE.include?(it.class) }
+  def stateless? = body.none? { STATE.include?(it.class) }
 
   def fenced?(name)
     tested = tests { it == name }
@@ -48,7 +50,7 @@ class Hashira::Smells::Foreign
   end
 
   def wire?(name)
-    calls = @body.grep(Prism::CallNode).select { |call| local?(call.receiver) { it == name } }
+    calls = body.grep(Prism::CallNode).select { |call| local?(call.receiver) { it == name } }
     calls.any? && calls.all? { keyed?(it) } && reassignments(name).none?
   end
 
@@ -75,11 +77,11 @@ class Hashira::Smells::Foreign
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 
   def among(kind, name)
-    @body.grep(kind).select { it.name == name }
+    body.grep(kind).select { it.name == name }
   end
 
   def snares(name)
-    @body.grep(Prism::RescueNode).select { it.reference&.name == name }
+    body.grep(Prism::RescueNode).select { it.reference&.name == name }
   end
 
   def alien?(exceptions)
@@ -107,15 +109,15 @@ class Hashira::Smells::Foreign
   end
 
   def probes(&)
-    @body.grep(Prism::CallNode).select { TYPE_TESTS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
+    body.grep(Prism::CallNode).select { TYPE_TESTS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
   end
 
   def arms(&)
-    @body.grep(Prism::CaseNode).select { local?(it.predicate, &) }.flat_map(&:conditions).flat_map(&:conditions)
+    body.grep(Prism::CaseNode).select { local?(it.predicate, &) }.flat_map(&:conditions).flat_map(&:conditions)
   end
 
   def lookups(&)
-    @body.grep(Prism::CallNode).select { it.name == :[] && sorts?(key(it), &) }.flat_map { @ownership.keys(Hashira::Analysis::Syntax.segments(it.receiver)) }
+    body.grep(Prism::CallNode).select { it.name == :[] && sorts?(key(it), &) }.flat_map { @ownership.keys(Hashira::Analysis::Syntax.segments(it.receiver)) }
   end
 
   def sorts?(argument, &)
@@ -126,6 +128,4 @@ class Hashira::Smells::Foreign
   def local?(node, &) = node.is_a?(Prism::LocalVariableReadNode) && yield(node.name)
 
   def key(call) = call.arguments&.arguments&.first
-
-  def tail(def_node) = Hashira::Analysis::Syntax.statements(def_node).compact.last
 end

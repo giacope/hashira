@@ -11,7 +11,7 @@ class Hashira::Coupling::Folding
     @suffixes = suffixes
   end
 
-  def map = @map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
+  def map = @_map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
 
   def disclosed
     map.map { |from, to| { from:, to:, via: parents.key?(from) ? "base" : "suffix" } }
@@ -19,10 +19,10 @@ class Hashira::Coupling::Folding
 
   private
 
-  def links = @links ||= named.merge(parents)
+  def links = @_links ||= named.merge(parents)
 
   def parents
-    @parents ||= singles.select { |_name, one| one.superclass }.to_h { |name, one| [name, target(one)] }.compact
+    @_parents ||= singles.select { |_name, one| one.superclass }.to_h { |name, one| [name, target(one)] }.compact
   end
 
   def named
@@ -38,11 +38,11 @@ class Hashira::Coupling::Folding
 
   def trims?(name, suffix) = name.end_with?(suffix) && name != suffix
 
-  def singles = @singles ||= lone.group_by(&:name).transform_values { it.find(&:superclass) || it.last }
+  def singles = @_singles ||= lone.group_by(&:name).transform_values { it.find(&:superclass) || it.last }
 
   def lone = @definitions.select(&:singular?).reject { anchored.include?(it.name) }
 
-  def anchored = @anchored ||= @definitions.select(&:nested?).to_set(&:name)
+  def anchored = @_anchored ||= @definitions.select(&:nested?).to_set(&:name)
 
   def target(one) = @census.pinpoint(Hashira::Analysis::Syntax.segments(one.superclass))
 

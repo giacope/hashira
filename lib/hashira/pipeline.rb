@@ -10,50 +10,55 @@ class Hashira::Pipeline
   STRUCTURAL = Hashira::Coupling::Report::RULES.map { it::KIND }.freeze
 
   SMELLS = (
-    Hashira::Smells::Report::CHECKS.map(&:kind) + [Hashira::Smells::BoundarySprawl::KIND]
+    Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
   ).sort.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto)
     @project = project
     @enabled = enabled
-    @parsed = Hashira::Trees.new(project)
-    @coupling = Hashira::Coupling::Report.new(project, @parsed.all, packaging: settle(packaging))
+    @packaging = packaging
   end
 
   attr_reader :project
 
-  def unparsed = @parsed.unparsed
+  def unparsed = parsed.unparsed
 
-  def graph = @coupling.graph
+  def graph = coupling.graph
 
-  def complexity = @complexity ||= analyzed(:complexity, Hashira::Complexity::Scores)
+  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores)
 
-  def duplication = @duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
+  def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 
-  def smells = @smells ||= analyzed(:smells, Hashira::Smells::Report)
+  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report)
 
   def hotspots
-    @hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
+    @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
   end
 
-  def churn = @churn ||= Hashira::Churn.scan(@project.directories.first)
+  def churn = @_churn ||= Hashira::Churn.build(@project.directories.first)
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
 
   def analyzed(name, kind, *extra)
-    kind.new(@project, @parsed.all, *extra) if enabled?(name)
+    kind.new(@project, parsed.all, *extra) if enabled?(name)
   end
 
   def findings = structural + listed(complexity) + listed(duplication) + listed(smells)
 
   private
 
+  def parsed = @_parsed ||= Hashira::Trees.new(@project)
+
+  def coupling
+    @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))
+  end
+
   def settle(packaging)
     return packaging unless packaging == :auto
     @project.rails? ? :namespace : :folder
   end
 
-  def structural = enabled?(:coupling) ? @coupling.findings : []
+  def structural = enabled?(:coupling) ? coupling.findings : []
 
   def listed(analyzer) = analyzer ? analyzer.findings : []
 end

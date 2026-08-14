@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Complexity::Scores) do
   it "ranks methods by cognitive complexity, worst first" do
-    complexity(FixtureHelper::COMPLEX_FILES) do |scores|
+    complexity(Fixtures::COMPLEX_FILES) do |scores|
       worst = scores.ranked.first
       expect(worst.subject).to(eq("App::Knot::Tangle#tangled"))
       expect(worst.cognitive).to(eq(12))
@@ -11,21 +11,21 @@ RSpec.describe(Hashira::Complexity::Scores) do
   end
 
   it "labels instance methods with # and singleton methods with ." do
-    complexity(FixtureHelper::COMPLEX_FILES) do |scores|
+    complexity(Fixtures::COMPLEX_FILES) do |scores|
       subjects = scores.ranked.map(&:subject)
       expect(subjects).to(include("App::Knot::Tangle.helper", "App::Knot::Tangle#simple"))
     end
   end
 
   it "rolls complexity up per class — the total a per-method view hides" do
-    complexity(FixtureHelper::COMPLEX_FILES) do |scores|
+    complexity(Fixtures::COMPLEX_FILES) do |scores|
       rollup = scores.classes.first
       expect(rollup).to(have_attributes(name: "App::Knot::Tangle", cognitive: 12, method_count: 3, peak: 12))
     end
   end
 
   it "flags methods over the threshold as findings with a breakdown and advice" do
-    complexity(FixtureHelper::COMPLEX_FILES) do |scores|
+    complexity(Fixtures::COMPLEX_FILES) do |scores|
       finding = scores.findings.first
       expect(scores.findings.size).to(eq(1))
       expect(finding.kind).to(eq("complexity"))

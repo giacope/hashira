@@ -7,7 +7,7 @@ class Hashira::Duplication::Clones
     @churn = churn
   end
 
-  def clusters = @clusters ||= Hashira::Duplication::Clusters.new(fragments).sorted
+  def clusters = @_clusters ||= Hashira::Duplication::Clusters.new(fragments).sorted
 
   def findings = clusters.map { |cluster| Hashira::Duplication::DuplicationFinding.new(cluster, @churn).to_finding }
 

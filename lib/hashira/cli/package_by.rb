@@ -9,6 +9,6 @@ module Hashira::CLI::PackageBy
     return :auto if value.empty?
     choice = value.to_sym
     return choice if CHOICES.include?(choice)
-    raise(Hashira::Error.unknown("--package-by", value, CHOICES))
+    raise(Hashira::CLI::Choice.unknown("--package-by", value, CHOICES))
   end
 end

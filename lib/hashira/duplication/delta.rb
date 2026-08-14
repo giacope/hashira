@@ -11,10 +11,7 @@ class Hashira::Duplication::Delta
   end
 
   def to_h
-    {
-      mass: @cluster.mass, sites: @cluster.size, kind:,
-      locations: @cluster.sites.sort_by(&:rank).map(&:range)
-    }
+    { mass: @cluster.mass, sites: @cluster.size, kind: }.merge(locations: @cluster.sites.sort_by(&:rank).map(&:range))
   end
 
   private

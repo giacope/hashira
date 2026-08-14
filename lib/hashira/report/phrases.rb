@@ -1,28 +1,33 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
+  FLATTEN = "flatten the branching — guard clauses, early returns, or polymorphism."
+
+  LOOP_BODY = "extract the loop body into its own method."
+
   COMPLEXITY_ADVICE = {
-    "if" => "flatten the branching — guard clauses, early returns, or polymorphism.",
-    "elsif" => "replace the elsif ladder with a lookup or polymorphic dispatch.",
-    "else" => "flatten the branching — guard clauses, early returns, or polymorphism.",
+    "if" => FLATTEN, "else" => FLATTEN,
+    "elsif" => "replace the elsif ladder with a lookup or polymorphic dispatch."
+  }.merge(
     "case" => "a case this size often wants polymorphism or a dispatch table.",
     "boolean" => "name the compound condition in a predicate method.",
-    "rescue" => "narrow the rescue, or lift error handling to the caller.",
-    "while" => "extract the loop body into its own method.",
-    "until" => "extract the loop body into its own method.",
-    "for" => "extract the loop body into its own method.",
+    "rescue" => "narrow the rescue, or lift error handling to the caller."
+  ).merge(
+    "while" => LOOP_BODY, "until" => LOOP_BODY, "for" => LOOP_BODY
+  ).merge(
     "unless" => "invert to a guard clause or a named predicate.",
     "ternary" => "extract the nested ternary into a named method."
-  }.freeze
+  ).freeze
 
   DUPLICATION_ADVICE = {
     identical: "byte-for-byte identical — extract a shared method and call it from each site.",
     literal: "differs only in literal values — extract a method, pass them as arguments.",
-    message: "differs only in the receiver or message — extract a method taking the receiver.",
+    message: "differs only in the receiver or message — extract a method taking the receiver."
+  }.merge(
     constant: "differs only in a constant — extract a method and parameterize it.",
     structure: "the control flow differs — extract the common core, but verify by hand (lower confidence).",
     mixed: "extract the shared shape and pass what differs as parameters."
-  }.freeze
+  ).freeze
 
   module_function
 
@@ -38,9 +43,9 @@ module Hashira::Report::Phrases
 
   def on_sdp_violation(finding)
     detail = finding.detail
-    from, to = detail.values_at(:from, :to)
-    "#{from} (I=#{score(detail[:from_instability])}) depends on the LESS stable #{to} " \
-      "(I=#{score(detail[:to_instability])}) — churn in #{to} will force churn in #{from}. " \
+    from, to = detail.deconstruct
+    "#{from} (I=#{score(detail.from_instability)}) depends on the LESS stable #{to} " \
+      "(I=#{score(detail.to_instability)}) — churn in #{to} will force churn in #{from}. " \
       "Invert the edge or extract the stable part of #{to} that #{from} needs."
   end
 
@@ -69,14 +74,14 @@ module Hashira::Report::Phrases
 
   def on_complexity(finding)
     detail = finding.detail
-    "#{finding.package} — cognitive #{detail[:cognitive]}, #{detail[:calls]} calls " \
-      "(#{detail[:site]}). #{COMPLEXITY_ADVICE.fetch(detail[:dominant])}"
+    "#{finding.package} — cognitive #{detail.cognitive}, #{detail.calls} calls " \
+      "(#{detail.site}). #{COMPLEXITY_ADVICE.fetch(detail.dominant)}"
   end
 
   def on_duplication(finding)
     detail = finding.detail
-    "#{detail[:size]} similar fragments (mass #{detail[:mass]}) — " \
-      "#{DUPLICATION_ADVICE.fetch(detail[:kind])}#{footnote(detail)}"
+    "#{detail.size} similar fragments (mass #{detail.mass}) — " \
+      "#{DUPLICATION_ADVICE.fetch(detail.kind)}#{footnote(detail)}"
   end
 
   def score(value) = format("%.2f", value)
@@ -95,6 +100,6 @@ module Hashira::Report::Phrases
   end
 
   def footnote(detail)
-    detail[:hot] ? " Both sites change often — fix one, miss the other." : ""
+    detail.hot ? " Both sites change often — fix one, miss the other." : ""
   end
 end

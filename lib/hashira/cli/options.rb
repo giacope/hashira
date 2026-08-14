@@ -1,21 +1,16 @@
 # frozen_string_literal: true
 
 class Hashira::CLI
-  PAGE = { directories: [], baseline: "", fail_on: [], skip: [], packaging: :auto, top: nil, compact: nil }.freeze
-
   Options =
     Data.define(:directories, :mode, :baseline, :fail_on, :skip, :packaging, :top, :compact) do
       def self.parse(argv) = CommandLine.new(argv).options
 
-      def self.page(mode) = new(**PAGE, mode:)
-
-      def initialize(**attributes)
-        super
-        Needs.check(self)
+      def self.build(mode)
+        new(directories: [], baseline: "", fail_on: [], skip: [], packaging: :auto, top: nil, compact: nil, mode:)
       end
 
       def pipeline
-        chosen = Hashira::Project.detect(directories)
+        chosen = Hashira::Project.new(directories)
         told = Hashira::Report::Notices.new
         told.scanning(chosen.files.size)
         told.rails if directories.empty? && File.exist?("config/application.rb")

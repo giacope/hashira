@@ -51,6 +51,7 @@ RSpec/ExampleLength:
 # Configuration parameters: Max.
 RSpec/MultipleExpectations:
   Exclude:
+    - 'spec/analysis/finding_spec.rb'
     - 'spec/analysis/syntax_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'
@@ -101,6 +102,7 @@ RSpec/MultipleExpectations:
 RSpec/SpecFilePathFormat:
   Exclude:
     - '**/spec/routing/**/*'
+    - 'spec/analysis/finding_spec.rb'
     - 'spec/analysis/syntax_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'

@@ -22,13 +22,13 @@ class Hashira::Smells::ParamCheck
   private
 
   def nested
-    @nested ||= Hashira::Smells::Conditions.nested(branches).map { self.class.new(it, @name) }
+    @_nested ||= Hashira::Smells::Conditions.nested(branches).map { self.class.new(it, @name) }
   end
 
   def branches = Hashira::Smells::Conditions.branches(@node)
 
   def predicate
-    @predicate ||= spread(Hashira::Smells::Conditions.condition(@node))
+    @_predicate ||= spread(Hashira::Smells::Conditions.condition(@node))
   end
 
   def spread(condition) = condition ? Hashira::Analysis::NodeWalk.collect(condition) : []

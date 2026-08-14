@@ -12,7 +12,7 @@ class Hashira::Duplication::Fragment
 
   attr_reader :file
 
-  def types = @types ||= nodes.map(&:type)
+  def types = @_types ||= nodes.map(&:type)
 
   def digest = Digest::SHA256.hexdigest(shape).slice(0, DIGEST_LENGTH)
 
@@ -34,5 +34,5 @@ class Hashira::Duplication::Fragment
 
   def touches?(others) = others.any? { overlaps?(it) }
 
-  def nodes = @nodes ||= @roots.flat_map { Hashira::Analysis::NodeWalk.collect(it) }
+  def nodes = @_nodes ||= @roots.flat_map { Hashira::Analysis::NodeWalk.collect(it) }
 end

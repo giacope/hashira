@@ -7,7 +7,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
   it "reports cycles with path, weakest edge, and evidence" do
-    verdicts(FixtureHelper::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::CYCLIC_FILES) do |all|
       cycles = all.select { it.kind == "cycle" }
       expect(cycles.map(&:package)).to(eq(%w[alpha]))
       finding = cycles.first
@@ -19,7 +19,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "reports each distinct loop once, from its smallest member" do
-    verdicts(FixtureHelper::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::CYCLIC_FILES) do |all|
       cycles = all.select { it.kind == "cycle" }
       expect(cycles.size).to(eq(1))
       expect(cycles.first.package).to(eq("alpha"))
@@ -38,7 +38,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "reports SDP violations with instabilities and evidence" do
-    verdicts(FixtureHelper::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::CYCLIC_FILES) do |all|
       violations = all.select { it.kind == "sdp_violation" }
       expect(violations.size).to(eq(1))
       finding = violations.first
@@ -136,7 +136,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "lists findings in rule order" do
-    verdicts(FixtureHelper::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::CYCLIC_FILES) do |all|
       expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation utility_function]))
     end
   end

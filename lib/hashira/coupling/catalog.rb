@@ -5,15 +5,13 @@ class Hashira::Coupling::Catalog
 
   def initialize(definitions)
     @definitions = definitions
-    @naming = Hashira::Coupling::Naming.new(definitions)
-    @entries = definitions.map { |node, full, folder| entry(node, full, folder) }
   end
 
-  def each(&) = @entries.each(&)
+  def each(&) = entries.each(&)
 
-  def prefix = @naming.segments
+  def prefix = naming.segments
 
-  def strip(path) = @naming.strip(path)
+  def strip(path) = naming.strip(path)
 
   def roots = @definitions.roots
 
@@ -21,7 +19,11 @@ class Hashira::Coupling::Catalog
 
   private
 
+  def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)
+
+  def entries = @_entries ||= @definitions.map { |node, full, folder| entry(node, full, folder) }
+
   def entry(node, full, folder)
-    Hashira::Coupling::Definition.new(node:, path: @naming.strip(full), folder:)
+    Hashira::Coupling::Definition.new(node:, path: naming.strip(full), folder:)
   end
 end

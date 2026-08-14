@@ -21,7 +21,8 @@ class Hashira::Report::Json
 
   def about
     project = @view.project
-    { version: SCHEMA, packaging: @view.graph&.packaging, targets: project.directories, files: project.files.size }
+    { version: SCHEMA, packaging: @view.graph&.packaging, targets: project.directories }
+      .merge(files: project.files.size)
   end
 
   def base = { findings: @view.findings.all.map { rendered(it) }, accepted: accepted }

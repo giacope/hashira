@@ -14,7 +14,7 @@ module Hashira
 
         def identity = digest || package
 
-        def to_h = super.compact
+        def to_h = super.merge(detail: detail&.to_h).compact
       end
   end
 end

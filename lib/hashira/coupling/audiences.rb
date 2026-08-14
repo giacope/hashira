@@ -11,13 +11,13 @@ class Hashira::Coupling::Audiences
 
   def split? = parts.size >= 2
 
-  def parts = @parts ||= [common, *slices].compact.select { it.constants.size >= MIN }
+  def parts = @_parts ||= [common, *slices].compact.select { it.constants.size >= MIN }
 
   private
 
-  def clients = @clients ||= @usage.keys.sort
+  def clients = @_clients ||= @usage.keys.sort
 
-  def shared = @shared ||= tally.select { |_constant, users| users.size * 2 > clients.size }.keys.to_set
+  def shared = @_shared ||= tally.select { |_constant, users| users.size * 2 > clients.size }.keys.to_set
 
   def tally
     clients.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |client, seen|

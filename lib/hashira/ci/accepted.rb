@@ -7,7 +7,7 @@ class Hashira::CI::Accepted
 
   Entry =
     Data.define(:kind, :package, :digest, :reason) do
-      def self.from(hash)
+      def self.build(hash)
         new(kind: hash["kind"], package: hash["package"], digest: hash["digest"], reason: hash["reason"])
       end
 
@@ -17,16 +17,16 @@ class Hashira::CI::Accepted
 
       def label = reason || "accepted (no reason recorded)"
 
-      def to_h = { kind:, package:, digest:, reason: }.compact
+      def to_h = super.compact
     end
 
-  def self.load(path) = new(Hashira::CI::Baseline.read(path).fetch("accepted", []))
+  def self.build(path) = new(Hashira::CI::Baseline.new(path).accepted)
 
-  def initialize(entries)
-    @entries = entries.map { Entry.from(it) }
+  def initialize(list)
+    @list = list
   end
 
-  def entries = @entries.map(&:to_h)
+  def entries = records.map(&:to_h)
 
   def screen(findings)
     accepted, live = findings.map { [it, reason(it)] }.partition(&:last)
@@ -35,7 +35,9 @@ class Hashira::CI::Accepted
 
   private
 
+  def records = @_records ||= @list.map { Entry.build(it) }
+
   def reason(finding)
-    @entries.find { it.matches?(finding) }&.label
+    records.find { it.matches?(finding) }&.label
   end
 end

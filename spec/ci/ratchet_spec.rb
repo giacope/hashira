@@ -2,18 +2,18 @@
 
 RSpec.describe(Hashira::CI::Ratchet) do
   def with_graph(&)
-    analyze(FixtureHelper::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
+    analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
 
   def finding(kind, package, digest: nil)
     Hashira::Analysis::Finding.new(
       kind:, package:, digest:, evidence: ["a.rb:1"],
-      detail: { size: 2, mass: 30, kind: :identical, hot: false }
+      detail: Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
     )
   end
 
   def ratchet(graph, findings = [], path = "baseline.json", io: StringIO.new)
-    described_class.new(graph, findings, Hashira::CI::Baseline.load(path), io:)
+    described_class.new(graph, findings, Hashira::CI::Baseline.new(path), io:)
   end
 
   def edges = ["alpha -> beta", "alpha -> core", "beta -> alpha"]
@@ -55,7 +55,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "fails with evidence when an edge is new" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core"], findings: [])
-      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.load("baseline.json")).check).to(eq(1)) }
+      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check).to(eq(1)) }
       expect(output).to(eq(<<~TEXT))
         NEW EDGE beta -> alpha — introduced by:
           · beta/two.rb:4: Alpha::One
@@ -86,7 +86,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   def scored(kind, package, value)
     Hashira::Analysis::Finding.new(
       kind:, package:, evidence: ["a.rb:1"],
-      detail: { cognitive: value, calls: 3, site: "a.rb:1", dominant: "if" }
+      detail: Hashira::Complexity::MethodFinding::Effort.new(cognitive: value, calls: 3, site: "a.rb:1", dominant: "if")
     )
   end
 
@@ -147,7 +147,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "fails but celebrates removed edges" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core", "beta -> alpha", "core -> alpha"], findings: [])
-      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.load("baseline.json")).check).to(eq(3)) }
+      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check).to(eq(3)) }
       expect(output).to(include("Edges removed (improvement!): core -> alpha"))
       expect(output).to(include("Lock it in: re-run this command with --update-baseline"))
       expect(output).not_to(include("Ratchet FAILED"))
@@ -189,14 +189,14 @@ RSpec.describe(Hashira::CI::Ratchet) do
   end
 
   it "refuses to ratchet a folder-mode baseline against a namespace run" do
-    analyze(FixtureHelper::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+    analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       seed(findings: [])
       expect(ratchet(graph).blocker).to(match(/recorded with --package-by folder.*rerun with --package-by folder/))
     end
   end
 
   it "records the packaging mode and accepts a matching run" do
-    analyze(FixtureHelper::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+    analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       io = StringIO.new
       ratchet(graph, [], io:).update
       expect(JSON.parse(File.read("baseline.json"))["packaging"]).to(eq("namespace"))
@@ -205,7 +205,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   end
 
   def scoped(graph, analyzers:, targets:)
-    described_class.new(graph, [], Hashira::CI::Baseline.load("baseline.json", analyzers:, targets:))
+    described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json", analyzers:, targets:))
   end
 
   it "refuses a run that analyzes less, or elsewhere, than the baseline recorded" do
@@ -228,7 +228,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
 
   it "blocks without a baseline and stands aside with one" do
     with_graph do |graph|
-      expect(described_class.new(graph, [], Hashira::CI::Baseline.load("missing.json")).blocker)
+      expect(described_class.new(graph, [], Hashira::CI::Baseline.new("missing.json")).blocker)
         .to(eq("no baseline at missing.json — run --update-baseline first"))
       seed(findings: [])
       expect(ratchet(graph).blocker).to(be_nil)

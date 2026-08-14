@@ -85,16 +85,16 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     def references = Hashira::Coupling::References
 
     it "collects outermost constant paths, not their parents separately" do
-      expect(references.list(parse("x = A::B::C; y = D"))).to(eq([%w[A B C], %w[D]]))
+      expect(references.new.list(parse("x = A::B::C; y = D"))).to(eq([%w[A B C], %w[D]]))
     end
 
     it "skips the constant being defined but keeps the superclass" do
-      expect(references.list(parse("class App::Child < Base::Parent; Used::Thing; end")))
+      expect(references.new.list(parse("class App::Child < Base::Parent; Used::Thing; end")))
         .to(eq([%w[Base Parent], %w[Used Thing]]))
     end
 
     it "ignores strings and comments" do
-      expect(references.list(parse("# Fake::Ref\nx = 'Other::Ref'"))).to(eq([]))
+      expect(references.new.list(parse("# Fake::Ref\nx = 'Other::Ref'"))).to(eq([]))
     end
   end
 end

@@ -19,7 +19,7 @@ class Hashira::Report::HotspotTable
 
   private
 
-  def ranked = @ranked ||= @hotspots.files.first(@top)
+  def ranked = @_ranked ||= @hotspots.files.first(@top)
 
   def legend
     @io.puts("\nLegend: Cog cognitive complexity, Dup mass of the clones the file carries,")

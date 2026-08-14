@@ -8,6 +8,7 @@ require_relative "duplicate_method_call"
 require_relative "feature_envy"
 require_relative "foreign"
 require_relative "instance_variable_assumption"
+require_relative "kind"
 require_relative "manual_dispatch"
 require_relative "module_initialize"
 require_relative "nil_check"
@@ -19,22 +20,30 @@ require_relative "utility_function"
 class Hashira::Smells::Report
   CHECKS = Hashira::Smells::Check.subclasses.sort_by(&:name).freeze
 
-  JUDGES = CHECKS.select(&:judge?).freeze
+  JUDGES = [
+    Hashira::Smells::DataClump, Hashira::Smells::InstanceVariableAssumption,
+    Hashira::Smells::ModuleInitialize, Hashira::Smells::RepeatedConditional,
+    Hashira::Smells::TooManyInstanceVariables
+  ].freeze
 
-  PROBES = CHECKS.reject(&:judge?).freeze
+  PROBES = (CHECKS - JUDGES).freeze
 
   def initialize(project, trees)
-    @census = Hashira::Smells::Census.new(project, trees)
-    @types = @census.types
+    @project = project
+    @trees = trees
   end
 
-  def findings = @findings ||= sniff(@types, JUDGES) + sniff(methods, PROBES) + sprawl
+  def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
 
   private
 
-  def methods = @types.flat_map(&:defs)
+  def census = @_census ||= Hashira::Smells::Census.new(@project, @trees)
 
-  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, @census.ownership).findings
+  def types = @_types ||= census.types
+
+  def methods = types.flat_map(&:defs)
+
+  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership).findings
 
   def sniff(subjects, checks) = subjects.flat_map { |subject| verdicts(subject, checks) }
 

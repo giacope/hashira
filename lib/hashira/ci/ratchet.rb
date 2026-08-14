@@ -57,7 +57,7 @@ class Hashira::CI::Ratchet
   def edges = @graph.edges.map(&:to_s)
 
   def scored
-    @scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, group.filter_map(&:magnitude).max] }
+    @_scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, group.filter_map(&:magnitude).max] }
   end
 
   def drift = Hashira::CI::Diff.new(added: fresh, removed: @baseline.edges - edges)
@@ -65,6 +65,6 @@ class Hashira::CI::Ratchet
   def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
 
   def delta
-    Hashira::CI::Diff.between(scored, @baseline.findings) if @baseline.findings?
+    Hashira::CI::Comparison.new(scored, @baseline.findings).diff if @baseline.findings?
   end
 end

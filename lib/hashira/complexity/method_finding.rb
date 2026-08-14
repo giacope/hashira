@@ -3,6 +3,8 @@
 class Hashira::Complexity::MethodFinding
   KIND = "complexity"
 
+  Effort = Data.define(:cognitive, :calls, :site, :dominant)
+
   def initialize(score)
     @score = score
   end
@@ -14,7 +16,7 @@ class Hashira::Complexity::MethodFinding
   private
 
   def detail
-    { cognitive: @score.cognitive, calls: @score.calls, site: "#{@score.file}:#{@score.line}", dominant: }
+    Effort.new(cognitive: @score.cognitive, calls: @score.calls, site: "#{@score.file}:#{@score.line}", dominant:)
   end
 
   def evidence

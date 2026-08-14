@@ -36,11 +36,11 @@ RSpec.describe(Hashira::CI::Gate) do
     nils = Array.new(2) { finding(kind: "nil_check", evidence: []) }
     all = nils.unshift(finding(kind: "cycle", evidence: []))
     io = StringIO.new
-    err = StringIO.new
-    expect(described_class.new(findings(all), %w[cycle nil_check sdp_violation utility_function], io:, err:).check)
+    error = StringIO.new
+    expect(described_class.new(findings(all), %w[cycle nil_check sdp_violation utility_function], io:, error:).check)
       .to(eq(1))
     expect(io.string).to(include("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1."))
     expect(io.string).not_to(include("sdp_violation"))
-    expect(err.string).to(eq("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.\n"))
+    expect(error.string).to(eq("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.\n"))
   end
 end

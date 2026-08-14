@@ -2,13 +2,13 @@
 
 class Hashira::Coupling::Naming
   def initialize(definitions)
-    @segments = Hashira::Coupling::NamespacePrefix.infer(definitions)
+    @definitions = definitions
   end
 
-  attr_reader :segments
+  def segments = @_segments ||= Hashira::Coupling::NamespacePrefix.infer(@definitions)
 
   def strip(path)
-    return [] if @segments.first(path.length) == path
-    path.drop(@segments.length.downto(0).find { path.first(it) == @segments.last(it) })
+    return [] if segments.first(path.length) == path
+    path.drop(segments.length.downto(0).find { path.first(it) == segments.last(it) })
   end
 end

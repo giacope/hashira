@@ -8,6 +8,6 @@ module Hashira::CLI::Format
   def parse(value)
     return if value.empty?
     return value.to_sym if CHOICES.include?(value)
-    raise(Hashira::Error.unknown("--format", value, CHOICES))
+    raise(Hashira::CLI::Choice.unknown("--format", value, CHOICES))
   end
 end

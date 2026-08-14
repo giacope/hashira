@@ -8,7 +8,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
   def smelly? = sightings.any?
 
   def sightings
-    @sightings ||= Hashira::Smells::Scope.inside(subject.node)
+    @_sightings ||= Hashira::Smells::Scope.inside(subject.node)
       .select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
   end
 

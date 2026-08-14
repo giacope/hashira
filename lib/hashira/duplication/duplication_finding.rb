@@ -3,6 +3,8 @@
 class Hashira::Duplication::DuplicationFinding
   KIND = "duplication"
 
+  Overlap = Data.define(:size, :mass, :kind, :hot)
+
   def initialize(cluster, churn)
     @cluster = cluster
     @churn = churn
@@ -16,10 +18,10 @@ class Hashira::Duplication::DuplicationFinding
   private
 
   def detail
-    {
+    Overlap.new(
       size: @cluster.size, mass: @cluster.mass,
       kind: Hashira::Duplication::Delta.new(@cluster).kind, hot: @churn.hot?(@cluster.sites)
-    }
+    )
   end
 
   def evidence = @cluster.sites.sort_by(&:rank).map(&:range)

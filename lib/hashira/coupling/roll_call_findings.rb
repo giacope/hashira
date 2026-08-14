@@ -12,7 +12,7 @@ class Hashira::Coupling::RollCallFindings < Hashira::Coupling::Rule
   def rolls = Hashira::Coupling::RollCall.new(lists, homes).rolls
 
   def sightings
-    @sightings ||=
+    @_sightings ||=
       graph.trees.filter_map do |file, tree|
         words = Hashira::Coupling::Words.list(tree)
         [project.relative(file), graph.charge(file), words] unless words.empty?

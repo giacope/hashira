@@ -2,16 +2,28 @@
 
 class Hashira::Smells::Ownership
   def initialize(trees)
-    @suffixes = Set.new
-    @tables = {}
-    trees.each { survey(it) }
+    @trees = trees
   end
 
-  def owned?(segments) = @suffixes.include?(segments.join("::"))
+  def owned?(segments)
+    surveyed
+    @_suffixes.include?(segments.join("::"))
+  end
 
-  def keys(segments) = @tables.fetch(segments.join("::"), [])
+  def keys(segments)
+    surveyed
+    @_tables.fetch(segments.join("::"), [])
+  end
 
   private
+
+  def surveyed
+    return if @_surveyed
+    @_surveyed = true
+    @_suffixes = Set.new
+    @_tables = {}
+    @trees.each { survey(it) }
+  end
 
   def survey(tree)
     Hashira::Analysis::TypeWalk.each(tree) do |node, full|
@@ -27,14 +39,14 @@ class Hashira::Smells::Ownership
   end
 
   def absorb(path)
-    @suffixes.merge(suffixes(path))
+    @_suffixes.merge(suffixes(path))
   end
 
   def chart(path, value)
     return unless value.is_a?(Prism::HashNode)
     keys = value.elements.map { spine(it) }
     return if keys.empty? || keys.any?(&:nil?)
-    suffixes(path).each { @tables[it] = keys }
+    suffixes(path).each { @_tables[it] = keys }
   end
 
   def thaw(value)

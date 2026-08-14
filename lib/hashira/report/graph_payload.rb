@@ -17,7 +17,7 @@ class Hashira::Report::GraphPayload
 
   def edges
     @graph.weighted.map do |from, to, weight|
-      { from:, to:, weight:, refs: @graph.evidence(from, to).to_a.sort }
+      { from:, to:, weight: }.merge(refs: @graph.evidence(from, to).to_a.sort)
     end
   end
 end

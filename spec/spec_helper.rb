@@ -10,7 +10,7 @@ end
 require "hashira"
 require "tmpdir"
 
-module FixtureHelper
+module Fixtures
   def within(files, &)
     Dir.mktmpdir do |dir|
       files.each do |path, source|
@@ -36,7 +36,7 @@ module FixtureHelper
   end
 
   def with_pipeline(&)
-    within(FixtureHelper::CYCLIC_FILES) do
+    within(Fixtures::CYCLIC_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
     end
@@ -269,7 +269,7 @@ module FixtureHelper
 end
 
 RSpec.configure do |config|
-  config.include(FixtureHelper)
+  config.include(Fixtures)
   config.disable_monkey_patching!
   config.order = :random
 end

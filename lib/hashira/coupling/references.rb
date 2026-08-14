@@ -3,28 +3,28 @@
 require "prism"
 
 class Hashira::Coupling::References
-  def self.list(tree) = new.sightings(tree).map(&:first)
-
-  def self.sightings(tree, roots = nil) = new(roots).sightings(tree)
-
   def initialize(roots = nil)
     @roots = roots
-    @found = []
-    @scopes = [[]]
   end
+
+  def list(tree) = sightings(tree).map(&:first)
 
   def sightings(tree)
     collect(tree)
-    @found
+    found
   end
 
   private
 
-  def nesting = @scopes.last
+  def found = @_found ||= []
+
+  def scopes = @_scopes ||= [[]]
+
+  def nesting = scopes.last
 
   def collect(node, home = nesting)
     return unless node
-    return @found << sighting(node, home) if constant?(node)
+    return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
     node.compact_child_nodes.each { collect(it, home) }
   end
@@ -48,8 +48,8 @@ class Hashira::Coupling::References
   def anchor(node) = syntax.anchor(nesting, syntax.segments(node.constant_path), @roots)
 
   def inside(scope)
-    @scopes << scope
+    scopes << scope
     yield
-    @scopes.pop
+    scopes.pop
   end
 end

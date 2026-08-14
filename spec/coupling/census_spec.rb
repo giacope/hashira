@@ -2,13 +2,13 @@
 
 RSpec.describe(Hashira::Coupling::Census) do
   it "infers the majority outermost module as the namespace prefix" do
-    analyze(FixtureHelper::CYCLIC_FILES) do |_project, census, _graph|
+    analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
       expect(census.prefix).to(eq(["App"]))
     end
   end
 
   it "infers a deep prefix when every package shares a nested wrapper" do
-    analyze(FixtureHelper::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
+    analyze(Fixtures::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
       expect(census.prefix).to(eq(%w[App Core]))
     end
   end
@@ -43,7 +43,7 @@ RSpec.describe(Hashira::Coupling::Census) do
   end
 
   it "counts a class whose body is only DSL calls" do
-    files = FixtureHelper::CYCLIC_FILES.merge(
+    files = Fixtures::CYCLIC_FILES.merge(
       "lib/app/alpha/styled.rb" => "module App; module Alpha; class Styled; register :thing; end; end; end\n"
     )
     analyze(files) do |_project, census, _graph|
@@ -86,7 +86,7 @@ RSpec.describe(Hashira::Coupling::Census) do
   end
 
   it "records the declaring package of each constant path" do
-    analyze(FixtureHelper::CYCLIC_FILES) do |_project, census, _graph|
+    analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
       expect(census.origins)
         .to(
           eq(
@@ -99,7 +99,7 @@ RSpec.describe(Hashira::Coupling::Census) do
   end
 
   it "records top-level constants outside the root namespace" do
-    files = FixtureHelper::CYCLIC_FILES.merge(
+    files = Fixtures::CYCLIC_FILES.merge(
       "lib/app/helpers/extra.rb" => "module AppHelpers; class Extra; def a = 1; end; end\n"
     )
     analyze(files) do |_project, census, _graph|
@@ -110,14 +110,14 @@ RSpec.describe(Hashira::Coupling::Census) do
 
   describe "#resolve" do
     it "resolves with and without the leading root namespace" do
-      analyze(FixtureHelper::CYCLIC_FILES) do |_project, census, _graph|
+      analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
         expect(census.resolve(%w[App Alpha One])).to(eq("alpha"))
         expect(census.resolve(%w[Alpha One])).to(eq("alpha"))
       end
     end
 
     it "resolves references under a deep namespace prefix at any depth" do
-      analyze(FixtureHelper::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
+      analyze(Fixtures::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
         expect(census.resolve(%w[Walk Stepper])).to(eq("walk"))
         expect(census.resolve(%w[Core Walk Stepper])).to(eq("walk"))
         expect(census.resolve(%w[App Core Walk Stepper])).to(eq("walk"))
@@ -126,20 +126,20 @@ RSpec.describe(Hashira::Coupling::Census) do
     end
 
     it "returns nil for external constants" do
-      analyze(FixtureHelper::CYCLIC_FILES) do |_project, census, _graph|
+      analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
         expect(census.resolve(%w[JSON])).to(be_nil)
         expect(census.resolve([])).to(be_nil)
       end
     end
 
     it "falls back to the namespace's package for an unknown member" do
-      analyze(FixtureHelper::CYCLIC_FILES) do |_project, census, _graph|
+      analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
         expect(census.resolve(%w[Alpha Unknown])).to(eq("alpha"))
       end
     end
 
     context "when a namespace spans several packages" do
-      def mirror(&) = analyze(FixtureHelper::MIRROR_FILES, directories: ["app/controllers", "app/models"], &)
+      def mirror(&) = analyze(Fixtures::MIRROR_FILES, directories: ["app/controllers", "app/models"], &)
 
       it "resolves each constant path to its own package" do
         mirror do |_project, census, _graph|

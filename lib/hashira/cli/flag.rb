@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::CLI
+  BLANK = %i[arg field parse mode].to_h { [it, nil] }.freeze
+
   Flag =
     Data.define(:name, :arg, :default, :field, :parse, :mode, :text) do
-      def initialize(**attributes) = super(arg: nil, default: "", field: nil, parse: nil, mode: nil, **attributes)
+      def initialize(**attributes) = super(**BLANK, default: "", **attributes)
 
       def read(arguments) = arg ? take(arguments) : arguments.delete(name)
 

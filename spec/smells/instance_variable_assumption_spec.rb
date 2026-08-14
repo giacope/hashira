@@ -80,4 +80,21 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "trusts underscore-prefixed memoization caches to be lazily assigned" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def initialize
+              @seen = true
+            end
+
+            def report = (@_report ||= @seen.to_s)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end

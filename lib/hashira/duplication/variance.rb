@@ -27,7 +27,7 @@ class Hashira::Duplication::Variance
 
   def pairs = @canonical.nodes.zip(@other.nodes)
 
-  def named = @named ||= pairs.select { |left, _| NAMED.include?(left.type) }
+  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) }
 
   def differing = pairs.select { |pair| varies?(*pair) }.map(&:first)
 

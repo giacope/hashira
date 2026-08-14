@@ -80,7 +80,7 @@ RSpec.describe(Hashira::Report::Text) do
   end
 
   it "adds the complexity section and its findings when complexity is present" do
-    within(FixtureHelper::COMPLEX_FILES) do
+    within(Fixtures::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       view = view(pipeline.project, pipeline.graph, screened, complexity: pipeline.complexity)
@@ -95,7 +95,7 @@ RSpec.describe(Hashira::Report::Text) do
   end
 
   it "renders complexity alone when coupling is skipped (no graph)" do
-    within(FixtureHelper::COMPLEX_FILES) do
+    within(Fixtures::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       view = view(pipeline.project, nil, screened, complexity: pipeline.complexity)
@@ -106,7 +106,7 @@ RSpec.describe(Hashira::Report::Text) do
   end
 
   it "lists accepted findings with their recorded reason" do
-    within(FixtureHelper::COMPLEX_FILES) do
+    within(Fixtures::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
       screened = Hashira::CI::Accepted.new([entry]).screen(pipeline.findings)

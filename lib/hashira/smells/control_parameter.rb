@@ -5,7 +5,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
 
   def smelly? = culprits.any?
 
-  def culprits = @culprits ||= subject.parameters.filter_map { |name| culprit(name) }
+  def culprits = @_culprits ||= subject.parameters.filter_map { |name| culprit(name) }
 
   def culprit(name)
     lines = spots(name).uniq

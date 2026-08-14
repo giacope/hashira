@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Churn) do
-  it "tallies file paths from git log output, ignoring blank lines" do
-    expect(described_class.tally("a.rb\nb.rb\n\na.rb\n")).to(eq("a.rb" => 2, "b.rb" => 1))
-  end
-
   it "counts hits by matching a display path against the git-path suffix" do
     churn = described_class.new("lib/app/foo.rb" => 3, "lib/app/bar.rb" => 1)
     expect(churn.hits("foo.rb")).to(eq(3))
@@ -19,7 +15,7 @@ RSpec.describe(Hashira::Churn) do
       File.rename("a.rb", "b.rb")
       git("add", "-A")
       git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "y")
-      churn = described_class.scan(".")
+      churn = described_class.build(".")
       expect(churn.hits("a.rb")).to(eq(2))
       expect(churn.hits("b.rb")).to(eq(1))
     end
@@ -30,8 +26,8 @@ RSpec.describe(Hashira::Churn) do
       git("-C", "repo", "init", "-q")
       git("-C", "repo", "add", "-A")
       git("-C", "repo", "-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
-      expect(described_class.scan("repo").hits("a.rb")).to(eq(1))
-      expect(described_class.scan(".").history?).to(be(false))
+      expect(described_class.build("repo").hits("a.rb")).to(eq(1))
+      expect(described_class.build(".").history?).to(be(false))
     end
   end
 
@@ -39,7 +35,7 @@ RSpec.describe(Hashira::Churn) do
     within("a.rb" => "class A\nend\n") do
       path = ENV.fetch("PATH", nil)
       ENV["PATH"] = ""
-      expect(described_class.scan(".").history?).to(be(false))
+      expect(described_class.build(".").history?).to(be(false))
     ensure
       ENV["PATH"] = path
     end

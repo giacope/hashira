@@ -3,15 +3,16 @@
 class Hashira::Coupling::EdgeMap
   def initialize(census)
     @census = census
-    @dependencies = sets
-    @evidence = sets
-    @usage = sets
   end
 
-  attr_reader :dependencies, :evidence, :usage
+  def dependencies = @_dependencies ||= sets
+
+  def evidence = @_evidence ||= sets
+
+  def usage = @_usage ||= sets
 
   def record(source, file, tree)
-    Hashira::Coupling::References.sightings(tree, @census.roots).each do |segments, line, nesting, home|
+    Hashira::Coupling::References.new(@census.roots).sightings(tree).each do |segments, line, nesting, home|
       note(@census.charge(file, home), locate(segments, nesting), segments, "#{source}:#{line}")
     end
   end
@@ -26,8 +27,8 @@ class Hashira::Coupling::EdgeMap
 
   def note(from, to, segments, site)
     return unless to && to != from
-    @dependencies[from] << to
-    @evidence[[from, to]] << "#{site}: #{segments.join("::")}"
-    @usage[[from, to]] << @census.holder(segments)
+    dependencies[from] << to
+    evidence[[from, to]] << "#{site}: #{segments.join("::")}"
+    usage[[from, to]] << @census.holder(segments)
   end
 end
