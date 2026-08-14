@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Smells::Report) do
   it "runs inside the pipeline by default and steps aside when skipped" do
-    within(FixtureHelper::CYCLIC_FILES) do
+    within(Fixtures::CYCLIC_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       expect(pipeline.smells).to(be_a(described_class))
       expect(pipeline.findings.map(&:kind)).to(include("utility_function"))

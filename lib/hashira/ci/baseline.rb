@@ -5,47 +5,37 @@ require "json"
 class Hashira::CI::Baseline
   SCHEMA_VERSION = 4
 
-  def self.load(path, analyzers: [], targets: [])
-    new(path, read(path), Hashira::CI::Scope.new(analyzers:, targets:))
-  end
-
-  def self.read(path)
-    return {} unless path && File.exist?(path)
-    recorded = JSON.parse(File.read(path))
-    recorded.is_a?(Hash) ? recorded : raise(JSON::ParserError, "its top level is a list, not an object")
-  end
-
-  def self.trouble(path)
-    read(path) && nil
-  rescue JSON::ParserError, SystemCallError => error
-    "#{path} is not a usable baseline — #{error.message.lines.first.strip}. Re-record it with --update-baseline"
-  end
-
-  def initialize(path, recorded, scope = Hashira::CI::Scope.none)
+  def initialize(path, analyzers: [], targets: [])
     @path = path
-    @recorded = recorded
-    @scope = scope
+    @analyzers = analyzers
+    @targets = targets
   end
 
   attr_reader :path
 
   def exist? = File.exist?(@path)
 
-  def edges = @recorded.fetch("edges", [])
+  def trouble
+    recorded && nil
+  rescue JSON::ParserError, SystemCallError => error
+    "#{@path} is not a usable baseline — #{error.message.lines.first.strip}. Re-record it with --update-baseline"
+  end
 
-  def findings = self.class.scored(@recorded.fetch("findings", {}))
+  def edges = recorded.fetch("edges", [])
 
-  def self.scored(recorded) = recorded.is_a?(Array) ? recorded.to_h { [it, nil] } : recorded
+  def findings = keyed(recorded.fetch("findings", {}))
 
-  def findings? = @recorded.key?("findings")
+  def findings? = recorded.key?("findings")
 
-  def packaging = @recorded.fetch("packaging", "folder")
+  def accepted = recorded.fetch("accepted", [])
 
-  def analyzers = @recorded.fetch("analyzers", wanted[:analyzers])
+  def packaging = recorded.fetch("packaging", "folder")
 
-  def targets = @recorded.fetch("targets", wanted[:targets])
+  def analyzers = recorded.fetch("analyzers", wanted[:analyzers])
 
-  def wanted = @scope.to_h
+  def targets = recorded.fetch("targets", wanted[:targets])
+
+  def wanted = scope.to_h
 
   def write(edges, findings, packaging:)
     File.write(@path, JSON.pretty_generate(payload(edges, findings, packaging)) << "\n")
@@ -53,9 +43,23 @@ class Hashira::CI::Baseline
 
   private
 
+  def recorded
+    @recorded ||= read
+  end
+
+  def read
+    return {} unless @path && File.exist?(@path)
+    stored = JSON.parse(File.read(@path))
+    stored.is_a?(Hash) ? stored : raise(JSON::ParserError, "its top level is a list, not an object")
+  end
+
+  def keyed(findings) = findings.is_a?(Array) ? findings.to_h { [it, nil] } : findings
+
+  def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
+
   def payload(edges, findings, packaging)
-    base = { version: SCHEMA_VERSION, packaging:, **@scope.to_h, edges:, findings: }
-    accepted = Hashira::CI::Accepted.new(@recorded.fetch("accepted", [])).entries
-    accepted.empty? ? base : base.merge(accepted:)
+    base = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h).merge(edges:, findings:)
+    kept = Hashira::CI::Accepted.new(accepted).entries
+    kept.empty? ? base : base.merge(accepted: kept)
   end
 end

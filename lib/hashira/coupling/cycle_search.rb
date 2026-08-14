@@ -4,8 +4,6 @@ class Hashira::Coupling::CycleSearch
   def initialize(dependencies, package)
     @dependencies = dependencies
     @package = package
-    @predecessor = {}
-    @queue = dependencies[package].to_a.each { @predecessor[it] = package }
   end
 
   def path
@@ -14,7 +12,13 @@ class Hashira::Coupling::CycleSearch
 
   private
 
+  def prepare
+    @predecessor = {}
+    @queue = @dependencies[@package].to_a.each { @predecessor[it] = @package }
+  end
+
   def cycle?
+    prepare
     while (node = @queue.shift)
       return true if node == @package
       visit(node)

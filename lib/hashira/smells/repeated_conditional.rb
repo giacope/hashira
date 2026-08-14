@@ -5,8 +5,6 @@ require "prism"
 class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
   LIMIT = 2
 
-  def self.judge? = true
-
   private
 
   def smelly? = subject.kind == :class && repeats.any?

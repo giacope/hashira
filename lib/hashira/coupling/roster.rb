@@ -2,22 +2,47 @@
 
 class Hashira::Coupling::Roster
   def initialize(placed)
+    @placed = placed
+  end
+
+  def registry
+    admitted
+    @registry
+  end
+
+  def types
+    admitted
+    @types
+  end
+
+  def origins = registry.origins
+
+  def type?(path)
+    admitted
+    @typed.include?(path)
+  end
+
+  def packages = types.keys | registry.packages
+
+  private
+
+  def admitted
+    return if @admitted
+    @admitted = true
+    blank
+    fill
+  end
+
+  def blank
     @registry = Hashira::Coupling::ConstantRegistry.new
     @types = Hash.new(0)
     @typed = Set.new
-    counted = Set.new
-    placed.each { |definition, package| admit(definition, package, counted) }
   end
 
-  attr_reader :registry, :types
-
-  def origins = @registry.origins
-
-  def type?(path) = @typed.include?(path)
-
-  def packages = @types.keys | @registry.packages
-
-  private
+  def fill
+    counted = Set.new
+    @placed.each { |definition, package| admit(definition, package, counted) }
+  end
 
   def admit(definition, package, counted)
     return unless package

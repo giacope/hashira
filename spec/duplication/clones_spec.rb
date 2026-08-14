@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Duplication::Clones) do
   it "reports one finding per cluster, with each site as evidence and a refactoring" do
-    duplication(FixtureHelper::DUPLICATION_FILES) do |clones|
+    duplication(Fixtures::DUPLICATION_FILES) do |clones|
       finding = clones.findings.first
       expect(clones.findings.size).to(eq(1))
       expect(finding.kind).to(eq("duplication"))
@@ -22,7 +22,7 @@ RSpec.describe(Hashira::Duplication::Clones) do
   end
 
   it "warns, via churn, when both sites of a clone change often" do
-    duplication(FixtureHelper::DUPLICATION_FILES) do |clones|
+    duplication(Fixtures::DUPLICATION_FILES) do |clones|
       churn = Hashira::Churn.new("orders/checkout.rb" => 5, "billing/refund.rb" => 4)
       finding = Hashira::Duplication::DuplicationFinding.new(clones.clusters.first, churn).to_finding
       expect(message(finding)).to(include("Both sites change often"))

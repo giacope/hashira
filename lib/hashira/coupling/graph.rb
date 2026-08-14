@@ -2,18 +2,18 @@
 
 class Hashira::Coupling::Graph
   def initialize(project, trees, census)
+    @project = project
     @census = census
     @trees = trees
-    @map = Hashira::Coupling::EdgeMap.new(census)
-    trees.each { |file, tree| @map.record(project.relative(file), file, tree) }
-    @cycles = Hashira::Coupling::Cycles.new(@map.dependencies, self)
   end
 
-  attr_reader :cycles, :trees
+  attr_reader :trees
+
+  def cycles = @cycles ||= Hashira::Coupling::Cycles.new(map.dependencies, self)
 
   def charge(file) = @census.charge(file, [])
 
-  def packages = (@census.packages | @map.dependencies.keys)
+  def packages = (@census.packages | dependencies.keys)
 
   def packaging = @census.packaging
 
@@ -34,13 +34,13 @@ class Hashira::Coupling::Graph
     end
   end
 
-  def evidence(from, to) = @map.evidence[[from, to]]
+  def evidence(from, to) = map.evidence[[from, to]]
 
-  def usage(package) = incoming(package).to_h { [it, @map.usage[[it, package]]] }
+  def usage(package) = incoming(package).to_h { [it, map.usage[[it, package]]] }
 
   def constants(edge)
     from, to = edge.deconstruct
-    @map.usage[[from, to]].sort
+    map.usage[[from, to]].sort
   end
 
   def metric(package)
@@ -59,5 +59,12 @@ class Hashira::Coupling::Graph
 
   private
 
-  def dependencies = @map.dependencies
+  def map
+    @map ||=
+      Hashira::Coupling::EdgeMap.new(@census).tap do |edges|
+        @trees.each { |file, tree| edges.record(@project.relative(file), file, tree) }
+      end
+  end
+
+  def dependencies = map.dependencies
 end

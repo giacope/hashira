@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::CI::Gate
-  def initialize(findings, kinds, io: $stdout, err: $stderr)
+  def initialize(findings, kinds, io: $stdout, error: $stderr)
     @findings = findings
     @kinds = kinds
     @io = io
-    @err = err
+    @error = error
   end
 
   def check
@@ -19,7 +19,7 @@ class Hashira::CI::Gate
     offending.each { Hashira::Report::FindingLines.new(it, io: @io).print }
     verdict = "Gate FAILED: #{offending.size} finding(s) — #{tally(offending)}."
     @io.puts("\n#{verdict}")
-    @err.puts(verdict)
+    @error.puts(verdict)
     1
   end
 

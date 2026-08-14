@@ -3,7 +3,7 @@
 RSpec.describe(Hashira::CLI) do
   it "prints every line the headline example shows, in the order shown" do
     shown = readme[/```console\n\$ hashira app\n(.*?)^```/m, 1].lines(chomp: true).reject(&:empty?)
-    printed = within(tangled) { capture { described_class.run(["app"]) } }.lines(chomp: true)
+    printed = within(tangled) { capture { described_class.new(["app"]).status } }.lines(chomp: true)
     cursor = -1
     shown.each do |line|
       offset = printed[(cursor + 1)..].index(line)
@@ -14,7 +14,7 @@ RSpec.describe(Hashira::CLI) do
 
   it "reports the healthy-project line the README promises" do
     promised = readme[/A healthy project reports `([^`]+)`/, 1]
-    printed = within(healthy) { capture { described_class.run(["app"]) } }
+    printed = within(healthy) { capture { described_class.new(["app"]).status } }
     expect(printed.gsub(/\s+/, " ")).to(include(promised.gsub(/\s+/, " ")))
   end
 

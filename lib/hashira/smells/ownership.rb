@@ -2,16 +2,28 @@
 
 class Hashira::Smells::Ownership
   def initialize(trees)
-    @suffixes = Set.new
-    @tables = {}
-    trees.each { survey(it) }
+    @trees = trees
   end
 
-  def owned?(segments) = @suffixes.include?(segments.join("::"))
+  def owned?(segments)
+    surveyed
+    @suffixes.include?(segments.join("::"))
+  end
 
-  def keys(segments) = @tables.fetch(segments.join("::"), [])
+  def keys(segments)
+    surveyed
+    @tables.fetch(segments.join("::"), [])
+  end
 
   private
+
+  def surveyed
+    return if @surveyed
+    @surveyed = true
+    @suffixes = Set.new
+    @tables = {}
+    @trees.each { survey(it) }
+  end
 
   def survey(tree)
     Hashira::Analysis::TypeWalk.each(tree) do |node, full|

@@ -15,14 +15,15 @@ class Hashira::Coupling::Report
 
   def initialize(project, trees, packaging:)
     @project = project
-    @graph = Hashira::Coupling::Graph.new(project, trees, census(trees, packaging))
+    @trees = trees
+    @packaging = packaging
   end
 
-  attr_reader :graph
+  def graph = @graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
 
-  def findings = RULES.flat_map { it.new(@project, @graph).list }
+  def findings = RULES.flat_map { it.new(@project, graph).list }
 
   private
 
-  def census(trees, packaging) = Hashira::Coupling::Census.new(@project, trees, packaging:)
+  def census = Hashira::Coupling::Census.new(@project, @trees, packaging: @packaging)
 end

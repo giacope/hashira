@@ -5,12 +5,12 @@ require_relative "../pipeline"
 module Hashira::CLI::FailOn
   MEASURES = (Hashira::Pipeline::ANALYZERS - %i[coupling smells]).map(&:to_s).freeze
 
-  KINDS = {
-    "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication",
-    **Hashira::Pipeline::STRUCTURAL.to_h { [it, it] },
-    **MEASURES.to_h { [it, it] },
-    "smells" => Hashira::Pipeline::SMELLS, **Hashira::Pipeline::SMELLS.to_h { [it, it] }
-  }.freeze
+  KINDS = { "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication" }
+    .merge(Hashira::Pipeline::STRUCTURAL.to_h { [it, it] })
+    .merge(MEASURES.to_h { [it, it] })
+    .merge("smells" => Hashira::Pipeline::SMELLS)
+    .merge(Hashira::Pipeline::SMELLS.to_h { [it, it] })
+    .freeze
 
   OWNERS = {
     **Hashira::Pipeline::STRUCTURAL.to_h { [it, :coupling] },

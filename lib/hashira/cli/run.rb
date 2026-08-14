@@ -1,12 +1,13 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Run
-  MODES = { update: :update, ratchet: :check, fail_on: :guard, json: :json, dot: :diagram, mermaid: :diagram }.freeze
-
   def initialize(pipeline, options)
     @pipeline = pipeline
     @options = options
   end
+
+  MODES = { update: :update, ratchet: :check, fail_on: :guard }
+    .merge(json: :json, dot: :diagram, mermaid: :diagram).freeze
 
   def status = __send__(MODES.fetch(@options.mode, :text))
 
@@ -18,9 +19,9 @@ class Hashira::CLI::Run
 
   def accepted
     path = @options.baseline
-    stop = Hashira::CI::Baseline.trouble(path)
+    stop = Hashira::CI::Baseline.new(path).trouble
     raise(Hashira::Error, stop) if stop
-    Hashira::CI::Accepted.load(path)
+    Hashira::CI::Accepted.build(path)
   end
 
   def update
@@ -58,7 +59,7 @@ class Hashira::CLI::Run
   def ratchet = @ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
 
   def baseline
-    Hashira::CI::Baseline.load(@options.baseline, analyzers: @options.analyzers, targets:)
+    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:)
   end
 
   def targets = @pipeline.project.directories

@@ -11,21 +11,27 @@ class Hashira::Smells::Refs
   ].freeze
 
   def initialize(def_node)
-    @tallies = {}
-    Hashira::Smells::Scope.inside(def_node).each { record(it) }
+    @node = def_node
   end
 
   def ego = lines(:self).size
 
-  def lines(name) = @tallies.fetch(name, [])
+  def lines(name) = tallies.fetch(name, [])
 
   def envious
-    peak = @tallies.values.map(&:size).max
-    names = @tallies.filter_map { |name, sightings| name if sightings.size == peak }
+    peak = tallies.values.map(&:size).max
+    names = tallies.filter_map { |name, sightings| name if sightings.size == peak }
     names.include?(:self) ? [] : names
   end
 
   private
+
+  def tallies
+    return @tallies if @tallies
+    @tallies = {}
+    Hashira::Smells::Scope.inside(@node).each { record(it) }
+    @tallies
+  end
 
   def record(node)
     return note(:self, node) if selfish?(node)

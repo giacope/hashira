@@ -2,12 +2,12 @@
 
 RSpec.describe(Hashira::Project) do
   it "raises for a missing directory" do
-    expect { described_class.new(["nope"]) }.to(raise_error(Hashira::Error, "no such directory: nope"))
+    expect { described_class.new(["nope"]).directories }.to(raise_error(Hashira::Error, "no such directory: nope"))
   end
 
   it "points at the parent directory when handed a file" do
     within("lib/app/a/x.rb" => "") do
-      expect { described_class.new(["lib/app/a/x.rb"]) }
+      expect { described_class.new(["lib/app/a/x.rb"]).directories }
         .to(raise_error(Hashira::Error, %r{\Alib/app/a/x\.rb is a file .+try: hashira lib/app/a\)\z}))
     end
   end
@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Project) do
 
   it "raises for a directory holding no Ruby files" do
     within("lib/app/README.md" => "") do
-      expect { described_class.new(["lib/app"]) }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
+      expect { described_class.new(["lib/app"]).files }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
     end
   end
 
@@ -48,7 +48,7 @@ RSpec.describe(Hashira::Project) do
 
   describe "#package" do
     it "uses the first folder under the target directory" do
-      within("lib/app/alpha/deep/x.rb" => "") do
+      within("lib/app/alpha/deep/x.rb" => "", "lib/app/beta/y.rb" => "") do
         expect(described_class.new(["lib/app"]).package("lib/app/alpha/deep/x.rb")).to(eq("alpha"))
       end
     end
@@ -99,49 +99,49 @@ RSpec.describe(Hashira::Project) do
     end
   end
 
-  describe ".detect" do
+  describe "directory resolution" do
     it "uses explicit directories when given" do
       within("src/a/x.rb" => "") do
-        expect(described_class.detect(["src"]).directories).to(eq(["src"]))
+        expect(described_class.new(["src"]).directories).to(eq(["src"]))
       end
     end
 
     it "auto-detects a single lib/<gem> directory" do
       within("lib/mygem/a/x.rb" => "") do
-        expect(described_class.detect([]).directories).to(eq(["lib/mygem"]))
+        expect(described_class.new([]).directories).to(eq(["lib/mygem"]))
       end
     end
 
     it "descends a chain of single-folder wrappers to the package level" do
       files = { "lib/mygem/core/a/x.rb" => "", "lib/mygem/core/b/y.rb" => "", "lib/mygem/core.rb" => "" }
       within(files) do
-        expect(described_class.detect([]).directories).to(eq(["lib/mygem/core"]))
-        expect(described_class.detect(["lib"]).directories).to(eq(["lib/mygem/core"]))
+        expect(described_class.new([]).directories).to(eq(["lib/mygem/core"]))
+        expect(described_class.new(["lib"]).directories).to(eq(["lib/mygem/core"]))
       end
     end
 
     it "stops descending at loose code files beside the single folder" do
       files = { "src/app/a/x.rb" => "", "src/app/b/y.rb" => "", "src/loose.rb" => "" }
       within(files) do
-        expect(described_class.detect(["src"]).directories).to(eq(["src"]))
+        expect(described_class.new(["src"]).directories).to(eq(["src"]))
       end
     end
 
     it "falls back to lib when it has several subdirectories" do
       within("lib/one/x.rb" => "", "lib/two/y.rb" => "") do
-        expect(described_class.detect([]).directories).to(eq(["lib"]))
+        expect(described_class.new([]).directories).to(eq(["lib"]))
       end
     end
 
     it "raises without a lib directory" do
       within({}) do
-        expect { described_class.detect([]) }.to(raise_error(Hashira::Error, %r{no lib/ directory here}))
+        expect { described_class.new([]).directories }.to(raise_error(Hashira::Error, %r{no lib/ directory here}))
       end
     end
 
     it "accepts a lib holding only loose files, as every gem does on day one" do
       within("lib/solo.rb" => "class Solo; def a = 1; end\n") do
-        expect(described_class.detect([]).directories).to(eq(["lib"]))
+        expect(described_class.new([]).directories).to(eq(["lib"]))
       end
     end
   end

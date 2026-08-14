@@ -56,7 +56,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
   end
 
   it "prints each fold under the coupling section" do
-    files = FixtureHelper::RAILS_FILES.merge(FixtureHelper::SANDBOX_FILES)
+    files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       view = Hashira::Report::View.new(

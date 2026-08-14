@@ -5,8 +5,6 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   MIN_SIZE = 2
 
-  def self.judge? = true
-
   private
 
   def smelly? = clumps.any?

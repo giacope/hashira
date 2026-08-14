@@ -3,37 +3,35 @@
 require "prism"
 
 class Hashira::Complexity::CognitiveScore
-  HANDLERS = {
-    Prism::IfNode => :on_if,
-    Prism::UnlessNode => :on_nester,
-    Prism::WhileNode => :on_nester,
-    Prism::UntilNode => :on_nester,
-    Prism::ForNode => :on_nester,
-    Prism::CaseNode => :on_nester,
-    Prism::CaseMatchNode => :on_nester,
-    Prism::BeginNode => :on_begin,
-    Prism::AndNode => :on_boolean,
-    Prism::OrNode => :on_boolean,
-    Prism::BlockNode => :on_block,
-    Prism::CallNode => :on_call
-  }.freeze
+  HANDLERS = { Prism::IfNode => :on_if, Prism::BeginNode => :on_begin, Prism::BlockNode => :on_block }
+    .merge(Prism::AndNode => :on_boolean, Prism::OrNode => :on_boolean, Prism::CallNode => :on_call)
+    .merge(Prism::UnlessNode => :on_nester, Prism::WhileNode => :on_nester, Prism::UntilNode => :on_nester)
+    .merge(Prism::ForNode => :on_nester, Prism::CaseNode => :on_nester, Prism::CaseMatchNode => :on_nester)
+    .freeze
 
-  LABELS = {
-    Prism::UnlessNode => "unless", Prism::WhileNode => "while",
-    Prism::UntilNode => "until", Prism::ForNode => "for",
-    Prism::CaseNode => "case", Prism::CaseMatchNode => "case"
-  }.freeze
+  LABELS = { Prism::UnlessNode => "unless", Prism::WhileNode => "while", Prism::UntilNode => "until" }
+    .merge(Prism::ForNode => "for", Prism::CaseNode => "case", Prism::CaseMatchNode => "case").freeze
 
-  def initialize(def_node)
-    @increments = []
-    @calls = 0
-    @nesting = 0
-    visit(def_node.body)
+  def initialize(node)
+    @node = node
   end
 
-  attr_reader :increments, :calls, :nesting
+  def increments
+    walked
+    @increments
+  end
 
-  def total = @increments.sum(&:cost)
+  def calls
+    walked
+    @calls
+  end
+
+  def nesting
+    walked
+    @nesting
+  end
+
+  def total = increments.sum(&:cost)
 
   def visit(node)
     return unless node
@@ -51,6 +49,19 @@ class Hashira::Complexity::CognitiveScore
   end
 
   private
+
+  def walked
+    return if @walked
+    @walked = true
+    blank
+    visit(@node.body)
+  end
+
+  def blank
+    @increments = []
+    @calls = 0
+    @nesting = 0
+  end
 
   def descend(node) = node.compact_child_nodes.each { visit(it) }
 

@@ -2,23 +2,26 @@
 
 class Hashira::CLI::CommandLine
   def initialize(argv)
-    @arguments = Hashira::CLI::Arguments.new(argv)
+    @argv = argv
   end
 
   def options = page || parsed
 
   private
 
+  def arguments = @arguments ||= Hashira::CLI::Arguments.new(@argv)
+
   def page
     flag = Hashira::CLI::FLAGS.select(&:page?).find { seen?(it) }
-    Hashira::CLI::Options.page(flag.mode) if flag
+    Hashira::CLI::Options.build(flag.mode) if flag
   end
 
-  def seen?(flag) = flag.names.any? { @arguments.delete(it) }
+  def seen?(flag) = flag.names.any? { arguments.delete(it) }
 
   def parsed
-    parses = Hashira::CLI::FLAGS.reject(&:page?).to_h { [it, it.read(@arguments)] }
-    Hashira::CLI::Options.new(directories: @arguments.rest, mode: mode(parses), **fields(parses))
+    parses = Hashira::CLI::FLAGS.reject(&:page?).to_h { [it, it.read(arguments)] }
+    Hashira::CLI::Options.new(directories: arguments.rest, mode: mode(parses), **fields(parses))
+      .tap { Hashira::CLI::Needs.check(it) }
   end
 
   def fields(parses) = parses.to_h { |flag, value| [flag.field, value] }.except(nil)

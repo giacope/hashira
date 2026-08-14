@@ -6,7 +6,7 @@ module Hashira
 
     MethodScore =
       Data.define(:subject, :file, :line, :cognitive, :calls, :increments) do
-        def to_h = { subject:, file:, line:, cognitive:, calls: }
+        def to_h = super.except(:increments)
 
         def cells = [subject, cognitive, calls, "#{file}:#{line}"]
       end

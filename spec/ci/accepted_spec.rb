@@ -16,7 +16,7 @@ RSpec.describe(Hashira::CI::Accepted) do
   it "screens matching findings out with their reason" do
     within({}) do
       File.write("b.json", JSON.generate(acceptance))
-      screened = described_class.load("b.json").screen([finding, finding(kind: "sdp_violation")])
+      screened = described_class.build("b.json").screen([finding, finding(kind: "sdp_violation")])
       expect(screened.all.map(&:kind)).to(eq(%w[sdp_violation]))
       expect(screened.accepted).to(eq([[finding, "usage conformance-tests the CLI"]]))
     end
@@ -46,7 +46,7 @@ RSpec.describe(Hashira::CI::Accepted) do
   end
 
   it "screens nothing without a baseline file" do
-    screened = described_class.load("nope.json").screen([finding])
+    screened = described_class.build("nope.json").screen([finding])
     expect(screened.all.size).to(eq(1))
     expect(screened.accepted).to(be_empty)
   end

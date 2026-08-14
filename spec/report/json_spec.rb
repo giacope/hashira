@@ -44,7 +44,7 @@ RSpec.describe(Hashira::Report::Json) do
     with_pipeline do |project, graph, findings|
       expect(emit(view(project, graph, findings))["folds"]).to(eq([]))
     end
-    files = FixtureHelper::RAILS_FILES.merge(FixtureHelper::SANDBOX_FILES)
+    files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
@@ -61,7 +61,7 @@ RSpec.describe(Hashira::Report::Json) do
   end
 
   it "omits coupling keys when no graph is present" do
-    within(FixtureHelper::COMPLEX_FILES) do
+    within(Fixtures::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       report = emit(view(pipeline.project, nil, findings, complexity: pipeline.complexity))
@@ -71,7 +71,7 @@ RSpec.describe(Hashira::Report::Json) do
   end
 
   it "includes duplication clusters when supplied" do
-    within(FixtureHelper::DUPLICATION_FILES) do
+    within(Fixtures::DUPLICATION_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       report = emit(view(pipeline.project, pipeline.graph, findings, duplication: pipeline.duplication))

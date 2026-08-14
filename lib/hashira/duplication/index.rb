@@ -6,12 +6,13 @@ class Hashira::Duplication::Index
 
   def initialize(fragments)
     @fragments = fragments
-    @frequency = frequencies(fragments)
   end
 
   def buckets = grouped.values.select { |bucket| bucket.size.between?(2, MAX_BUCKET) }
 
   private
+
+  def frequency = @frequency ||= frequencies(@fragments)
 
   def frequencies(fragments)
     fragments.each_with_object(Hash.new(0)) { |fragment, counts| tally(counts, fragment) }
@@ -27,5 +28,5 @@ class Hashira::Duplication::Index
 
   def file(index, fragment) = rarest(fragment).each { |type| index[type] << fragment }
 
-  def rarest(fragment) = fragment.types.uniq.min_by(RARE) { @frequency[it] }
+  def rarest(fragment) = fragment.types.uniq.min_by(RARE) { frequency[it] }
 end

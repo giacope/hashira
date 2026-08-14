@@ -7,20 +7,23 @@ class Hashira::Duplication::Clusters
   PAIR = 2
   PENALTY_PER_RECURRENCE = 2
 
-  def initialize(fragments)
-    @fragments = fragments.select { |fragment| fragment.mass >= PREFILTER }
-    @sets = Hashira::Duplication::UnionFind.new
+  def initialize(all)
+    @all = all
   end
 
   def sorted
-    @fragments.group_by(&:types).each_value { |group| chain(group) }
-    Hashira::Duplication::NearMiss.new(@fragments).pairs.each { |left, right| @sets.union(left, right) }
+    fragments.group_by(&:types).each_value { |group| chain(group) }
+    Hashira::Duplication::NearMiss.new(fragments).pairs.each { |left, right| sets.union(left, right) }
     Hashira::Duplication::Maximal.new(sized).reduced.sort_by { -it.mass }
   end
 
   private
 
-  def chain(group) = group.each_cons(2) { |left, right| @sets.union(left, right) }
+  def fragments = @fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }
+
+  def sets = @sets ||= Hashira::Duplication::UnionFind.new
+
+  def chain(group) = group.each_cons(2) { |left, right| sets.union(left, right) }
 
   def sized = built.filter_map { admitted(it) }
 
@@ -30,7 +33,7 @@ class Hashira::Duplication::Clusters
 
   def core(cluster) = Hashira::Duplication::Grouping.new(cluster.identical).cluster
 
-  def built = @sets.clusters.filter_map { |group| Hashira::Duplication::Grouping.new(group).cluster }
+  def built = sets.clusters.filter_map { |group| Hashira::Duplication::Grouping.new(group).cluster }
 
   def floor(cluster) = base(cluster) + penalty(cluster)
 

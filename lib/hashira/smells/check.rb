@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Check
-  def self.kind = name.split("::").last.gsub(/(?<=[a-z])(?=[A-Z])/, "_").downcase
-
-  def self.judge? = false
-
   def initialize(subject)
     @subject = subject
   end
@@ -18,7 +14,7 @@ class Hashira::Smells::Check
 
   attr_reader :subject
 
-  def kind = self.class.kind
+  def kind = Hashira::Smells::Kind.new(self.class).to_s
 
   def label = subject.subject
 

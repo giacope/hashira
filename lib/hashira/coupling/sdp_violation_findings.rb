@@ -5,6 +5,8 @@ require_relative "rule"
 class Hashira::Coupling::SdpViolationFindings < Hashira::Coupling::Rule
   KIND = "sdp_violation"
 
+  Imbalance = Data.define(:from, :to, :from_instability, :to_instability)
+
   def list
     ranked.map { |from, to| violation(from, to) }
   end
@@ -18,7 +20,7 @@ class Hashira::Coupling::SdpViolationFindings < Hashira::Coupling::Rule
   end
 
   def detail(from, to)
-    { from:, to:, from_instability: instability(from), to_instability: instability(to) }
+    Imbalance.new(from:, to:, from_instability: instability(from), to_instability: instability(to))
   end
 
   def instability(package) = metrics[package].instability

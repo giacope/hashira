@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Coupling::Graph) do
   def with_cycle(&)
-    analyze(FixtureHelper::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
+    analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
 
   it "builds edges from constant references, skipping self-references" do
@@ -182,7 +182,7 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
 
     it "reports the offending edges" do
-      analyze(FixtureHelper::CYCLIC_FILES) do |_project, _census, graph|
+      analyze(Fixtures::CYCLIC_FILES) do |_project, _census, graph|
         expect(graph.violations).to(eq([%w[beta alpha]]))
       end
     end

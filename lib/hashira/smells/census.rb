@@ -6,10 +6,9 @@ class Hashira::Smells::Census
   def initialize(project, trees)
     @project = project
     @trees = trees
-    @ownership = Hashira::Smells::Ownership.new(trees.values)
   end
 
-  attr_reader :ownership
+  def ownership = @ownership ||= Hashira::Smells::Ownership.new(@trees.values)
 
   def types = @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 
@@ -29,7 +28,7 @@ class Hashira::Smells::Census
 
   def defs(name, node, file)
     Hashira::Smells::Visibility.new(node).entries.map do |def_node, section|
-      Hashira::Smells::MethodContext.new(owner: name, node: def_node, file:, section:, ownership: @ownership)
+      Hashira::Smells::MethodContext.new(owner: name, node: def_node, file:, section:, ownership:)
     end
   end
 end

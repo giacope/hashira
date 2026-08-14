@@ -65,6 +65,6 @@ class Hashira::CI::Ratchet
   def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
 
   def delta
-    Hashira::CI::Diff.between(scored, @baseline.findings) if @baseline.findings?
+    Hashira::CI::Comparison.new(scored, @baseline.findings).diff if @baseline.findings?
   end
 end

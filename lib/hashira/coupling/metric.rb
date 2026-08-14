@@ -13,7 +13,9 @@ module Hashira
 
         def order = [isolated? ? 1 : 0, instability]
 
-        def to_h = { tc: types, ca: afferent, ce: efferent, i: (instability unless isolated?) }
+        def to_h = counts.merge(i: (instability unless isolated?))
+
+        def counts = { tc: types, ca: afferent, ce: efferent }
 
         def cells = [types, afferent, efferent, isolated? ? "—" : format("%.2f", instability)]
       end

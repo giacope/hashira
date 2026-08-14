@@ -7,7 +7,7 @@ class Hashira::Report::Columns
   NUMBER = /\A-?\d+(?:\.\d+)?\z/
 
   def initialize(headers, rows, io: $stdout)
-    @headers, *@rows = [headers, *rows].map { |cells| cells.map { clip(it) } }
+    @raw = [headers, *rows]
     @io = io
   end
 
@@ -17,13 +17,19 @@ class Hashira::Report::Columns
     body
   end
 
-  def body = @rows.each { @io.puts(line(it)) }
+  def body = rows.each { @io.puts(line(it)) }
 
-  def header = line(@headers)
+  def header = line(headers)
 
-  def rule = "-" * [header, *@rows.map { line(it) }].map(&:length).max
+  def rule = "-" * [header, *rows.map { line(it) }].map(&:length).max
 
   private
+
+  def clipped = @clipped ||= @raw.map { |cells| cells.map { clip(it) } }
+
+  def headers = clipped.first
+
+  def rows = clipped.drop(1)
 
   def line(cells) = cells.map.with_index { |cell, column| pad(cell, column) }.join(GAP).rstrip
 
@@ -32,13 +38,13 @@ class Hashira::Report::Columns
     numeric[column] ? cell.rjust(width) : cell.ljust(width)
   end
 
-  def widths = @widths ||= @headers.each_index.map { |column| down(column).map(&:length).max }
+  def widths = @widths ||= headers.each_index.map { |column| down(column).map(&:length).max }
 
-  def numeric = @numeric ||= @headers.each_index.map { |column| @rows.any? && counted?(column) }
+  def numeric = @numeric ||= headers.each_index.map { |column| rows.any? && counted?(column) }
 
-  def counted?(column) = @rows.all? { NUMBER.match?(it[column]) }
+  def counted?(column) = rows.all? { NUMBER.match?(it[column]) }
 
-  def down(column) = [@headers[column], *@rows.map { it[column] }]
+  def down(column) = [headers[column], *rows.map { it[column] }]
 
   def clip(cell)
     text = cell.to_s

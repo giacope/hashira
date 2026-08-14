@@ -6,15 +6,22 @@ class Hashira::Smells::Visibility
   MARKERS = %i[public private protected module_function].freeze
 
   def initialize(type_node)
+    @node = type_node
+  end
+
+  def entries
+    blank
+    scan(statements(@node))
+    @found.map { |node, section| [node, @overrides.fetch(node.name, section)] }
+  end
+
+  private
+
+  def blank
     @section = :public
     @overrides = {}
     @found = []
-    scan(statements(type_node))
   end
-
-  def entries = @found.map { |node, section| [node, @overrides.fetch(node.name, section)] }
-
-  private
 
   def statements(node)
     body = node.body

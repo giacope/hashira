@@ -1,18 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Churn
-  LOG = %w[log --no-renames --name-only --format=].freeze
   SITES_THAT_DRIFT_APART = 2
 
-  def self.scan(directory) = new(tally(read(directory)))
-
-  def self.read(directory)
-    IO.popen(["git", "-C", directory, *LOG], err: File::NULL, &:read)
-  rescue SystemCallError
-    ""
-  end
-
-  def self.tally(output) = output.split("\n").map(&:strip).reject(&:empty?).tally
+  def self.build(directory) = new(Hashira::GitLog.new(directory).counts)
 
   def initialize(counts)
     @counts = counts

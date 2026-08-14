@@ -12,7 +12,7 @@ module Hashira
 
         def heat = [churn, CHURN_FLOOR].max
 
-        def to_h = { file:, cognitive:, duplication:, churn:, cost:, rank: }
+        def to_h = super.merge(cost:, rank:)
 
         def cells = [file, cognitive, duplication, churn, rank]
       end

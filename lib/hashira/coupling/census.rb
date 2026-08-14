@@ -2,28 +2,26 @@
 
 class Hashira::Coupling::Census
   def initialize(project, trees, packaging: :folder)
-    @catalog = Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(project, trees))
-    @placement = Hashira::Coupling::Placement.build(packaging, project, @catalog)
-    @folding = Hashira::Coupling::NoFolding
-    @roster = tally
-    settle
+    @project = project
+    @trees = trees
+    @packaging = packaging
   end
 
-  def packaging = @placement.mode
+  def packaging = placement.mode
 
-  def types = @roster.types
+  def types = roster.types
 
-  def prefix = @catalog.prefix
+  def prefix = catalog.prefix
 
-  def origins = @roster.origins
+  def origins = roster.origins
 
-  def roots = @catalog.roots
+  def roots = catalog.roots
 
-  def packages = @roster.packages | @placement.baseline
+  def packages = roster.packages | placement.baseline
 
-  def folds = @folding.disclosed
+  def folds = folding.disclosed
 
-  def strip(segments) = @catalog.strip(segments)
+  def strip(segments) = catalog.strip(segments)
 
   def holder(segments)
     path = strip(segments)
@@ -34,22 +32,44 @@ class Hashira::Coupling::Census
 
   def pinpoint(segments) = scope.pinpoint(segments)
 
-  def charge(file, nesting) = translate(@placement.charge(file, nesting))
+  def charge(file, nesting) = translate(placement.charge(file, nesting))
 
   private
 
-  def type?(segments) = @roster.type?(segments)
+  def catalog = @catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
 
-  def tally
-    Hashira::Coupling::Roster.new(@placement.placed.map { |definition, package| [definition, translate(package)] })
+  def placement = @placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
+
+  def roster
+    settled
+    @roster
   end
 
-  def settle
-    @folding = @placement.folding(self)
+  def folding
+    settled
+    @folding
+  end
+
+  def settled
+    return if @settled
+    @settled = true
+    @folding = Hashira::Coupling::NoFolding
+    @roster = tally
+    refold
+  end
+
+  def refold
+    @folding = placement.folding(self)
     @roster = tally unless @folding.map.empty?
   end
 
-  def translate(package) = @folding.map.fetch(package, package)
+  def type?(segments) = roster.type?(segments)
 
-  def scope = Hashira::Coupling::Scope.new(@roster.registry, @catalog, @placement)
+  def tally
+    Hashira::Coupling::Roster.new(placement.placed.map { |definition, package| [definition, translate(package)] })
+  end
+
+  def translate(package) = folding.map.fetch(package, package)
+
+  def scope = Hashira::Coupling::Scope.new(roster.registry, catalog, placement)
 end

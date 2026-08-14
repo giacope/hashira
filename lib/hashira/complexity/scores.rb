@@ -5,16 +5,18 @@ class Hashira::Complexity::Scores
 
   def initialize(project, trees)
     @project = project
-    @scores = trees.flat_map { |path, tree| harvest(path, tree) }
+    @trees = trees
   end
 
-  def ranked = @scores.sort_by { -it.cognitive }
+  def ranked = scores.sort_by { -it.cognitive }
 
-  def classes = Hashira::Complexity::Rollup.new(@scores).classes.sort_by { -it.cognitive }
+  def classes = Hashira::Complexity::Rollup.new(scores).classes.sort_by { -it.cognitive }
 
   def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding }
 
   private
+
+  def scores = @scores ||= @trees.flat_map { |path, tree| harvest(path, tree) }
 
   def flagged = ranked.select { it.cognitive >= THRESHOLD }
 
