@@ -49,7 +49,7 @@ GEM
     rubocop-elegant (0.7.1)
       lint_roller (~> 1.1)
       rubocop (~> 1.75)
-    rubocop-kata (0.3.0)
+    rubocop-kata (0.4.0)
       lint_roller (~> 1.1)
       rubocop (~> 1.75)
       rubocop-elegant (~> 0.7)
@@ -110,7 +110,7 @@ CHECKSUMS
   rubocop (1.89.0) sha256=4dee8e3ee9c45e474834efd9e8d6fd031e8331c8dacdff0de4ad65ae0a6faae7
   rubocop-ast (1.50.0) sha256=b9ca88300da0803ee222ad20cdb30494c0a784eed06fdc35d254b06d662788db
   rubocop-elegant (0.7.1) sha256=7712ce9bb21daeee721b179457040caee33b8fd4556560c6ac5ace8496a1bd0d
-  rubocop-kata (0.3.0) sha256=156c20e90baa834da2dda685d49641d72cb3f8af349e32535f5f1a743f1de39e
+  rubocop-kata (0.4.0) sha256=d8871c6ade90be297d162366e456b4b4ac77f65041a5258d841ae674c57f6b68
   rubocop-packaging (0.6.0) sha256=fb92bd0fb48e6f8cdb1648d2249b0cd51c2497dcc87340132d22f01edbf558a7
   rubocop-performance (1.26.1) sha256=cd19b936ff196df85829d264b522fd4f98b6c89ad271fa52744a8c11b8f71834
   rubocop-rspec (3.10.2) sha256=0b3e2ecc592cd10ecbf0095bb58d1e357905276e069643523cc19eb7495f65e2
