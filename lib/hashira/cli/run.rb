@@ -33,7 +33,7 @@ class Hashira::CLI::Run
   def check
     stop = ratchet.blocker
     raise(Hashira::Error, stop) if stop
-    ratchet.check
+    ratchet.check(@pipeline.focus)
   end
 
   def guard = gate.check

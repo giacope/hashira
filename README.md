@@ -476,6 +476,35 @@ record the decision: update the baseline, or accept it with a reason.
 Improvements fail the build too, and say so cheerfully — an unrecorded gain is one
 the next commit can quietly undo. Re-run `--update-baseline` to lock it in.
 
+### Hooks: ratchet the files you just touched
+
+`--only` narrows the findings to the files you name, so an editor hook, a
+pre-commit hook, or an agent finishing an edit can ask the one question that
+matters there: *did these files get worse?*
+
+```sh
+hashira --only lib/billing/refund.rb,lib/orders/checkout.rb --ratchet
+hashira --only "$(git diff --cached --name-only -- '*.rb' | paste -sd, -)" --ratchet
+```
+
+The whole project is still parsed — that is the point. Half of what hashira knows
+is cross-file (which constants are yours, which methods pick apart a neighbour's
+internals, which fragments are clones of each other), so a file read alone would
+answer differently. `--only` narrows the *report*, never the analysis. On this
+repository a full run is under a second for 129 files; smells alone, a quarter of
+that.
+
+Two things a focused run cannot judge, and so stays quiet about: package edges,
+which belong to no single file, and findings that *disappeared*, which you would
+have to read the whole project to be sure of. It reports what your files
+introduced or made worse, and nothing else. Run the unfocused `--ratchet` in CI —
+that is where removals get celebrated and the baseline gets relocked.
+
+`--only` refuses to combine with `--update-baseline` (which would record a
+baseline missing everything you did not name) or with the diagram formats (which
+draw the graph, not the findings). Paths outside the analyzed directories are
+ignored, so a hook can hand it every changed file without filtering first.
+
 ### Exit codes
 
 A build step should be able to tell a regression from a typo without grepping

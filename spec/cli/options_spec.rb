@@ -151,6 +151,31 @@ RSpec.describe(Hashira::CLI::Options) do
         .to(raise_error(Hashira::Error, 'unknown --skip "typo" (use: coupling, complexity, duplication, smells)'))
     end
 
+    it "defaults --only to nothing and reads a comma-separated list of files" do
+      within("lib/app/x.rb" => "class X; def a = 1; end\n") do
+        expect(described_class.parse(%w[lib/app]).only).to(eq([]))
+        expect(described_class.parse(%w[lib/app --only lib/app/x.rb]).only).to(eq(%w[lib/app/x.rb]))
+        expect(described_class.parse(["lib/app", "--only", "./lib/app/x.rb, lib/app/x.rb"]).only)
+          .to(eq(%w[lib/app/x.rb lib/app/x.rb]))
+        expect(described_class.parse(["lib/app", "--only", "#{Dir.pwd}/lib/app/x.rb"]).only).to(eq(%w[lib/app/x.rb]))
+      end
+    end
+
+    it "rejects an --only path that is not a file here" do
+      expect { described_class.parse(%w[lib --only lib/gone.rb]) }
+        .to(raise_error(Hashira::Error, '--only "lib/gone.rb" is not a file here'))
+    end
+
+    it "refuses --only for runs that report more than findings" do
+      within("lib/app/x.rb" => "class X; def a = 1; end\n") do
+        expect { described_class.parse(%w[lib/app --only lib/app/x.rb --update-baseline]) }
+          .to(raise_error(Hashira::Error, "--only narrows the findings, but --update-baseline records them all"))
+        expect { described_class.parse(%w[lib/app --only lib/app/x.rb --format mermaid]) }
+          .to(raise_error(Hashira::Error, "--format mermaid draws the coupling graph, which --only cannot narrow"))
+        expect(described_class.parse(%w[lib/app --only lib/app/x.rb --ratchet]).mode).to(eq(:ratchet))
+      end
+    end
+
     it "refuses to skip every analyzer" do
       expect { described_class.parse(%w[--skip coupling,complexity,duplication,smells]) }
         .to(raise_error(Hashira::Error, "cannot skip every analyzer"))

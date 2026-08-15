@@ -14,7 +14,11 @@ class Hashira::CI::Ratchet
     Hashira::CI::Status::CLEAN
   end
 
-  def check = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(drift, delta)
+  def check(focus)
+    compared = focus.narrowing? ? Hashira::CI::Slice.new(@baseline) : Hashira::CI::Sweep.new(@baseline)
+    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
+      .print(compared.edges(drift), delta(compared), tally(compared))
+  end
 
   def blocker
     return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?
@@ -56,6 +60,8 @@ class Hashira::CI::Ratchet
 
   def edges = @graph.edges.map(&:to_s)
 
+  def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
+
   def scored
     @_scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, group.filter_map(&:magnitude).max] }
   end
@@ -64,7 +70,7 @@ class Hashira::CI::Ratchet
 
   def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
 
-  def delta
-    Hashira::CI::Comparison.new(scored, @baseline.findings).diff if @baseline.findings?
+  def delta(compared)
+    compared.findings(scored) if @baseline.findings?
   end
 end

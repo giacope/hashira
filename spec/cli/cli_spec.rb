@@ -78,6 +78,36 @@ RSpec.describe(Hashira::CLI) do
     end
   end
 
+  it "keeps only the findings that name the files --only lists" do
+    within(Fixtures::CYCLIC_FILES) do
+      whole = capture { expect(described_class.new(["lib/app"]).status).to(eq(0)) }
+      expect(whole).to(include("cycle: alpha"))
+      part = capture { expect(described_class.new(["lib/app", "--only", "lib/app/core/util.rb"]).status).to(eq(0)) }
+      expect(part).to(include("Package (folder) metrics"))
+      expect(part).to(include("Findings (0)"))
+    end
+  end
+
+  it "ratchets a focused run on regressions alone, staying quiet about the rest of the project" do
+    within(Fixtures::CYCLIC_FILES) do
+      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
+      File.write("lib/app/beta/two.rb", <<~RUBY)
+        module App
+          module Beta
+            class Two
+              def call = 1
+            end
+          end
+        end
+      RUBY
+      whole = capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(3)) }
+      expect(whole).to(include("Edges removed", "Findings resolved"))
+      focused = ["lib/app", "--ratchet", "--only", "lib/app/core/util.rb"]
+      part = capture { expect(described_class.new(focused).status).to(eq(0)) }
+      expect(part).to(eq("Ratchet OK: 0 findings, unchanged.\n"))
+    end
+  end
+
   it "reports unreadable files as a friendly error" do
     within("lib/app/thing.rb" => "class Thing; def x = 1; end") do
       File.chmod(0o000, "lib/app/thing.rb")

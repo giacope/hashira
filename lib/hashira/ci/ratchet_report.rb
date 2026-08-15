@@ -7,8 +7,8 @@ class Hashira::CI::RatchetReport
     @io = io
   end
 
-  def print(edges, findings)
-    return unchanged if quiet?(edges, findings)
+  def print(edges, findings, tally)
+    return unchanged(tally) if quiet?(edges, findings)
     details(edges, findings)
     advice(edges, findings)
     verdict(edges, findings)
@@ -18,8 +18,8 @@ class Hashira::CI::RatchetReport
 
   def quiet?(*diffs) = diffs.compact.all?(&:empty?)
 
-  def unchanged
-    @io.puts("Ratchet OK: #{@graph.edges.size} edges, #{@findings.size} findings, unchanged.")
+  def unchanged(tally)
+    @io.puts("Ratchet OK: #{tally}, unchanged.")
     Hashira::CI::Status::CLEAN
   end
 

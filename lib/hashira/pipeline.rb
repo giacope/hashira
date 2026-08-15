@@ -13,10 +13,11 @@ class Hashira::Pipeline
     Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
   ).sort.freeze
 
-  def initialize(project, enabled: ANALYZERS, packaging: :auto)
+  def initialize(project, enabled: ANALYZERS, packaging: :auto, only: [])
     @project = project
     @enabled = enabled
     @packaging = packaging
+    @only = only
   end
 
   attr_reader :project
@@ -43,7 +44,9 @@ class Hashira::Pipeline
     kind.new(@project, parsed.all, *extra) if enabled?(name)
   end
 
-  def findings = structural + listed(complexity) + listed(duplication) + listed(smells)
+  def findings = focus.narrow(structural + listed(complexity) + listed(duplication) + listed(smells))
+
+  def focus = @_focus ||= Hashira::Focus.new(@project, @only)
 
   private
 

@@ -3,6 +3,7 @@
 require_relative "fail_on"
 require_relative "flag"
 require_relative "format"
+require_relative "only"
 require_relative "package_by"
 require_relative "skip"
 require_relative "top"
@@ -30,6 +31,15 @@ class Hashira::CLI
     Flag.new(
       name: "--skip", arg: "ANALYZERS", field: :skip, parse: Skip,
       text: ["drop an analyzer; comma-separated: coupling,", "complexity, duplication, smells"]
+    ),
+    Flag.new(
+      name: "--only", arg: "PATHS", field: :only, parse: Only,
+      text: [
+        "keep only the findings that name these files;",
+        "comma-separated. The whole project is still read,",
+        "so cross-file signals stay right. Meant for hooks:",
+        "hashira --only $CHANGED --ratchet"
+      ]
     ),
     Flag.new(
       name: "--top", arg: "N", field: :top, parse: Top,

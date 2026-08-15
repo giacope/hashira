@@ -16,6 +16,8 @@ RSpec.describe(Hashira::CI::Ratchet) do
     described_class.new(graph, findings, Hashira::CI::Baseline.new(path), io:)
   end
 
+  def sweeping = Hashira::Focus.new(nil, [])
+
   def edges = ["alpha -> beta", "alpha -> core", "beta -> alpha"]
 
   def seed(findings:, edges: self.edges)
@@ -38,7 +40,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       )
 
       io.truncate(io.pos = 0)
-      expect(ratchet(graph, [finding("cycle", "alpha")], io:).check).to(eq(0))
+      expect(ratchet(graph, [finding("cycle", "alpha")], io:).check(sweeping)).to(eq(0))
       expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
     end
   end
@@ -55,7 +57,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "fails with evidence when an edge is new" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core"], findings: [])
-      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check).to(eq(1)) }
+      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check(sweeping)).to(eq(1)) }
       expect(output).to(eq(<<~TEXT))
         NEW EDGE beta -> alpha — introduced by:
           · beta/two.rb:4: Alpha::One
@@ -72,7 +74,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       seed(findings: [])
       clone = finding("duplication", "orders.rb:4", digest: "a3f9c1")
 
-      output = capture { expect(ratchet(graph, [clone], "baseline.json", io: $stdout).check).to(eq(1)) }
+      output = capture { expect(ratchet(graph, [clone], "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
 
       expect(output).to(
         include(
@@ -94,7 +96,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
     with_graph do |graph|
       File.write("baseline.json", JSON.generate(version: 4, edges:, findings: { "complexity:App#run" => 10 }))
       io = StringIO.new
-      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json", io:).check).to(eq(1))
+      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json", io:).check(sweeping)).to(eq(1))
       expect(io.string).to(include("WORSE FINDING (was 10, now 54):", "complexity: App#run"))
       expect(io.string).to(include("Ratchet FAILED"))
     end
@@ -103,15 +105,15 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "stays quiet when a baselined finding gets better or holds still" do
     with_graph do |graph|
       File.write("baseline.json", JSON.generate(version: 4, edges:, findings: { "complexity:App#run" => 10 }))
-      expect(ratchet(graph, [scored("complexity", "App#run", 10)], "baseline.json").check).to(eq(0))
-      expect(ratchet(graph, [scored("complexity", "App#run", 4)], "baseline.json").check).to(eq(0))
+      expect(ratchet(graph, [scored("complexity", "App#run", 10)], "baseline.json").check(sweeping)).to(eq(0))
+      expect(ratchet(graph, [scored("complexity", "App#run", 4)], "baseline.json").check(sweeping)).to(eq(0))
     end
   end
 
   it "reads a baseline recorded before magnitudes as identity-only, without crying regression" do
     with_graph do |graph|
       seed(findings: ["complexity:App#run"])
-      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json").check).to(eq(0))
+      expect(ratchet(graph, [scored("complexity", "App#run", 54)], "baseline.json").check(sweeping)).to(eq(0))
     end
   end
 
@@ -129,7 +131,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       seed(findings: ["duplication:a3f9c1"])
       moved = finding("duplication", "orders.rb:91", digest: "a3f9c1")
 
-      expect(ratchet(graph, [moved]).check).to(eq(0))
+      expect(ratchet(graph, [moved]).check(sweeping)).to(eq(0))
     end
   end
 
@@ -137,7 +139,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
     with_graph do |graph|
       seed(findings: ["complexity:App::Knot#tangled"])
 
-      output = capture { expect(ratchet(graph, [], "baseline.json", io: $stdout).check).to(eq(3)) }
+      output = capture { expect(ratchet(graph, [], "baseline.json", io: $stdout).check(sweeping)).to(eq(3)) }
 
       expect(output).to(include("Findings resolved (improvement!): complexity:App::Knot#tangled"))
       expect(output).not_to(include("Ratchet FAILED"))
@@ -147,7 +149,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "fails but celebrates removed edges" do
     with_graph do |graph|
       seed(edges: ["alpha -> beta", "alpha -> core", "beta -> alpha", "core -> alpha"], findings: [])
-      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check).to(eq(3)) }
+      output = capture { expect(described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json")).check(sweeping)).to(eq(3)) }
       expect(output).to(include("Edges removed (improvement!): core -> alpha"))
       expect(output).to(include("Lock it in: re-run this command with --update-baseline"))
       expect(output).not_to(include("Ratchet FAILED"))
@@ -160,7 +162,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       File.write("baseline.json", JSON.generate(version: 1, edges:))
       io = StringIO.new
 
-      expect(ratchet(graph, [finding("cycle", "alpha")], io:).check).to(eq(0))
+      expect(ratchet(graph, [finding("cycle", "alpha")], io:).check(sweeping)).to(eq(0))
       expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
     end
   end
@@ -170,7 +172,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       File.write("baseline.json", JSON.generate(version: 1, edges: ["alpha -> beta", "alpha -> core"]))
       current = [finding("cycle", "alpha")]
 
-      output = capture { expect(ratchet(graph, current, "baseline.json", io: $stdout).check).to(eq(1)) }
+      output = capture { expect(ratchet(graph, current, "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
 
       expect(output).to(include("NEW EDGE beta -> alpha"))
       expect(output).not_to(include("NEW FINDING"))
@@ -200,7 +202,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       io = StringIO.new
       ratchet(graph, [], io:).update
       expect(JSON.parse(File.read("baseline.json"))["packaging"]).to(eq("namespace"))
-      expect(ratchet(graph, [], io:).check).to(eq(0))
+      expect(ratchet(graph, [], io:).check(sweeping)).to(eq(0))
     end
   end
 
