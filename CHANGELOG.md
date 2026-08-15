@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-08-15
+
+### Added
+
+- **`--only PATHS` narrows the findings to the files you name.** Meant for
+  hooks: after a formatter, a refactor, or an agent's edit, ask whether *these*
+  files got worse — `hashira --only "$CHANGED" --ratchet`. The whole project is
+  still parsed, because half of what hashira knows is cross-file (which
+  constants are yours, which methods reach into a neighbour, which fragments
+  are clones); reading one file alone would answer differently. A focused
+  ratchet stays quiet about package edges, which belong to no single file, and
+  about findings that disappeared, which only a whole-project run can confirm —
+  it reports what your files introduced or made worse. `--only` refuses
+  `--update-baseline` and the diagram formats, and ignores paths outside the
+  analyzed directories so a hook can hand it every changed file.
+
+### Changed
+
+- **Memoization stops reading as state.** An instance variable named `@_thing`
+  is a cache, not a responsibility: `instance_variable_assumption` no longer
+  reports lazy presence as an assumption, and `too_many_instance_variables`
+  no longer counts derived values against the class. Codebases that memoize
+  behind the `@_` convention will see both smells quieten; codebases that
+  don't are unaffected.
+- **Every object is built the way this tool says to build one.** Constructors
+  only assign, class-method logic dissolves into instances (`Project.detect`
+  and `CLI.run` are plain constructors — `exe/hashira` now calls
+  `CLI.new(argv).status`), factories are named `build`, and hashes acting as
+  objects got names (`SdpViolationFindings::Imbalance`,
+  `DuplicationFinding::Overlap`, `MethodFinding::Effort`). Internal
+  throughout: the command line, the reports, the JSON, and the baseline
+  format are unchanged. Only embedders calling the Ruby API directly are
+  affected.
+- Coupling reads its rule list from `Rule.subclasses`, the way the smells
+  report already read `Check.subclasses`, and parameters stop carrying their
+  node type (`def_node` → `definition`). hashira's own baseline is down to
+  zero findings and one accepted boundary.
+
 ## [0.7.0] - 2026-08-10
 
 ### Added
