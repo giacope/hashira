@@ -27,14 +27,12 @@
     "report -> duplication",
     "smells -> analysis"
   ],
-  "findings": {
-    "duplication:45473fba11d0": 18
-  },
+  "findings": {},
   "accepted": [
     {
       "kind": "boundary_sprawl",
       "package": "Prism",
-      "reason": "hashira IS a Prism adapter: reading Prism's AST across every analyzer is the product, and analysis/ is that boundary"
+      "reason": "every analyzer IS an AST pattern-matcher, so Prism reaches all of them by design: each smell asks about a different node type, so an adapter fronting them would mirror Prism's hierarchy and tax every new check without decoupling anything"
     }
   ]
 }

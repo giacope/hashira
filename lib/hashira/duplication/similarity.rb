@@ -8,7 +8,7 @@ class Hashira::Duplication::Similarity
 
   def ratio
     return 0.0 if @left.empty? || @right.empty?
-    normalized(lcs)
+    normalized(subsequence)
   end
 
   def meets?(threshold) = ceiling >= threshold && ratio >= threshold
@@ -29,7 +29,7 @@ class Hashira::Duplication::Similarity
     true
   end
 
-  def lcs = @left.reduce(blank) { |prev, token| advance(prev, token) }.last
+  def subsequence = @left.reduce(blank) { |prev, token| advance(prev, token) }.last
 
   def blank = Array.new(@right.size + 1, 0)
 

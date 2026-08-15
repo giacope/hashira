@@ -20,12 +20,12 @@ class Hashira::Complexity::MethodFinding
   end
 
   def evidence
-    @score.increments.group_by(&:label).map { |label, incs| lines(label, incs) }
+    @score.increments.group_by(&:label).map { |label, increments| lines(label, increments) }
   end
 
-  def lines(label, incs)
-    lines = incs.map(&:line).uniq
-    "#{label} +#{incs.sum(&:cost)} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
+  def lines(label, increments)
+    lines = increments.map(&:line).uniq
+    "#{label} +#{increments.sum(&:cost)} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
   end
 
   def dominant

@@ -16,11 +16,11 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     end
   end
 
-  describe ".cbase?" do
+  describe ".rooted?" do
     it "marks ::-anchored paths absolute, plain paths not" do
-      expect(described_class.cbase?(parse("::A::B").statements.body.first)).to(be(true))
-      expect(described_class.cbase?(parse("A::B").statements.body.first)).to(be(false))
-      expect(described_class.cbase?(parse("A").statements.body.first)).to(be(false))
+      expect(described_class.rooted?(parse("::A::B").statements.body.first)).to(be(true))
+      expect(described_class.rooted?(parse("A::B").statements.body.first)).to(be(false))
+      expect(described_class.rooted?(parse("A").statements.body.first)).to(be(false))
     end
   end
 

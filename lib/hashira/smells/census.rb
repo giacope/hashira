@@ -27,8 +27,8 @@ class Hashira::Smells::Census
   def kind(node) = node.is_a?(Prism::ModuleNode) ? :module : :class
 
   def defs(name, node, file)
-    Hashira::Smells::Visibility.new(node).entries.map do |def_node, section|
-      Hashira::Smells::MethodContext.new(owner: name, node: def_node, file:, section:, ownership:)
+    Hashira::Smells::Visibility.new(node).entries.map do |definition, section|
+      Hashira::Smells::MethodContext.new(owner: name, node: definition, file:, section:, ownership:)
     end
   end
 end

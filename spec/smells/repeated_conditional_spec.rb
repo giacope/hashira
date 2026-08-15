@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::RepeatedConditional) do
-  def branchy(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_conditional")
+  def branching(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_conditional")
   it "flags a test repeated in more than two places across the class" do
-    findings = branchy(<<~RUBY)
+    findings = branching(<<~RUBY)
       module App
         module Zone
           class Thing
@@ -32,7 +32,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
   end
 
   it "tolerates two repeats, block_given?, and predicateless cases" do
-    findings = branchy(<<~RUBY)
+    findings = branching(<<~RUBY)
       module App
         module Zone
           class Thing
@@ -60,7 +60,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
   end
 
   it "skips modules and nested classes it does not own" do
-    findings = branchy(<<~RUBY)
+    findings = branching(<<~RUBY)
       module App
         module Zone
           module Helper

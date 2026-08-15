@@ -3,15 +3,12 @@
 require_relative "cycle_findings"
 require_relative "mixed_audience_findings"
 require_relative "roll_call_findings"
+require_relative "rule"
 require_relative "sdp_violation_findings"
 require_relative "wide_edge_findings"
 
 class Hashira::Coupling::Report
-  RULES = [
-    Hashira::Coupling::CycleFindings, Hashira::Coupling::SdpViolationFindings,
-    Hashira::Coupling::MixedAudienceFindings, Hashira::Coupling::WideEdgeFindings,
-    Hashira::Coupling::RollCallFindings
-  ].freeze
+  RULES = Hashira::Coupling::Rule.subclasses.sort_by(&:name).freeze
 
   def initialize(project, trees, packaging:)
     @project = project

@@ -10,8 +10,8 @@ class Hashira::Smells::Refs
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
-  def initialize(def_node)
-    @node = def_node
+  def initialize(definition)
+    @node = definition
   end
 
   def ego = lines(:self).size

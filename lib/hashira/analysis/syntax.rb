@@ -17,10 +17,10 @@ module Hashira
 
       def label(node) = [node.name.to_s]
 
-      def cbase?(node)
+      def rooted?(node)
         return false unless node.is_a?(Prism::ConstantPathNode)
         parent = node.parent
-        !parent || cbase?(parent)
+        !parent || rooted?(parent)
       end
 
       def anchor(stack, segments, roots)
@@ -33,12 +33,12 @@ module Hashira
         roots.include?(segments.first(1)) ? segments : (stack.last || []) + segments
       end
 
-      def direct(type_node) = statements(type_node).grep(Prism::DefNode)
+      def direct(type) = statements(type).grep(Prism::DefNode)
 
-      def constants(type_node) = statements(type_node).grep(Prism::ConstantWriteNode)
+      def constants(type) = statements(type).grep(Prism::ConstantWriteNode)
 
-      def statements(type_node)
-        body = type_node.body
+      def statements(type)
+        body = type.body
         body.is_a?(Prism::StatementsNode) ? body.body : [body]
       end
     end

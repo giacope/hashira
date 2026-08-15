@@ -21,21 +21,21 @@ class Hashira::Complexity::Scores
   def flagged = ranked.select { it.cognitive >= THRESHOLD }
 
   def harvest(path, tree)
-    rel = @project.relative(path)
-    sites(tree).map { |full, node| score(rel, full, node) }
+    relative = @project.relative(path)
+    sites(tree).map { |full, node| score(relative, full, node) }
   end
 
   def sites(tree)
     found = []
-    Hashira::Analysis::TypeWalk.each(tree) do |type_node, full|
-      Hashira::Analysis::Syntax.direct(type_node).each { found << [full, it] }
+    Hashira::Analysis::TypeWalk.each(tree) do |type, full|
+      Hashira::Analysis::Syntax.direct(type).each { found << [full, it] }
     end
     found
   end
 
-  def score(rel, full, node)
+  def score(relative, full, node)
     Hashira::Complexity::MethodScore.new(
-      subject: subject(full, node), file: rel, line: node.location.start_line,
+      subject: subject(full, node), file: relative, line: node.location.start_line,
       **tallies(Hashira::Complexity::CognitiveScore.new(node))
     )
   end

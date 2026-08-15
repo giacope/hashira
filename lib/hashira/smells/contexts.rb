@@ -9,12 +9,12 @@ module Hashira
 
       module_function
 
-      def names(def_node) = parts(def_node).flat_map { expand(it) }
+      def names(definition) = parts(definition).flat_map { expand(it) }
 
-      def arguments(def_node) = parts(def_node).grep_v(Prism::BlockParameterNode).flat_map { expand(it) }
+      def arguments(definition) = parts(definition).grep_v(Prism::BlockParameterNode).flat_map { expand(it) }
 
-      def parts(def_node)
-        node = def_node.parameters
+      def parts(definition)
+        node = definition.parameters
         return [] unless node
         node.requireds + node.optionals + node.posts + node.keywords +
           [node.rest, node.keyword_rest, node.block].compact

@@ -38,9 +38,9 @@ class Hashira::Report::MetricsTable
 
   def more = @io.puts("  … and #{over} more — raise the cap with --top, or read them all with --json")
 
-  def row(package, metric) = [package, *metric.cells, cyc(package)]
+  def row(package, metric) = [package, *metric.cells, cycle(package)]
 
-  def cyc(package) = @graph.cycles.through?(package) ? "YES" : "-"
+  def cycle(package) = @graph.cycles.through?(package) ? "YES" : "-"
 
   def legend
     @io.puts("\nLegend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),")

@@ -30,7 +30,7 @@ class Hashira::Coupling::References
   end
 
   def sighting(node, home)
-    [syntax.segments(node), node.location.start_line, syntax.cbase?(node) ? nil : nesting, home]
+    [syntax.segments(node), node.location.start_line, syntax.rooted?(node) ? nil : nesting, home]
   end
 
   def syntax = Hashira::Analysis::Syntax

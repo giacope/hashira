@@ -13,6 +13,22 @@ Kata/AgentNoun:
     - Error
     - Roster
 
+Kata/GoodMethodName:
+  Terms:
+    - on_duplicate_method_call
+    - on_instance_variable_assumption
+    - on_too_many_instance_variables
+
+Kata/GoodVariableName:
+  Terms:
+    - fail_on
+
+Kata/RealWords:
+  Terms:
+    - hotspots
+    - rollup
+    - sdp
+
 Kata/ProsePlacement:
   Enabled: true
   Include:

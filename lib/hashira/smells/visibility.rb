@@ -5,8 +5,8 @@ require "prism"
 class Hashira::Smells::Visibility
   MARKERS = %i[public private protected module_function].freeze
 
-  def initialize(type_node)
-    @node = type_node
+  def initialize(type)
+    @node = type
   end
 
   def entries
