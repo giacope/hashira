@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "prism"
+
 class Hashira::Duplication::Variance
   LITERALS = %i[integer_node float_node string_node symbol_node].freeze
   VALUED = %i[integer_node float_node].freeze
@@ -27,7 +29,11 @@ class Hashira::Duplication::Variance
 
   def pairs = @canonical.nodes.zip(@other.nodes)
 
-  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) }
+  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) }
+
+  def inner?(node) = nested.any? { it.equal?(node) }
+
+  def nested = @_nested ||= @canonical.nodes.grep(Prism::ConstantPathNode).filter_map(&:parent)
 
   def differing = pairs.select { |pair| varies?(*pair) }.map(&:first)
 

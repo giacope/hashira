@@ -33,8 +33,8 @@ RSpec.describe(Hashira::CI::Ratchet) do
       saved = JSON.parse(File.read("baseline.json"))
       expect(saved).to(
         eq(
-          "version" => 4, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
-          "analyzers" => [], "targets" => [],
+          "version" => 5, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
+          "analyzers" => [], "targets" => [], "traces" => { "cycle:alpha" => "cycle||a.rb" },
           "edges" => ["alpha -> beta", "alpha -> core", "beta -> alpha"]
         )
       )
@@ -119,10 +119,11 @@ RSpec.describe(Hashira::CI::Ratchet) do
 
   it "records the magnitude of every finding that has one" do
     with_graph do |graph|
-      findings = [scored("complexity", "App#run", 12), finding("cycle", "alpha")]
+      findings = [scored("complexity", "App#run", 12), finding("duplication", "orders.rb:4", digest: "a3f9c1")]
       ratchet(graph, findings).update
       saved = JSON.parse(File.read("baseline.json"))
-      expect(saved["findings"]).to(eq("complexity:App#run" => 12, "cycle:alpha" => nil))
+      expect(saved["findings"]).to(eq("complexity:App#run" => 12, "duplication:a3f9c1" => 30))
+      expect(saved["traces"]).to(eq("complexity:App#run" => "complexity|a.rb|a.rb"))
     end
   end
 
@@ -234,6 +235,69 @@ RSpec.describe(Hashira::CI::Ratchet) do
         .to(eq("no baseline at missing.json — run --update-baseline first"))
       seed(findings: [])
       expect(ratchet(graph).blocker).to(be_nil)
+    end
+  end
+
+  def focused = Hashira::Focus.new(nil, ["a.rb"])
+
+  def smell(kind, package)
+    Hashira::Analysis::Finding.new(kind:, package:, evidence: [], detail: { site: "a.rb:1" })
+  end
+
+  it "carries a finding across a rename instead of calling it resolved and new at once" do
+    with_graph do |graph|
+      io = StringIO.new
+      ratchet(graph, [smell("nil_check", "Widget#ready")], io:).update
+      io.truncate(io.pos = 0)
+
+      expect(ratchet(graph, [smell("nil_check", "Gadget#ready")], io:).check(sweeping)).to(eq(0))
+
+      expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
+    end
+  end
+
+  it "matches a rename one for one, so a finding that arrived with it still fails" do
+    with_graph do |graph|
+      ratchet(graph, [smell("nil_check", "Widget#ready")]).update
+      arrived = [smell("nil_check", "Gadget#ready"), smell("nil_check", "Gadget#idle")]
+
+      output = capture { expect(ratchet(graph, arrived, "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
+
+      expect(output.scan("NEW FINDING:").size).to(eq(1))
+      expect(output).not_to(include("Findings resolved"))
+    end
+  end
+
+  it "still reports a renamed finding that got worse on the way" do
+    with_graph do |graph|
+      ratchet(graph, [scored("complexity", "App#run", 10)]).update
+      io = StringIO.new
+
+      expect(ratchet(graph, [scored("complexity", "App#total", 54)], "baseline.json", io:).check(sweeping)).to(eq(1))
+
+      expect(io.string).to(include("WORSE FINDING (was 10, now 54):", "complexity: App#total"))
+    end
+  end
+
+  it "reads a baseline recorded before traces the old way, reporting a rename as both" do
+    with_graph do |graph|
+      seed(findings: { "nil_check:Widget#ready" => nil })
+
+      renamed = [smell("nil_check", "Gadget#ready")]
+      output = capture { expect(ratchet(graph, renamed, "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
+
+      expect(output).to(include("NEW FINDING:", "Findings resolved (improvement!): nil_check:Widget#ready"))
+    end
+  end
+
+  it "carries a rename across a focused ratchet, without judging what it was not shown" do
+    with_graph do |graph|
+      ratchet(graph, [smell("nil_check", "Widget#ready"), finding("cycle", "alpha")]).update
+      io = StringIO.new
+
+      expect(ratchet(graph, [smell("nil_check", "Gadget#ready")], "baseline.json", io:).check(focused)).to(eq(0))
+
+      expect(io.string).to(eq("Ratchet OK: 1 findings, unchanged.\n"))
     end
   end
 end

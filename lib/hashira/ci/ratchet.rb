@@ -63,8 +63,10 @@ class Hashira::CI::Ratchet
   def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
 
   def scored
-    @_scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, group.filter_map(&:magnitude).max] }
+    @_scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, mark(group)] }
   end
+
+  def mark(group) = Hashira::CI::Mark.new(magnitude: group.filter_map(&:magnitude).max, trace: group.first.trace)
 
   def drift = Hashira::CI::Diff.new(added: fresh, removed: @baseline.edges - edges)
 

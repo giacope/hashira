@@ -3,7 +3,7 @@
 require "json"
 
 class Hashira::CI::Baseline
-  SCHEMA_VERSION = 4
+  SCHEMA_VERSION = 5
 
   def initialize(path, analyzers: [], targets: [])
     @path = path
@@ -25,6 +25,10 @@ class Hashira::CI::Baseline
 
   def findings = keyed(recorded.fetch("findings", {}))
 
+  def marks = findings.to_h { |key, magnitude| [key, Hashira::CI::Mark.new(magnitude:, trace: traces[key])] }
+
+  def traces = recorded.fetch("traces", {})
+
   def findings? = recorded.key?("findings")
 
   def accepted = recorded.fetch("accepted", [])
@@ -37,8 +41,8 @@ class Hashira::CI::Baseline
 
   def wanted = scope.to_h
 
-  def write(edges, findings, packaging:)
-    File.write(@path, JSON.pretty_generate(payload(edges, findings, packaging)) << "\n")
+  def write(edges, marks, packaging:)
+    File.write(@path, JSON.pretty_generate(payload(edges, marks, packaging)) << "\n")
   end
 
   private
@@ -57,9 +61,21 @@ class Hashira::CI::Baseline
 
   def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
 
-  def payload(edges, findings, packaging)
-    base = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h).merge(edges:, findings:)
-    kept = Hashira::CI::Accepted.new(accepted).entries
-    kept.empty? ? base : base.merge(accepted: kept)
+  def payload(edges, marks, packaging)
+    stem(packaging).merge(edges:, findings: sized(marks)).merge(traced(marks)).merge(kept)
+  end
+
+  def stem(packaging) = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h)
+
+  def sized(marks) = marks.transform_values(&:magnitude)
+
+  def traced(marks)
+    found = marks.transform_values(&:trace).compact
+    found.empty? ? {} : { traces: found }
+  end
+
+  def kept
+    entries = Hashira::CI::Accepted.new(accepted).entries
+    entries.empty? ? {} : { accepted: entries }
   end
 end

@@ -24,4 +24,10 @@ RSpec.describe(Hashira::Duplication::Variance) do
     expect(drifted.structural?).to(be(false))
     expect(drifted.kinds).to(eq([:structure]))
   end
+
+  it "reads a constant by what it points at, not the namespace it sits in" do
+    shared = variance("a.grep(Prism::CallNode)", "b.grep_v(Prism::BlockParameterNode)")
+    expect(shared.structural?).to(be(true))
+    expect(variance("a.grep(Prism::CallNode)", "b.grep_v(Prism::CallNode)").structural?).to(be(false))
+  end
 end

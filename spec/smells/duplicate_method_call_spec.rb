@@ -112,4 +112,133 @@ RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "excuses calls that mint a fresh value every time they run" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def buffers
+              out = "".b
+              err = "".b
+              [out, err]
+            end
+
+            def ids
+              { job: rand(1000), run: rand(1000) }
+            end
+
+            def tokens
+              [SecureRandom.hex(8), SecureRandom.hex(8)]
+            end
+
+            def copies(row)
+              [row.dup, row.dup]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "excuses repeats that no single run can reach twice" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def steered(node)
+              case node.kind
+              when :left then walk(node)
+              when :two then walk(node)
+              end
+            end
+
+            def matched(row)
+              case row
+              in { left: } then @io.tick(2)
+              in { right: } then @io.tick(2)
+              end
+            end
+
+            def either(flag)
+              if flag
+                @io.tick(1)
+              else
+                @io.tick(1)
+              end
+            end
+
+            def reversed(flag)
+              unless flag
+                @io.wrap { work }
+              else
+                @io.wrap { work }
+              end
+            end
+
+            def guarded(key)
+              raise(KeyError, key.to_s) unless @store.key?(key)
+              @store.fetch(key)
+            rescue TypeError
+              raise(KeyError, key.to_s)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts repeats on separate conditions, which one run can reach both of" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def sifted(one, two)
+              @io.tick(1) if one
+              @io.tick(1) if two
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 5, 6)"]))
+  end
+
+  it "counts calls in a rescue body and its else clause when execution can reach both" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def guarded
+              begin
+                @io.tick(1)
+              rescue StandardError
+                @io.warn
+              else
+                @io.tick(1)
+              ensure
+                cleanup
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 6, 10)"]))
+  end
+
+  it "excuses calls on opposite sides of a rescue modifier" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def guarded = @io.tick(1) rescue @io.tick(1)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end

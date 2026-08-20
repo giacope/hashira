@@ -288,6 +288,12 @@ it does inside Ruby:
 - **Lists aren't clones.** A run of identically shaped statements — a require
   block, a routes file, a column of registrations — is skipped, so windows cut
   out of one don't report a match at every offset.
+- **Declarations aren't clones either.** A fragment built only from directives —
+  receiverless macro calls with literal arguments, the `has_many` /
+  `validates` / `attribute` spine of a model or a serializer — is a schema, not
+  copied logic; extracting it only hides what the class declares. Two models
+  that open the same way are two models. As soon as a fragment carries logic —
+  a block, a method, a variable, a receiver, a branch — it counts again.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
   pairwise matches.
@@ -343,13 +349,21 @@ What each one catches:
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing.
 - **duplicate_method_call** — the identical receiver-and-arguments call repeated
-  inside one method; name the result once.
+  inside one method; name the result once. Quiet wherever naming it would be
+  wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
+  `SecureRandom.hex`) are meant to differ, and a repeat no single run can reach
+  twice — the two arms of an `if`, two `when` branches, a body and its `rescue`
+  — has nothing to hoist.
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue.
 - **too_many_instance_variables** — more than four per class. Memoization
   (`@x ||=`) doesn't count as state.
-- **instance_variable_assumption** — an ivar read that no `initialize` ever
-  assigns; the reader is assuming another method ran first.
+- **instance_variable_assumption** — an ivar read that nothing the class can
+  reach ever assigns: not `initialize`, not another of its own methods, not an
+  `attr_writer`, not a reopening of the class, not a module it mixes in or a
+  class it inherits. Usually a typo, or state some other object is expected to
+  install. Silent when the class inherits or includes something the codebase
+  can't see, because the assignment may live in there.
 - **manual_dispatch** — `respond_to?` then send: a type check wearing a duck
   costume.
 - **module_initialize** — `initialize` in a mixin; construction order becomes
@@ -459,6 +473,17 @@ WORSE FINDING (was 13, now 24):
 
 Baselines written by earlier versions still work: they record identity only, so
 they ratchet on appearance until the next `--update-baseline` records magnitudes.
+
+It also records a *trace* of each finding — the file it sits in and what it says,
+with the line numbers left out. A finding is keyed by what it names
+(`Class#method`), so renaming a class, or adding a `?` to four predicates, would
+otherwise report every finding under it as resolved and new in the same breath.
+When a key disappears and another appears carrying the same trace, the ratchet
+reads them as one finding that changed name. The match is one for one: a rename
+that *brought* a new finding with it still fails, and a renamed method that also
+got more complex still reports WORSE. Moving the file changes the trace, because
+that is a relocation rather than a rename — re-record it. Baselines without
+traces behave exactly as they did before.
 
 A regression prints in full, with the evidence that introduced it:
 

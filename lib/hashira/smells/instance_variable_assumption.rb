@@ -3,12 +3,6 @@
 require "prism"
 
 class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
-  SETTERS = [
-    Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode,
-    Prism::InstanceVariableAndWriteNode, Prism::InstanceVariableOperatorWriteNode,
-    Prism::InstanceVariableTargetNode
-  ].freeze
-
   MAYBES = [
     Prism::LocalVariableOrWriteNode, Prism::InstanceVariableOrWriteNode,
     Prism::ClassVariableOrWriteNode, Prism::GlobalVariableOrWriteNode,
@@ -28,19 +22,15 @@ class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && assumed.any?
+  def smelly? = subject.kind == :class && assigned && assumed.any?
 
-  def assumed = @_assumed ||= (read - prepared).uniq.sort.reject { cache?(it) }
+  def assigned = subject.assigned
+
+  def assumed = @_assumed ||= (read - assigned).uniq.sort.reject { cache?(it) }
 
   def cache?(name) = name.start_with?("@_")
 
   def read = subject.owned.flat_map { Harvest.reads(it.node) }
-
-  def prepared
-    starters.flat_map { Hashira::Smells::Scope.inside(it.node) }.select { SETTERS.include?(it.class) }.map(&:name)
-  end
-
-  def starters = subject.owned.select { it.node.name == :initialize }
 
   def evidence = assumed.map(&:to_s)
 end

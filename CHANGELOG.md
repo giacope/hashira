@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **A rename stops reading as churn in the ratchet.** A finding is keyed by what
+  it names, so renaming a class reported the twelve findings under it as
+  resolved and new at once, and adding `?` to four predicates did the same. The
+  baseline now records a `traces` map beside `findings` — for each finding, the
+  file it sits in and what its evidence says, with line numbers stripped — and
+  the ratchet pairs a disappeared key with an appeared one carrying the same
+  trace. The match is one for one, so a rename that brought a new finding along
+  still fails, and a renamed method that also got worse still reports WORSE.
+  Acceptance is untouched: `accepted` entries still name a finding by `package`
+  or `digest`. Baselines recorded before this have no traces and behave exactly
+  as they did; the next `--update-baseline` writes them (schema version 5, which
+  older hashira reads too).
+- **A shared namespace stops passing for a shared name.** The duplication
+  near-miss guard raises the mass floor when two sites have no name in common —
+  but `Prism::CallNode` and `Prism::BlockParameterNode` counted `Prism` as
+  common, so two unrelated one-liners that both mention a Prism class slipped
+  under the low floor. A constant is now read by what it points at, not the
+  namespace it sits in.
+- **A nested class is named the way Ruby resolves it.** `class Widget::Broken`
+  written inside `class Widget` was reported as `Widget::Widget::Broken`. The
+  smell census now resolves a compound constant path against the constants the
+  codebase actually declares, the way the coupling graph already did. Findings
+  on such classes change name, so a baseline recorded before this reports them
+  once as resolved-and-new; re-record it with `--update-baseline`.
+
+### Changed
+
+- **`duplicate_method_call` stops flagging calls that are supposed to differ.**
+  `stdout = "".b` next to `stderr = "".b` is two buffers, and
+  `rand(1_000_000_000)` twice is two ids — naming either once writes a bug. The
+  check now excuses calls that mint a fresh value each time (`new`, `dup`,
+  `clone`, `allocate`, `rand`, anything from `SecureRandom` or `Random`, and
+  any call on a literal) and repeats that no single run can reach twice: the
+  two arms of an `if` or `unless`, two `when` or `in` branches, a body and its
+  `rescue`. Nothing can be hoisted across those, and a `raise` has no result to
+  name.
+- **`instance_variable_assumption` asks whether anything assigns, not whether
+  `initialize` does.** Assignment through a mixin, a superclass, an
+  `attr_writer`, a reopening of the class, or a private method the constructor
+  calls all count now — every shape that made the old check report a class that
+  was perfectly fine. What survives is the ivar nothing the class can reach ever
+  sets: a typo, or state another object is expected to install. When a class
+  inherits or includes something the codebase can't see, the check stays quiet
+  rather than guess.
+- **A run of declarative macros is a schema, not a clone.** Two models opening
+  with the same `has_many ..., dependent: :destroy` lines, or two serializers
+  with the same `typelize`/`attribute` pairs, were reported as duplication whose
+  only fix was to hide the schema behind a class method. A fragment built purely
+  from directives — receiverless calls with literal arguments — no longer
+  clusters. A block, a method, a variable, a receiver, or a branch anywhere in
+  the fragment makes it code again.
+
 ## [0.8.0] - 2026-08-15
 
 ### Added

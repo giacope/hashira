@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
   def assumed(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "instance_variable_assumption")
-  it "flags instance variables read but never assigned in initialize" do
+  it "flags instance variables read but never assigned anywhere in the class" do
     findings = assumed(<<~RUBY)
       module App
         module Zone
@@ -19,11 +19,11 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(message(finding)).to(include("reads instance variables never set in initialize", "zone/thing.rb:3"))
+    expect(message(finding)).to(include("reads instance variables nothing in the class assigns", "zone/thing.rb:3"))
     expect(finding.evidence).to(eq(["@late"]))
   end
 
-  it "treats every read as an assumption when initialize is missing" do
+  it "treats every read as an assumption when nothing assigns at all" do
     findings = assumed(<<~RUBY)
       module App
         module Zone
@@ -91,6 +91,107 @@ RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
             end
 
             def report = (@_report ||= @seen.to_s)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "counts assignments made anywhere the object can reach" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          module Tracked
+            include Timed
+
+            def track(value) = @tracked = value
+          end
+
+          module Timed
+            def stamp = @stamped = 1
+          end
+
+          class Thing
+            include Tracked
+            include Timed
+
+            attr_writer :handle
+
+            def initialize(value)
+              track(value)
+              settle(value)
+            end
+
+            def report = [@tracked, @stamped, @handle, @settled]
+
+            private
+
+            def settle(value) = @settled = value
+          end
+
+          class Thing
+            def again = @tracked
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "stays quiet when a class inherits or mixes in something the codebase cannot see" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Thing < ActiveRecord::Base
+            def report = @late.to_s
+          end
+
+          class Other
+            include ActiveModel::Model
+
+            def report = @late.to_s
+          end
+
+          class Dynamic
+            extend Module.new
+
+            def report = @late.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "does not count singleton writes or extended modules as instance initialization" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          module State
+            def set_state = @state = true
+          end
+
+          class Thing
+            extend State
+
+            def self.configure(value) = @token = value
+            def report = [@state, @token]
+          end
+        end
+      end
+    RUBY
+    expect(findings.first.evidence).to(eq(["@state", "@token"]))
+  end
+
+  it "recognizes string-named attribute writers" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            attr_writer "handle"
+
+            def report = @handle
           end
         end
       end

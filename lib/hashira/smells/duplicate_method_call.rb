@@ -5,23 +5,43 @@ require "prism"
 class Hashira::Smells::DuplicateMethodCall < Hashira::Smells::Check
   LIMIT = 1
 
+  MINTS = %i[new dup clone allocate rand srand].freeze
+
+  SOURCES = %w[SecureRandom Random].freeze
+
+  LITERALS = [
+    Prism::StringNode, Prism::SymbolNode, Prism::ArrayNode, Prism::HashNode,
+    Prism::IntegerNode, Prism::FloatNode, Prism::RegularExpressionNode
+  ].freeze
+
   private
 
   def smelly? = repeats.any?
 
-  def calls = @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode)
+  def calls
+    @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode).reject { minted?(it) }
+  end
+
+  def minted?(node) = mints?(node.name) || spawns?(node.receiver)
+
+  def mints?(name) = MINTS.include?(name)
+
+  def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
 
   def plain?(node)
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
   end
 
   def repeats
-    @_repeats ||= usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole)
+    @_repeats ||= together(usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole))
   end
 
+  def together(groups) = groups.select { |_handle, nodes| branches.together?(nodes) }
+
+  def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
+
   def usual
-    calls.reject { plain?(it) || it.name == :new }
-      .group_by { handle(it) }.select { |_handle, group| group.size > LIMIT }
+    calls.reject { plain?(it) }.group_by { handle(it) }.select { |_handle, group| group.size > LIMIT }
   end
 
   def whole

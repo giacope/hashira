@@ -7,6 +7,10 @@ module Hashira
     module TypeWalk
       module_function
 
+      def roots(trees)
+        trees.each_value.with_object(Set.new) { |tree, set| each(tree) { |_node, full| set << full } }
+      end
+
       def each(node, stack = [], roots: nil, &)
         return descend(node, stack, roots, &) unless type?(node)
         full = Syntax.anchor(stack, Syntax.segments(node.constant_path), roots)

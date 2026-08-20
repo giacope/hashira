@@ -7,7 +7,7 @@ class Hashira::CI::Sweep
 
   def edges(diff) = diff
 
-  def findings(scored) = Hashira::CI::Comparison.new(scored, @baseline.findings).diff
+  def findings(marks) = Hashira::CI::Comparison.new(marks, @baseline.marks).diff
 
   def counts(edges, findings) = [edges, findings]
 end

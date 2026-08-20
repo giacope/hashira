@@ -14,15 +14,9 @@ class Hashira::Coupling::Definitions
 
   def packages = @trees.keys.map { @project.package(it) }.uniq
 
-  def roots
-    @_roots ||= @trees.each_value.with_object(Set.new) { |tree, set| survey(tree, set) }
-  end
+  def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)
 
   private
-
-  def survey(tree, set)
-    Hashira::Analysis::TypeWalk.each(tree) { |_node, full| set << full }
-  end
 
   def scan(file, tree)
     package = @project.package(file)

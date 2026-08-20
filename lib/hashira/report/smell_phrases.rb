@@ -33,8 +33,8 @@ module Hashira::Report::Phrases
   end
 
   def on_instance_variable_assumption(finding)
-    "#{finding.package} reads instance variables never set in initialize (#{finding.detail[:site]}). " \
-      "Assign them in initialize, or pass the data explicitly."
+    "#{finding.package} reads instance variables nothing in the class assigns (#{finding.detail[:site]}). " \
+      "Assign them where the object is built, or pass the data explicitly."
   end
 
   def on_manual_dispatch(finding)

@@ -82,4 +82,88 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     }
     expect(clusters(solo)).to(be_empty)
   end
+
+  it "leaves a run of declarative macros alone — the shared shape is the schema" do
+    schema = {
+      "order.rb" => "class Order < ApplicationRecord\n has_many :line_items, dependent: :destroy\n " \
+        "has_many :adjustments, dependent: :destroy\n belongs_to :customer\n " \
+        "validates :reference, presence: true\nend\n",
+      "invoice.rb" => "class Invoice < ApplicationRecord\n has_many :payments, dependent: :destroy\n " \
+        "has_many :credits, dependent: :destroy\n belongs_to :account\n " \
+        "validates :number, presence: true\nend\n"
+    }
+    expect(clusters(schema)).to(be_empty)
+  end
+
+  it "still reads a macro body as code once it carries logic of its own" do
+    logic = {
+      "order.rb" => "class Order < ApplicationRecord\n belongs_to :customer\n " \
+        "def total\n  lines.sum { it.price * it.count }\n end\nend\n",
+      "invoice.rb" => "class Invoice < ApplicationRecord\n belongs_to :account\n " \
+        "def total\n  lines.sum { it.price * it.count }\n end\nend\n"
+    }
+    expect(clusters(logic).first.sites.map(&:file)).to(contain_exactly("order.rb", "invoice.rb"))
+  end
+
+  it "keeps receiverless macros with runtime arguments as executable code" do
+    runtime = {
+      "a.rb" => <<~RUBY,
+        class A
+          add feature_enabled?(enabled?, enabled?)
+          add feature_enabled?(enabled?, enabled?)
+          add feature_enabled?(enabled?, enabled?)
+        end
+      RUBY
+      "b.rb" => <<~RUBY
+        class B
+          add feature_enabled?(enabled?, enabled?)
+          add feature_enabled?(enabled?, enabled?)
+          add feature_enabled?(enabled?, enabled?)
+        end
+      RUBY
+    }
+    expect(clusters(runtime).first.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
+  end
+
+  it "leaves a run of bare macros alone — a directive with no arguments is still schema" do
+    bare = {
+      "a.rb" => <<~RUBY,
+        class A
+          audited
+          versioned
+          paranoid
+          searchable
+          sluggable
+          taggable
+          sortable
+          cacheable
+          auditable
+          trackable
+          archivable
+          publishable
+          countable
+          rankable
+        end
+      RUBY
+      "b.rb" => <<~RUBY
+        class B
+          audited
+          versioned
+          paranoid
+          searchable
+          sluggable
+          taggable
+          sortable
+          cacheable
+          auditable
+          trackable
+          archivable
+          publishable
+          countable
+          rankable
+        end
+      RUBY
+    }
+    expect(clusters(bare)).to(be_empty)
+  end
 end

@@ -97,4 +97,20 @@ RSpec.describe(Hashira::Smells::Report) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))
     expect(findings.first.evidence).to(eq(["bravo (line 6)", "delta (line 6)"]))
   end
+
+  it "names a compound-path type the way Ruby resolves it, not the way it nests" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~RUBY
+        module App
+          module Zone
+            class Zone::Thing
+              def leak = @late
+            end
+          end
+        end
+      RUBY
+    }
+    findings = sniffed(files, "instance_variable_assumption")
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing"]))
+  end
 end

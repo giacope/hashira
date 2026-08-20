@@ -19,7 +19,7 @@ class Hashira::Duplication::Clusters
 
   private
 
-  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }
+  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
 
   def sets = @_sets ||= Hashira::Duplication::UnionFind.new
 
