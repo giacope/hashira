@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::CLI) do
+RSpec.describe(Hashira::CLI::Session) do
   it "prints every line the headline example shows, in the order shown" do
     shown = readme[/```console\n\$ hashira app\n(.*?)^```/m, 1].lines(chomp: true).reject(&:empty?)
     printed = within(tangled) { capture { described_class.new(["app"]).status } }.lines(chomp: true)

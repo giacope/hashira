@@ -57,7 +57,8 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       "lib/app/one/a.rb" => "module App; module One; class A; def c = [Core::Walk, Core::Score]; end; end; end\n",
       "lib/app/two/b.rb" => "module App; module Two; class B; def c = [Core::Walk, Core::Score]; end; end; end\n",
       "lib/app/three/c.rb" => "module App; module Three; class C; def c = [Core::Walk, Core::Score]; end; end; end\n",
-      "lib/app/main/d.rb" => "module App; module Main; class D; def c = [App::Core::Graph, Core::Chart, Core::Score]; end; end; end\n" # rubocop:disable Layout/LineLength
+      "lib/app/main/d.rb" => "module App; module Main; class D; " \
+        "def c = [App::Core::Graph, Core::Chart, Core::Score]; end; end; end\n"
     }
     message =
       "core splits 2 ways: main, one, three, two share Core::Score, Core::Walk; " \

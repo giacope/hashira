@@ -8,7 +8,7 @@ require_relative "package_by"
 require_relative "skip"
 require_relative "top"
 
-class Hashira::CLI
+module Hashira::CLI
   FLAGS = [
     Flag.new(
       name: "--format", arg: "FORMAT", parse: Format, mode: :parsed,

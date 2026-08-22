@@ -38,3 +38,12 @@ Kata/ProsePlacement:
     - "lib/hashira/ci/**/*"
     - "lib/hashira/cli/flags.rb"
     - "lib/hashira/cli/usage.rb"
+
+Elegant/NoRedundantVariable:
+  AutoCorrect: true
+
+Elegant/PairedBrackets:
+  AutoCorrect: true
+
+Elegant/ClassInModule:
+  Enabled: true

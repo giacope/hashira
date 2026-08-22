@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::CLI
+module Hashira::CLI
   Options =
     Data.define(:directories, :mode, :baseline, :fail_on, :skip, :only, :packaging, :top, :compact) do
       def self.parse(argv) = CommandLine.new(argv).options

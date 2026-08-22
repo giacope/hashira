@@ -7,6 +7,9 @@ module Hashira
   module CI
   end
 
+  module CLI
+  end
+
   module Coupling
   end
 
@@ -50,7 +53,6 @@ require_relative "hashira/ci/scope"
 require_relative "hashira/ci/slice"
 require_relative "hashira/ci/status"
 require_relative "hashira/ci/sweep"
-require_relative "hashira/cli"
 require_relative "hashira/cli/arguments"
 require_relative "hashira/cli/choice"
 require_relative "hashira/cli/command_line"
@@ -63,6 +65,7 @@ require_relative "hashira/cli/only"
 require_relative "hashira/cli/options"
 require_relative "hashira/cli/package_by"
 require_relative "hashira/cli/run"
+require_relative "hashira/cli/session"
 require_relative "hashira/cli/skip"
 require_relative "hashira/cli/usage"
 require_relative "hashira/complexity/boolean_run"

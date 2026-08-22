@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::CLI
+class Hashira::CLI::Session
   MISUSE = 2
   BROKEN = 70
 
@@ -9,7 +9,7 @@ class Hashira::CLI
   end
 
   def status
-    dispatch(Options.parse(@argv))
+    dispatch(Hashira::CLI::Options.parse(@argv))
   rescue Hashira::Error => error
     failure(error)
   rescue StandardError => error
@@ -18,14 +18,16 @@ class Hashira::CLI
 
   private
 
-  def dispatch(options) = usage?(options) ? Usage.public_send(options.mode) : timed(options)
+  def dispatch(options)
+    usage?(options) ? Hashira::CLI::Usage.public_send(options.mode) : timed(options)
+  end
 
-  def usage?(options) = Usage::PAGES.include?(options.mode)
+  def usage?(options) = Hashira::CLI::Usage::PAGES.include?(options.mode)
 
   def timed(options)
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     pipeline = options.pipeline
-    Run.new(pipeline, options).status.tap do
+    Hashira::CLI::Run.new(pipeline, options).status.tap do
       Hashira::Report::Notices.new.finished(pipeline.project.files.size, elapsed(started))
     end
   end

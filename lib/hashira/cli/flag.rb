@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::CLI
+module Hashira::CLI
   BLANK = %i[arg field parse mode].to_h { [it, nil] }.freeze
 
   Flag =

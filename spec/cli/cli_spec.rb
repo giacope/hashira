@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::CLI) do
+RSpec.describe(Hashira::CLI::Session) do
   it "prints a text report and returns 0" do
     within(Fixtures::CYCLIC_FILES) do
       nil
