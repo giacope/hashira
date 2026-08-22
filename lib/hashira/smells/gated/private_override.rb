@@ -10,7 +10,7 @@ class Hashira::Smells::Gated::PrivateOverride < Hashira::Smells::Gated::Rule
 
   private
 
-  def subjects(type) = type.owned.reject { it.public? || HOOKS.include?(it.node.name) }
+  def subjects(type) = sealed(type, HOOKS)
 
   def entry(type, method)
     open = family.ancestral(type, method.node.name).select(&:public?)

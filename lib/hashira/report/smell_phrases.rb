@@ -53,9 +53,23 @@ module Hashira::Report::Phrases
   end
 
   def on_abstract_stub_gap(finding)
+    charged(finding, "never implements %s, which %s leaves to it", "Implement it, or drop the stub that promises it.")
+  end
+
+  def on_dead_method(finding)
     detail = finding.detail
-    "#{finding.package} never implements #{quoted(detail[:names])}, which #{owners(detail)} leaves to it " \
-      "(#{detail[:site]}). Implement it, or drop the stub that promises it."
+    "#{finding.package} is #{detail[:section]}, and nothing in #{owners(detail)} or below it ever names it " \
+      "(#{detail[:site]}). Delete it, or call it."
+  end
+
+  def on_mixin_collision(finding)
+    detail = finding.detail
+    "#{owners(detail)} each define #{quoted(detail[:names])} into #{finding.package} (#{detail[:site]}), " \
+      "and the last include silently wins. Name them apart, or let the class settle it."
+  end
+
+  def on_unchained_initialize(finding)
+    charged(finding, "leaves %s nil, because it builds without the super %s needs", "Call super, or assign them here.")
   end
 
   def on_override_arity_mismatch(finding)
@@ -67,7 +81,7 @@ module Hashira::Report::Phrases
   def on_private_override(finding)
     detail = finding.detail
     "#{finding.package} is #{detail[:section]} here, but #{owners(detail)} makes it public (#{detail[:site]}). " \
-      "A caller holding the base contract gets NoMethodError. Keep the visibility, or rename."
+      "A caller holding the base contract gets NoMethodError. Keep the visibility, or give it another name."
   end
 
   def on_registry_gap(finding)
@@ -87,6 +101,11 @@ module Hashira::Report::Phrases
   def on_utility_function(finding)
     "#{finding.package} touches no instance state (#{finding.detail[:site]}). " \
       "Move it onto the object it serves, or make it a module function."
+  end
+
+  def charged(finding, event, advice)
+    detail = finding.detail
+    "#{finding.package} #{format(event, quoted(detail[:names]), owners(detail))} (#{detail[:site]}). #{advice}"
   end
 
   def tally(finding, event, advice)

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "no_define_method"
+require_relative "no_eval"
 require_relative "no_method_missing"
 
 module Hashira::Constraints::Vocabulary

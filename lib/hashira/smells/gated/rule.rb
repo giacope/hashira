@@ -15,9 +15,13 @@ class Hashira::Smells::Gated::Rule
   attr_reader :family, :trees
 
   def survey(type)
-    return [] unless family.visible?(type)
+    return [] unless family.visible?(type) && considers?(type)
     subjects(type).filter_map { entry(type, it) }
   end
+
+  def considers?(_type) = true
+
+  def sealed(type, hooks) = type.owned.reject { it.public? || hooks.include?(it.node.name) }
 
   def kind = Hashira::Smells::Kind.new(self.class).to_s
 

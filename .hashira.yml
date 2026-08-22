@@ -6,3 +6,5 @@ constraints:
     scope: lib/
   - fact: no_define_method
     scope: lib/
+  - fact: no_eval
+    scope: lib/

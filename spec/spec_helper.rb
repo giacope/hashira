@@ -97,6 +97,8 @@ module Fixtures
 
   BOTH_FACTS = facts(%w[no_method_missing no_define_method], "lib/")
 
+  THREE_FACTS = facts(%w[no_method_missing no_define_method no_eval], "lib/")
+
   def fragments(sources)
     project = Object.new
     def project.relative(path) = path

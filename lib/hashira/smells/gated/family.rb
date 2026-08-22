@@ -7,6 +7,8 @@ class Hashira::Smells::Gated::Family
 
   ALIASES = %i[alias_method].freeze
 
+  MIXINS = %i[include].freeze
+
   def initialize(types)
     @types = types
   end
@@ -31,7 +33,21 @@ class Hashira::Smells::Gated::Family
 
   def ancestral(type, name) = elders(type).flat_map(&:owned).select { it.node.name == name }
 
+  def reach(type) = kin(type).flat_map { Hashira::Smells::Scope.sweep(it.node) }
+
+  def mixins(type) = included(type).map { kinfolk(type, it) }.reject(&:empty?)
+
   private
+
+  def included(type)
+    passed(type, MIXINS).map { Hashira::Analysis::Syntax.segments(it) }.reject(&:empty?)
+  end
+
+  def kinfolk(type, segments) = ancestry(type).select { same?(it, segments) }
+
+  def same?(kin, segments) = tail?(kin.name, segments.join("::"))
+
+  def tail?(name, path) = name == path || name.end_with?("::#{path}")
 
   def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
 

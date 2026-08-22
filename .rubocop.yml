@@ -16,6 +16,7 @@ Kata/AgentNoun:
 Kata/GoodMethodName:
   Terms:
     - on_abstract_stub_gap
+    - on_unchained_initialize
     - on_override_arity_mismatch
     - on_duplicate_method_call
     - on_instance_variable_assumption

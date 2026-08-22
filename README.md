@@ -404,6 +404,7 @@ hashira owns the closed list of facts and what each one means:
 | --- | --- |
 | `no_method_missing` | `def method_missing`, `def respond_to_missing?` |
 | `no_define_method` | `define_method`, `define_singleton_method` |
+| `no_eval` | `eval`, `instance_eval`, `class_eval`, `module_eval`, `instance_exec`, `class_exec`, `module_exec`, `binding` |
 
 **Declarations are checked, not trusted.** While walking the source it already
 parses, hashira verifies every declaration. A contradiction stops the run with
@@ -446,6 +447,23 @@ gets today — nothing is added, nothing is announced.
   positional arguments, a dropped keyword, or a keyword it demands that the base
   did not. Silent on `initialize`, on `...` forwarding, and wherever a splat
   makes the override accept anything.
+
+- **dead_method** (needs `no_method_missing`, `no_define_method`, `no_eval`) — a
+  private or protected method of a class that nothing in that class, its
+  ancestors, or its subclasses ever names. Any spelling counts as a use: a call,
+  `self.name`, a bare `:name` symbol that `send` or `&:name` could reach — but
+  not the `private :name` marker that only labels it. Silent for modules, whose
+  helpers travel to hosts hashira may not see, and silent for any class that
+  sends or asks `respond_to?` about a name it does not spell out.
+- **mixin_collision** (needs `no_define_method`, `no_eval`) — two modules a class
+  includes both define the same instance method, and the class does not define it
+  itself. The later `include` silently wins, and swapping the two lines changes
+  behaviour. A superclass and a module sharing a name is not this: Ruby's order
+  there is not in doubt.
+- **unchained_initialize** (needs `no_method_missing`, `no_define_method`) — a
+  subclass defines `initialize` and never calls `super`, while an inherited
+  `initialize` assigns instance variables. Those stay nil for every instance of
+  the subclass.
 
 The effective constraint scope is part of the baseline's identity — fact name,
 hashira's own version of that fact, and the normalized scope. Adding, changing,

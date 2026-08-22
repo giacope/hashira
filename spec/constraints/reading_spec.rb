@@ -30,7 +30,7 @@ RSpec.describe(Hashira::Constraints::Reading) do
 
   it "refuses a fact hashira does not own" do
     refused("constraints:\n  - fact: no_magic\n    scope: lib/\n") do |trouble|
-      expect(trouble).to(include('unknown fact "no_magic"', "no_define_method, no_method_missing"))
+      expect(trouble).to(include('unknown fact "no_magic"', Hashira::Constraints::Vocabulary.listed))
     end
   end
 

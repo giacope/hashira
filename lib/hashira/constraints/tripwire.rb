@@ -19,7 +19,5 @@ class Hashira::Constraints::Tripwire
 
   def tripped(tree) = Hashira::Analysis::NodeWalk.collect(tree).select { trips?(it) }
 
-  def bare?(node) = node.is_a?(Prism::CallNode) && !node.receiver
-
   def named?(node, names) = node.is_a?(Prism::CallNode) && names.include?(node.name)
 end
