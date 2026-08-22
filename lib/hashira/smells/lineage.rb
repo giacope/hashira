@@ -21,6 +21,8 @@ class Hashira::Smells::Lineage
 
   def assigned(context) = kin(context)&.flat_map { writes(it) }&.uniq
 
+  def ancestry(context) = kin(context)
+
   private
 
   def index = @_index ||= @types.group_by(&:name)

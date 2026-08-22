@@ -32,7 +32,8 @@ class Hashira::CI::Ratchet
   def narrowed(wanted)
     [
       widened("the analyzers", @baseline.analyzers, wanted[:analyzers]),
-      widened("the directories", @baseline.targets, wanted[:targets])
+      widened("the directories", @baseline.targets, wanted[:targets]),
+      widened("the constraints", @baseline.constraints, wanted[:constraints])
     ]
   end
 

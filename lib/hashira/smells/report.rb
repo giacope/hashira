@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "gated/report"
 require_relative "boundary_sprawl"
 require_relative "check"
 require_relative "control_parameter"
@@ -28,12 +29,13 @@ class Hashira::Smells::Report
 
   PROBES = (CHECKS - JUDGES).freeze
 
-  def initialize(project, trees)
+  def initialize(project, trees, declarations = Hashira::Constraints::Declarations::NONE)
     @project = project
     @trees = trees
+    @declarations = declarations
   end
 
-  def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
+  def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl + gated
 
   private
 
@@ -44,6 +46,8 @@ class Hashira::Smells::Report
   def methods = types.flat_map(&:defs)
 
   def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership).findings
+
+  def gated = Hashira::Smells::Gated::Report.new(types, @trees, @declarations).findings
 
   def sniff(subjects, checks) = subjects.flat_map { |subject| verdicts(subject, checks) }
 

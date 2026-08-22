@@ -1,0 +1,8 @@
+# hashira reads this itself. Each entry is a promise about a directory: within
+# it, our own code does not use that Ruby escape hatch, so hashira may rule it
+# out. Nothing here describes hashira's architecture — that it reads from code.
+constraints:
+  - fact: no_method_missing
+    scope: lib/
+  - fact: no_define_method
+    scope: lib/

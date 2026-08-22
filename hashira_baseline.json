@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 6,
   "packaging": "folder",
   "analyzers": [
     "complexity",
@@ -10,8 +10,13 @@
   "targets": [
     "lib/hashira"
   ],
+  "constraints": [
+    "no_define_method@1.0.0:lib",
+    "no_method_missing@1.0.0:lib"
+  ],
   "edges": [
     "(root) -> complexity",
+    "(root) -> constraints",
     "(root) -> coupling",
     "(root) -> duplication",
     "(root) -> hotspots",
@@ -19,13 +24,16 @@
     "ci -> report",
     "cli -> (root)",
     "cli -> ci",
+    "cli -> constraints",
     "cli -> diagram",
     "cli -> report",
     "complexity -> analysis",
+    "constraints -> analysis",
     "coupling -> analysis",
     "duplication -> analysis",
     "report -> duplication",
-    "smells -> analysis"
+    "smells -> analysis",
+    "smells -> constraints"
   ],
   "findings": {},
   "accepted": [

@@ -10,6 +10,9 @@ module Hashira
   module CLI
   end
 
+  module Constraints
+  end
+
   module Coupling
   end
 
@@ -29,6 +32,8 @@ module Hashira
   end
 
   module Smells
+    module Gated
+    end
   end
 end
 
@@ -68,6 +73,11 @@ require_relative "hashira/cli/run"
 require_relative "hashira/cli/session"
 require_relative "hashira/cli/skip"
 require_relative "hashira/cli/usage"
+require_relative "hashira/constraints/declaration"
+require_relative "hashira/constraints/declarations"
+require_relative "hashira/constraints/reading"
+require_relative "hashira/constraints/tripwire"
+require_relative "hashira/constraints/vocabulary"
 require_relative "hashira/complexity/boolean_run"
 require_relative "hashira/complexity/cognitive_score"
 require_relative "hashira/complexity/if_chain"
@@ -132,6 +142,7 @@ require_relative "hashira/focus"
 require_relative "hashira/hotspots/file_cost"
 require_relative "hashira/hotspots/rollup"
 require_relative "hashira/pipeline"
+require_relative "hashira/plan"
 require_relative "hashira/project"
 require_relative "hashira/report/columns"
 require_relative "hashira/report/complexity_table"
@@ -164,6 +175,12 @@ require_relative "hashira/smells/nil_check"
 require_relative "hashira/smells/param_check"
 require_relative "hashira/smells/refs"
 require_relative "hashira/smells/repeated_conditional"
+require_relative "hashira/smells/gated/dispatch"
+require_relative "hashira/smells/gated/family"
+require_relative "hashira/smells/gated/registry_gap"
+require_relative "hashira/smells/gated/report"
+require_relative "hashira/smells/gated/rule"
+require_relative "hashira/smells/gated/table"
 require_relative "hashira/smells/report"
 require_relative "hashira/smells/scope"
 require_relative "hashira/smells/too_many_instance_variables"

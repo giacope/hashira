@@ -52,6 +52,12 @@ module Hashira::Report::Phrases
       "Prefer a default, a null object, or polymorphism."
   end
 
+  def on_registry_gap(finding)
+    detail = finding.detail
+    "#{finding.package} routes to #{quoted(detail[:names])}, which #{detail[:owner]} cannot answer " \
+      "(#{detail[:site]}). Define the handler, or drop the entry the table cannot reach."
+  end
+
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")
   end

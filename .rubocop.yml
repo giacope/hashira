@@ -36,6 +36,7 @@ Kata/ProsePlacement:
   Exclude:
     - "lib/hashira/report/**/*"
     - "lib/hashira/ci/**/*"
+    - "lib/hashira/constraints/**/*"
     - "lib/hashira/cli/flags.rb"
     - "lib/hashira/cli/usage.rb"
 

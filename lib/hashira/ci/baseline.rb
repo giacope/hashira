@@ -3,12 +3,13 @@
 require "json"
 
 class Hashira::CI::Baseline
-  SCHEMA_VERSION = 5
+  SCHEMA_VERSION = 6
 
-  def initialize(path, analyzers: [], targets: [])
+  def initialize(path, analyzers: [], targets: [], constraints: [])
     @path = path
     @analyzers = analyzers
     @targets = targets
+    @constraints = constraints
   end
 
   attr_reader :path
@@ -39,6 +40,8 @@ class Hashira::CI::Baseline
 
   def targets = recorded.fetch("targets", wanted[:targets])
 
+  def constraints = recorded.fetch("constraints", wanted[:constraints])
+
   def wanted = scope.to_h
 
   def write(edges, marks, packaging:)
@@ -59,7 +62,7 @@ class Hashira::CI::Baseline
 
   def keyed(findings) = findings.is_a?(Array) ? findings.to_h { [it, nil] } : findings
 
-  def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
+  def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets, constraints: @constraints)
 
   def payload(edges, marks, packaging)
     stem(packaging).merge(edges:, findings: sized(marks)).merge(traced(marks)).merge(kept)

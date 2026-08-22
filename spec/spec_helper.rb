@@ -60,6 +60,39 @@ module Fixtures
     smells(files) { |report| return report.findings.select { it.kind == kind } }
   end
 
+  def declared(yaml)
+    Hashira::Constraints::Reading.new(Hashira::Constraints::Reading::FILE).tap do |reading|
+      raise(Hashira::Error, reading.trouble) if yaml && reading.trouble
+    end
+  end
+
+  def constrained(files, yaml, directories: ["lib/app"])
+    within(yaml ? files.merge(".hashira.yml" => yaml) : files) do
+      yield(Hashira::Plan.new(constraints: declared(yaml).declarations).pipeline(Hashira::Project.new(directories)))
+    end
+  end
+
+  def self.facts(names, scope) = "constraints:\n#{names.map { "  - fact: #{it}\n    scope: #{scope}\n" }.join}"
+
+  def self.wrapped(path, body, parent = nil)
+    *outer, name = path.split("::")
+    outer.each_with_index.to_a.reverse.reduce(sole(name, body, parent, outer.size)) do |inner, (word, depth)|
+      "#{"  " * depth}module #{word}\n#{inner}#{"  " * depth}end\n"
+    end
+  end
+
+  def self.sole(name, body, parent, depth)
+    pad = "  " * depth
+    lines = body.lines.map { "#{pad}  #{it.chomp}\n" }.join
+    "#{pad}class #{name}#{" < #{parent}" if parent}\n#{lines}#{pad}end\n"
+  end
+
+  def gated(files, yaml, kind, directories: ["lib/app"])
+    constrained(files, yaml, directories:) { |pipeline| return pipeline.findings.select { it.kind == kind } }
+  end
+
+  BOTH_FACTS = facts(%w[no_method_missing no_define_method], "lib/")
+
   def fragments(sources)
     project = Object.new
     def project.relative(path) = path

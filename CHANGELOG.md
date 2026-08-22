@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Constraints: tell hashira which Ruby escape hatches your code forbids.** A
+  project may write a `.hashira.yml` naming facts about the Ruby subset it keeps
+  to, each scoped to a directory:
+
+  ```yaml
+  constraints:
+    - fact: no_method_missing
+      scope: lib/
+    - fact: no_define_method
+      scope: lib/
+  ```
+
+  Constraints describe your Ruby, never your architecture — hashira reads
+  registries, hierarchies and handlers from the code, and stays silent when
+  either the code or the constraint leaves the intent unclear. hashira owns the
+  closed list of facts and what each one means, and checks every declaration
+  against the source it already parses: a contradiction stops the run naming the
+  line that broke it (`constraint no_method_missing is contradicted by
+  lib/gem/proxy.rb:17`), as does an unknown fact or a scope that is not a
+  directory. RuboCop is not read, run, or imitated. A project without a
+  `.hashira.yml` gets exactly the behaviour and output it got before.
+- **registry_gap, the first gated smell.** Needs `no_method_missing` and
+  `no_define_method`, and runs only where the declarations cover every file the
+  run parses. It reports a frozen literal table of handler names, dispatched
+  through `send` on the object's own self, that routes a key to a method nothing
+  in the class, its ancestors, or its subclasses defines — an entry that raises
+  `NoMethodError` the first time its key turns up. Silent when the table is
+  unfrozen or built from anything but literals, when the values are not method
+  names, when the send goes to another object, or when the class inherits
+  something the project cannot see. It gates and ratchets like every other smell.
+- **The effective constraint scope is part of the baseline's identity** — fact
+  name, hashira's own version of that fact, and the normalized scope. Adding,
+  changing, or removing a constraint asks for `--update-baseline` instead of
+  reporting findings that appeared or vanished on their own. Schema version 6;
+  baselines recorded without constraints keep working untouched.
+- **Findings carry the files they came from.** Every finding now records its
+  source files as data, so `--only` selects on that list instead of matching
+  paths out of the rendered message, and `--json` exposes it as `sources`.
+
+### Fixed
+
+- **One immutable source snapshot per run.** The file list is settled and every
+  file read once, before the first parse; parsing and reporting both work from
+  that snapshot. A file written while hashira runs can no longer change which
+  files the report says it counted.
+- **A graph lookup stops inventing what it was asked about.** `EdgeMap` answered
+  a missing key by creating it, so asking for the weight of a pair with no
+  edges, or the neighbours of a package that is not in the graph, added it —
+  `packages` grew as the report walked it. Reads no longer write.
+- **The duplication pre-filter counts a repeated token once.** `Similarity`
+  re-tallied the right-hand side on every token, so its cheap upper bound spent
+  one token as many times as the left repeated it, and let pairs through that
+  could never meet the threshold. Tallied once, the bound is the multiset
+  overlap it always claimed to be.
+- **`--format dot` escapes its identifiers.** A package name carrying a quote or
+  a backslash broke the graph it drew.
+
 ## [0.9.0] - 2026-08-20
 
 ### Fixed

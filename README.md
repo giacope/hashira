@@ -40,7 +40,7 @@ A healthy project reports `Findings (0): none ✓ — structure is healthy`.
 
 ## Contents
 
-[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Code smells](#code-smells) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
+[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Code smells](#code-smells) · [Constraints](#constraints) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
 
 ## Install
 
@@ -372,8 +372,69 @@ What each one catches:
   cheapest type there is.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
-all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the
+all of them, or name one (`--fail-on feature_envy`); `--skip smells` drops the
 analyzer entirely.
+
+## Constraints
+
+Some defects are only provable once Ruby stops being able to surprise you. If a
+class can answer anything through `method_missing`, no static reader can say a
+dispatch table has a hole in it — the hole may be filled at runtime. So hashira
+lets a project state which escape hatches its own code does not use:
+
+```yaml
+# .hashira.yml
+constraints:
+  - fact: no_method_missing
+    scope: lib/
+  - fact: no_define_method
+    scope: lib/
+```
+
+Read it as a promise about a directory: *within `lib/`, our code does not use
+this Ruby feature, and hashira may rely on that.* That is the whole vocabulary —
+constraints describe the Ruby subset you keep to, never your architecture.
+hashira never asks you to enumerate your registries, protocols, handlers, or
+object relationships; it reads those from the code. Where either the code or the
+constraint leaves the intent unclear, hashira says nothing.
+
+hashira owns the closed list of facts and what each one means:
+
+| fact | contradicted by |
+| --- | --- |
+| `no_method_missing` | `def method_missing`, `def respond_to_missing?` |
+| `no_define_method` | `define_method`, `define_singleton_method` |
+
+**Declarations are checked, not trusted.** While walking the source it already
+parses, hashira verifies every declaration. A contradiction stops the run with
+the line that broke it:
+
+```console
+$ hashira
+hashira: constraint no_method_missing is contradicted by lib/gem/proxy.rb:17
+```
+
+An unknown fact or a scope that is not a directory is the same kind of error. If
+you want the declarations kept true between runs, that is what RuboCop is for —
+hashira neither reads its configuration nor runs it.
+
+**Gated smells run only where they are covered.** Each one names the facts it
+needs, and hashira runs it only when the declarations cover every file this run
+parses. A project with no `.hashira.yml` gets exactly the behaviour and output it
+gets today — nothing is added, nothing is announced.
+
+- **registry_gap** (needs `no_method_missing`, `no_define_method`) — a frozen
+  literal table of handler names, dispatched through `send` on the object's own
+  self, routes a key to a method nothing in the class, its ancestors, or its
+  subclasses defines. That entry raises `NoMethodError` the first time its key
+  turns up. Silent when the table is unfrozen or built from anything but
+  literals, when the values are not method names, when the send goes to another
+  object, or when the class inherits something the project cannot see.
+
+The effective constraint scope is part of the baseline's identity — fact name,
+hashira's own version of that fact, and the normalized scope. Adding, changing,
+or removing a constraint asks for `--update-baseline` rather than showing up as
+findings that appeared or disappeared on their own.
 
 ## Hotspots
 

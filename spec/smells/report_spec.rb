@@ -6,7 +6,7 @@ RSpec.describe(Hashira::Smells::Report) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       expect(pipeline.smells).to(be_a(described_class))
       expect(pipeline.findings.map(&:kind)).to(include("utility_function"))
-      trimmed = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled: %i[coupling])
+      trimmed = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), Hashira::Plan.new(enabled: %i[coupling]))
       expect(trimmed.smells).to(be_nil)
       expect(trimmed.findings.map(&:kind)).not_to(include("utility_function"))
     end

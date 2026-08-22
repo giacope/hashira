@@ -48,7 +48,7 @@ RSpec.describe(Hashira::Report::Json) do
     end
     files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)
     within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), Hashira::Plan.new(enabled: %i[coupling]))
       report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
       expect(report["folds"]).to(include("from" => "SandboxResource", "to" => "Sandbox", "via" => "suffix"))
     end

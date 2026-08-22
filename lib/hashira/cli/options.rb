@@ -17,9 +17,16 @@ module Hashira::CLI
         told = Hashira::Report::Notices.new
         told.scanning(chosen.files.size)
         told.rails if directories.empty? && File.exist?("config/application.rb")
-        Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:)
+        Hashira::Plan.new(enabled: analyzers, packaging:, only:, constraints: declared).pipeline(chosen)
       end
 
-      def analyzers = Hashira::Pipeline::ANALYZERS - skip
+      def analyzers = Hashira::Plan::ANALYZERS - skip
+
+      def declared
+        reading = Hashira::Constraints::Reading.new(Hashira::Constraints::Reading::FILE)
+        stop = reading.trouble
+        raise(Hashira::Error, stop) if stop
+        reading.declarations
+      end
     end
 end

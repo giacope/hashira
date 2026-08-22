@@ -214,7 +214,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
 
     it "honors an explicit folder packaging override" do
       within(Fixtures::RAILS_FILES) do
-        pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), packaging: :folder)
+        pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), Hashira::Plan.new(packaging: :folder))
         expect(pipeline.graph.edges.map(&:to_s)).to(eq(["models -> jobs"]))
       end
     end

@@ -108,6 +108,25 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "reports an unusable .hashira.yml as a friendly error, before reading a line of source" do
+    within(Fixtures::CYCLIC_FILES.merge(".hashira.yml" => "constraints:\n  - fact: no_magic\n    scope: lib/\n")) do
+      expect do
+        expect(described_class.new(["lib/app"]).status).to(eq(2))
+      end.to(output(/hashira: \.hashira\.yml: unknown fact "no_magic"/).to_stderr)
+    end
+  end
+
+  it "reports a contradicted constraint as a friendly error, naming the line that broke it" do
+    files = Fixtures::CYCLIC_FILES.merge(".hashira.yml" => Fixtures::BOTH_FACTS)
+    hook = "module App\n  module Core\n    class Util\n      def method_missing(name, *) = super\n    end\n  end\nend\n"
+    files = files.merge("lib/app/core/util.rb" => hook)
+    within(files) do
+      expect do
+        expect(described_class.new(["lib/app"]).status).to(eq(2))
+      end.to(output(%r{constraint no_method_missing is contradicted by lib/app/core/util\.rb:4}).to_stderr)
+    end
+  end
+
   it "reports unreadable files as a friendly error" do
     within("lib/app/thing.rb" => "class Thing; def x = 1; end") do
       File.chmod(0o000, "lib/app/thing.rb")
