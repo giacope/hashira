@@ -1,6 +1,26 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::CLI::Session) do
+  def boundary
+    {
+      root: "Prism", role: "interpreted_model", entrypoint: "lib/app/trees.rb",
+      reason: "the AST is the input model"
+    }
+  end
+
+  def interpretation
+    3.times.to_h { ["lib/app/check#{it}.rb", probes(it)] }.merge(
+      "lib/app/trees.rb" => "TREE = Prism.parse('1').value\n",
+      "hashira_baseline.json" => JSON.generate(boundaries: [boundary])
+    )
+  end
+
+  def probes(slot)
+    "class Check#{slot}\nprivate\n#{Array.new(4) { probe(it) }.join("\n")}\nend\n"
+  end
+
+  def probe(index) = "def probe#{index}(node) = node.is_a?(Prism::CallNode)"
+
   it "prints a text report and returns 0" do
     within(Fixtures::CYCLIC_FILES) do
       nil
@@ -26,6 +46,14 @@ RSpec.describe(Hashira::CLI::Session) do
       expect(dot).to(start_with("digraph hashira {"))
       gate = capture { expect(described_class.new(["lib/app", "--fail-on", "cycles"]).status).to(eq(1)) }
       expect(gate).to(include("Gate FAILED"))
+    end
+  end
+
+  it "treats a verified interpreted model as compliant architecture" do
+    within(interpretation) do
+      args = %w[lib/app --json --skip duplication,complexity,coupling]
+      report = JSON.parse(capture { expect(described_class.new(args).status).to(eq(0)) })
+      expect(report.values_at("findings", "accepted")).to(eq([[], []]))
     end
   end
 

@@ -3,7 +3,7 @@
 require "json"
 
 class Hashira::CI::Baseline
-  SCHEMA_VERSION = 5
+  SCHEMA_VERSION = 6
 
   def initialize(path, analyzers: [], targets: [])
     @path = path
@@ -32,6 +32,8 @@ class Hashira::CI::Baseline
   def findings? = recorded.key?("findings")
 
   def accepted = recorded.fetch("accepted", [])
+
+  def boundaries = recorded.fetch("boundaries", [])
 
   def packaging = recorded.fetch("packaging", "folder")
 
@@ -75,7 +77,8 @@ class Hashira::CI::Baseline
   end
 
   def kept
-    entries = Hashira::CI::Accepted.new(accepted).entries
-    entries.empty? ? {} : { accepted: entries }
+    optional(:accepted, Hashira::CI::Accepted.new(accepted).entries).merge(optional(:boundaries, boundaries))
   end
+
+  def optional(name, values) = values.empty? ? {} : { name => values }
 end

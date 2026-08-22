@@ -340,7 +340,9 @@ What each one catches:
   the method" needs a destination you own.
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
-  foreign type is a fact of life; a sprawl of them is a missing adapter.
+  foreign type is a fact of life; a sprawl of them usually means a missing
+  adapter. An analyzer or interpreter which deliberately understands a foreign
+  data model can declare and verify that boundary instead.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.
@@ -546,6 +548,34 @@ English, so the codes are distinct:
 `3` is the one worth wiring specially: it means the code got better and only the
 baseline is stale. Failing on `1` while treating `3` as a nudge lets a build
 block regressions without blocking progress.
+
+### Declaring interpreted models
+
+Some foreign models are the subject of the program rather than a dependency to
+hide. A compiler interprets an AST; a serializer interprets a schema. Declare
+that architecture in the baseline instead of accepting a `boundary_sprawl`
+finding:
+
+```json
+"boundaries": [
+  {
+    "root": "Prism",
+    "role": "interpreted_model",
+    "entrypoint": "lib/my_tool/trees.rb",
+    "reason": "the Prism AST is the input model"
+  }
+]
+```
+
+Type dispatch over that root no longer counts as boundary sprawl. The
+declaration is checked, not waived: the root API must be called, every such call
+must go through the named entrypoint, and every field needs a value. A missing,
+unknown, unused, or bypassed declaration exits as misuse. `--update-baseline`
+preserves declarations.
+
+This is deliberately narrower than acceptance. A declared boundary says what
+architecture the project conforms to; an accepted finding records why a real
+violation is allowed to remain.
 
 ### Accepting by design
 

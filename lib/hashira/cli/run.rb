@@ -17,12 +17,7 @@ class Hashira::CLI::Run
 
   def findings = @_findings ||= accepted.screen(@pipeline.findings)
 
-  def accepted
-    path = @options.baseline
-    stop = Hashira::CI::Baseline.new(path).trouble
-    raise(Hashira::Error, stop) if stop
-    Hashira::CI::Accepted.build(path)
-  end
+  def accepted = Hashira::CI::Accepted.build(@options.baseline)
 
   def update
     ratchet.update

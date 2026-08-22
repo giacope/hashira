@@ -22,6 +22,11 @@ class Hashira::Pipeline
 
   attr_reader :project
 
+  def verify
+    boundaries.interpreted
+    self
+  end
+
   def unparsed = parsed.unparsed
 
   def graph = coupling.graph
@@ -30,7 +35,7 @@ class Hashira::Pipeline
 
   def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 
-  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report)
+  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report, boundaries)
 
   def hotspots
     @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
@@ -51,6 +56,8 @@ class Hashira::Pipeline
   private
 
   def parsed = @_parsed ||= Hashira::Trees.new(@project)
+
+  def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all)
 
   def coupling
     @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))

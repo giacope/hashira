@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Interpreted foreign models are verified architecture, not accepted debt.**
+  A baseline can declare a foreign root with `role: interpreted_model`, its one
+  API entrypoint, and a reason. Type dispatch over that model no longer emits
+  `boundary_sprawl`, while a missing root call or a call which bypasses the
+  entrypoint is rejected as misuse. Baseline schema 6 preserves these
+  declarations on `--update-baseline`. Hashira now declares Prism this way and
+  dogfoods with zero findings and zero acceptances.
+
+### Changed
+
+- `boundary_sprawl` now distinguishes a missing adapter from a program which
+  deliberately interprets a foreign data model. Undeclared foreign roots keep
+  the same 12-method, 3-file threshold and behavior.
+
 ## [0.9.0] - 2026-08-20
 
 ### Fixed

@@ -9,13 +9,14 @@ class Hashira::Smells::BoundarySprawl
 
   SHOWN = 4
 
-  def initialize(subjects, ownership)
+  def initialize(subjects, ownership, interpreted = [])
     @subjects = subjects
     @ownership = ownership
+    @interpreted = interpreted
   end
 
   def findings
-    reaches.filter_map { |root, contexts| finding(root, contexts) }
+    reaches.except(*@interpreted).filter_map { |root, contexts| finding(root, contexts) }
   end
 
   private

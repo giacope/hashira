@@ -27,6 +27,23 @@ RSpec.describe(Hashira::Smells::BoundarySprawl) do
     expect(sniffed(files, "boundary_sprawl")).to(be_empty)
   end
 
+  it "stays quiet for a declared interpreted model" do
+    files = spread(methods: 12, files: 3).merge(
+      "lib/app/trees.rb" => "class Trees; def parse = Prism.parse('1').value; end\n"
+    )
+    within(files) do
+      project = Hashira::Project.new(["lib/app"])
+      trees = Hashira::Trees.new(project).all
+      record = {
+        "root" => "Prism", "role" => "interpreted_model",
+        "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
+      }
+      boundaries = Hashira::Boundaries.new([record], trees)
+      report = Hashira::Smells::Report.new(project, trees, boundaries)
+      expect(report.findings.select { it.kind == "boundary_sprawl" }).to(be_empty)
+    end
+  end
+
   def spread(methods:, files:, tested: "Prism::CallNode")
     methods.times.group_by { it % files }.to_h do |slot, group|
       ["lib/app/zone/probe#{slot}.rb", <<~RUBY]

@@ -33,7 +33,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       saved = JSON.parse(File.read("baseline.json"))
       expect(saved).to(
         eq(
-          "version" => 5, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
+          "version" => 6, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
           "analyzers" => [], "targets" => [], "traces" => { "cycle:alpha" => "cycle||a.rb" },
           "edges" => ["alpha -> beta", "alpha -> core", "beta -> alpha"]
         )

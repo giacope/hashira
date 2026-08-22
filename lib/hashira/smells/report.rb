@@ -28,9 +28,10 @@ class Hashira::Smells::Report
 
   PROBES = (CHECKS - JUDGES).freeze
 
-  def initialize(project, trees)
+  def initialize(project, trees, boundaries = nil)
     @project = project
     @trees = trees
+    @boundaries = boundaries
   end
 
   def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
@@ -43,7 +44,9 @@ class Hashira::Smells::Report
 
   def methods = types.flat_map(&:defs)
 
-  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership).findings
+  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership, interpreted).findings
+
+  def interpreted = @boundaries ? @boundaries.interpreted : []
 
   def sniff(subjects, checks) = subjects.flat_map { |subject| verdicts(subject, checks) }
 

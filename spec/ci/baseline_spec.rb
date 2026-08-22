@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::CI::Baseline) do
+  def boundary
+    {
+      "root" => "Prism", "role" => "interpreted_model",
+      "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
+    }
+  end
+
   describe "#edges" do
     it "returns nothing recorded when the file is absent" do
       within({}) do
@@ -34,6 +41,13 @@ RSpec.describe(Hashira::CI::Baseline) do
       within("b.json/keep" => "") do
         expect(described_class.new("b.json").trouble).to(include("is not a usable baseline"))
       end
+    end
+  end
+
+  it "preserves declared boundaries when it is rewritten" do
+    within("b.json" => JSON.generate(boundaries: [boundary])) do
+      described_class.new("b.json").write([], {}, packaging: "folder")
+      expect(JSON.parse(File.read("b.json"))["boundaries"]).to(eq([boundary]))
     end
   end
 end
