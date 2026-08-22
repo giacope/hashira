@@ -15,6 +15,6 @@ class Hashira::CI::EdgeDiffReport
 
   def emit(edge)
     @io.puts("NEW EDGE #{edge} — introduced by:")
-    @graph.evidence(edge.from, edge.to).to_a.sort.each { @io.puts("  · #{it}") }
+    @graph.refs(edge).each { @io.puts("  · #{it}") }
   end
 end

@@ -19,7 +19,7 @@ class Hashira::Report::DependencyMap
   end
 
   def outgoing(package)
-    @graph.outgoing(package).map { "#{it}(#{@graph.weight(package, it)})" }
+    @graph.departures(package).map { |to, weight| "#{to}(#{weight})" }
   end
 
   def list(items) = items.empty? ? "(none)" : items.join(", ")

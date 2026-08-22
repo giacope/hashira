@@ -10,7 +10,7 @@ class Hashira::Complexity::MethodFinding
   end
 
   def to_finding
-    Hashira::Analysis::Finding.new(kind: KIND, package: @score.subject, detail:, evidence:)
+    Hashira::Analysis::Finding.new(kind: KIND, package: @score.subject, detail:, evidence:, sources: [@score.file])
   end
 
   private

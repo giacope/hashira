@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Graph) do
+  def edge(from, to) = Hashira::Coupling::Edge.new(from, to)
+
   def with_cycle(&)
     analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
@@ -8,6 +10,31 @@ RSpec.describe(Hashira::Coupling::Graph) do
   it "builds edges from constant references, skipping self-references" do
     with_cycle do |graph|
       expect(graph.edges.map(&:to_s)).to(eq(["alpha -> beta", "alpha -> core", "beta -> alpha"]))
+    end
+  end
+
+  it "answers about a pair it never saw without inventing it" do
+    with_cycle do |graph|
+      expect(graph.weight(edge("core", "beta"))).to(eq(0))
+      expect(graph.evidence(edge("core", "beta"))).to(be_empty)
+      expect(graph.sources(edge("core", "beta"))).to(be_empty)
+      expect(graph.packages.sort).to(eq(%w[alpha beta core]))
+      expect(graph.edges.map(&:to_s)).to(eq(["alpha -> beta", "alpha -> core", "beta -> alpha"]))
+    end
+  end
+
+  it "answers about a package that is not in the graph at all without adopting it" do
+    with_cycle do |graph|
+      expect(graph.outgoing("ghost")).to(be_empty)
+      expect(graph.incoming("ghost")).to(be_empty)
+      expect(graph.packages.sort).to(eq(%w[alpha beta core]))
+    end
+  end
+
+  it "names the files behind an edge" do
+    with_cycle do |graph|
+      expect(graph.sources(edge("alpha", "beta"))).to(eq(["alpha/one.rb"]))
+      expect(graph.sources(edge("beta", "alpha"))).to(eq(["beta/two.rb"]))
     end
   end
 
@@ -37,7 +64,7 @@ RSpec.describe(Hashira::Coupling::Graph) do
     }
     analyze(files) do |_project, _census, graph|
       expect(graph.edges).to(be_empty)
-      expect(graph.evidence("alpha", "alpha")).to(be_empty)
+      expect(graph.evidence(edge("alpha", "alpha"))).to(be_empty)
     end
   end
 
@@ -111,10 +138,10 @@ RSpec.describe(Hashira::Coupling::Graph) do
   describe "#weight and #evidence" do
     it "counts distinct references backing an edge" do
       with_cycle do |graph|
-        expect(graph.weight("beta", "alpha")).to(eq(2))
-        expect(graph.weight("alpha", "core")).to(eq(1))
-        expect(graph.evidence("alpha", "core").to_a).to(eq(["alpha/one.rb:5: Core::Util"]))
-        expect(graph.evidence("beta", "alpha").to_a)
+        expect(graph.weight(edge("beta", "alpha"))).to(eq(2))
+        expect(graph.weight(edge("alpha", "core"))).to(eq(1))
+        expect(graph.evidence(edge("alpha", "core")).to_a).to(eq(["alpha/one.rb:5: Core::Util"]))
+        expect(graph.evidence(edge("beta", "alpha")).to_a)
           .to(contain_exactly("beta/two.rb:4: Alpha::One", "beta/two.rb:5: App::Alpha::One"))
       end
     end

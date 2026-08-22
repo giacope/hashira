@@ -45,6 +45,13 @@ RSpec.describe(Hashira::Diagram::Source) do
     end
   end
 
+  it "escapes a quote or a backslash in a package name rather than breaking the graph" do
+    edges = [['say "hi"', "back\\slash", 2]]
+    source = Hashira::Diagram::Dot.new(edges, ['say "hi"', "back\\slash"]).source
+    expect(source).to(include(%(  "say \\"hi\\"";), %(  "back\\\\slash";)))
+    expect(source).to(include(%(  "say \\"hi\\"" -> "back\\\\slash" [label="2"];)))
+  end
+
   it "never collides two packages onto one node, whatever they are called" do
     files = {
       "lib/app/my-pkg/a.rb" => "module App; class A; def a = 1; end; end\n",

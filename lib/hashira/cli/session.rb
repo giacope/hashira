@@ -28,7 +28,7 @@ class Hashira::CLI::Session
     started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
     pipeline = options.pipeline
     Hashira::CLI::Run.new(pipeline, options).status.tap do
-      Hashira::Report::Notices.new.finished(pipeline.project.files.size, elapsed(started))
+      Hashira::Report::Notices.new.finished(pipeline.snapshot.size, elapsed(started))
     end
   end
 

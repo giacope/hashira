@@ -52,7 +52,7 @@ class Hashira::Report::Text
 
   def count(number, noun) = Hashira::Report::Phrases.count(number, noun)
 
-  def total = @view.project.files.size
+  def total = @view.files
 
   def caveat
     @io.puts(

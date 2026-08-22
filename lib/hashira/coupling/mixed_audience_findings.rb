@@ -18,15 +18,22 @@ class Hashira::Coupling::MixedAudienceFindings < Hashira::Coupling::Rule
 
   def detail(package, parts)
     finding(
-      package:, evidence: parts.flat_map do
-        sightings(package, it).first(2)
-      end, detail: { parts: parts.map(&:to_h) }
+      package:, evidence: parts.flat_map { sightings(package, it).first(2) },
+      sources: sources(package, parts), detail: { parts: parts.map(&:to_h) }
     )
   end
 
-  def sightings(package, part)
-    part.users.flat_map { |client| graph.evidence(client, package).to_a.select { mentions?(it, part.constants) } }
+  def sources(package, parts)
+    parts.flat_map(&:users).flat_map { graph.sources(reach(it, package)) }
   end
+
+  def sightings(package, part)
+    part.users.flat_map { |client| quotes(reach(client, package), part.constants) }
+  end
+
+  def quotes(edge, constants) = graph.evidence(edge).to_a.select { mentions?(it, constants) }
+
+  def reach(from, to) = Hashira::Coupling::Edge.new(from, to)
 
   def mentions?(line, constants) = constants.any? { line.end_with?(": #{it}", "::#{it}") }
 end

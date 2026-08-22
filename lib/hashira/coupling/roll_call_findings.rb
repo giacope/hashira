@@ -25,6 +25,9 @@ class Hashira::Coupling::RollCallFindings < Hashira::Coupling::Rule
 
   def entry(roll)
     words, files, packages = roll.deconstruct
-    finding(package: packages.first, digest: words.join(","), evidence: files, detail: { words:, files:, packages: })
+    finding(
+      package: packages.first, digest: words.join(","), evidence: files,
+      sources: files, detail: { words:, files:, packages: }
+    )
   end
 end

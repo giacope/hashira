@@ -11,7 +11,7 @@ class Hashira::Project
 
   def rails? = directories.any? { config?(File.expand_path(it)) }
 
-  def files = directories.flat_map { Dir["#{it}/**/*.rb"] }.sort
+  def files = @_files ||= directories.flat_map { Dir["#{it}/**/*.rb"] }.sort
 
   def package(path)
     first, rest = relative(path).delete_suffix(".rb").split("/", 2)

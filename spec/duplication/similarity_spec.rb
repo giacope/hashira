@@ -30,4 +30,12 @@ RSpec.describe(Hashira::Duplication::Similarity) do
   it "counts a repeated token only as often as both sides carry it" do
     expect(described_class.new(%i[a a a a], %i[a a b b]).meets?(0.6)).to(be(false))
   end
+
+  it "spends each token on the other side once, however often the left repeats it" do
+    expect(described_class.new(%i[a a a a a a], %i[a b c d e f]).meets?(0.5)).to(be(false))
+  end
+
+  it "still lets a genuine match through the bound" do
+    expect(described_class.new(%i[a b c d], %i[a b c e]).meets?(0.75)).to(be(true))
+  end
 end

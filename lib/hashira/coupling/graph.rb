@@ -19,35 +19,33 @@ class Hashira::Coupling::Graph
 
   def folds = @census.folds
 
-  def outgoing(package) = dependencies[package].to_a.sort
+  def outgoing(package) = map.outgoing(package).to_a.sort
 
-  def incoming(package) = packages.select { dependencies[it].include?(package) }.sort
+  def incoming(package) = packages.select { map.outgoing(it).include?(package) }.sort
 
   def edges
     dependencies.sort.flat_map { |from, tos| tos.sort.map { Hashira::Coupling::Edge.new(from:, to: it) } }
   end
 
-  def weighted
-    edges.map do |edge|
-      from, to = edge.deconstruct
-      [from, to, weight(from, to)]
-    end
-  end
+  def weighted = edges.map { [it.from, it.to, weight(it)] }
 
-  def evidence(from, to) = map.evidence[[from, to]]
+  def departures(package) = outgoing(package).map { [it, weight(edge(package, it))] }
 
-  def usage(package) = incoming(package).to_h { [it, map.usage[[it, package]]] }
+  def refs(edge) = evidence(edge).to_a.sort
 
-  def constants(edge)
-    from, to = edge.deconstruct
-    map.usage[[from, to]].sort
-  end
+  def evidence(edge) = map.evidence(edge)
+
+  def sources(edge) = map.sources(edge).to_a.sort
+
+  def usage(package) = incoming(package).to_h { [it, map.usage(edge(it, package))] }
+
+  def constants(edge) = map.usage(edge).sort
 
   def metric(package)
     Hashira::Coupling::Metric.new(
       types: @census.types[package],
       afferent: incoming(package).size,
-      efferent: dependencies[package].size
+      efferent: map.outgoing(package).size
     )
   end
 
@@ -55,9 +53,11 @@ class Hashira::Coupling::Graph
 
   def violations = Hashira::Coupling::SdpCheck.new(dependencies, metrics).violations
 
-  def weight(from, to) = evidence(from, to).size
+  def weight(edge) = evidence(edge).size
 
   private
+
+  def edge(from, to) = Hashira::Coupling::Edge.new(from, to)
 
   def map
     @_map ||=

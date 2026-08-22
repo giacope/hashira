@@ -19,11 +19,9 @@ class Hashira::Report::Json
 
   def payload = about.merge(base).merge(coupling).merge(sections.compact)
 
-  def about
-    project = @view.project
-    { version: SCHEMA, packaging: @view.graph&.packaging, targets: project.directories }
-      .merge(files: project.files.size)
-  end
+  def about = shape.merge(targets: @view.project.directories, files: @view.files)
+
+  def shape = { version: SCHEMA, packaging: @view.graph&.packaging }
 
   def base = { findings: @view.findings.all.map { rendered(it) }, accepted: accepted }
 

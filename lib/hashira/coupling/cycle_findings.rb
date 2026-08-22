@@ -17,15 +17,21 @@ class Hashira::Coupling::CycleFindings < Hashira::Coupling::Rule
   end
 
   def entry(path)
-    finding(package: path.first, cycle: path, evidence: evidence(path), detail: detail(graph.cycles.weakest(path)))
+    finding(
+      package: path.first, cycle: path, evidence: evidence(path),
+      sources: sources(path), detail: detail(graph.cycles.weakest(path))
+    )
   end
 
-  def detail(weak)
-    from, to = weak
-    { weak:, weight: graph.weight(from, to) }
-  end
+  def detail(weak) = { weak:, weight: graph.weight(link(weak)) }
+
+  def link(pair) = Hashira::Coupling::Edge.new(*pair)
 
   def evidence(path)
-    path.each_cons(2).flat_map { |from, to| graph.evidence(from, to).to_a.first(2) }
+    path.each_cons(2).flat_map { graph.evidence(link(it)).to_a.first(2) }
+  end
+
+  def sources(path)
+    path.each_cons(2).flat_map { graph.sources(link(it)) }
   end
 end

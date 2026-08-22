@@ -18,7 +18,8 @@ class Hashira::Coupling::WideEdgeFindings < Hashira::Coupling::Rule
   def entry(edge)
     from, to = edge.deconstruct
     finding(
-      package: from, digest: "#{from} -> #{to}", evidence: graph.evidence(from, to).to_a.first(4),
+      package: from, digest: "#{from} -> #{to}", evidence: graph.evidence(edge).to_a.first(4),
+      sources: graph.sources(edge),
       detail: { from:, to:, constants: graph.constants(edge) }
     )
   end

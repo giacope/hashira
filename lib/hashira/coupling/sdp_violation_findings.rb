@@ -16,7 +16,11 @@ class Hashira::Coupling::SdpViolationFindings < Hashira::Coupling::Rule
   def ranked = graph.violations.sort_by { |from, to| instability(from) - instability(to) }
 
   def violation(from, to)
-    finding(package: from, evidence: graph.evidence(from, to).to_a.first(5), detail: detail(from, to))
+    edge = Hashira::Coupling::Edge.new(from, to)
+    finding(
+      package: from, evidence: graph.evidence(edge).to_a.first(5),
+      sources: graph.sources(edge), detail: detail(from, to)
+    )
   end
 
   def detail(from, to)

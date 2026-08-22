@@ -2,7 +2,9 @@
 
 RSpec.describe(Hashira::Report::Json) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:)
+    Hashira::Report::View.new(
+      project:, files: project.files.size, graph:, complexity:, duplication:, hotspots:, findings:, compact:
+    )
   end
 
   def emit(view) = JSON.parse(capture { described_class.new(view).print })

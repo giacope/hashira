@@ -60,7 +60,8 @@ RSpec.describe(Hashira::Report::MetricsTable) do
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       view = Hashira::Report::View.new(
-        project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
+        project: pipeline.project, files: pipeline.snapshot.size, graph: pipeline.graph,
+        complexity: nil, duplication: nil,
         hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       )
       output = capture { Hashira::Report::Text.new(view).print }

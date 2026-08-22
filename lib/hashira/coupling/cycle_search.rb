@@ -14,7 +14,7 @@ class Hashira::Coupling::CycleSearch
 
   def prepare
     @_predecessor = {}
-    @_queue = @dependencies[@package].to_a.each { @_predecessor[it] = @package }
+    @_queue = reachable(@package).to_a.each { @_predecessor[it] = @package }
   end
 
   def cycle?
@@ -26,12 +26,14 @@ class Hashira::Coupling::CycleSearch
   end
 
   def visit(node)
-    @dependencies[node].each do |neighbor|
+    reachable(node).each do |neighbor|
       next if @_predecessor.key?(neighbor)
       @_predecessor[neighbor] = node
       @_queue << neighbor
     end
   end
+
+  def reachable(package) = @dependencies.fetch(package, Hashira::Coupling::EdgeMap::NONE)
 
   def unwind(path)
     first = path.first

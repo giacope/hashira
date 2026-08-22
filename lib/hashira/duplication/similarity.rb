@@ -20,7 +20,8 @@ class Hashira::Duplication::Similarity
   def normalized(length) = (2.0 * length) / (@left.size + @right.size)
 
   def overlap
-    @left.count { taken?(@right.tally, it) }
+    counts = @right.tally
+    @left.count { taken?(counts, it) }
   end
 
   def taken?(counts, token)

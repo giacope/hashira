@@ -15,9 +15,9 @@ class Hashira::Report::GraphPayload
 
   def ranked = @graph.metrics.sort_by { |_package, metric| metric.instability }
 
-  def edges
-    @graph.weighted.map do |from, to, weight|
-      { from:, to:, weight: }.merge(refs: @graph.evidence(from, to).to_a.sort)
-    end
+  def edges = @graph.edges.map { entry(it) }
+
+  def entry(edge)
+    { from: edge.from, to: edge.to, weight: @graph.weight(edge) }.merge(refs: @graph.refs(edge))
   end
 end

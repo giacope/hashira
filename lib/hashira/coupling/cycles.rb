@@ -10,5 +10,5 @@ class Hashira::Coupling::Cycles
 
   def path(package) = Hashira::Coupling::CycleSearch.new(@dependencies, package).path
 
-  def weakest(trail) = trail.each_cons(2).min_by { |from, to| @graph.weight(from, to) }
+  def weakest(trail) = trail.each_cons(2).min_by { @graph.weight(Hashira::Coupling::Edge.new(*it)) }
 end

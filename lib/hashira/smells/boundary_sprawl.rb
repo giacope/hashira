@@ -35,7 +35,7 @@ class Hashira::Smells::BoundarySprawl
 
   def build(root, contexts, files)
     Hashira::Analysis::Finding.new(
-      kind: KIND, package: root,
+      kind: KIND, package: root, sources: files,
       detail: { count: contexts.size, files: files.size },
       evidence: contexts.first(SHOWN).map(&:site)
     )

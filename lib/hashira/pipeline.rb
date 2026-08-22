@@ -48,9 +48,11 @@ class Hashira::Pipeline
 
   def focus = @_focus ||= Hashira::Focus.new(@project, @only)
 
+  def snapshot = @_snapshot ||= Hashira::Snapshot.new(@project)
+
   private
 
-  def parsed = @_parsed ||= Hashira::Trees.new(@project)
+  def parsed = @_parsed ||= Hashira::Trees.new(snapshot)
 
   def coupling
     @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))
