@@ -207,8 +207,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
     end
   end
 
-  def scoped(graph, analyzers:, targets:)
-    described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json", analyzers:, targets:))
+  def scoped(graph, analyzers:, targets:, constraints: [])
+    described_class.new(graph, [], Hashira::CI::Baseline.new("baseline.json", analyzers:, targets:, constraints:))
+  end
+
+  def under(graph, constraints)
+    scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"], constraints:)
   end
 
   it "refuses a run that analyzes less, or elsewhere, than the baseline recorded" do
@@ -219,6 +223,29 @@ RSpec.describe(Hashira::CI::Ratchet) do
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["app"]).blocker)
         .to(include("recorded with the directories lib/app, but this run uses app"))
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"]).blocker).to(be_nil)
+    end
+  end
+
+  it "asks for a refresh when a constraint is added, rather than calling its findings new" do
+    with_graph do |graph|
+      under(graph, ["no_eval@1.0.0:lib"]).update
+      expect(under(graph, ["no_eval@1.0.0:lib", "no_method_missing@1.0.0:lib"]).blocker)
+        .to(include("recorded with the constraints no_eval@1.0.0:lib, but this run uses"))
+    end
+  end
+
+  it "asks for a refresh when a constraint is dropped, or its scope moves" do
+    with_graph do |graph|
+      under(graph, ["no_eval@1.0.0:lib"]).update
+      expect(under(graph, ["no_eval@1.0.0:app"]).blocker).to(include("but this run uses no_eval@1.0.0:app"))
+      expect(under(graph, []).blocker).to(include("recorded with the constraints no_eval@1.0.0:lib"))
+    end
+  end
+
+  it "stands aside when the constraints are the ones it recorded" do
+    with_graph do |graph|
+      under(graph, ["no_eval@1.0.0:lib"]).update
+      expect(under(graph, ["no_eval@1.0.0:lib"]).blocker).to(be_nil)
     end
   end
 

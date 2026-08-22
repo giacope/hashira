@@ -9,8 +9,9 @@ Gem::Specification.new do |spec|
   spec.email = ["giaco@hey.com"]
   spec.summary = "Coupling, cognitive-complexity, duplication and code-smell metrics for Ruby, via Prism"
   spec.description = "Measures package coupling (Ca/Ce/instability, SDP violations, cycles), " \
-    "per-method cognitive complexity, near-miss code duplication, and twelve design " \
-    "smells in a Ruby codebase from the AST, then ranks files by cost against git " \
+    "per-method cognitive complexity, near-miss code duplication, and design " \
+    "smells in a Ruby codebase from the AST — ten more once a project declares which " \
+    "Ruby escape hatches it forbids — then ranks files by cost against git " \
     "churn. Findings are backed by file-level evidence, and a baseline ratchets edges " \
     "and findings for CI — direction, not a score."
   spec.homepage = "https://github.com/giacope/hashira"

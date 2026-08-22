@@ -12,6 +12,7 @@ worse rather than on a score nobody agrees on.
 - **Zero runtime dependencies.** Prism ships with Ruby 3.4+; nothing else to install.
 - **Reads the AST, never strings.** Every signal comes from the parse tree. Comments and string literals are invisible.
 - **Four analyzers, opt-out.** Coupling, complexity, duplication, and smells run together by default; `--skip` drops any.
+- **Constraints, not configuration.** Name the Ruby escape hatches your code forbids and ten more smells switch on. hashira never asks you to describe your architecture — it reads that from the code.
 - **Ranked, not graded.** The hotspot rollup orders files by cost × churn — a work queue, not a letter that reads the same on every healthy repo.
 - **Findings, not just a dashboard.** Cycles, SDP violations, complexity hotspots, and clone clusters — each backed by file-level evidence and a plain-language fix.
 - **Made for CI.** Ratchet edges *and* findings against a baseline, so no clean slate is required. Or gate outright with `--fail-on`.
@@ -315,7 +316,7 @@ it does inside Ruby:
 ## Code smells
 
 RuboCop counts lines and branches inside one method; design smells are about how
-objects treat each other, and no line count sees that. hashira ships the twelve
+objects treat each other, and no line count sees that. hashira ships the thirteen
 smells that carry that design signal — the object-relationship kinds, not the
 naming, size, and style checks a linter already argues about — read from the
 same parse trees the other analyzers already built:
@@ -373,7 +374,9 @@ What each one catches:
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all of them, or name one (`--fail-on feature_envy`); `--skip smells` drops the
-analyzer entirely.
+analyzer entirely. Ten more smells wait behind [constraints](#constraints), for
+the questions that only have an answer once Ruby stops being able to surprise
+you.
 
 ## Constraints
 
