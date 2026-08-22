@@ -43,8 +43,6 @@ class Hashira::Smells::Gated::RegistryGap < Hashira::Smells::Gated::Rule
 
   def sender?(call) = SENDERS.include?(call)
 
-  def selfish?(receiver) = !receiver || receiver.is_a?(Prism::SelfNode)
-
   def reads?(node, table)
     return false unless node.is_a?(Prism::CallNode) && READS.include?(node.name)
     holder = node.receiver

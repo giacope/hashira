@@ -99,6 +99,8 @@ module Fixtures
 
   THREE_FACTS = facts(%w[no_method_missing no_define_method no_eval], "lib/")
 
+  ALL_FACTS = facts(Hashira::Constraints::Vocabulary.names, "lib/")
+
   def fragments(sources)
     project = Object.new
     def project.relative(path) = path

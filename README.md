@@ -405,6 +405,8 @@ hashira owns the closed list of facts and what each one means:
 | `no_method_missing` | `def method_missing`, `def respond_to_missing?` |
 | `no_define_method` | `define_method`, `define_singleton_method` |
 | `no_eval` | `eval`, `instance_eval`, `class_eval`, `module_eval`, `instance_exec`, `class_exec`, `module_exec`, `binding` |
+| `no_const_missing` | `def const_missing`, `const_set`, `const_get`, `remove_const` |
+| `no_refinements` | `refine`, `using` |
 
 **Declarations are checked, not trusted.** While walking the source it already
 parses, hashira verifies every declaration. A contradiction stops the run with
@@ -464,6 +466,24 @@ gets today — nothing is added, nothing is announced.
   subclass defines `initialize` and never calls `super`, while an inherited
   `initialize` assigns instance variables. Those stay nil for every instance of
   the subclass.
+
+- **hierarchy_dispatch** (needs `no_const_missing`, `no_eval`) — a method asks
+  `is_a?`/`kind_of?`/`instance_of?`, or arms a `case`, on a class in its own
+  family: a descendant, an ancestor, or a sibling under a shared superclass.
+  That is dispatch written by hand where Ruby would do it. Mixins do not count
+  as family, and neither does a class the project does not define.
+- **unanswered_message** (needs `no_method_missing`, `no_define_method`,
+  `no_eval`, `no_refinements`) — an instance method calls a name on itself that
+  neither the class, its ancestors, its subclasses, nor Ruby itself defines.
+  Usually a typo waiting for the branch that reaches it. It is deliberately
+  timid: silent for modules, silent when the ancestry leaves the project, and
+  silent for any class whose body runs a macro hashira does not recognize, since
+  that macro may be defining methods.
+- **unreachable_rescue** (needs `no_const_missing`, `no_eval`) — a `rescue`
+  names an error class the project defines and nothing in the project raises,
+  directly or through a subclass. The handler is dead code. Silent for errors
+  the project does not define, and silent everywhere as soon as one `raise` in
+  the project names a class hashira cannot read.
 
 The effective constraint scope is part of the baseline's identity — fact name,
 hashira's own version of that fact, and the normalized scope. Adding, changing,

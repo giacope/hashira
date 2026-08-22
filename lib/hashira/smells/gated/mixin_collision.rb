@@ -8,7 +8,7 @@ class Hashira::Smells::Gated::MixinCollision < Hashira::Smells::Gated::Rule
 
   private
 
-  def considers?(type) = type.kind == :class
+  def considers?(type) = super && type.kind == :class
 
   def subjects(type)
     settled = type.owned.map { it.node.name }

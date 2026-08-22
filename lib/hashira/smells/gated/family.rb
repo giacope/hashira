@@ -37,6 +37,12 @@ class Hashira::Smells::Gated::Family
 
   def mixins(type) = included(type).map { kinfolk(type, it) }.reject(&:empty?)
 
+  def sole(segments) = only(@types.select { tail?(it.name, segments.join("::")) }.uniq(&:name))
+
+  def related?(type, other) = bloodline(type).intersect?(bloodline(other))
+
+  def bloodline(type) = trail(type.name, [])
+
   private
 
   def included(type)
@@ -44,6 +50,16 @@ class Hashira::Smells::Gated::Family
   end
 
   def kinfolk(type, segments) = ancestry(type).select { same?(it, segments) }
+
+  def only(found) = (found.first if found.one?)
+
+  def trail(name, known)
+    return known if known.include?(name)
+    parent = @types.select { it.name == name }.filter_map { above(it) }.first
+    parent ? trail(parent, known + [name]) : known + [name]
+  end
+
+  def above(type) = sole(Hashira::Analysis::Syntax.segments(type.parent))&.name
 
   def same?(kin, segments) = tail?(kin.name, segments.join("::"))
 

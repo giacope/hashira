@@ -58,6 +58,10 @@ module Hashira
 
         def subject = name
 
+        def owner = name
+
+        def parent = (node.superclass if kind == :class)
+
         def owned = defs.reject(&:singleton?)
 
         def site = "#{file}:#{line}"

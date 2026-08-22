@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "prism"
 require_relative "../kind"
 
 class Hashira::Smells::Gated::Rule
@@ -15,13 +16,24 @@ class Hashira::Smells::Gated::Rule
   attr_reader :family, :trees
 
   def survey(type)
-    return [] unless family.visible?(type) && considers?(type)
+    return [] unless considers?(type)
     subjects(type).filter_map { entry(type, it) }
   end
 
-  def considers?(_type) = true
+  def considers?(type) = family.visible?(type)
 
   def sealed(type, hooks) = type.owned.reject { it.public? || hooks.include?(it.node.name) }
+
+  def selfish?(receiver) = !receiver || receiver.is_a?(Prism::SelfNode)
+
+  def aimed(pair)
+    subject, other = pair
+    about(subject, [other], sited(other), names: titled(other))
+  end
+
+  def sited(other) = [other.site]
+
+  def titled(other) = [other.name]
 
   def kind = Hashira::Smells::Kind.new(self.class).to_s
 

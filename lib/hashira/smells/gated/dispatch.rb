@@ -26,7 +26,7 @@ module Hashira
               .merge(evidence: absent.map { "#{it.first} → ##{it.last}" }, detail: detail(absent))
           end
 
-          def detail(absent) = { site:, owner:, names: absent.map(&:last) }
+          def detail(absent) = { site:, owners: [owner], names: absent.map(&:last) }
 
           def fallbacks = routes.filter_map { spare(it) }
 

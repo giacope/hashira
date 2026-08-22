@@ -10,7 +10,7 @@ class Hashira::Smells::Gated::UnchainedInitialize < Hashira::Smells::Gated::Rule
 
   private
 
-  def considers?(type) = type.kind == :class
+  def considers?(type) = super && type.kind == :class
 
   def subjects(type)
     own = type.owned.find { it.node.name == :initialize }

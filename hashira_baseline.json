@@ -11,9 +11,11 @@
     "lib/hashira"
   ],
   "constraints": [
+    "no_const_missing@1.0.0:lib",
     "no_define_method@1.0.0:lib",
     "no_eval@1.0.0:lib",
-    "no_method_missing@1.0.0:lib"
+    "no_method_missing@1.0.0:lib",
+    "no_refinements@1.0.0:lib"
   ],
   "edges": [
     "(root) -> complexity",

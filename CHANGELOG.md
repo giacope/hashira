@@ -24,12 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Constraints describe your Ruby, never your architecture — hashira reads
   registries, hierarchies and handlers from the code, and stays silent when
   either the code or the constraint leaves the intent unclear. hashira owns the
-  closed list of facts and what each one means, and checks every declaration
+  closed list of five facts — `no_method_missing`, `no_define_method`, `no_eval`,
+  `no_const_missing`, `no_refinements` — and what each one means, and checks every declaration
   against the source it already parses: a contradiction stops the run naming the
   line that broke it (`constraint no_method_missing is contradicted by
   lib/gem/proxy.rb:17`), as does an unknown fact or a scope that is not a
   directory. RuboCop is not read, run, or imitated. A project without a
   `.hashira.yml` gets exactly the behaviour and output it got before.
+- **Ten gated smells.** Each names the facts it needs, and hashira runs it only
+  where the declarations cover every file the run parses. Each reports a concrete
+  counterexample — a name, a signature, a line — rather than a rule it
+  disapproves of, and each stays silent wherever the code leaves the intent
+  ambiguous: `registry_gap`, `abstract_stub_gap`, `private_override`,
+  `override_arity_mismatch`, `dead_method`, `mixin_collision`,
+  `unchained_initialize`, `hierarchy_dispatch`, `unanswered_message`, and
+  `unreachable_rescue`. They gate and ratchet like every other smell —
+  `--fail-on smells` covers them, or name one.
 - **registry_gap, the first gated smell.** Needs `no_method_missing` and
   `no_define_method`, and runs only where the declarations cover every file the
   run parses. It reports a frozen literal table of handler names, dispatched

@@ -16,6 +16,9 @@ Kata/AgentNoun:
 Kata/GoodMethodName:
   Terms:
     - on_abstract_stub_gap
+    - on_hierarchy_dispatch
+    - on_unanswered_message
+    - on_unreachable_rescue
     - on_unchained_initialize
     - on_override_arity_mismatch
     - on_duplicate_method_call

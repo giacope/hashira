@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Smells::Gated::MixinCollision) do
 
   it "says who defined the same method and what happens" do
     expect(message(clashing(contested).first)).to(
-      include("each define 'call' into App::Zone::Thing", "the last include silently wins")
+      include("takes 'call' from both App::Zone::Alpha, App::Zone::Beta", "the last include silently wins")
     )
   end
 

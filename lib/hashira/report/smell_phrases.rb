@@ -52,44 +52,6 @@ module Hashira::Report::Phrases
       "Prefer a default, a null object, or polymorphism."
   end
 
-  def on_abstract_stub_gap(finding)
-    charged(finding, "never implements %s, which %s leaves to it", "Implement it, or drop the stub that promises it.")
-  end
-
-  def on_dead_method(finding)
-    detail = finding.detail
-    "#{finding.package} is #{detail[:section]}, and nothing in #{owners(detail)} or below it ever names it " \
-      "(#{detail[:site]}). Delete it, or call it."
-  end
-
-  def on_mixin_collision(finding)
-    detail = finding.detail
-    "#{owners(detail)} each define #{quoted(detail[:names])} into #{finding.package} (#{detail[:site]}), " \
-      "and the last include silently wins. Name them apart, or let the class settle it."
-  end
-
-  def on_unchained_initialize(finding)
-    charged(finding, "leaves %s nil, because it builds without the super %s needs", "Call super, or assign them here.")
-  end
-
-  def on_override_arity_mismatch(finding)
-    detail = finding.detail
-    "#{finding.package} cannot take the calls #{owners(detail)} accepts (#{detail[:site]}). " \
-      "Match the signature, or give the override its own name."
-  end
-
-  def on_private_override(finding)
-    detail = finding.detail
-    "#{finding.package} is #{detail[:section]} here, but #{owners(detail)} makes it public (#{detail[:site]}). " \
-      "A caller holding the base contract gets NoMethodError. Keep the visibility, or give it another name."
-  end
-
-  def on_registry_gap(finding)
-    detail = finding.detail
-    "#{finding.package} routes to #{quoted(detail[:names])}, which #{detail[:owner]} cannot answer " \
-      "(#{detail[:site]}). Define the handler, or drop the entry the table cannot reach."
-  end
-
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")
   end
@@ -103,17 +65,10 @@ module Hashira::Report::Phrases
       "Move it onto the object it serves, or make it a module function."
   end
 
-  def charged(finding, event, advice)
-    detail = finding.detail
-    "#{finding.package} #{format(event, quoted(detail[:names]), owners(detail))} (#{detail[:site]}). #{advice}"
-  end
-
   def tally(finding, event, advice)
     detail = finding.detail
     "#{finding.package} #{format(event, detail[:count])} (#{detail[:site]}). #{advice}"
   end
-
-  def owners(detail) = detail[:owners].join(", ")
 
   def quoted(names) = names.map { "'#{it}'" }.join(", ")
 end
