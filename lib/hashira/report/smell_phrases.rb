@@ -52,6 +52,24 @@ module Hashira::Report::Phrases
       "Prefer a default, a null object, or polymorphism."
   end
 
+  def on_abstract_stub_gap(finding)
+    detail = finding.detail
+    "#{finding.package} never implements #{quoted(detail[:names])}, which #{owners(detail)} leaves to it " \
+      "(#{detail[:site]}). Implement it, or drop the stub that promises it."
+  end
+
+  def on_override_arity_mismatch(finding)
+    detail = finding.detail
+    "#{finding.package} cannot take the calls #{owners(detail)} accepts (#{detail[:site]}). " \
+      "Match the signature, or give the override its own name."
+  end
+
+  def on_private_override(finding)
+    detail = finding.detail
+    "#{finding.package} is #{detail[:section]} here, but #{owners(detail)} makes it public (#{detail[:site]}). " \
+      "A caller holding the base contract gets NoMethodError. Keep the visibility, or rename."
+  end
+
   def on_registry_gap(finding)
     detail = finding.detail
     "#{finding.package} routes to #{quoted(detail[:names])}, which #{detail[:owner]} cannot answer " \
@@ -75,6 +93,8 @@ module Hashira::Report::Phrases
     detail = finding.detail
     "#{finding.package} #{format(event, detail[:count])} (#{detail[:site]}). #{advice}"
   end
+
+  def owners(detail) = detail[:owners].join(", ")
 
   def quoted(names) = names.map { "'#{it}'" }.join(", ")
 end

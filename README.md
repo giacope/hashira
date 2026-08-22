@@ -431,6 +431,22 @@ gets today — nothing is added, nothing is announced.
   literals, when the values are not method names, when the send goes to another
   object, or when the class inherits something the project cannot see.
 
+- **abstract_stub_gap** (needs `no_method_missing`, `no_define_method`) — a class
+  with no subclasses of its own inherits a method whose whole body is
+  `raise NotImplementedError`, and neither it nor anything between implements it.
+  Instantiating that class and calling the method raises. Silent about the class
+  that owns the stub, about a stub raising anything else, about a body that does
+  more than raise, and about a class whose ancestry the project cannot see.
+- **private_override** (needs `no_method_missing`, `no_define_method`) — a
+  subclass redefines an inherited public method as `private` or `protected`. A
+  caller holding the base's contract gets `NoMethodError`. `initialize` and the
+  other hooks Ruby keeps private are exempt.
+- **override_arity_mismatch** (needs `no_method_missing`, `no_define_method`) —
+  an override cannot accept the calls the definition above it accepts: fewer
+  positional arguments, a dropped keyword, or a keyword it demands that the base
+  did not. Silent on `initialize`, on `...` forwarding, and wherever a splat
+  makes the override accept anything.
+
 The effective constraint scope is part of the baseline's identity — fact name,
 hashira's own version of that fact, and the normalized scope. Adding, changing,
 or removing a constraint asks for `--update-baseline` rather than showing up as

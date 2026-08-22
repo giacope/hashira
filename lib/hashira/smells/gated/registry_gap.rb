@@ -12,13 +12,13 @@ class Hashira::Smells::Gated::RegistryGap < Hashira::Smells::Gated::Rule
 
   READS = %i[fetch []].freeze
 
-  def list = family.types.flat_map { gaps(it) }
-
   private
 
-  def gaps(type)
-    return [] unless family.visible?(type)
-    dispatches(type).select(&:routed?).filter_map { gap(it) }
+  def subjects(type) = dispatches(type).select(&:routed?)
+
+  def entry(_type, dispatch)
+    absent = dispatch.unanswered(family)
+    finding(**dispatch.gap(absent)) unless absent.empty?
   end
 
   def dispatches(type)
@@ -28,13 +28,6 @@ class Hashira::Smells::Gated::RegistryGap < Hashira::Smells::Gated::Rule
   def tables(type)
     Hashira::Analysis::Syntax.constants(type.node).map { Hashira::Smells::Gated::Table.new(it) }.select(&:dispatch?)
   end
-
-  def gap(dispatch)
-    absent = dispatch.entries.reject { family.answers?(dispatch.type, it.last) }
-    entry(dispatch, absent) unless absent.empty?
-  end
-
-  def entry(dispatch, absent) = finding(**dispatch.gap(absent))
 
   def routes(type, table)
     Hashira::Smells::Scope.sweep(type.node).grep(Prism::CallNode).filter_map { read(it, table) }

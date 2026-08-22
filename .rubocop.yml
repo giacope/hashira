@@ -15,6 +15,8 @@ Kata/AgentNoun:
 
 Kata/GoodMethodName:
   Terms:
+    - on_abstract_stub_gap
+    - on_override_arity_mismatch
     - on_duplicate_method_call
     - on_instance_variable_assumption
     - on_too_many_instance_variables
@@ -22,6 +24,7 @@ Kata/GoodMethodName:
 Kata/GoodVariableName:
   Terms:
     - fail_on
+    - keyword_rest
 
 Kata/RealWords:
   Terms:

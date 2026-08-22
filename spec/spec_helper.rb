@@ -74,21 +74,25 @@ module Fixtures
 
   def self.facts(names, scope) = "constraints:\n#{names.map { "  - fact: #{it}\n    scope: #{scope}\n" }.join}"
 
-  def self.wrapped(path, body, parent = nil)
+  def self.wrapped(path, body, parent = nil, kind: :class)
     *outer, name = path.split("::")
-    outer.each_with_index.to_a.reverse.reduce(sole(name, body, parent, outer.size)) do |inner, (word, depth)|
+    outer.each_with_index.to_a.reverse.reduce(sole(name, body, parent, outer.size, kind)) do |inner, (word, depth)|
       "#{"  " * depth}module #{word}\n#{inner}#{"  " * depth}end\n"
     end
   end
 
-  def self.sole(name, body, parent, depth)
+  def self.sole(name, body, parent, depth, kind)
     pad = "  " * depth
     lines = body.lines.map { "#{pad}  #{it.chomp}\n" }.join
-    "#{pad}class #{name}#{" < #{parent}" if parent}\n#{lines}#{pad}end\n"
+    "#{pad}#{kind} #{name}#{" < #{parent}" if parent}\n#{lines}#{pad}end\n"
   end
 
   def gated(files, yaml, kind, directories: ["lib/app"])
     constrained(files, yaml, directories:) { |pipeline| return pipeline.findings.select { it.kind == kind } }
+  end
+
+  def self.zoned(name, body, parent = nil, kind: :class)
+    { "lib/app/zone/#{name.downcase}.rb" => wrapped("App::Zone::#{name}", body, parent, kind:) }
   end
 
   BOTH_FACTS = facts(%w[no_method_missing no_define_method], "lib/")

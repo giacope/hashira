@@ -25,6 +25,12 @@ class Hashira::Smells::Gated::Family
 
   def names(type) = tables.fetch(type.node) { chart(type) }
 
+  def elders(type) = ancestry(type).reject { it.name == type.name }
+
+  def leaf?(type) = type.kind == :class && descendants(type).empty?
+
+  def ancestral(type, name) = elders(type).flat_map(&:owned).select { it.node.name == name }
+
   private
 
   def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
@@ -39,7 +45,7 @@ class Hashira::Smells::Gated::Family
 
   def tables = @_tables ||= {}.compare_by_identity
 
-  def chart(type) = tables[type.node] = type.defs.reject(&:singleton?).map { it.node.name } + granted(type)
+  def chart(type) = tables[type.node] = type.owned.map { it.node.name } + granted(type)
 
   def granted(type) = named(passed(type, READERS) + passed(type, ALIASES) + renamed(type))
 

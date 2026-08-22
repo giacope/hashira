@@ -9,6 +9,8 @@ module Hashira
         Data.define(:type, :table, :routes) do
           def routed? = !routes.empty?
 
+          def unanswered(family) = entries.reject { family.answers?(type, it.last) }
+
           def entries = (table.handlers + fallbacks).uniq
 
           def owner = type.name

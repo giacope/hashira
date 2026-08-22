@@ -3,6 +3,9 @@
 require_relative "../kind"
 require_relative "family"
 require_relative "rule"
+require_relative "abstract_stub_gap"
+require_relative "override_arity_mismatch"
+require_relative "private_override"
 require_relative "registry_gap"
 
 class Hashira::Smells::Gated::Report

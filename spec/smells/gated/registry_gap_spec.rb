@@ -5,9 +5,7 @@ RSpec.describe(Hashira::Smells::Gated::RegistryGap) do
     gated(files, yaml, "registry_gap", directories:)
   end
 
-  def zone(name, body, parent = nil)
-    { "lib/app/zone/#{name.downcase}.rb" => Fixtures.wrapped("App::Zone::#{name}", body, parent) }
-  end
+  def zone(name, body, parent = nil) = Fixtures.zoned(name, body, parent)
 
   def dispatcher(body) = zone("Thing", body)
 
