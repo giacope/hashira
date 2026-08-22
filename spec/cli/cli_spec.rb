@@ -108,6 +108,40 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  def dispatcher
+    table = "TABLE = { a: :on_a, b: :on_b }.freeze\ndef run(key) = __send__(TABLE.fetch(key))\ndef on_a = 1"
+    Fixtures.zoned("Thing", table).merge(".hashira.yml" => Fixtures::ALL_FACTS)
+  end
+
+  it "gates, reports, narrows and ratchets a gated finding like any other" do
+    within(dispatcher) do
+      gate = capture { expect(described_class.new(["lib/app", "--fail-on", "registry_gap"]).status).to(eq(1)) }
+      expect(gate).to(include("registry_gap: App::Zone::Thing::TABLE routes to 'on_b'"))
+      json = JSON.parse(capture { described_class.new(["lib/app", "--json"]).status })
+      expect(json["findings"].map { it["sources"] }).to(include(["zone/thing.rb"]))
+      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
+      capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(0)) }
+    end
+  end
+
+  it "keeps a gated finding when --only names the file it came from, and drops it otherwise" do
+    within(dispatcher.merge("lib/app/zone/other.rb" => "class Other; def a = 1; end\n")) do
+      kept = capture { described_class.new(["lib/app", "--only", "lib/app/zone/thing.rb", "--json"]).status }
+      expect(JSON.parse(kept)["findings"].map { it["kind"] }).to(include("registry_gap"))
+      dropped = capture { described_class.new(["lib/app", "--only", "lib/app/zone/other.rb", "--json"]).status }
+      expect(JSON.parse(dropped)["findings"].map { it["kind"] }).not_to(include("registry_gap"))
+    end
+  end
+
+  it "asks for a baseline refresh when the declared constraints change" do
+    within(dispatcher) do
+      capture { described_class.new(["lib/app", "--update-baseline"]).status }
+      File.write(".hashira.yml", Fixtures.facts(%w[no_method_missing no_define_method], "lib/"))
+      expect { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(2)) }
+        .to(output(/recorded with the constraints/).to_stderr)
+    end
+  end
+
   it "reports an unusable .hashira.yml as a friendly error, before reading a line of source" do
     within(Fixtures::CYCLIC_FILES.merge(".hashira.yml" => "constraints:\n  - fact: no_magic\n    scope: lib/\n")) do
       expect do
