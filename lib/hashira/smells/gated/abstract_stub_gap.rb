@@ -23,11 +23,6 @@ class Hashira::Smells::Gated::AbstractStubGap < Hashira::Smells::Gated::Rule
 
   def stub?(method) = raises?(sole(method))
 
-  def sole(method)
-    body = Hashira::Analysis::Syntax.statements(method.node).compact
-    body.first if body.one?
-  end
-
   def raises?(node)
     node.is_a?(Prism::CallNode) && node.name == :raise && abstract?(node)
   end

@@ -28,7 +28,7 @@ class Hashira::Smells::Gated::HierarchyDispatch < Hashira::Smells::Gated::Rule
   def arms(node) = node.conditions.grep(Prism::WhenNode).flat_map(&:conditions)
 
   def pair(type, method, node)
-    other = family.sole(Hashira::Analysis::Syntax.segments(node))
+    other = family.lone(Hashira::Analysis::Syntax.segments(node))
     [method, other] if other && other.name != type.name && family.related?(type, other)
   end
 

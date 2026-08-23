@@ -11,7 +11,7 @@ module Hashira::Report::Phrases
     "private_override" => "A caller holding the base contract gets NoMethodError. Keep the visibility, or rename it."
   ).merge(
     "registry_gap" => "Define the handler, or drop the entry the table cannot reach.",
-    "unanswered_message" => "Fix the name, or define the method.",
+    "rescue_shadow" => "Put the narrower clause first, or drop the one that never runs.",
     "unchained_initialize" => "Call super, or assign them here.",
     "unreachable_rescue" => "Drop the handler, or raise what it was written for."
   ).freeze
@@ -38,8 +38,8 @@ module Hashira::Report::Phrases
     verdict(finding, "routes to #{names(finding)}, which #{owners(finding)} cannot answer")
   end
 
-  def on_unanswered_message(finding)
-    verdict(finding, "calls #{names(finding)} on itself, and nothing #{owners(finding)} can reach defines it")
+  def on_rescue_shadow(finding)
+    verdict(finding, "rescues #{names(finding)} after #{owners(finding)}, which already catches it")
   end
 
   def on_unchained_initialize(finding)

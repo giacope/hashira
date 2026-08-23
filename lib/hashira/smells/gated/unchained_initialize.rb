@@ -14,11 +14,11 @@ class Hashira::Smells::Gated::UnchainedInitialize < Hashira::Smells::Gated::Rule
 
   def subjects(type)
     own = type.owned.find { it.node.name == :initialize }
-    own && !chained?(own) ? stranded(type) : []
+    own && !chained?(own) ? stranded(type, sets(own)) : []
   end
 
-  def stranded(type)
-    family.ancestral(type, :initialize).reject { sets(it).empty? }
+  def stranded(type, settled)
+    family.ancestral(type, :initialize).reject { (sets(it) - settled).empty? }
   end
 
   def chained?(method)
@@ -30,5 +30,11 @@ class Hashira::Smells::Gated::UnchainedInitialize < Hashira::Smells::Gated::Rule
       .map(&:name).uniq
   end
 
-  def entry(type, parent) = about(type, [parent], [parent.site], names: sets(parent))
+  def entry(type, parent) = about(type, [parent], sites(parent), names: stray(type, parent))
+
+  def sites(parent) = [parent.site]
+
+  def stray(type, parent) = sets(parent) - type.owned.flat_map { own(it) }
+
+  def own(method) = method.node.name == :initialize ? sets(method) : []
 end

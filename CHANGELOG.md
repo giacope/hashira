@@ -37,9 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   disapproves of, and each stays silent wherever the code leaves the intent
   ambiguous: `registry_gap`, `abstract_stub_gap`, `private_override`,
   `override_arity_mismatch`, `dead_method`, `mixin_collision`,
-  `unchained_initialize`, `hierarchy_dispatch`, `unanswered_message`, and
+  `unchained_initialize`, `hierarchy_dispatch`, `rescue_shadow`, and
   `unreachable_rescue`. They gate and ratchet like every other smell —
-  `--fail-on smells` covers them, or name one.
+  `--fail-on smells` covers them, or name one. Each was read against eight gems
+  outside this repository as well as hashira itself, about 440 files: four
+  findings, each checked by hand and each real.
 - **registry_gap, the first gated smell.** Needs `no_method_missing` and
   `no_define_method`, and runs only where the declarations cover every file the
   run parses. It reports a frozen literal table of handler names, dispatched
@@ -60,6 +62,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A subclass written `class Heir < self` joins its family.** hashira read the
+  superclass only when it was written as a constant, so the nested-subclass form
+  Ruby's own stdlib uses left the parent unlinked — every hierarchy answer about
+  those classes was drawn from half a family.
 - **One immutable source snapshot per run.** The file list is settled and every
   file read once, before the first parse; parsing and reporting both work from
   that snapshot. A file written while hashira runs can no longer change which

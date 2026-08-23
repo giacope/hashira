@@ -26,6 +26,11 @@ class Hashira::Smells::Gated::Rule
 
   def selfish?(receiver) = !receiver || receiver.is_a?(Prism::SelfNode)
 
+  def sole(method)
+    written = Hashira::Analysis::Syntax.statements(method.node).compact
+    written.first if written.one?
+  end
+
   def aimed(pair)
     subject, other = pair
     about(subject, [other], sited(other), names: titled(other))

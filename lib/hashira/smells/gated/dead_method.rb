@@ -16,7 +16,7 @@ class Hashira::Smells::Gated::DeadMethod < Hashira::Smells::Gated::Rule
 
   private
 
-  def considers?(type) = super && type.kind == :class && asked(type).empty?
+  def considers?(type) = super && type.kind == :class && family.whole?(type) && asked(type).empty?
 
   def subjects(type) = sealed(type, HOOKS)
 

@@ -60,7 +60,13 @@ module Hashira
 
         def owner = name
 
-        def parent = (node.superclass if kind == :class)
+        def parent = kind == :class ? handed : []
+
+        def handed
+          written = node.superclass
+          return [] unless written
+          written.is_a?(Prism::SelfNode) ? name.split("::")[..-2] : Hashira::Analysis::Syntax.segments(written)
+        end
 
         def owned = defs.reject(&:singleton?)
 

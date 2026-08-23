@@ -32,6 +32,11 @@ RSpec.describe(Hashira::Smells::Gated::DeadMethod) do
     expect(unused(files)).to(be_empty)
   end
 
+  it "counts a name a subclass written < self calls" do
+    body = "class Heir < self\n  def run = helper\nend\n\nprivate\n\ndef helper = 2"
+    expect(unused(thing(body))).to(be_empty)
+  end
+
   it "counts a name spelled as a symbol, which send could reach" do
     expect(unused(thing("def run = __send__(:helper)\n\nprivate\n\ndef helper = 2"))).to(be_empty)
   end

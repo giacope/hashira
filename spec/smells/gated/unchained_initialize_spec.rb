@@ -30,6 +30,16 @@ RSpec.describe(Hashira::Smells::Gated::UnchainedInitialize) do
     expect(stranded(files)).to(be_empty)
   end
 
+  it "names only the state the subclass never sets, whatever else it defines" do
+    files = pair("def initialize = @seed = 1", "def initialize = @own = 2\n\ndef call = @own")
+    expect(stranded(files).first.detail[:names]).to(eq([:@seed]))
+  end
+
+  it "counts only the state the subclass leaves unset" do
+    files = pair("def initialize = @seed = 1", "def initialize = @seed = 2\n\ndef call = @seed")
+    expect(stranded(files)).to(be_empty)
+  end
+
   it "says nothing when the parent constructor assigns nothing" do
     expect(stranded(pair("def initialize = nil", "def initialize = @own = 2"))).to(be_empty)
   end

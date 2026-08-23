@@ -458,8 +458,10 @@ gets today — nothing is added, nothing is announced.
   ancestors, or its subclasses ever names. Any spelling counts as a use: a call,
   `self.name`, a bare `:name` symbol that `send` or `&:name` could reach — but
   not the `private :name` marker that only labels it. Silent for modules, whose
-  helpers travel to hosts hashira may not see, and silent for any class that
-  sends or asks `respond_to?` about a name it does not spell out.
+  helpers travel to hosts hashira may not see; silent for any class that sends or
+  asks `respond_to?` about a name it does not spell out; and silent for a class
+  that calls names nothing it can reach defines, because that is what half a class
+  looks like when the other half lives somewhere hashira was not pointed at.
 - **mixin_collision** (needs `no_define_method`, `no_eval`) — two modules a class
   includes both define the same instance method, and the class does not define it
   itself. The later `include` silently wins, and swapping the two lines changes
@@ -475,18 +477,21 @@ gets today — nothing is added, nothing is announced.
   family: a descendant, an ancestor, or a sibling under a shared superclass.
   That is dispatch written by hand where Ruby would do it. Mixins do not count
   as family, and neither does a class the project does not define.
-- **unanswered_message** (needs `no_method_missing`, `no_define_method`,
-  `no_eval`, `no_refinements`) — an instance method calls a name on itself that
-  neither the class, its ancestors, its subclasses, nor Ruby itself defines.
-  Usually a typo waiting for the branch that reaches it. It is deliberately
-  timid: silent for modules, silent when the ancestry leaves the project, and
-  silent for any class whose body runs a macro hashira does not recognize, since
-  that macro may be defining methods.
+- **rescue_shadow** (needs `no_const_missing`, `no_eval`) — one `rescue` clause
+  already catches everything a later clause in the same chain names, so the later
+  one never runs. Read from the written superclass chain, so `rescue StandardError`
+  before `rescue MyError` counts even though `StandardError` is not the project's.
 - **unreachable_rescue** (needs `no_const_missing`, `no_eval`) — a `rescue`
   names an error class the project defines and nothing in the project raises,
   directly or through a subclass. The handler is dead code. Silent for errors
   the project does not define, and silent everywhere as soon as one `raise` in
   the project names a class hashira cannot read.
+
+Each of the ten was read against eight gems outside this repository as well as
+hashira itself — about 440 files. What they say about that corpus is four
+findings, each checked by hand and each real. What they do not say is worth as
+much: `rack` and `sinatra` can declare almost nothing, so almost nothing runs on
+them.
 
 The effective constraint scope is part of the baseline's identity — fact name,
 hashira's own version of that fact, and the normalized scope. Adding, changing,

@@ -3,6 +3,13 @@
 require "prism"
 
 class Hashira::Smells::Gated::Family
+  RUBY = (Object.instance_methods + Object.private_instance_methods).to_set.freeze
+
+  MACROS = %i[
+    attr attr_reader attr_writer attr_accessor include extend prepend private public protected
+    module_function alias_method require require_relative raise freeze private_constant public_constant
+  ].to_set.freeze
+
   READERS = %i[attr_reader attr_accessor attr_writer attr].freeze
 
   ALIASES = %i[alias_method].freeze
@@ -37,11 +44,17 @@ class Hashira::Smells::Gated::Family
 
   def mixins(type) = included(type).map { kinfolk(type, it) }.reject(&:empty?)
 
-  def sole(segments) = only(@types.select { tail?(it.name, segments.join("::")) }.uniq(&:name))
+  def lone(segments) = only(@types.select { tail?(it.name, segments.join("::")) }.uniq(&:name))
 
   def related?(type, other) = bloodline(type).intersect?(bloodline(other))
 
-  def bloodline(type) = trail(type.name, [])
+  def bloodline(type) = ascent(type).select { born?(it) }
+
+  def ascent(type) = climb(type.name, [])
+
+  def kindred?(name, path) = tail?(name, path)
+
+  def whole?(type) = plain?(type) && kin(type).all? { answered?(type, it) }
 
   private
 
@@ -53,13 +66,40 @@ class Hashira::Smells::Gated::Family
 
   def only(found) = (found.first if found.one?)
 
-  def trail(name, known)
-    return known if known.include?(name)
-    parent = @types.select { it.name == name }.filter_map { above(it) }.first
-    parent ? trail(parent, known + [name]) : known + [name]
+  def born?(name) = @types.any? { it.name == name }
+
+  def climb(name, known)
+    return known if seen?(known, name)
+    written = @types.select { it.name == name }.map(&:parent).reject(&:empty?).first
+    written ? beyond(written, known + [name]) : known + [name]
   end
 
-  def above(type) = sole(Hashira::Analysis::Syntax.segments(type.parent))&.name
+  def beyond(written, known)
+    above = lone(written)
+    above ? climb(above.name, known) : known + [written.join("::")]
+  end
+
+  def seen?(known, name) = known.include?(name)
+
+  def plain?(type) = kin(type).all? { tame?(it) }
+
+  def tame?(kin)
+    Hashira::Analysis::Syntax.statements(kin.node).compact.grep(Prism::CallNode).all? { MACROS.include?(it.name) }
+  end
+
+  def answered?(type, kin)
+    kin.owned.flat_map { inward(it) }.all? { RUBY.include?(it) || answers?(type, it) }
+  end
+
+  def inward(method)
+    Hashira::Smells::Scope.inside(method.node).grep(Prism::CallNode).select { self?(it) }.map(&:name)
+  end
+
+  def self?(node) = spoken?(node.receiver) && !passing?(node.block)
+
+  def passing?(block) = block.is_a?(Prism::BlockArgumentNode)
+
+  def spoken?(receiver) = !receiver || receiver.is_a?(Prism::SelfNode)
 
   def same?(kin, segments) = tail?(kin.name, segments.join("::"))
 

@@ -18,13 +18,13 @@ class Hashira::Smells::Gated::UnreachableRescue < Hashira::Smells::Gated::Rule
   end
 
   def stale(method, node)
-    caught = family.sole(Hashira::Analysis::Syntax.segments(node))
+    caught = family.lone(Hashira::Analysis::Syntax.segments(node))
     [method, caught] if caught && !thrown?(caught)
   end
 
   def thrown?(caught) = raised.any? { family.bloodline(it).include?(caught.name) }
 
-  def raised = @_raised ||= flung.filter_map { family.sole(Hashira::Analysis::Syntax.segments(thrower(it))) }
+  def raised = @_raised ||= flung.filter_map { family.lone(Hashira::Analysis::Syntax.segments(thrower(it))) }
 
   def blind? = flung.any? { muddy?(it) }
 
@@ -33,9 +33,24 @@ class Hashira::Smells::Gated::UnreachableRescue < Hashira::Smells::Gated::Rule
     given && !given.is_a?(Prism::StringNode) && Hashira::Analysis::Syntax.segments(thrower(call)).empty?
   end
 
-  def thrower(call)
-    given = call.arguments&.arguments&.first
-    given.is_a?(Prism::CallNode) && given.name == :new ? given.receiver : given
+  def thrower(call) = unwrapped(call.arguments&.arguments&.first)
+
+  def unwrapped(given)
+    return given.receiver if built?(given)
+    minted(given) || given
+  end
+
+  def built?(node) = node.is_a?(Prism::CallNode) && node.name == :new
+
+  def minted(given)
+    made = factory(given) if given.is_a?(Prism::CallNode)
+    made.receiver if built?(made)
+  end
+
+  def factory(given)
+    owner = family.lone(Hashira::Analysis::Syntax.segments(given.receiver))
+    made = owner ? owner.defs.select { it.node.name == given.name } : []
+    sole(made.first) if made.one?
   end
 
   def flung

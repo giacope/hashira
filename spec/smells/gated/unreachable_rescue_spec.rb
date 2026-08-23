@@ -30,6 +30,21 @@ RSpec.describe(Hashira::Smells::Gated::UnreachableRescue) do
     expect(dead(guard("def run\n  raise(Snag.new)\nrescue Snag\n  nil\nend"))).to(be_empty)
   end
 
+  it "reads a raise handed the error a factory builds" do
+    maker = Fixtures.zoned("Maker", "def self.snag = Snag.new\n\ndef go = raise(Maker.snag)")
+    expect(dead(caught.merge(maker))).to(be_empty)
+  end
+
+  it "stays blind to a raise handed something a foreign factory builds" do
+    maker = Fixtures.zoned("Maker", "def go = raise(Elsewhere.snag)")
+    expect(dead(caught.merge(maker))).to(be_empty)
+  end
+
+  it "stays blind to a factory the project defines twice under one name" do
+    twins = Fixtures.zoned("Maker", "def self.snag = Snag.new\n\ndef self.snag = 1\n\ndef go = raise(Maker.snag)")
+    expect(dead(caught.merge(twins))).to(be_empty)
+  end
+
   it "says nothing about an error the project does not define" do
     expect(dead(guard("def run\n  work\nrescue ArgumentError\n  nil\nend"))).to(be_empty)
   end

@@ -52,7 +52,7 @@ class Hashira::Smells::Lineage
   def pointed(type) = references(type).map { resolve(type.name, it) }
 
   def references(type)
-    (named(type, MIXINS) + [type.parent].compact).map { Hashira::Analysis::Syntax.segments(it) }
+    named(type, MIXINS).map { Hashira::Analysis::Syntax.segments(it) } + [type.parent].reject(&:empty?)
   end
 
   def resolve(owner, segments) = candidates(owner, segments).find { index.key?(it) }
