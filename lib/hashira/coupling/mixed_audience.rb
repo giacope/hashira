@@ -2,7 +2,7 @@
 
 require_relative "rule"
 
-class Hashira::Coupling::MixedAudienceFindings < Hashira::Coupling::Rule
+class Hashira::Coupling::MixedAudience < Hashira::Coupling::Rule
   KIND = "mixed_audience"
 
   def list

@@ -2,7 +2,7 @@
 
 require "prism"
 
-class Hashira::Smells::TooManyInstanceVariables < Hashira::Smells::Check
+class Hashira::Smells::StateSprawl < Hashira::Smells::Check
   LIMIT = 4
 
   COUNTED = [

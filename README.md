@@ -350,7 +350,7 @@ What each one catches:
   caller already knew which branch it wanted.
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing.
-- **duplicate_method_call** — the identical receiver-and-arguments call repeated
+- **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
   `SecureRandom.hex`) are meant to differ, and a repeat no single run can reach
@@ -358,9 +358,9 @@ What each one catches:
   — has nothing to hoist.
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue.
-- **too_many_instance_variables** — more than four per class. Memoization
+- **state_sprawl** — more than four per class. Memoization
   (`@x ||=`) doesn't count as state.
-- **instance_variable_assumption** — an ivar read that nothing the class can
+- **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
   class it inherits. Usually a typo, or state some other object is expected to

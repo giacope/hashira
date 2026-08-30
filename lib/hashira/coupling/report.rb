@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative "cycle_findings"
-require_relative "mixed_audience_findings"
-require_relative "roll_call_findings"
+require_relative "cycle"
+require_relative "mixed_audience"
+require_relative "echo"
 require_relative "rule"
-require_relative "sdp_violation_findings"
-require_relative "wide_edge_findings"
+require_relative "imbalance"
+require_relative "wide_edge"
 
 class Hashira::Coupling::Report
   RULES = Hashira::Coupling::Rule.subclasses.sort_by(&:name).freeze

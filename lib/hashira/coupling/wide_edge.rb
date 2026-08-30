@@ -2,7 +2,7 @@
 
 require_relative "rule"
 
-class Hashira::Coupling::WideEdgeFindings < Hashira::Coupling::Rule
+class Hashira::Coupling::WideEdge < Hashira::Coupling::Rule
   KIND = "wide_edge"
 
   WIDTH = 5

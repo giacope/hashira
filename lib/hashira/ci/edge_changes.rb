@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::CI::EdgeDiffReport
+class Hashira::CI::EdgeChanges
   def initialize(graph, io: $stdout)
     @graph = graph
     @io = io

@@ -2,7 +2,7 @@
 
 require "prism"
 
-class Hashira::Smells::DuplicateMethodCall < Hashira::Smells::Check
+class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   LIMIT = 1
 
   MINTS = %i[new dup clone allocate rand srand].freeze

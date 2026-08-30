@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::CI::FindingDiffReport
+class Hashira::CI::FindingChanges
   def initialize(findings, io: $stdout)
     @findings = findings
     @io = io

@@ -6,7 +6,7 @@ plugins:
 AllCops:
   TargetRubyVersion: 3.4
 
-Kata/AgentNoun:
+Kata/GoodClassName:
   AllowedNames:
     - Cluster
     - ControlParameter
@@ -15,9 +15,9 @@ Kata/AgentNoun:
 
 Kata/GoodMethodName:
   Terms:
-    - on_duplicate_method_call
-    - on_instance_variable_assumption
-    - on_too_many_instance_variables
+    - on_repeated_call
+    - on_assumed_state
+    - on_state_sprawl
 
 Kata/GoodVariableName:
   Terms:

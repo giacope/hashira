@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deliberately interprets a foreign data model. Undeclared foreign roots keep
   the same 12-method, 3-file threshold and behavior.
 
+- Three smell kinds are renamed to name the smell, not the mechanism:
+  `duplicate_method_call` is now `repeated_call`, `too_many_instance_variables`
+  is `state_sprawl`, and `instance_variable_assumption` is `assumed_state`. A
+  saved baseline reports the old kinds as resolved and the new ones as new;
+  accept once to move on.
+
 ## [0.9.0] - 2026-08-20
 
 ### Fixed

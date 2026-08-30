@@ -26,8 +26,8 @@ class Hashira::CI::RatchetReport
   def verdict(*diffs) = diffs.compact.any?(&:worse?) ? Hashira::CI::Status::WORSE : Hashira::CI::Status::BETTER
 
   def details(edges, findings)
-    Hashira::CI::EdgeDiffReport.new(@graph, io: @io).print(edges)
-    Hashira::CI::FindingDiffReport.new(@findings, io: @io).print(findings) if findings
+    Hashira::CI::EdgeChanges.new(@graph, io: @io).print(edges)
+    Hashira::CI::FindingChanges.new(@findings, io: @io).print(findings) if findings
   end
 
   def advice(*diffs)

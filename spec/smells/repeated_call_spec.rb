@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::DuplicateMethodCall) do
-  def repeated(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "duplicate_method_call")
+RSpec.describe(Hashira::Smells::RepeatedCall) do
+  def repeated(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_call")
   it "flags the same receiver-and-arguments call made twice" do
     findings = repeated(<<~RUBY)
       module App

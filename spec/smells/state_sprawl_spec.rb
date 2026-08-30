@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::TooManyInstanceVariables) do
-  def crowded(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "too_many_instance_variables")
+RSpec.describe(Hashira::Smells::StateSprawl) do
+  def crowded(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "state_sprawl")
   it "flags a class assigning more than four instance variables" do
     findings = crowded(<<~RUBY)
       module App

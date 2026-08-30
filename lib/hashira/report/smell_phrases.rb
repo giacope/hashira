@@ -14,7 +14,7 @@ module Hashira::Report::Phrases
       "Introduce a parameter object."
   end
 
-  def on_duplicate_method_call(finding)
+  def on_repeated_call(finding)
     "#{finding.package} repeats identical calls (#{finding.detail[:site]}). " \
       "Name the result in a local variable."
   end
@@ -32,7 +32,7 @@ module Hashira::Report::Phrases
       "The behavior may belong on #{names.first}."
   end
 
-  def on_instance_variable_assumption(finding)
+  def on_assumed_state(finding)
     "#{finding.package} reads instance variables nothing in the class assigns (#{finding.detail[:site]}). " \
       "Assign them where the object is built, or pass the data explicitly."
   end
@@ -56,7 +56,7 @@ module Hashira::Report::Phrases
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")
   end
 
-  def on_too_many_instance_variables(finding)
+  def on_state_sprawl(finding)
     tally(finding, "holds %d instance variables", "Split the class, or gather related fields into value objects.")
   end
 

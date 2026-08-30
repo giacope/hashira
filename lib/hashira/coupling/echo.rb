@@ -2,7 +2,7 @@
 
 require_relative "rule"
 
-class Hashira::Coupling::RollCallFindings < Hashira::Coupling::Rule
+class Hashira::Coupling::Echo < Hashira::Coupling::Rule
   KIND = "roll_call"
 
   def list = rolls.map { entry(it) }

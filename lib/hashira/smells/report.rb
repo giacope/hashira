@@ -4,26 +4,26 @@ require_relative "boundary_sprawl"
 require_relative "check"
 require_relative "control_parameter"
 require_relative "data_clump"
-require_relative "duplicate_method_call"
+require_relative "repeated_call"
 require_relative "feature_envy"
 require_relative "foreign"
-require_relative "instance_variable_assumption"
+require_relative "assumed_state"
 require_relative "kind"
 require_relative "manual_dispatch"
 require_relative "module_initialize"
 require_relative "nil_check"
 require_relative "ownership"
 require_relative "repeated_conditional"
-require_relative "too_many_instance_variables"
+require_relative "state_sprawl"
 require_relative "utility_function"
 
 class Hashira::Smells::Report
   CHECKS = Hashira::Smells::Check.subclasses.sort_by(&:name).freeze
 
   JUDGES = [
-    Hashira::Smells::DataClump, Hashira::Smells::InstanceVariableAssumption,
+    Hashira::Smells::DataClump, Hashira::Smells::AssumedState,
     Hashira::Smells::ModuleInitialize, Hashira::Smells::RepeatedConditional,
-    Hashira::Smells::TooManyInstanceVariables
+    Hashira::Smells::StateSprawl
   ].freeze
 
   PROBES = (CHECKS - JUDGES).freeze

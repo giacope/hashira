@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::InstanceVariableAssumption) do
-  def assumed(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "instance_variable_assumption")
+RSpec.describe(Hashira::Smells::AssumedState) do
+  def assumed(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "assumed_state")
   it "flags instance variables read but never assigned anywhere in the class" do
     findings = assumed(<<~RUBY)
       module App

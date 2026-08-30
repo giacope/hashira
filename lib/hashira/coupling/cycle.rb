@@ -2,7 +2,7 @@
 
 require_relative "rule"
 
-class Hashira::Coupling::CycleFindings < Hashira::Coupling::Rule
+class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   KIND = "cycle"
 
   def list

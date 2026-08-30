@@ -2,7 +2,7 @@
 
 require "prism"
 
-class Hashira::Smells::InstanceVariableAssumption < Hashira::Smells::Check
+class Hashira::Smells::AssumedState < Hashira::Smells::Check
   MAYBES = [
     Prism::LocalVariableOrWriteNode, Prism::InstanceVariableOrWriteNode,
     Prism::ClassVariableOrWriteNode, Prism::GlobalVariableOrWriteNode,

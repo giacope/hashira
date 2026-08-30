@@ -110,7 +110,7 @@ RSpec.describe(Hashira::Smells::Report) do
         end
       RUBY
     }
-    findings = sniffed(files, "instance_variable_assumption")
+    findings = sniffed(files, "assumed_state")
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing"]))
   end
 end
