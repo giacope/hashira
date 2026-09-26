@@ -28,6 +28,8 @@ RSpec.describe(Hashira::Smells::Report) do
 
               private :named
 
+              def shown(word) = word.to_s
+
               private "stray"
 
               Thing.private :ignored
@@ -44,7 +46,7 @@ RSpec.describe(Hashira::Smells::Report) do
       RUBY
     }
     findings = sniffed(files, "utility_function")
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#open"]))
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#open", "App::Zone::Thing#shown"]))
   end
 
   it "names singleton subjects with a dot and instance subjects with a hash" do
