@@ -28,6 +28,25 @@ RSpec.describe(Hashira::Report::MetricsTable) do
     end
   end
 
+  it "keeps a package holding several types visible past the limit" do
+    files = hub(26).merge(
+      "app/models/pair.rb" => "module Pair\n  class One\n    def a = 1\n  end\n  class Two\n    def b = 2\n  end\nend\n"
+    )
+    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      output = capture { described_class.new(graph).print }
+      expect(output).to(match(/^Pair\s+2\s+0\s+0/))
+      expect(output).to(include("+ 26 single-type leaf packages"))
+    end
+  end
+
+  it "hides no leaf when the table exactly fits the cap" do
+    analyze(hub(3), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      output = capture { described_class.new(graph, top: 4).print }
+      expect(output).to(include("Leaf3"))
+      expect(output).not_to(include("leaf packages"))
+    end
+  end
+
   def chain(count)
     (1..count).to_h do |n|
       ["app/models/p#{n}.rb", "class P#{n}\n  def go = P#{(n % count) + 1}.new\nend\n"]
@@ -65,7 +84,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       )
       output = capture { Hashira::Report::Text.new(view).print }
       expect(output).to(include("Folded (single-type classes joined to their base or domain):"))
-      expect(output).to(include("  SandboxResource -> Sandbox (suffix)"))
+      expect(output).to(include("  SandboxResource -> Sandbox (suffix)\n\nFindings ("))
     end
   end
 end

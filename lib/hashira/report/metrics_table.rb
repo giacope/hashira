@@ -36,7 +36,7 @@ class Hashira::Report::MetricsTable
 
   def leaves = Hashira::Report::Phrases.count(spared.size, "single-type leaf package")
 
-  def more = @io.puts("  … and #{over} more — raise the cap with --top, or read them all with --json")
+  def more = @io.puts(Hashira::Report::Phrases.withheld(over))
 
   def row(package, metric) = [package, *metric.cells, cycle(package)]
 

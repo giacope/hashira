@@ -105,6 +105,16 @@ RSpec.describe(Hashira::Report::Text) do
     end
   end
 
+  it "ranks the hotspots between the complexity tables and the findings" do
+    within(Fixtures::COMPLEX_FILES) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+      view = view(pipeline.project, nil, screened, complexity: pipeline.complexity, hotspots: pipeline.hotspots)
+      output = capture { described_class.new(view).print }
+      expect(output).to(match(%r{Per-class rollup.*Hotspots — cost × churn.*knot/tangle\.rb\s+12.*Findings \(}m))
+    end
+  end
+
   it "lists accepted findings with their recorded reason" do
     within(Fixtures::COMPLEX_FILES) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
