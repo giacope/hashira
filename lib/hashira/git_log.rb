@@ -12,7 +12,7 @@ class Hashira::GitLog
   private
 
   def output
-    IO.popen(["git", "-C", @directory, *LOG], err: File::NULL, &:read)
+    IO.popen(["git", "-C", @directory, *LOG], err: File::NULL, binmode: true, &:read)
   rescue SystemCallError
     ""
   end

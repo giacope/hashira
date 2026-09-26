@@ -24,6 +24,15 @@ module Fixtures
 
   def git(*) = system("git", *, exception: true)
 
+  def with_default_encodings(external, internal = nil)
+    saved = [Encoding.default_external, Encoding.default_internal]
+    Encoding.default_external = external
+    Encoding.default_internal = internal
+    yield
+  ensure
+    Encoding.default_external, Encoding.default_internal = saved
+  end
+
   def pipeline(directories, packaging: :folder)
     project = Hashira::Project.new(directories)
     trees = project.files.to_h { [it, Prism.parse_file(it).value] }

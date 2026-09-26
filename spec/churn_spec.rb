@@ -31,6 +31,20 @@ RSpec.describe(Hashira::Churn) do
     end
   end
 
+  it "counts a file whose name is not ASCII, whatever the locale's encoding" do
+    within("café.rb" => "class Café\nend\n") do
+      git("init", "-q")
+      git("config", "core.quotepath", "false")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      [Encoding::UTF_8, Encoding::US_ASCII].each do |external|
+        with_default_encodings(external) do
+          expect(described_class.build(".").hits(Dir["*.rb"].first)).to(eq(1))
+        end
+      end
+    end
+  end
+
   it "reports no history rather than crashing when git is not on PATH" do
     within("a.rb" => "class A\nend\n") do
       path = ENV.fetch("PATH", nil)

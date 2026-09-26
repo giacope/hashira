@@ -4,6 +4,7 @@ require "json"
 
 class Hashira::CI::Baseline
   SCHEMA_VERSION = 6
+  ENCODING = Encoding::UTF_8
 
   def initialize(path, analyzers: [], targets: [])
     @path = path
@@ -42,7 +43,7 @@ class Hashira::CI::Baseline
   def wanted = scope.to_h
 
   def write(edges, marks, packaging:)
-    File.write(@path, JSON.pretty_generate(payload(edges, marks, packaging)) << "\n")
+    File.write(@path, JSON.pretty_generate(payload(edges, marks, packaging)) << "\n", encoding: ENCODING)
   end
 
   private
@@ -53,7 +54,7 @@ class Hashira::CI::Baseline
 
   def read
     return {} unless @path && File.exist?(@path)
-    stored = JSON.parse(File.read(@path))
+    stored = JSON.parse(File.read(@path, encoding: ENCODING))
     stored.is_a?(Hash) ? stored : raise(JSON::ParserError, "its top level is a list, not an object")
   end
 

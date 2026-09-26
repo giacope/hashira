@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `--ratchet` and `--update-baseline` no longer stop with an internal error
+  when the locale isn't UTF-8 (e.g. `LANG` unset) and the baseline holds
+  non-ASCII text, such as an em dash in an acceptance reason. The baseline is
+  read and written as UTF-8 whatever the locale.
+- A run no longer stops with an internal error when the locale isn't UTF-8,
+  git's `core.quotepath` is off, and the history names a non-ASCII file.
+  Churn matches file names byte for byte.
+
 Found by mutation-testing the suite with [kimera](https://rubygems.org/gems/kimera).
 
 - An exact clone no longer disappears when one copy runs a statement longer:
