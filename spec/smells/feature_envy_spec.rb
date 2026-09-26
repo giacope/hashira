@@ -501,6 +501,25 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(findings).to(be_empty)
   end
 
+  it "reads dispatch through a table's fetch keyed by foreign classes as a guard" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            LABEL = "thing"
+            TABLE = { Prism::CallNode => :call, Prism::IfNode => :branch }.freeze
+
+            def pick(node)
+              @seen = true
+              TABLE.fetch(node.class, nil) && node.name && node.receiver
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "keeps flagging when the table's keys are owned, mixed, absent, or not a table at all" do
     findings = envy(<<~RUBY)
       module App

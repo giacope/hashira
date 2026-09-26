@@ -29,6 +29,8 @@ Found by mutation-testing the suite with [kimera](https://rubygems.org/gems/kime
   nested constants (`Core::Walk::LIMIT`); such a part printed none.
 - The worst-methods, per-class, and hotspot tables say how many rows `--top`
   withheld, as the package table and findings list already did.
+- `feature_envy` reads `TABLE.fetch(x.class)` as table dispatch, as it
+  already read `TABLE[x.class]`; a fetch-keyed guard was reported as envy.
 
 ## [0.10.0] - 2026-08-30
 

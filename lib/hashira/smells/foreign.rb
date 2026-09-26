@@ -4,6 +4,7 @@ require "prism"
 
 class Hashira::Smells::Foreign
   TYPE_TESTS = %i[is_a? kind_of? instance_of?].freeze
+  LOOKUPS = %i[[] fetch].freeze
 
   KEYED_READS = %i[[] fetch values_at dig key?].freeze
 
@@ -117,7 +118,7 @@ class Hashira::Smells::Foreign
   end
 
   def lookups(&)
-    body.grep(Prism::CallNode).select { it.name == :[] && sorts?(key(it), &) }.flat_map { @ownership.keys(Hashira::Analysis::Syntax.segments(it.receiver)) }
+    body.grep(Prism::CallNode).select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }.flat_map { @ownership.keys(Hashira::Analysis::Syntax.segments(it.receiver)) }
   end
 
   def sorts?(argument, &)
