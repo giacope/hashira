@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Duplication pairs only fragments of at least 16 tokens, the exact-clone
+  floor, instead of 12. A shorter fragment could reach a report only through
+  a chain of near-misses. Findings on four codebases, including a 2,600-file
+  Rails app, are unchanged, and the duplication pass runs about a fifth
+  faster there.
+
 ## [0.10.1] - 2026-09-26
 
 ### Fixed
