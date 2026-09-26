@@ -7,4 +7,4 @@ tests:
 jobs: 4
 max_survivors: 0
 max_errors: 0
-fail_on_no_coverage: false
+fail_on_no_coverage: true
