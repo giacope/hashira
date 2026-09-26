@@ -26,10 +26,7 @@ class Hashira::Complexity::CognitiveScore
     @_calls
   end
 
-  def nesting
-    walked
-    @_nesting
-  end
+  def nesting = @_nesting
 
   def total = increments.sum(&:cost)
 
