@@ -73,12 +73,8 @@ class Hashira::Report::Text
     return @io.puts("  none ✓ — structure is healthy") if all.empty?
     shown = all.first(@view.top || FINDINGS)
     shown.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
-    elided(all.size - shown.size)
-  end
-
-  def elided(rest)
-    return if rest.zero?
-    @io.puts("  … and #{rest} more — raise the cap with --top, or read them all with --json")
+    rest = all.size - shown.size
+    @io.puts(Hashira::Report::Phrases.withheld(rest)) unless rest.zero?
   end
 
   def accepted

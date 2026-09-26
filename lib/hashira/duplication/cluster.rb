@@ -13,13 +13,11 @@ module Hashira
           sites.reject { |site| site.equal?(chosen) }
         end
 
-        def identical = sites.select { it.types == canonical.types }
-
         def mass = canonical.mass
 
         def size = sites.size
 
-        def masses = sites.map { [it.file, mass] }
+        def masses = sites.map { [it.file, it.mass] }
 
         def structural? = others.all? { Variance.new(canonical, it).structural? }
       end

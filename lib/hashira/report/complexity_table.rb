@@ -21,12 +21,15 @@ class Hashira::Report::ComplexityTable
   private
 
   def section(scores, headers, title)
-    rows = ranked(scores)
-    return if rows.empty?
+    scored = scores.select { it.cognitive.positive? }
+    return if scored.empty?
     @io.puts("#{title}:\n\n")
-    Hashira::Report::Columns.new(headers, rows.map(&:cells), io: @io).print
-    @io.puts
+    Hashira::Report::Columns.new(headers, scored.first(@top).map(&:cells), io: @io).print
+    close(scored.size - @top)
   end
 
-  def ranked(scores) = scores.select { it.cognitive.positive? }.first(@top)
+  def close(rest)
+    @io.puts(Hashira::Report::Phrases.withheld(rest)) if rest.positive?
+    @io.puts
+  end
 end

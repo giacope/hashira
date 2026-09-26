@@ -194,7 +194,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "refuses to ratchet a folder-mode baseline against a namespace run" do
     analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
       seed(findings: [])
-      expect(ratchet(graph).blocker).to(match(/recorded with --package-by folder.*rerun with --package-by folder/))
+      expect(ratchet(graph).blocker).to(
+        eq(
+          "baseline baseline.json was recorded with --package-by folder, but this run uses namespace — " \
+            "rerun with --package-by folder, or refresh it with --update-baseline"
+        )
+      )
     end
   end
 
@@ -214,8 +219,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
   it "refuses a run that analyzes less, or elsewhere, than the baseline recorded" do
     with_graph do |graph|
       scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"]).update
-      expect(scoped(graph, analyzers: %i[coupling], targets: ["lib/app"]).blocker)
-        .to(include("recorded with the analyzers coupling, smells, but this run uses coupling"))
+      expect(scoped(graph, analyzers: %i[coupling], targets: ["lib/app"]).blocker).to(
+        eq(
+          "baseline baseline.json was recorded with the analyzers coupling, smells, but this run uses " \
+            "coupling — rerun the recorded way, or refresh it with --update-baseline"
+        )
+      )
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["app"]).blocker)
         .to(include("recorded with the directories lib/app, but this run uses app"))
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"]).blocker).to(be_nil)
@@ -287,6 +296,18 @@ RSpec.describe(Hashira::CI::Ratchet) do
       output = capture { expect(ratchet(graph, renamed, "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
 
       expect(output).to(include("NEW FINDING:", "Findings resolved (improvement!): nil_check:Widget#ready"))
+    end
+  end
+
+  it "fails a focused ratchet on what the named files introduced, without calling the rest resolved" do
+    with_graph do |graph|
+      ratchet(graph, [finding("cycle", "alpha")]).update
+      io = StringIO.new
+
+      expect(ratchet(graph, [smell("nil_check", "Gadget#idle")], "baseline.json", io:).check(focused)).to(eq(1))
+
+      expect(io.string).to(include("NEW FINDING:", "nil_check: Gadget#idle"))
+      expect(io.string).not_to(include("resolved"))
     end
   end
 

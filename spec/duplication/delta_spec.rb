@@ -23,6 +23,10 @@ RSpec.describe(Hashira::Duplication::Delta) do
     expect(kind(clone("Foo.emit(fetch(:h), fetch(:p))", "Bar.emit(fetch(:h), fetch(:p))"))).to(eq(:constant))
   end
 
+  it "reports :literal when only a string differs" do
+    expect(kind(clone('emit(fetch(:h), "one")', 'emit(fetch(:h), "two")'))).to(eq(:literal))
+  end
+
   it "reports :mixed when more than one kind of thing differs" do
     expect(kind(clone("x.emit(fetch(:h), 1)", "y.emit(fetch(:h), 9)"))).to(eq(:mixed))
   end
@@ -36,6 +40,19 @@ RSpec.describe(Hashira::Duplication::Delta) do
         "s.authenticate(token: load(:t), scope: :admin)\nend\n"
     }
     expect(kind(near)).to(eq(:structure))
+  end
+
+  it "reports :structure over a literal drift, measured by the shape most sites share" do
+    base =
+      lambda do |timeout, extra = ""|
+        "def run(gateway)\n gateway.configure(fetch(:host), fetch(:port))\n " \
+          "gateway.connect(retries: 3, timeout: #{timeout})\n#{extra} " \
+          "gateway.authorize(token: load(:tok), scope: :sale)\n " \
+          "gateway.settle(amount: total(:net), currency: :eur)\nend\n"
+      end
+    sources = { "a.rb" => base[30], "b.rb" => base[60], "c.rb" => base[30, " gateway.log(:slow)\n"] }
+    expect(cluster(sources)).to(have_attributes(size: 3, mass: 47))
+    expect(kind(sources)).to(eq(:structure))
   end
 
   it "serializes to a hash whose kind selects the refactoring advice" do

@@ -26,6 +26,29 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "reports every distinct loop, one finding each" do
+    files = {
+      "lib/app/a/x.rb" => "module App; module A; class X; def c = B::X; end; end; end\n",
+      "lib/app/b/x.rb" => "module App; module B; class X; def c = A::X; end; end; end\n",
+      "lib/app/c/x.rb" => "module App; module C; class X; def c = D::X; end; end; end\n",
+      "lib/app/d/x.rb" => "module App; module D; class X; def c = C::X; end; end; end\n"
+    }
+    verdicts(files) do |all|
+      expect(all.select { it.kind == "cycle" }.map(&:cycle)).to(eq([%w[a b a], %w[c d c]]))
+    end
+  end
+
+  it "names the lightest edge wherever it sits on the cycle" do
+    files = {
+      "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
+      "lib/app/b/x.rb" => "module App; module B; class X; def c = A::X; end; end; end\n"
+    }
+    verdicts(files) do |all|
+      cycle = all.find { it.kind == "cycle" }
+      expect(message(cycle)).to(include("The lightest edge on this cycle is b -> a (1 ref)."))
+    end
+  end
+
   it "pluralizes a multi-ref weakest edge" do
     files = {
       "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
@@ -93,6 +116,27 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     verdicts(files) do |all|
       finding = all.find { it.kind == "mixed_audience" }
       expect(message(finding)).to(eq(message))
+    end
+  end
+
+  it "backs an audience with evidence when its clients reach only nested constants" do
+    files = {
+      "lib/app/core/walk.rb" => "module App; module Core; class Walk; LIMIT = 1; end; end; end\n",
+      "lib/app/core/score.rb" => "module App; module Core; class Score; LIMIT = 1; end; end; end\n",
+      "lib/app/core/graph.rb" => "module App; module Core; class Graph; def a = 1; end; end; end\n",
+      "lib/app/core/chart.rb" => "module App; module Core; class Chart; def a = 1; end; end; end\n",
+      "lib/app/one/a.rb" =>
+        "module App; module One; class A; def c = [Core::Walk::LIMIT, Core::Score::LIMIT]; end; end; end\n",
+      "lib/app/two/b.rb" =>
+        "module App; module Two; class B; def c = [Core::Walk::LIMIT, Core::Score::LIMIT]; end; end; end\n",
+      "lib/app/three/c.rb" => "module App; module Three; class C; def c = [Core::Graph, Core::Chart]; end; end; end\n",
+      "lib/app/main/d.rb" => "module App; module Main; class D; def c = [Core::Graph, Core::Chart]; end; end; end\n"
+    }
+    verdicts(files) do |all|
+      finding = all.find { it.kind == "mixed_audience" }
+      expect(finding.evidence).to(
+        eq(["main/d.rb:1: Core::Graph", "main/d.rb:1: Core::Chart", "one/a.rb:1: Core::Walk::LIMIT", "one/a.rb:1: Core::Score::LIMIT"])
+      )
     end
   end
 

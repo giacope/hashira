@@ -10,6 +10,12 @@ class Hashira::Complexity::IfChain
   def apply(node)
     return ternary(node) unless node.if_keyword
     branch(node, 1 + @scorer.nesting, "if")
+    tail(node.subsequent)
+  end
+
+  def negated(node)
+    branch(node, 1 + @scorer.nesting, "unless")
+    tail(node.else_clause)
   end
 
   private
@@ -18,14 +24,18 @@ class Hashira::Complexity::IfChain
     @scorer.add(node, cost, label)
     @scorer.visit(node.predicate)
     @scorer.deeper { @scorer.visit(node.statements) }
-    tail(node.subsequent)
   end
 
   def tail(node)
     case node
-    when Prism::IfNode then branch(node, 1, "elsif")
+    when Prism::IfNode then alternative(node)
     when Prism::ElseNode then otherwise(node)
     end
+  end
+
+  def alternative(node)
+    branch(node, 1, "elsif")
+    tail(node.subsequent)
   end
 
   def otherwise(node)

@@ -22,6 +22,16 @@ RSpec.describe(Hashira::Report::Notices) do
     expect(io.string).to(eq("hashira: 4 of the files did not parse — a.rb, b.rb, c.rb\n"))
   end
 
+  it "names a crash, where it happened, and where to report it" do
+    io = piped
+    described_class.new(io:).crashed(ArgumentError.new("bad things").tap { it.set_backtrace(["lib/x.rb:3:in 'go'"]) })
+    expect(io.string).to(eq(<<~TEXT))
+      hashira: internal error — ArgumentError: bad things
+        at lib/x.rb:3:in 'go'
+        this is a bug in hashira — please report it at https://github.com/giacope/hashira/issues
+    TEXT
+  end
+
   it "keeps progress off a pipe, so a captured log is unchanged" do
     io = piped
     described_class.new(io:).scanning(3222)

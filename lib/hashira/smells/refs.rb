@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::Refs
+  LOCALS = [Prism::LocalVariableReadNode, Prism::LocalVariableWriteNode].freeze
+
   SELVES = [
     Prism::SelfNode, Prism::SuperNode, Prism::ForwardingSuperNode,
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode,
@@ -35,10 +37,8 @@ class Hashira::Smells::Refs
 
   def record(node)
     return note(:self, node) if selfish?(node)
-    case node
-    when Prism::CallNode then named(node)
-    when Prism::LocalVariableOperatorWriteNode then note(node.name, node)
-    end
+    return note(node.receiver.name, node) if local?(node)
+    note(node.name, node) if node.is_a?(Prism::LocalVariableOperatorWriteNode)
   end
 
   def selfish?(node)
@@ -47,13 +47,7 @@ class Hashira::Smells::Refs
 
   def implicit?(node) = node.is_a?(Prism::CallNode) && !node.receiver
 
-  def named(node)
-    case (receiver = node.receiver)
-    when Prism::SelfNode then note(:self, node)
-    when Prism::LocalVariableReadNode, Prism::LocalVariableWriteNode
-      note(receiver.name, node) unless node.name == :new
-    end
-  end
+  def local?(node) = node.is_a?(Prism::CallNode) && LOCALS.include?(node.receiver.class) && node.name != :new
 
   def note(name, node) = (@_tallies[name] ||= []) << node.location.start_line
 end

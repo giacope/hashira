@@ -44,6 +44,14 @@ RSpec.describe(Hashira::CI::Baseline) do
     end
   end
 
+  it "writes no traces section when no finding carries a trace" do
+    within({}) do
+      marks = { "dupe:a3" => Hashira::CI::Mark.new(magnitude: 30, trace: nil) }
+      described_class.new("b.json").write([], marks, packaging: "folder")
+      expect(JSON.parse(File.read("b.json")).keys).to(eq(%w[version packaging analyzers targets edges findings]))
+    end
+  end
+
   it "preserves declared boundaries when it is rewritten" do
     within("b.json" => JSON.generate(boundaries: [boundary])) do
       described_class.new("b.json").write([], {}, packaging: "folder")

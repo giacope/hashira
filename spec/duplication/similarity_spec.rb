@@ -9,6 +9,7 @@ RSpec.describe(Hashira::Duplication::Similarity) do
   it "scores an empty sequence 0.0 from either side" do
     expect(ratio([], %i[a b])).to(eq(0.0))
     expect(ratio(%i[a b], [])).to(eq(0.0))
+    expect(ratio([], [])).to(eq(0.0))
   end
 
   it "scores a one-token drift by the length-normalized LCS" do
@@ -29,5 +30,12 @@ RSpec.describe(Hashira::Duplication::Similarity) do
 
   it "counts a repeated token only as often as both sides carry it" do
     expect(described_class.new(%i[a a a a], %i[a a b b]).meets?(0.6)).to(be(false))
+  end
+
+  it "rejects a lopsided pair on its token counts alone, without the quadratic comparison" do
+    lopsided = described_class.new([:a] * 3000, [:a] + ([:b] * 2999))
+    started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    expect(lopsided.meets?(0.8)).to(be(false))
+    expect(Process.clock_gettime(Process::CLOCK_MONOTONIC) - started).to(be < 0.5)
   end
 end

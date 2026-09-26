@@ -55,7 +55,7 @@ class Hashira::Smells::Lineage
 
   def parent(type) = (type.node.superclass if type.kind == :class)
 
-  def resolve(owner, segments) = candidates(owner, segments).find { index.key?(it) }
+  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def candidates(owner, segments)
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }

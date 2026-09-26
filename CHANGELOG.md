@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+Found by mutation-testing the suite with [kimera](https://rubygems.org/gems/kimera).
+
+- An exact clone no longer disappears when one copy runs a statement longer:
+  the near-miss window that absorbed it failed its floor and took the exact
+  pair down with it. Two unrelated clones side by side are no longer trimmed
+  to shorter windows either.
+- The duplication pre-check is linear again. It re-tallied one side for every
+  token, which was quadratic and never used a token up, so lopsided pairs paid
+  for the full comparison. Results are unchanged.
+- `unless … else` charges the `else` +1 that `if … else` does, and scores its
+  condition at the same nesting.
+- `feature_envy` counted `self.x` as two references to self, which hid real
+  envy such as `self.rate * order.net + order.tax`.
+- `assumed_state` no longer resolves a same-named superclass to the class
+  itself (`class Thing < Thing` inside a module, `class User < ::User`), which
+  reported ivars set in the real parent as assumed.
+- `mixed_audience` shows evidence for an audience whose clients reach only
+  nested constants (`Core::Walk::LIMIT`); such a part printed none.
+- The worst-methods, per-class, and hotspot tables say how many rows `--top`
+  withheld, as the package table and findings list already did.
+- Hotspots charge each clone site the mass of its own copy, as the README
+  says. Every site of a near-miss cluster was charged the canonical copy's
+  mass, so a longer copy was under-charged and a shorter one over-charged.
+- `feature_envy` reads `TABLE.fetch(x.class)` as table dispatch, as it
+  already read `TABLE[x.class]`; a fetch-keyed guard was reported as envy.
+
 ## [0.10.0] - 2026-08-30
 
 ### Added

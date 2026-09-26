@@ -58,6 +58,20 @@ RSpec.describe(Hashira::Coupling::Graph) do
         expect(graph.usage("alpha")).to(eq("beta" => Set["Alpha::One"]))
       end
     end
+
+    it "credits a reference to a type's constant or unknown member to the type that holds it" do
+      files = {
+        "lib/app/core/util.rb" => "module App; module Core; class Util; LIMIT = 1; def self.help = 1; end; end; end\n",
+        "lib/app/main/uses.rb" => <<~RUBY
+          module App; module Main; class Uses
+            def go = [Core::Util::LIMIT, Core::Util::Missing, Core::Util]
+          end; end; end
+        RUBY
+      }
+      analyze(files) do |_project, _census, graph|
+        expect(graph.usage("core")).to(eq("main" => Set["Core::Util"]))
+      end
+    end
   end
 
   describe "#outgoing / #incoming" do
@@ -94,6 +108,16 @@ RSpec.describe(Hashira::Coupling::Graph) do
       with_cycle do |graph|
         expect(graph.metrics.keys).to(contain_exactly("alpha", "beta", "core"))
         expect(graph.metrics["beta"]).to(eq(graph.metric("beta")))
+      end
+    end
+
+    it "orders connected packages from stable to unstable, and unconnected ones after them all" do
+      files = Fixtures::CYCLIC_FILES.merge(
+        "lib/app/solo/x.rb" => "module App; module Solo; class X; def a = 1; end; end; end\n"
+      )
+      analyze(files) do |_project, _census, graph|
+        ranked = graph.metrics.sort_by { |_package, metric| metric.order }.map(&:first)
+        expect(ranked).to(eq(%w[core beta alpha solo]))
       end
     end
   end

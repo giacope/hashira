@@ -24,6 +24,24 @@ RSpec.describe(Hashira::Report::Json) do
     end
   end
 
+  it "indents across lines unless asked to be compact" do
+    with_pipeline do |project, graph, findings|
+      printed = capture { described_class.new(view(project, graph, findings)).print }
+      expect(printed).to(eq("#{JSON.pretty_generate(JSON.parse(printed))}\n"))
+    end
+  end
+
+  it "lists accepted findings with their message and the reason they were accepted" do
+    within(Fixtures::COMPLEX_FILES) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled: %i[complexity])
+      entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
+      report = emit(view(pipeline.project, nil, Hashira::CI::Accepted.new([entry]).screen(pipeline.findings)))
+      expect(report["accepted"].map { it.values_at("kind", "package", "reason") })
+        .to(eq([["complexity", "App::Knot::Tangle#tangled", "legacy tangle"]]))
+      expect(report["accepted"].first["message"]).to(start_with("App::Knot::Tangle#tangled — cognitive 12"))
+    end
+  end
+
   it "emits packages sorted by instability, edges with evidence, and findings" do
     with_pipeline do |project, graph, findings|
       report = emit(view(project, graph, findings))
@@ -67,6 +85,8 @@ RSpec.describe(Hashira::Report::Json) do
       report = emit(view(pipeline.project, nil, findings, complexity: pipeline.complexity))
       expect(report).not_to(have_key("packages"))
       expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
+      expect(report["complexity"]["classes"])
+        .to(eq([{ "name" => "App::Knot::Tangle", "cognitive" => 12, "method_count" => 3, "peak" => 12 }]))
     end
   end
 

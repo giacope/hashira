@@ -35,6 +35,26 @@ RSpec.describe(Hashira::Complexity::Scores) do
     end
   end
 
+  it "flags a method from exactly the threshold, and not one point below it" do
+    ten = "def ten\n if a\n  if b\n   if c\n    d if e\n   end\n  end\n end\nend\n"
+    nine = "def nine\n x if p\n x if q\n x if r\n if a\n  if b\n   c if d\n  end\n end\nend\n"
+    source = "module App; module Knot; class Edge\n#{ten}#{nine}end; end; end\n"
+    complexity({ "lib/app/knot/edge.rb" => source }) do |scores|
+      expect(scores.ranked.map(&:cognitive)).to(eq([10, 9]))
+      expect(scores.findings.map(&:package)).to(eq(["App::Knot::Edge#ten"]))
+    end
+  end
+
+  it "names the method's site and advises on the label that cost the most, not the first one seen" do
+    run = "def run\n x unless a\n if b\n  if c\n   if d\n    e if f\n   end\n  end\n end\nend\n"
+    source = "module App; module Knot; class Guard\n#{run}end; end; end\n"
+    complexity({ "lib/app/knot/guard.rb" => source }) do |scores|
+      text = message(scores.findings.first)
+      expect(text).to(include("(knot/guard.rb:2)", "flatten the branching"))
+      expect(text).not_to(include("invert to a guard clause"))
+    end
+  end
+
   it "reports nothing when every method is under the threshold" do
     files = { "lib/app/tiny/x.rb" => "module App; module Tiny; class X; def a = 1; end; end; end\n" }
     complexity(files) do |scores|

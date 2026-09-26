@@ -11,7 +11,7 @@ class Hashira::Coupling::Audiences
 
   def split? = parts.size >= 2
 
-  def parts = @_parts ||= [common, *slices].compact.select { it.constants.size >= MIN }
+  def parts = @_parts ||= [common, *slices].select { it.constants.size >= MIN }
 
   private
 
@@ -26,7 +26,6 @@ class Hashira::Coupling::Audiences
   end
 
   def common
-    return if shared.empty?
     Part.new(users: clients.select { @usage[it].intersect?(shared) }, constants: shared.sort, shared: true)
   end
 

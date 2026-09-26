@@ -121,7 +121,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         module Zone
           class Thing
             def spawn(seed)
-              @made = seed.new
+              @made = [seed.new, seed.new]
             end
           end
         end
@@ -239,6 +239,63 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick", "App::Zone::Thing#bump", "App::Zone::Thing#scoop"]))
   end
 
+  it "counts an explicit self receiver once" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def total(order)
+              self.rate * order.net + order.tax
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["order (line 5)"]))
+  end
+
+  it "still flags a name when the guard or lookup is about something else" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            TABLE = { Prism::CallNode => :call }.freeze
+
+            def price(item, other)
+              return 0 if other.is_a?(Prism::CallNode)
+              @rate * item.net + item.tax
+            end
+
+            def label(item)
+              @rate * item.net + item.tax + TABLE[:call].size
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#price", "App::Zone::Thing#label"]))
+  end
+
+  it "still flags an exception rescued from an error class defined as a constant" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          Boom = Class.new(StandardError)
+
+          class Thing
+            def guard
+              @tries += 1
+              risky
+            rescue Zone::Boom => e
+              e.message && e.backtrace && e.cause
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#guard"]))
+  end
+
   it "stays quiet about a stateless converter that ends by building a typed object" do
     findings = envy(<<~RUBY)
       module App
@@ -280,7 +337,8 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
               @seen = true
               options.merge!(scan(argv))
               options.delete(:tmp)
-              options
+              options.delete(:cache)
+              options.freeze
             end
           end
         end
@@ -389,6 +447,13 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
             rescue => e
               e.message && e.backtrace && e.cause
             end
+
+            def relay
+              @tries += 1
+              risky
+            rescue IOError => e
+              e.message && e.backtrace && e.cause
+            end
           end
         end
       end
@@ -422,11 +487,31 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
       module App
         module Zone
           class Thing
+            LABEL = "thing"
             TABLE = { Prism::CallNode => :call, Prism::IfNode => :branch }.freeze
 
             def pick(node)
               @seen = true
               TABLE[node.class] && node.name && node.receiver
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "reads dispatch through a table's fetch keyed by foreign classes as a guard" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            LABEL = "thing"
+            TABLE = { Prism::CallNode => :call, Prism::IfNode => :branch }.freeze
+
+            def pick(node)
+              @seen = true
+              TABLE.fetch(node.class, nil) && node.name && node.receiver
             end
           end
         end

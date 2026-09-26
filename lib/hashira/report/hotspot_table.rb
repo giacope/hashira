@@ -14,12 +14,20 @@ class Hashira::Report::HotspotTable
     return if ranked.empty?
     @io.puts("Hotspots — cost × churn (where refactoring pays the most):\n\n")
     Hashira::Report::Columns.new(HEADERS, ranked.map(&:cells), io: @io).print
+    withheld
     legend
   end
 
   private
 
-  def ranked = @_ranked ||= @hotspots.files.first(@top)
+  def files = @_files ||= @hotspots.files
+
+  def ranked = files.first(@top)
+
+  def withheld
+    rest = files.size - ranked.size
+    @io.puts(Hashira::Report::Phrases.withheld(rest)) unless rest.zero?
+  end
 
   def legend
     @io.puts("\nLegend: Cog cognitive complexity, Dup mass of the clones the file carries,")

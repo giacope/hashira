@@ -34,4 +34,10 @@ RSpec.describe(Hashira::Report::Columns) do
   it "keeps a short cell whole" do
     expect(render(%w[a], [["short"]]).last).to(eq("short"))
   end
+
+  it "keeps a cell exactly at the cap whole" do
+    cell = "Billing::Subscriptions::MonthlyRevenue#reconcile"
+    expect(cell.length).to(eq(described_class::CAP))
+    expect(render(%w[a], [[cell]]).last).to(eq(cell))
+  end
 end

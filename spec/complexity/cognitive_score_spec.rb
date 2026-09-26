@@ -35,6 +35,13 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
     expect(total("def m\n case a\n in Integer then p\n end\nend")).to(eq(1))
   end
 
+  it "charges the else of an unless exactly as the else of an if" do
+    expect(total("def m\n unless a\n  1\n else\n  2\n end\nend")).to(eq(2))
+    expect(score("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend").increments.map(&:label))
+      .to(eq(%w[unless else if]))
+    expect(total("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend")).to(eq(4))
+  end
+
   it "keeps elsif and else flat rather than compounding like fresh nesting" do
     expect(total("def m\n if a\n  1\n elsif b\n  2\n else\n  3\n end\nend")).to(eq(3))
   end
@@ -62,6 +69,32 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
 
   it "handles a bare rescue with neither else nor ensure clause" do
     expect(total("def m\n begin\n  risky\n rescue\n  recover\n end\nend")).to(eq(1))
+  end
+
+  it "counts calls even when asked before the score" do
+    expect(score("def r\n a.b\nend").calls).to(eq(2))
+  end
+
+  it "nests the body of a loop or a case one level deeper" do
+    expect(total("def m\n while a\n  x if b\n end\nend")).to(eq(3))
+    expect(total("def m\n case a\n when 1 then x if b\n end\nend")).to(eq(3))
+  end
+
+  it "scores the condition of an if, not only its body" do
+    expect(total("def m\n if a && b\n  c\n end\nend")).to(eq(2))
+  end
+
+  it "nests the else branch like the if branch" do
+    expect(total("def m\n if a\n  b\n else\n  c if d\n end\nend")).to(eq(4))
+  end
+
+  it "scores what sits inside a ternary" do
+    expect(total("def m = a ? b && c : d")).to(eq(2))
+  end
+
+  it "scores the body, rescue, else and ensure of a begin, nesting only the rescue" do
+    source = "def m\n begin\n  w if a\n rescue\n  x if b\n else\n  y if c\n ensure\n  z if d\n end\nend"
+    expect(total(source)).to(eq(6))
   end
 
   it "records where each increment landed" do

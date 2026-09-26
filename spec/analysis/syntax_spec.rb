@@ -30,6 +30,14 @@ RSpec.describe(Hashira::Analysis::Syntax) do
       expect(described_class.anchor([%w[Baz]], %w[Foo Bar], Set[%w[Foo]])).to(eq(%w[Foo Bar]))
       expect(described_class.anchor([%w[Baz]], %w[Qux Bar], Set[%w[Foo]])).to(eq(%w[Baz Qux Bar]))
     end
+
+    it "anchors a deep compact path at top level when only the top level defines its root" do
+      expect(described_class.anchor([%w[Baz]], %w[Foo Bar Qux], Set[%w[Foo]])).to(eq(%w[Foo Bar Qux]))
+    end
+
+    it "nests a single-segment definition in the current scope even when a top-level namesake exists" do
+      expect(described_class.anchor([%w[Baz]], %w[Foo], Set[%w[Foo]])).to(eq(%w[Baz Foo]))
+    end
   end
 
   describe ".direct" do

@@ -4,7 +4,6 @@ module Hashira::CLI::Only
   module_function
 
   def parse(value)
-    return [] if value.empty?
     value.split(",").map { vet(it.strip) }
   end
 

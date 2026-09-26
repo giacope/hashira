@@ -88,6 +88,8 @@ module Hashira::Report::Phrases
 
   def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"
 
+  def withheld(rest) = "  … and #{rest} more — raise the cap with --top, or read them all with --json"
+
   def clause(part) = "#{part[:users].join(", ")} #{verb(part)} #{part[:constants].join(", ")}"
 
   def verb(part)
