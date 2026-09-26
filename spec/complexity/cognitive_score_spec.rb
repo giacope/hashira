@@ -35,6 +35,13 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
     expect(total("def m\n case a\n in Integer then p\n end\nend")).to(eq(1))
   end
 
+  it "charges the else of an unless exactly as the else of an if" do
+    expect(total("def m\n unless a\n  1\n else\n  2\n end\nend")).to(eq(2))
+    expect(score("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend").increments.map(&:label))
+      .to(eq(%w[unless else if]))
+    expect(total("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend")).to(eq(4))
+  end
+
   it "keeps elsif and else flat rather than compounding like fresh nesting" do
     expect(total("def m\n if a\n  1\n elsif b\n  2\n else\n  3\n end\nend")).to(eq(3))
   end

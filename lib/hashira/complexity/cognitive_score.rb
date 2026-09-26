@@ -5,11 +5,11 @@ require "prism"
 class Hashira::Complexity::CognitiveScore
   HANDLERS = { Prism::IfNode => :on_if, Prism::BeginNode => :on_begin, Prism::BlockNode => :on_block }
     .merge(Prism::AndNode => :on_boolean, Prism::OrNode => :on_boolean, Prism::CallNode => :on_call)
-    .merge(Prism::UnlessNode => :on_nester, Prism::WhileNode => :on_nester, Prism::UntilNode => :on_nester)
+    .merge(Prism::UnlessNode => :on_unless, Prism::WhileNode => :on_nester, Prism::UntilNode => :on_nester)
     .merge(Prism::ForNode => :on_nester, Prism::CaseNode => :on_nester, Prism::CaseMatchNode => :on_nester)
     .freeze
 
-  LABELS = { Prism::UnlessNode => "unless", Prism::WhileNode => "while", Prism::UntilNode => "until" }
+  LABELS = { Prism::WhileNode => "while", Prism::UntilNode => "until" }
     .merge(Prism::ForNode => "for", Prism::CaseNode => "case", Prism::CaseMatchNode => "case").freeze
 
   def initialize(node)
@@ -78,6 +78,8 @@ class Hashira::Complexity::CognitiveScore
   end
 
   def on_if(node) = Hashira::Complexity::IfChain.new(self).apply(node)
+
+  def on_unless(node) = Hashira::Complexity::IfChain.new(self).negated(node)
 
   def on_begin(node) = Hashira::Complexity::RescueScan.new(self).apply(node)
 
