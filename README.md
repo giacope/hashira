@@ -1,6 +1,6 @@
-<h1><img src="assets/logo.svg" alt="hashira" width="360"></h1>
+<h1 align="center"><img src="assets/logo.svg" alt="hashira" width="360"></h1>
 
-⛩️ **Coupling, cognitive-complexity, duplication and code-smell metrics for Ruby, read straight from the AST via [Prism](https://github.com/ruby/prism).**
+**Coupling, cognitive-complexity, duplication and code-smell metrics for Ruby, read straight from the AST via [Prism](https://github.com/ruby/prism).**
 
 hashira tells you which file to open first. It reads a Ruby codebase four ways —
 which packages depend on which, how hard each method is to follow, what has been
