@@ -25,7 +25,9 @@ class Hashira::Coupling::Roster
     end
   end
 
-  def counted = packaged.select { |definition, _| definition.counted? }.uniq { |definition, _| definition.path }
+  def counted = countable.uniq { |definition, _| definition.path }
+
+  def countable = packaged.select { |definition, _| definition.counted? }
 
   def typed = @_typed ||= packaged.filter_map { |definition, _| definition.path if definition.type? }.to_set
 end
