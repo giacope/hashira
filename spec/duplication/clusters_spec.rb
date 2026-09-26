@@ -43,6 +43,11 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(cluster.sites.map(&:types).uniq.size).to(eq(2))
   end
 
+  it "charges each site of a near-miss cluster the mass of its own copy" do
+    cluster = clusters(near).first
+    expect(cluster.masses.sort).to(eq([["c.rb", 40], ["d.rb", 44]]))
+  end
+
   it "suppresses a near-miss below the raised near-miss floor" do
     small = {
       "e.rb" => "def a(r)\n r.setup(fetch(:h))\n r.run(fetch(:p))\n r.close(:done)\nend\n",

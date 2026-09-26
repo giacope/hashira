@@ -396,8 +396,8 @@ controllers/orders_controller.rb            8    0      7    56
 ```
 
 Read it as a work queue: the top row is where a day of refactoring buys the most.
-A file carrying a clone is charged per site, so one holding both copies pays
-twice. Churn floors at one, so a repo with no git history still ranks by cost.
+A file carrying a clone is charged per site, by the mass of its own copy, so one
+holding both copies pays twice. Churn floors at one, so a repo with no git history still ranks by cost.
 
 Deliberately not a rating. A letter grade on a healthy codebase is the same
 letter repeated — it tells you nothing about what to open first.
