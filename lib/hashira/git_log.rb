@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::GitLog
-  LOG = %w[log --no-renames --name-only --format=].freeze
+  LOG = %w[-c core.quotePath=false log --no-renames --name-only --format=].freeze
 
   def initialize(directory)
     @directory = directory

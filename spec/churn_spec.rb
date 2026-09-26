@@ -31,13 +31,13 @@ RSpec.describe(Hashira::Churn) do
     end
   end
 
-  it "counts a file whose name is not ASCII, whatever the locale's encoding" do
+  it "counts a file whose name is not ASCII, whatever git's quotepath or the locale's encoding" do
     within("café.rb" => "class Café\nend\n") do
       git("init", "-q")
-      git("config", "core.quotepath", "false")
       git("add", "-A")
       git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
-      [Encoding::UTF_8, Encoding::US_ASCII].each do |external|
+      %w[true false].product([Encoding::UTF_8, Encoding::US_ASCII]).each do |quote_path, external|
+        git("config", "core.quotepath", quote_path)
         with_default_encodings(external) do
           expect(described_class.build(".").hits(Dir["*.rb"].first)).to(eq(1))
         end

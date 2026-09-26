@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A run no longer stops with an internal error when the locale isn't UTF-8,
   git's `core.quotepath` is off, and the history names a non-ASCII file.
   Churn matches file names byte for byte.
+- Churn counts files whose names aren't ASCII. git quotes such names by
+  default (`"caf\303\251.rb"`), so they never matched and scored 0.
 
 Found by mutation-testing the suite with [kimera](https://rubygems.org/gems/kimera).
 
