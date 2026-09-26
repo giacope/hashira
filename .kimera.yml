@@ -1,0 +1,10 @@
+---
+framework: rspec
+paths:
+- lib/**/*.rb
+tests:
+- spec/**/*_spec.rb
+jobs: 4
+max_survivors: 0
+max_errors: 0
+fail_on_no_coverage: false

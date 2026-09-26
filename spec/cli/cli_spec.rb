@@ -138,12 +138,11 @@ RSpec.describe(Hashira::CLI::Session) do
 
   it "reports unreadable files as a friendly error" do
     within("lib/app/thing.rb" => "class Thing; def x = 1; end") do
-      File.chmod(0o000, "lib/app/thing.rb")
+      # A stub, not chmod: root reads a mode-000 file, so chmod passes only for non-root users.
+      allow(Prism).to(receive(:parse_file).and_raise(Errno::EACCES, "lib/app/thing.rb"))
       expect do
         expect(described_class.new(["lib/app"]).status).to(eq(2))
       end.to(output(%r{hashira: cannot read lib/app/thing\.rb}).to_stderr)
-    ensure
-      File.chmod(0o644, "lib/app/thing.rb")
     end
   end
 
