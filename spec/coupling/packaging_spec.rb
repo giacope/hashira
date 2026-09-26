@@ -21,6 +21,14 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
   end
 
+  it "skips every wrapper above a deep prefix, even one that defines methods" do
+    files = Fixtures::NESTED_FILES.merge("lib/app/core/boot.rb" => "module App\n  def self.boot = 1\nend\n")
+    analyze(files, packaging: :namespace) do |_project, census, _graph|
+      expect(census.packages).to(contain_exactly("Search", "Walk"))
+      expect(census.types).to(eq("Search" => 1, "Walk" => 1))
+    end
+  end
+
   it "charges top-level code to the root package" do
     files = Fixtures::RAILS_FILES.merge("app/models/boot.rb" => "Billing::Invoice.new\n")
     analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|

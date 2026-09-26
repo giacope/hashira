@@ -173,4 +173,26 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges).to(be_empty)
     end
   end
+
+  it "leaves a class's lexical scope behind once its body closes" do
+    files = {
+      "lib/app/alpha/one.rb" => <<~RUBY,
+        module App
+          module Alpha
+            class One
+              Util = 1
+            end
+
+            class Two
+              def a = Util
+            end
+          end
+        end
+      RUBY
+      "lib/app/core/util.rb" => "module App\n  class Util\n    def x = 1\n  end\nend\n"
+    }
+    analyze(files) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(eq(["alpha -> core"]))
+    end
+  end
 end

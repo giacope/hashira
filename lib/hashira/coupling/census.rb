@@ -60,7 +60,7 @@ class Hashira::Coupling::Census
 
   def refold
     @_folding = placement.folding(self)
-    @_roster = tally unless @_folding.map.empty?
+    @_roster = tally
   end
 
   def type?(segments) = roster.type?(segments)
