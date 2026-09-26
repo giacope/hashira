@@ -8,3 +8,10 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
+max_ignored: 1
+ignore:
+- file: lib/hashira/coupling/echo.rb
+  line: 18
+  label: condition => false
+  reason: RollCall keeps only word sets at least 3 files share (MIN_WORDS = MIN_FILES = 3), so a file with no words never
+    joins a roll; the filter only keeps such files out of the pairwise scan (about 30% of coupling time on a 2,600-file app)
