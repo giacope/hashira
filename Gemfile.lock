@@ -9,7 +9,7 @@ GEM
     ast (2.4.3)
     diff-lcs (1.6.2)
     json (2.21.2)
-    kimera (0.1.1)
+    kimera (0.1.2)
       prism (>= 0.19, < 2)
       unparser (>= 0.6, < 1)
     language_server-protocol (3.17.0.6)
@@ -102,7 +102,7 @@ CHECKSUMS
   diff-lcs (1.6.2) sha256=9ae0d2cba7d4df3075fe8cd8602a8604993efc0dfa934cff568969efb1909962
   hashira (0.10.0)
   json (2.21.2) sha256=1f1d3b7cf2b3ba1a69beca0bb6db13d5438b80bff3cd54cdaaa620b9b07c1c6a
-  kimera (0.1.1) sha256=6e86eb65f7652f0a61fe41cb2e5525e392ca24ae0ad5c16c0fc090d4f7438736
+  kimera (0.1.2) sha256=273fbd00fca890bf3bcf38159ef1843e1d796b3671ca5b86a3da0f6a2768606e
   language_server-protocol (3.17.0.6) sha256=5ef2c0c138f8267e1bc631d3328347d354f96724b0af22f2c79516120443b7f0
   lint_roller (1.1.0) sha256=2c0c845b632a7d172cb849cc90c1bce937a28c5c8ccccb50dfd46a485003cc87
   parallel (2.1.0) sha256=b35258865c2e31134c5ecb708beaaf6772adf9d5efae28e93e99260877b09356

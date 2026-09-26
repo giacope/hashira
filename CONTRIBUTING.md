@@ -24,11 +24,11 @@ hashira's own gate and ratchet on itself. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
 Pull requests also get a mutation gate: [kimera](https://rubygems.org/gems/kimera)
-mutates the lines you changed, and any mutant the specs don't kill fails the
-build. To run it before pushing:
+mutates the lines you changed, and any mutant the specs don't run or don't kill
+fails the build. To run it before pushing:
 
 ```sh
-KIMERA=1 bundle exec kimera ci --since origin/main --no-fail-on-no-coverage
+bundle exec kimera ci --since origin/main
 ```
 
 `bundle exec kimera skill` explains how to triage a survivor.
