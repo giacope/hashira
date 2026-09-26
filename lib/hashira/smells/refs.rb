@@ -49,7 +49,6 @@ class Hashira::Smells::Refs
 
   def named(node)
     case (receiver = node.receiver)
-    when Prism::SelfNode then note(:self, node)
     when Prism::LocalVariableReadNode, Prism::LocalVariableWriteNode
       note(receiver.name, node) unless node.name == :new
     end

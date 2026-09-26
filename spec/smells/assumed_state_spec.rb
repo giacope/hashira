@@ -98,6 +98,86 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     expect(findings).to(be_empty)
   end
 
+  it "trusts an underscore-prefixed cache even when only read" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def initialize
+              @seen = true
+            end
+
+            def report = @_report || @seen.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "follows a superclass the codebase defines and still flags what nothing assigns" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Base
+            def initialize
+              @late = true
+            end
+          end
+
+          class Thing < Base
+            def report = [@late, @seen]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+  end
+
+  it "resolves a superclass named like the class itself to the outer class" do
+    findings = assumed(<<~RUBY)
+      module App
+        class Thing
+          def initialize
+            @late = true
+          end
+        end
+
+        module Zone
+          class Thing < Thing
+            def report = [@late, @seen]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+  end
+
+  it "walks a mixin cycle once" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          module Tracked
+            include Timed
+
+            def track = @tracked = true
+          end
+
+          module Timed
+            include Tracked
+          end
+
+          class Thing
+            include Timed
+
+            def report = [@tracked, @seen]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+  end
+
   it "counts assignments made anywhere the object can reach" do
     findings = assumed(<<~RUBY)
       module App

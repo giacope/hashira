@@ -229,6 +229,42 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 6, 10)"]))
   end
 
+  it "counts a call in a condition repeated in the branch it guards" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def lookup(key)
+              if @store.fetch(key)
+                @store.fetch(key).to_s
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@store.fetch(key) × 2 (lines 5, 6)"]))
+  end
+
+  it "counts a call in a rescue body repeated in the ensure that follows it" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def guarded
+              work
+            rescue IOError
+              @io.close(1)
+            ensure
+              @io.close(1)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.close(1) × 2 (lines 7, 9)"]))
+  end
+
   it "excuses calls on opposite sides of a rescue modifier" do
     findings = repeated(<<~RUBY)
       module App

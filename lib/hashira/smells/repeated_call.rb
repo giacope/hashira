@@ -3,8 +3,6 @@
 require "prism"
 
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
-  LIMIT = 1
-
   MINTS = %i[new dup clone allocate rand srand].freeze
 
   SOURCES = %w[SecureRandom Random].freeze
@@ -41,13 +39,11 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 
   def usual
-    calls.reject { plain?(it) }.group_by { handle(it) }.select { |_handle, group| group.size > LIMIT }
+    calls.reject { plain?(it) }.group_by { handle(it) }
   end
 
   def whole
-    @_whole ||=
-      calls.select { it.block.is_a?(Prism::BlockNode) }
-        .group_by { it.slice.gsub(/\s+/, " ") }.select { |_handle, group| group.size > LIMIT }
+    @_whole ||= calls.select { it.block.is_a?(Prism::BlockNode) }.group_by { it.slice.gsub(/\s+/, " ") }
   end
 
   def handle(node) = "#{title(node)}#{signature(node)}"

@@ -107,6 +107,49 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(findings).to(be_empty)
   end
 
+  it "accepts parameters used in an else branch" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def fallback(name)
+              if name
+                @io.puts("named")
+              else
+                @io.puts(name.inspect)
+              end
+            end
+
+            def inverted(name)
+              unless name
+                @io.puts("anonymous")
+              else
+                @io.puts(name)
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "leaves conditions inside a nested definition to that definition" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def install(mode)
+              @installed = true
+              def pick(mode) = mode ? @a : @b
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "reports each controlling parameter with every deciding line" do
     findings = steered(<<~RUBY)
       module App
