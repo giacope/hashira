@@ -28,4 +28,14 @@ RSpec.describe(Hashira::Duplication::Clones) do
       expect(message(finding)).to(include("Both sites change often"))
     end
   end
+
+  it "keys a clone by a digest that survives it moving down the file and changes when it changes" do
+    digest = ->(files) { duplication(files) { |clones| return clones.findings.first.digest } }
+    original = digest.call(Fixtures::DUPLICATION_FILES)
+    moved = Fixtures::DUPLICATION_FILES.transform_values { "\n\n#{it}" }
+    changed = Fixtures::DUPLICATION_FILES.transform_values { it.gsub("gateway.connect(", "gateway.reconnect(1, ") }
+    expect(original).to(match(/\A\h{12}\z/))
+    expect(digest.call(moved)).to(eq(original))
+    expect(digest.call(changed)).not_to(eq(original))
+  end
 end

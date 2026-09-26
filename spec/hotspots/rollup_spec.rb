@@ -39,6 +39,11 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     expect(ranked.map { [it.file, it.churn, it.rank] }).to(eq([["b.rb", 0, 9], ["a.rb", 0, 2]]))
   end
 
+  it "serializes a file's cost and rank alongside its signals" do
+    row = rollup(scores: [score("a.rb", 2)], churn: { "a.rb" => 3 }).files.first.to_h
+    expect(row).to(eq(file: "a.rb", cognitive: 2, duplication: 0, churn: 3, cost: 2, rank: 6))
+  end
+
   it "leaves out files that cost nothing" do
     expect(rollup(scores: [score("a.rb", 0)], churn: { "a.rb" => 7 }).files).to(be_empty)
   end
@@ -46,5 +51,7 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
   it "zeroes the column of a skipped analyzer rather than breaking" do
     dupes = described_class.new(nil, duplication([cluster(9, "a.rb")]), Hashira::Churn.new({}))
     expect(dupes.files.map { [it.file, it.cognitive, it.duplication] }).to(eq([["a.rb", 0, 9]]))
+    costs = described_class.new(complexity([score("b.rb", 4)]), nil, Hashira::Churn.new({}))
+    expect(costs.files.map { [it.file, it.cognitive, it.duplication] }).to(eq([["b.rb", 4, 0]]))
   end
 end

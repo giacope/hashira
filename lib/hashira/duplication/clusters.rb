@@ -25,15 +25,18 @@ class Hashira::Duplication::Clusters
 
   def chain(group) = group.each_cons(2) { |left, right| sets.union(left, right) }
 
-  def sized = built.filter_map { admitted(it) }
+  def sized = sets.clusters.flat_map { admitted(it) }
 
-  def admitted(cluster) = [cluster, core(cluster)].compact.find { fits?(it) }
+  def admitted(group)
+    whole = Hashira::Duplication::Grouping.new(group).cluster
+    whole && fits?(whole) ? [whole] : cores(group)
+  end
+
+  def cores(group) = shaped(group).select { fits?(it) }
+
+  def shaped(group) = group.group_by(&:types).values.filter_map { Hashira::Duplication::Grouping.new(it).cluster }
 
   def fits?(cluster) = cluster.mass >= floor(cluster)
-
-  def core(cluster) = Hashira::Duplication::Grouping.new(cluster.identical).cluster
-
-  def built = sets.clusters.filter_map { |group| Hashira::Duplication::Grouping.new(group).cluster }
 
   def floor(cluster) = base(cluster) + penalty(cluster)
 
