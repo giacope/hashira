@@ -23,6 +23,16 @@ That's exactly what CI runs: rubocop, rspec (with a coverage floor), and
 hashira's own gate and ratchet on itself. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
+Pull requests also get a mutation gate: [kimera](https://rubygems.org/gems/kimera)
+mutates the lines you changed, and any mutant the specs don't kill fails the
+build. To run it before pushing:
+
+```sh
+KIMERA=1 bundle exec kimera ci --since origin/main --no-fail-on-no-coverage
+```
+
+`bundle exec kimera skill` explains how to triage a survivor.
+
 There is deliberately no quality score to clear. The ratchet asks only whether a
 change made things worse, so passing it means fixing what regressed or recording
 why it stands — never padding a number.

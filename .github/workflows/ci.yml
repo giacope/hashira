@@ -20,3 +20,21 @@ jobs:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
       - run: bin/ci
+
+  mutation:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # --since diffs against the base branch
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      # Mutates only the lines this PR changed; any surviving mutant fails the build.
+      # SimpleCov's floor already fails untested lines, so kimera's no_coverage is
+      # left to it: kimera can't overlay methods in a Data.define block (cli/flag.rb).
+      - run: bundle exec kimera ci --since origin/${{ github.base_ref }} --no-fail-on-no-coverage
+        env:
+          KIMERA: "1" # skips spec_helper's coverage floor, which a partial run always trips
