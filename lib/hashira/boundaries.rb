@@ -22,7 +22,11 @@ class Hashira::Boundaries
     @trees = trees
   end
 
-  def interpreted = @_interpreted ||= entries.each { check(it) }.map(&:root)
+  def interpreted
+    return @_interpreted if @_interpreted
+    verify
+    @_interpreted = entries.map(&:root)
+  end
 
   private
 
@@ -33,9 +37,11 @@ class Hashira::Boundaries
     Declaration.new(*%w[root role entrypoint reason].map { record[it] })
   end
 
-  def check(entry)
-    entry.verify
-    route(entry)
+  def verify
+    entries.each do
+      it.verify
+      route(it)
+    end
   end
 
   def route(entry)

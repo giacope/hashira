@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Duplication::Clusters
+  PREFILTER = 12
   BASE_MASS = 16
   NEAR_MASS = 40
   PAIR = 2
@@ -18,7 +19,7 @@ class Hashira::Duplication::Clusters
 
   private
 
-  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= BASE_MASS }.reject(&:schema?)
+  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
 
   def sets = @_sets ||= Hashira::Duplication::UnionFind.new
 

@@ -5,29 +5,50 @@ class Hashira::Coupling::Roster
     @placed = placed
   end
 
-  def registry = @_registry ||= registered
+  def registry
+    admitted
+    @_registry
+  end
 
-  def types = @_types ||= counted.each_with_object(Hash.new(0)) { |(_, package), counts| counts[package] += 1 }
+  def types
+    admitted
+    @_types
+  end
 
   def origins = registry.origins
 
-  def type?(path) = typed.include?(path)
+  def type?(path)
+    admitted
+    @_typed.include?(path)
+  end
 
   def packages = types.keys | registry.packages
 
   private
 
-  def packaged = @_packaged ||= @placed.select { |_, package| package }
-
-  def registered
-    Hashira::Coupling::ConstantRegistry.new.tap do |registry|
-      packaged.each { |definition, package| registry.register(definition.path, package) }
-    end
+  def admitted
+    return if @_admitted
+    @_admitted = true
+    blank
+    fill
   end
 
-  def counted = countable.uniq { |definition, _| definition.path }
+  def blank
+    @_registry = Hashira::Coupling::ConstantRegistry.new
+    @_types = Hash.new(0)
+    @_typed = Set.new
+  end
 
-  def countable = packaged.select { |definition, _| definition.counted? }
+  def fill
+    counted = Set.new
+    @placed.each { |definition, package| admit(definition, package, counted) }
+  end
 
-  def typed = @_typed ||= packaged.filter_map { |definition, _| definition.path if definition.type? }.to_set
+  def admit(definition, package, counted)
+    return unless package
+    path = definition.path
+    @_registry.register(path, package)
+    @_typed << path if definition.type?
+    @_types[package] += 1 if definition.counted? && counted.add?(path)
+  end
 end
