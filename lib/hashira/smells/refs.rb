@@ -28,17 +28,14 @@ class Hashira::Smells::Refs
 
   private
 
-  def tallies
-    return @_tallies if @_tallies
-    @_tallies = {}
-    Hashira::Smells::Scope.inside(@node).each { record(it) }
-    @_tallies
-  end
+  def tallies = @_tallies ||= sightings.group_by(&:first).transform_values { |pairs| pairs.map(&:last) }
 
-  def record(node)
-    return note(:self, node) if selfish?(node)
-    return note(node.receiver.name, node) if local?(node)
-    note(node.name, node) if node.is_a?(Prism::LocalVariableOperatorWriteNode)
+  def sightings = Hashira::Smells::Scope.inside(@node).map { [holder(it), it.location.start_line] }.select(&:first)
+
+  def holder(node)
+    return :self if selfish?(node)
+    return node.receiver.name if local?(node)
+    node.name if node.is_a?(Prism::LocalVariableOperatorWriteNode)
   end
 
   def selfish?(node)
@@ -48,6 +45,4 @@ class Hashira::Smells::Refs
   def implicit?(node) = node.is_a?(Prism::CallNode) && !node.receiver
 
   def local?(node) = node.is_a?(Prism::CallNode) && LOCALS.include?(node.receiver.class) && node.name != :new
-
-  def note(name, node) = (@_tallies[name] ||= []) << node.location.start_line
 end

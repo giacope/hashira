@@ -19,16 +19,12 @@ class Hashira::Smells::Branches
 
   def trail(node) = trails.fetch(node)
 
-  def trails
-    return @_trails if @_trails
-    @_trails = {}.compare_by_identity
-    chart(@root, [])
-    @_trails
-  end
+  def trails = @_trails ||= chart(@root, [], {}.compare_by_identity)
 
-  def chart(node, trail)
-    @_trails[node] = trail
-    node.compact_child_nodes.each { chart(it, trail + taken(node, it)) }
+  def chart(node, trail, charted)
+    charted[node] = trail
+    node.compact_child_nodes.each { chart(it, trail + taken(node, it), charted) }
+    charted
   end
 
   def taken(node, child)
