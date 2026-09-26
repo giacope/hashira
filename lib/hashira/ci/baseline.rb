@@ -23,9 +23,7 @@ class Hashira::CI::Baseline
 
   def edges = recorded.fetch("edges", [])
 
-  def findings = keyed(recorded.fetch("findings", {}))
-
-  def marks = findings.to_h { |key, magnitude| [key, Hashira::CI::Mark.new(magnitude:, trace: traces[key])] }
+  def marks = recorded.fetch("findings", {}).to_h { |key, magnitude| [key, mark(key, magnitude)] }
 
   def traces = recorded.fetch("traces", {})
 
@@ -59,7 +57,7 @@ class Hashira::CI::Baseline
     stored.is_a?(Hash) ? stored : raise(JSON::ParserError, "its top level is a list, not an object")
   end
 
-  def keyed(findings) = findings.is_a?(Array) ? findings.to_h { [it, nil] } : findings
+  def mark(key, magnitude) = Hashira::CI::Mark.new(magnitude:, trace: traces[key])
 
   def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
 

@@ -34,6 +34,13 @@ RSpec.describe(Hashira::CLI::Session) do
   it "prints help and version without analysing anything" do
     help = capture { expect(described_class.new(["--help"]).status).to(eq(0)) }
     expect(help).to(include("Usage: hashira"))
+    expect(help).to(
+      include(
+        "Options:\n  --format FORMAT      text (default), json, dot, or mermaid\n",
+        "  --compact            emit JSON on one line, without the indentation\n                       " \
+          "meant for reading\n"
+      )
+    )
     version = capture { expect(described_class.new(["--version"]).status).to(eq(0)) }
     expect(version).to(eq("hashira #{Hashira::VERSION}\n"))
   end
@@ -137,13 +144,11 @@ RSpec.describe(Hashira::CLI::Session) do
   end
 
   it "reports unreadable files as a friendly error" do
-    within("lib/app/thing.rb" => "class Thing; def x = 1; end") do
-      File.chmod(0o000, "lib/app/thing.rb")
+    within("lib/app/other.rb" => "class Other; def x = 1; end") do
+      File.symlink("gone.rb", "lib/app/thing.rb")
       expect do
         expect(described_class.new(["lib/app"]).status).to(eq(2))
       end.to(output(%r{hashira: cannot read lib/app/thing\.rb}).to_stderr)
-    ensure
-      File.chmod(0o644, "lib/app/thing.rb")
     end
   end
 
@@ -154,6 +159,31 @@ RSpec.describe(Hashira::CLI::Session) do
         expect { expect(described_class.new([]).status).to(eq(0)) }.to(output(/looks like a Rails root/).to_stderr)
         expect { expect(described_class.new(["lib"]).status).to(eq(0)) }.not_to(output(/Rails root/).to_stderr)
       end
+    end
+  end
+
+  def on_terminal
+    original = [$stdout, $stderr]
+    $stdout = StringIO.new
+    $stderr = StringIO.new.tap { |io| def io.tty? = true }
+    yield
+    $stderr.string
+  ensure
+    $stdout, $stderr = original
+  end
+
+  it "tells a terminal what it reads, what it had to work around, and how long it took" do
+    within(Fixtures::CYCLIC_FILES) do
+      told = on_terminal { expect(described_class.new(["lib/app"]).status).to(eq(0)) }
+      expect(told.lines).to(
+        match(
+          [
+            "hashira: reading 3 files…\n",
+            "hashira: no git history for lib/app — hotspots are ranked by cost alone\n",
+            /\Ahashira: 3 files in \d+\.\ds\n\z/
+          ]
+        )
+      )
     end
   end
 
@@ -185,8 +215,9 @@ RSpec.describe(Hashira::CLI::Session) do
     within("lib/app/x.rb" => "class X; def a = 1; end\n", "b.json" => "{ oops") do
       expect { expect(described_class.new(["lib/app", "--baseline", "b.json"]).status).to(eq(2)) }
         .to(output(/b\.json is not a usable baseline/).to_stderr)
-      expect { expect(described_class.new(%w[lib/app --update-baseline --baseline nope/b.json]).status).to(eq(2)) }
-        .to(output(%r{cannot write nope/b\.json}).to_stderr)
+      unwritable = %w[lib/app --update-baseline --baseline nope/b.json]
+      expect { expect(described_class.new(unwritable).status).to(eq(2)) }
+        .to(output(%r{\Ahashira: cannot write nope/b\.json \(No such file or directory @ rb_sysopen}).to_stderr)
     end
   end
 
