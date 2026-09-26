@@ -85,6 +85,16 @@ RSpec.describe(Hashira::Coupling::Census) do
     end
   end
 
+  it "names the type holding a referenced constant, even before anything else is asked" do
+    files = {
+      "lib/app/core/util.rb" => "module App; module Core; class Util; LIMIT = 1; def a = 1; end; end; end\n",
+      "lib/app/main/uses.rb" => "module App; module Main; class Uses; def a = 1; end; end; end\n"
+    }
+    analyze(files) do |_project, census, _graph|
+      expect(census.holder(%w[Core Util LIMIT])).to(eq("Core::Util"))
+    end
+  end
+
   it "records the declaring package of each constant path" do
     analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
       expect(census.origins)

@@ -39,6 +39,18 @@ RSpec.describe(Hashira::Boundaries) do
     end
   end
 
+  it "names the declaration's root when another field is missing" do
+    interpreted([declaration(entrypoint: nil)]) do |boundaries|
+      expect { boundaries.interpreted }.to(raise_error(Hashira::Error, "boundary Prism entrypoint is missing"))
+    end
+  end
+
+  it "calls the declaration unknown when its root is missing" do
+    interpreted([declaration(root: nil)]) do |boundaries|
+      expect { boundaries.interpreted }.to(raise_error(Hashira::Error, "boundary (unknown) root is missing"))
+    end
+  end
+
   it "rejects a declaration which is not an object" do
     interpreted(["Prism"]) do |boundaries|
       expect { boundaries.interpreted }.to(raise_error(Hashira::Error, /not an object/))
