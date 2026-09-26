@@ -6,10 +6,7 @@ class Hashira::Duplication::Similarity
     @right = right
   end
 
-  def ratio
-    return 0.0 if @left.empty? || @right.empty?
-    normalized(subsequence)
-  end
+  def ratio = normalized(subsequence)
 
   def meets?(threshold) = ceiling >= threshold && ratio >= threshold
 
@@ -17,10 +14,11 @@ class Hashira::Duplication::Similarity
 
   def ceiling = normalized(overlap)
 
-  def normalized(length) = (2.0 * length) / (@left.size + @right.size)
+  def normalized(length) = length.zero? ? 0.0 : (2.0 * length) / (@left.size + @right.size)
 
   def overlap
-    @left.count { taken?(@right.tally, it) }
+    counts = @right.tally
+    @left.count { taken?(counts, it) }
   end
 
   def taken?(counts, token)

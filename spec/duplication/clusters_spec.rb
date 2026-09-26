@@ -24,6 +24,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters.first.size).to(eq(2))
     expect(clusters.first.mass).to(eq(23))
     expect(clusters.first.canonical.range).to(eq("a.rb:1-5"))
+    expect(clusters.first.masses).to(eq([["a.rb", 23], ["b.rb", 23]]))
   end
 
   it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
@@ -45,9 +46,64 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   it "suppresses a near-miss below the raised near-miss floor" do
     small = {
       "e.rb" => "def a(r)\n r.setup(fetch(:h))\n r.run(fetch(:p))\n r.close(:done)\nend\n",
-      "f.rb" => "def b(s)\n s.setup(fetch(:h))\n s.run(fetch(:p))\n s.warn(:x)\n s.close(:done)\nend\n"
+      "f.rb" => "def b(s)\n s.setup(fetch(:h))\n s.run(fetch(:p))\n s.warn\n s.close(:done)\nend\n"
     }
     expect(clusters(small)).to(be_empty)
+  end
+
+  it "finds an exact stretch even when one copy runs a statement longer" do
+    body = " g.configure(fetch(:h), fetch(:p))\n g.connect(3, 30)\n g.finalize(:x, :y)\n"
+    longer = { "a.rb" => "def a(g)\n#{body} g.log(:done)\nend\n", "b.rb" => "def b(g)\n#{body}end\n" }
+    expect(clusters(longer).map { it.sites.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"]]))
+  end
+
+  it "reports an exact clone whose mass sits exactly on the floor" do
+    source = "r.setup(fetch(:h))\nr.run(fetch(:p))\nr.close(:done)\n"
+    expect(clusters("a.rb" => source, "b.rb" => source).map(&:mass)).to(eq([16]))
+  end
+
+  it "pairs a near-miss right at the mass ratio limit" do
+    head = "r.configure(host: fetch(:h), port: fetch(:p)).connect(:tcp, :tls, retries: 3, timeout: 30)" \
+      ".authenticate(token: load(:t), scope: :admin)"
+    tail = ".audit(user: current(:id), at: now(:utc), level: 1).notify(:ops, :team)"
+    cluster = clusters("c.rb" => "def a(r) = #{head}\n", "d.rb" => "def b(r) = #{head}#{tail}\n").first
+    expect(cluster.sites.map(&:mass)).to(contain_exactly(40, 60))
+  end
+
+  it "keeps two unrelated clones apart when they sit side by side in one method" do
+    pay = " gateway.configure(fetch(:host), fetch(:port))\n gateway.connect(retries: 3, timeout: 30)\n " \
+      "gateway.authorize(token: load(:tok), scope: :sale)\n"
+    ship = " @carrier = Carrier.lookup(order.region)\n label = @carrier.print(order.address, format: :pdf)\n " \
+      "queue << [label, order.id] unless label.nil?\n"
+    sources = {
+      "a.rb" => "def a(gateway, order, queue)\n#{pay}#{ship}end\n",
+      "b.rb" => "def b(gateway)\n#{pay}end\n", "c.rb" => "def c(order, queue)\n#{ship}end\n"
+    }
+    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"], ["a.rb:5-7", "c.rb:2-4"]]))
+  end
+
+  it "reports a repeat inside one method once, never as one site or as sites sharing a statement" do
+    one = " g.configure(host: fetch(:h), port: fetch(:p), mode: :sync)\n"
+    two = " g.authorize(token: load(:t), scope: :admin)\n"
+    repeated = { "a.rb" => "def m(g)\n#{one}#{two}#{one}#{two}#{one}end\n" }
+    expect(clusters(repeated).map { it.sites.map(&:range) }).to(eq([["a.rb:2-3", "a.rb:4-5"]]))
+  end
+
+  it "does not pair a small method with a much larger one that merely contains it" do
+    loop = " while x.next?\n  x.step(1)\n end\n"
+    rest = " x.report(total: x.sum(:net), tax: x.sum(:vat))\n " \
+      "x.archive(path: File.join(root, name), mode: :append)\n x.notify(users.map(&:email), subject: :done)\n"
+    expect(clusters("a.rb" => "def a(x)\n#{loop}end\n", "b.rb" => "def b(x)\n#{loop}#{rest}end\n")).to(be_empty)
+  end
+
+  it "does not pair methods of a size that only share a rare construct" do
+    one = "def a(list)\n until list.empty?\n  item = list.shift\n  process(item, mode: :fast) if item.ready?\n end\n " \
+      "log.info(\"done: \#{list.size}\")\n @seen = Set.new([1, 2, 3])\n " \
+      "report(@seen.to_a, header: [:id, :name])\nend\n"
+    two = "def b(table)\n rows = table.fetch(:rows, [])\n until rows.none?\n  emit(rows.pop.to_s.strip, :csv)\n " \
+      "end\n case rows.first\n when Hash then rows.map { |r| r.transform_keys(&:to_s) }\n " \
+      "else rows.flatten.compact.uniq\n end\nend\n"
+    expect(clusters("a.rb" => one, "b.rb" => two)).to(be_empty)
   end
 
   it "clusters a lone expression big enough to stand on its own" do
@@ -125,6 +181,11 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters(runtime).first.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
   end
 
+  it "reads macros sent to a receiver as code, not as a schema" do
+    macros = ->(name) { "class #{name}\n Config.set :a, 1\n Config.put \"b\", 2.0\n Config.flag :c, true, nil\nend\n" }
+    expect(clusters("a.rb" => macros["A"], "b.rb" => macros["B"]).first.sites.map(&:file)).to(eq(["a.rb", "b.rb"]))
+  end
+
   it "leaves a run of bare macros alone — a directive with no arguments is still schema" do
     bare = {
       "a.rb" => <<~RUBY,
@@ -165,5 +226,13 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       RUBY
     }
     expect(clusters(bare)).to(be_empty)
+  end
+
+  describe(Hashira::Duplication::Index) do
+    it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do
+      sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
+      buckets = described_class.new(fragments(sources)).buckets.map { it.map(&:file) }
+      expect(buckets).to(include(%w[a.rb b.rb], %w[c.rb d.rb]))
+    end
   end
 end
