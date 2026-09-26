@@ -119,6 +119,27 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "backs an audience with evidence when its clients reach only nested constants" do
+    files = {
+      "lib/app/core/walk.rb" => "module App; module Core; class Walk; LIMIT = 1; end; end; end\n",
+      "lib/app/core/score.rb" => "module App; module Core; class Score; LIMIT = 1; end; end; end\n",
+      "lib/app/core/graph.rb" => "module App; module Core; class Graph; def a = 1; end; end; end\n",
+      "lib/app/core/chart.rb" => "module App; module Core; class Chart; def a = 1; end; end; end\n",
+      "lib/app/one/a.rb" =>
+        "module App; module One; class A; def c = [Core::Walk::LIMIT, Core::Score::LIMIT]; end; end; end\n",
+      "lib/app/two/b.rb" =>
+        "module App; module Two; class B; def c = [Core::Walk::LIMIT, Core::Score::LIMIT]; end; end; end\n",
+      "lib/app/three/c.rb" => "module App; module Three; class C; def c = [Core::Graph, Core::Chart]; end; end; end\n",
+      "lib/app/main/d.rb" => "module App; module Main; class D; def c = [Core::Graph, Core::Chart]; end; end; end\n"
+    }
+    verdicts(files) do |all|
+      finding = all.find { it.kind == "mixed_audience" }
+      expect(finding.evidence).to(
+        eq(["main/d.rb:1: Core::Graph", "main/d.rb:1: Core::Chart", "one/a.rb:1: Core::Walk::LIMIT", "one/a.rb:1: Core::Score::LIMIT"])
+      )
+    end
+  end
+
   it "reports an edge too wide for one interface" do
     files = {
       "lib/app/core/a.rb" => "module App; module Core; class A; def a = 1; end; end; end\n",

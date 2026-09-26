@@ -28,5 +28,8 @@ class Hashira::Coupling::MixedAudience < Hashira::Coupling::Rule
     part.users.flat_map { |client| graph.evidence(client, package).to_a.select { mentions?(it, part.constants) } }
   end
 
-  def mentions?(line, constants) = constants.any? { line.end_with?(": #{it}", "::#{it}") }
+  def mentions?(line, constants)
+    reference = "::#{line.rpartition(": ").last}::"
+    constants.any? { reference.include?("::#{it}::") }
+  end
 end
