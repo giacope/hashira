@@ -16,20 +16,11 @@ class Hashira::Complexity::CognitiveScore
     @node = node
   end
 
-  def increments
-    walked
-    @_increments
-  end
+  def increments = walked.fetch(:increments)
 
-  def calls
-    walked
-    @_calls
-  end
+  def calls = walked.fetch(:calls)
 
-  def nesting
-    walked
-    @_nesting
-  end
+  def nesting = @_nesting
 
   def total = increments.sum(&:cost)
 
@@ -50,11 +41,12 @@ class Hashira::Complexity::CognitiveScore
 
   private
 
-  def walked
-    return if @_walked
-    @_walked = true
+  def walked = @_walked ||= walk
+
+  def walk
     blank
     visit(@node.body)
+    { increments: @_increments, calls: @_calls }
   end
 
   def blank
