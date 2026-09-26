@@ -11,7 +11,7 @@ class Hashira::Churn
 
   def history? = @counts.any?
 
-  def hits(file) = @counts.select { |path, _| path.end_with?(file) }.values.max || 0
+  def hits(file) = @counts.select { |path, _| path.end_with?(file.b) }.values.max || 0
 
   def hot?(members) = changing(members) >= SITES_THAT_DRIFT_APART
 

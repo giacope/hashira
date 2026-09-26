@@ -18,7 +18,7 @@ RSpec.describe(Hashira::CLI::Session) do
     expect(printed.gsub(/\s+/, " ")).to(include(promised.gsub(/\s+/, " ")))
   end
 
-  def readme = File.read("#{__dir__}/../README.md")
+  def readme = File.read("#{__dir__}/../README.md", encoding: Encoding::UTF_8)
 
   def tangled = { "app/billing/client.rb" => client, "app/shipping/rate.rb" => rate }
 
