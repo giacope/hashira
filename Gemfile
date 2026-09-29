@@ -3,7 +3,7 @@
 source "https://rubygems.org"
 gemspec
 
-gem "kimera", "~> 0.1", ">= 0.1.4", group: :test
+gem "kimera", "~> 0.1", ">= 0.1.6", group: :test
 
 gem "rspec", "~> 3.13", group: :test
 
