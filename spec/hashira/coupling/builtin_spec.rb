@@ -13,6 +13,10 @@ RSpec.describe(Hashira::Coupling::Builtin) do
     expect(%w[logger net zlib rack].map { described_class.shelved?(it) }).to(eq([true, true, true, false]))
   end
 
+  it "counts a gem Ruby ships bundled as standard library, wherever it is installed" do
+    expect(%w[logger csv rack].map { described_class.shelved?(it) }).to(eq([true, true, false]))
+  end
+
   it "counts core and standard-library names, loaded or not, and nothing else" do
     names = %w[Process Set JSON Logger URI Date Net Hashira Rack Billing]
     expect(names.select { described_class.include?(it) }).to(eq(%w[Process Set JSON Logger URI Date Net]))
