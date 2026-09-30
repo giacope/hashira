@@ -98,9 +98,9 @@ rollup above it states every kind once, withheld findings included:
 
 ```console
 Findings (2368):
-  repeated_call         915 in 412 files
-  duplication           376 in 318 files
-  nil_check             113 in 87 files
+  repeated_call         915 in 420 files
+  duplication           376 in 349 files
+  feature_envy          253 in 177 files
   ...
 ```
 
