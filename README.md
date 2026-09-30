@@ -87,6 +87,26 @@ them at once; `--json` is never capped. A long class or method name is clipped
 in the middle to keep the columns aligned, but a path never is: every `file` and
 `Loc` cell can be opened exactly as printed.
 
+The findings are dealt out across kinds rather than grouped by kind, so a capped
+list shows the spread of what is wrong instead of 25 of the same thing. Each
+round takes the next finding of every kind — structural kinds (cycles, SDP
+violations, …) first, then complexity, duplication, and the smells — and each
+kind comes worst first where it has a size (cognitive complexity, clone mass,
+sprawl count), in the order found where it does not. When the list is capped, a
+rollup above it states every kind once, withheld findings included:
+
+```console
+Findings (2368):
+  repeated_call         915 in 412 files
+  duplication           376 in 318 files
+  nil_check             113 in 87 files
+  ...
+```
+
+Hundreds of findings of one kind are then one fact about the codebase, not a
+wall. The dependency map leads with the most connected packages, and packages
+with no edges either way share one line instead of taking a row each.
+
 The heading names the packaging that ran (`folder` or `namespace`), since the
 baseline is recorded per mode. Anything hashira had to work around goes to
 stderr, never stdout: a directory with no git history (churn reads as zero, so
@@ -116,9 +136,9 @@ Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
 Dependencies (DependsUpon(refs) -> | <- UsedBy):
-  (root)       -> complexity(1), coupling(2), duplication(1), hotspots(1), smells(3) <- cli
-  analysis     -> (none)                           <- complexity, coupling, duplication, smells
-  duplication  -> analysis(3)                      <- (root), report
+  (root)       -> analysis(2), complexity(1), coupling(2), duplication(1), hotspots(1), smells(4) <- cli
+  analysis     -> (none)                           <- (root), complexity, coupling, duplication, smells
+  cli          -> (root)(33), ci(5), diagram(1), report(7) <- (none)
   ...
 
 Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends):

@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Text
-  FINDINGS = 25
-
   def initialize(view, io: $stdout)
     @view = view
     @io = io
@@ -22,7 +20,7 @@ class Hashira::Report::Text
     graph = @view.graph
     header(graph)
     table(Hashira::Report::MetricsTable, graph)
-    Hashira::Report::DependencyMap.new(graph, io: @io).print
+    table(Hashira::Report::DependencyMap, graph)
     folded(graph.folds)
   end
 
@@ -71,10 +69,7 @@ class Hashira::Report::Text
 
   def list(all)
     return @io.puts("  none ✓ — structure is healthy") if all.empty?
-    shown = all.first(@view.top || FINDINGS)
-    shown.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
-    rest = all.size - shown.size
-    @io.puts(Hashira::Report::Phrases.withheld(rest)) unless rest.zero?
+    table(Hashira::Report::FindingList, all)
   end
 
   def accepted
