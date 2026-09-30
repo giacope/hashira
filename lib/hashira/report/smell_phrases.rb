@@ -33,8 +33,14 @@ module Hashira::Report::Phrases
   end
 
   def on_assumed_state(finding)
-    "#{finding.package} reads instance variables nothing in the class assigns (#{finding.detail[:site]}). " \
-      "Assign them where the object is built, or pass the data explicitly."
+    detail = finding.detail
+    "#{finding.package} reads instance variables nothing in the class assigns (#{detail[:site]}). " \
+      "#{installing(detail[:installed])}"
+  end
+
+  def installing(names)
+    return "Assign them where the object is built, or pass the data explicitly." if names.empty?
+    "Its subclasses are expected to install #{quoted(names)}; pass #{names.one? ? "it" : "them"} in instead."
   end
 
   def on_manual_dispatch(finding)

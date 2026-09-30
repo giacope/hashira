@@ -20,9 +20,12 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
       smell("feature_envy", names: %w[item order]) =>
         "Cart#price refers to 'item', 'order' more than to self (cart.rb:12). The behavior may belong on item.",
-      smell("assumed_state") =>
+      smell("assumed_state", installed: []) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Assign them where the object is built, or pass the data explicitly.",
+      smell("assumed_state", installed: %w[@a @b]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Its subclasses are expected to install '@a', '@b'; pass them in instead.",
       smell("manual_dispatch") =>
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",

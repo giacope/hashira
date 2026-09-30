@@ -370,7 +370,12 @@ What each one catches:
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
   class it inherits. Usually a typo, or state some other object is expected to
   install. Silent when the class inherits or includes something the codebase
-  can't see, because the assignment may live in there.
+  can't see, or when its body (or a superclass's) calls a macro that neither
+  Ruby nor the codebase defines (`pattr_initialize [:user]`), because the
+  assignment may live in there. When the ivar is one the class's own
+  subclasses assign, the finding says so: a base class that waits for its
+  subclasses to install its state is a fragile base class, so pass the value in
+  instead.
 - **manual_dispatch** — any `respond_to?` check, with or without a `send`
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
