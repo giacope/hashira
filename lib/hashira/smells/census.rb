@@ -16,7 +16,7 @@ class Hashira::Smells::Census
 
   def placed(found) = settled(found, Hashira::Smells::Lineage.new(found))
 
-  def settled(found, lineage) = found.map { it.with(assigned: lineage.assigned(it)) }
+  def settled(found, lineage) = found.map { it.with(assigned: lineage.assigned(it), heirs: lineage.heirs(it)) }
 
   def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)
 

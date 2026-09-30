@@ -409,7 +409,10 @@ What each one catches:
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.
 - **control_parameter** — an argument used only to pick an execution path; the
-  caller already knew which branch it wanted.
+  caller already knew which branch it wanted. An argument that `||` or `&&`
+  hands on as a value (`name || "anonymous"`, `@options = options || {}`,
+  `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
+  alone as a statement, or in a loop's condition, still steers.
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing.
 - **repeated_call** — the identical receiver-and-arguments call repeated
@@ -420,20 +423,35 @@ What each one catches:
   — has nothing to hoist.
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue.
-- **state_sprawl** — more than four per class. Memoization
-  (`@x ||=`) doesn't count as state.
+- **state_sprawl** — more than four instance variables per class. Memoization
+  doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
+  (and only ever filled lazily), not one each method fills only behind its own
+  `defined?(@x)` guard.
 - **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
   class it inherits. Usually a typo, or state some other object is expected to
   install. Silent when the class inherits or includes something the codebase
-  can't see, because the assignment may live in there.
-- **manual_dispatch** — `respond_to?` then send: a type check wearing a duck
-  costume.
-- **module_initialize** — `initialize` in a mixin; construction order becomes
-  anyone's guess.
+  can't see, or when its body (or a superclass's) calls a macro that neither
+  Ruby nor the codebase defines (`pattr_initialize [:user]`), because the
+  assignment may live in there. When the ivar is one the class's own
+  subclasses assign, the finding says so: a base class that waits for its
+  subclasses to install its state is a fragile base class, so pass the value in
+  instead.
+- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+  after it: asking an object what it can do is a type check wearing a duck
+  costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
+  class that uses `method_missing`.
+- **module_initialize** — `initialize` in a mixin. Even a cooperative one that
+  calls `super` makes the module carry constructor state into every class that
+  includes it: implementation inheritance. Compose a collaborator instead.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is.
+  cheapest type there is. When the method itself read the checked value from
+  outside the program — through a literal key (`params[:id]`, `data["name"]`,
+  `request.headers["X-Token"]`) or from a call on a constant the codebase
+  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
+  changes: translate the missing value where it enters, at the boundary,
+  rather than reach for a null object.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the

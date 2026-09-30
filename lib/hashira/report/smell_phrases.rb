@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
+  NIL_ADVICE = {
+    nil => "Prefer a default, a null object, or polymorphism.",
+    outside: "The value comes from outside; translate the missing value where it enters, at the boundary.",
+    both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
+  }.freeze
+
   module_function
 
   def on_control_parameter(finding)
@@ -19,6 +25,16 @@ module Hashira::Report::Phrases
       "Name the result in a local variable."
   end
 
+  def on_manual_dispatch(finding)
+    "#{finding.package} dispatches manually via respond_to? (#{finding.detail[:site]}). " \
+      "Trust the duck type, or split the callers into two adapters."
+  end
+
+  def on_module_initialize(finding)
+    "#{finding.package} defines initialize in a module (#{finding.detail[:site]}). " \
+      "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
+  end
+
   def on_boundary_sprawl(finding)
     detail = finding.detail
     "#{detail[:count]} methods across #{detail[:files]} files each pick apart #{finding.package}'s " \
@@ -33,23 +49,19 @@ module Hashira::Report::Phrases
   end
 
   def on_assumed_state(finding)
-    "#{finding.package} reads instance variables nothing in the class assigns (#{finding.detail[:site]}). " \
-      "Assign them where the object is built, or pass the data explicitly."
+    detail = finding.detail
+    "#{finding.package} reads instance variables nothing in the class assigns (#{detail[:site]}). " \
+      "#{installing(detail[:installed])}"
   end
 
-  def on_manual_dispatch(finding)
-    "#{finding.package} dispatches manually via respond_to? (#{finding.detail[:site]}). " \
-      "Trust the duck type, or split the callers into two adapters."
-  end
-
-  def on_module_initialize(finding)
-    "#{finding.package} defines initialize in a module (#{finding.detail[:site]}). " \
-      "Move construction into the including class."
+  def installing(names)
+    return "Assign them where the object is built, or pass the data explicitly." if names.empty?
+    "Its subclasses are expected to install #{quoted(names)}; pass #{names.one? ? "it" : "them"} in instead."
   end
 
   def on_nil_check(finding)
-    "#{finding.package} checks for nil (#{finding.detail[:site]}). " \
-      "Prefer a default, a null object, or polymorphism."
+    detail = finding.detail
+    "#{finding.package} checks for nil (#{detail[:site]}). #{NIL_ADVICE.fetch(detail[:origin])}"
   end
 
   def on_repeated_conditional(finding)

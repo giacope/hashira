@@ -8,7 +8,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
   def culprits = @_culprits ||= subject.parameters.filter_map { |name| culprit(name) }
 
   def culprit(name)
-    lines = spots(name).uniq
+    lines = spots(name).uniq.sort
     [name, lines] unless lines.empty?
   end
 

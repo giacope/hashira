@@ -107,6 +107,50 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(findings).to(be_empty)
   end
 
+  it "accepts parameters handed on as a value through || or &&" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def label(name) = name || "anonymous"
+
+            def keep(options)
+              @options = options || {}
+            end
+
+            def mark(padded) = @io.puts(padded && "wide")
+
+            def settle(quiet)
+              return @a if quiet == :hush
+              @level = quiet || :loud
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags && standing alone as a statement and || steering a loop" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def bump(deep)
+              deep && @count.step
+              @count
+            end
+
+            def spin(eager)
+              @count.step while eager || @count.low?
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["deep (line 5)"], ["eager (line 10)"]]))
+  end
+
   it "accepts parameters used in an else branch" do
     findings = steered(<<~RUBY)
       module App
@@ -150,6 +194,22 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(findings).to(be_empty)
   end
 
+  it "does not take a nested definition's read of a same-named local as real work" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def install(mode)
+              return @a if mode == :fast
+              def announce(mode) = @io.puts(mode)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["mode (line 5)"]))
+  end
+
   it "reports each controlling parameter with every deciding line" do
     findings = steered(<<~RUBY)
       module App
@@ -165,5 +225,24 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
       end
     RUBY
     expect(findings.first.evidence).to(eq(["kind (lines 5, 6)"]))
+  end
+
+  it "follows an elsif ladder rung by rung, listing the lines in order" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def route(kind)
+              if kind == :a
+                @a
+              elsif kind == :b
+                @b
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.first.evidence).to(eq(["kind (lines 5, 7)"]))
   end
 end

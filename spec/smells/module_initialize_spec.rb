@@ -33,6 +33,25 @@ RSpec.describe(Hashira::Smells::ModuleInitialize) do
     expect(message(findings.first)).to(include("defines initialize in a module", "zone/thing.rb:3"))
   end
 
+  it "flags a cooperative initialize that calls super, since it still carries constructor state" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~RUBY
+        module App
+          module Zone
+            module Cooperative
+              def initialize(*)
+                super
+                @ready = true
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    finding = sniffed(files, "module_initialize").first
+    expect(message(finding)).to(include("implementation inheritance", "compose a collaborator"))
+  end
+
   it "flags block-born initializers but not those owned by an assigned constant" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY
