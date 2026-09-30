@@ -384,8 +384,9 @@ same parse trees the other analyzers already built:
 
 ```console
 Findings (2):
-  feature_envy: Cart#price refers to 'item' more than to self (cart.rb:12). The behavior may belong on item.
+  feature_envy: Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.
       · item (lines 13, 14)
+      · self (line 14)
   control_parameter: Report#write is steered by 'quoted' (report.rb:31). Split the method, or pass a strategy instead of a flag.
       · quoted (line 32)
 ```
@@ -393,13 +394,23 @@ Findings (2):
 What each one catches:
 
 - **feature_envy** — a method refers to another object more than to itself; the
-  behavior probably belongs over there. Stays quiet when the method's own body
-  proves the envied thing is foreign — type-guarded (or table-dispatched) only
-  against constants the codebase never defines, read purely through literal
-  keys (`msg["id"]`), built from a literal or derived from a foreign call in
-  the method itself, rescued from a foreign error class, or consumed by a
-  stateless converter that ends by building a typed object — because "move
-  the method" needs a destination you own.
+  behavior probably belongs over there. Only messages the codebase itself
+  defines count as references: a `def`, an `attr_*`, or a name its class
+  bodies declare through a macro (`has_many :lines`, `delegate :total`,
+  `Data.define(:x)`) — but not one it only ever defines privately. Operators (`==`, `+`, `[]`) and
+  what every object answers (`to_s`, `is_a?`, `tap`) never count, and neither
+  does `x += 1`. Each binding counts on its own — three blocks that each name
+  their parameter `r` are three variables, not one — and the evidence lists
+  self's references too, so "more than" can be checked. Stays quiet when the
+  method's own body proves the envied thing is foreign — type-guarded (or
+  table-dispatched) only against constants the codebase never defines, read
+  purely through literal keys (`msg["id"]`), built from a literal, derived
+  from a foreign call (or a call chain rooted in one) in the method itself,
+  handed to a block by one (`Faraday.new do |f|`), rescued from a foreign
+  error class, or consumed by a stateless converter that ends by building a
+  typed object — because "move the method" needs a destination you own. Block
+  parameters referenced together, as in a comparator (`sort { |a, b| ... }`),
+  are peers, not a destination.
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
@@ -407,7 +418,13 @@ What each one catches:
   data model can declare and verify that boundary instead.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
-  `module_function` modules are exempt — that's what they're for.
+  `module_function` and `extend self` modules are exempt — that's what they're
+  for. So is polymorphism: a method an owned ancestor or descendant also
+  defines, or one a sibling class under the same superclass defines too (every
+  job's `perform`), fills a role rather than hiding a function. What a concern
+  defines for its host class — in `class_methods do` or a `ClassMethods`
+  module — is class-level, named `Concern.method` in every smell. The advice
+  follows the owner: a module function in a module, private or moved in a class.
 - **control_parameter** — an argument used only to pick an execution path; the
   caller already knew which branch it wanted. An argument that `||` or `&&`
   hands on as a value (`name || "anonymous"`, `@options = options || {}`,

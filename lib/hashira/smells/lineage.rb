@@ -23,7 +23,15 @@ class Hashira::Smells::Lineage
 
   def assigned(context) = remember(learned, context.name) { ancestral(context) }
 
+  def settle(sketch, **) = sketch.settle(assigned: assigned(sketch), heirs: heirs(sketch), **)
+
   def heirs(context) = remember(bequeathed, context.name) { descendants(it).flat_map { installs(it) }.uniq }
+
+  def pointed(type) = references(type).map { resolve(type.name, it) }
+
+  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
+
+  def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
   private
 
@@ -77,19 +85,17 @@ class Hashira::Smells::Lineage
     Hashira::Analysis::Syntax.statements(type.node).grep(Prism::CallNode).reject(&:receiver).map(&:name)
   end
 
-  def vocabulary = @_vocabulary ||= @types.flat_map { |type| type.defs.map { it.node.name } }.to_set
+  def vocabulary
+    @_vocabulary ||= @types.flat_map { Hashira::Smells::Visibility.new(it.node).entries }.to_set { |definition, _| definition.name }
+  end
 
   def extensions(type) = named(type, EXTENSIONS)
-
-  def pointed(type) = references(type).map { resolve(type.name, it) }
 
   def references(type)
     (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.segments(it) }
   end
 
   def parent(type) = (type.node.superclass if type.kind == :class)
-
-  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def candidates(owner, segments)
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }
@@ -103,8 +109,6 @@ class Hashira::Smells::Lineage
   def writes(type) = remember(written, type.node) { definitions(type).flat_map { setters(it) } + attributes(type) }
 
   def written = @_written ||= {}.compare_by_identity
-
-  def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
   def setters(node) = Hashira::Smells::Scope.sweep(node).select { SETTERS.include?(it.class) }.map(&:name)
 
