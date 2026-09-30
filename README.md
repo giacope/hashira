@@ -354,9 +354,12 @@ What each one catches:
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
-  `SecureRandom.hex`) are meant to differ, and a repeat no single run can reach
-  twice — the two arms of an `if`, two `when` branches, a body and its `rescue`
-  — has nothing to hoist.
+  `SecureRandom.hex`) are meant to differ, and so is a call fed one
+  (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
+  an `if`, two `when` branches, a body and its `rescue` — has nothing to hoist;
+  and a command, a call whose result the method throws away (`@out << row`,
+  `raise`, `log.info(...)` as a statement), is repeated on purpose. A repeated
+  chain is listed once, at its longest.
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue.
 - **state_sprawl** — more than four per class. Memoization
