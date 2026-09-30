@@ -77,6 +77,7 @@ hashira app lib                # or several — one shared graph
 hashira --skip complexity,duplication   # coupling + smells only
 hashira --skip coupling                 # complexity + duplication + smells
 hashira --top 50                        # longer tables and findings list
+hashira --kind cycles,complexity        # only the findings of these kinds
 ```
 
 The full text report is the coupling tables, the complexity tables, the hotspot
@@ -106,6 +107,16 @@ Findings (2368):
 Hundreds of findings of one kind are then one fact about the codebase, not a
 wall. The dependency map leads with the most connected packages, and packages
 with no edges either way share one line instead of taking a row each.
+
+`--kind` keeps only the findings of the kinds you name, using the `--fail-on`
+names and shorthands (`--kind cycles,dupe`, `--kind smells`), in text and JSON
+alike; the tables and the graph stay whole. It narrows the way `--only` does
+(see [Hooks](#hooks-ratchet-the-files-you-just-touched)). With `--ratchet` it
+judges only those kinds: what is new or worse among them fails, while removals
+and edges are left to the full run. It refuses `--update-baseline`, which would
+record a baseline missing every other kind, and the diagram formats. Every kind
+`--fail-on` gates must be one `--kind` keeps, since a gate on a kind the report
+leaves out could never fire.
 
 The heading names the packaging that ran (`folder` or `namespace`), since the
 baseline is recorded per mode. Anything hashira had to work around goes to

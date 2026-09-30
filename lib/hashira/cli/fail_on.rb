@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "../pipeline"
+require_relative "kinds"
 
 module Hashira::CLI::FailOn
   MEASURES = (Hashira::Pipeline::ANALYZERS - %i[coupling smells]).map(&:to_s).freeze
@@ -20,18 +21,7 @@ module Hashira::CLI::FailOn
 
   module_function
 
-  def parse(list)
-    return [] if list.to_s.empty?
-    kinds = list.split(",").flat_map { Array(kind(it.strip)) }.uniq
-    raise(Hashira::Error, "--fail-on needs at least one kind") if kinds.empty?
-    kinds
-  end
+  def parse(list) = Hashira::CLI::Kinds.new("--fail-on").parse(list)
 
   def owner(kind) = OWNERS.fetch(kind)
-
-  def kind(name)
-    KINDS.fetch(name) do
-      raise(Hashira::Error, "unknown --fail-on kind #{name.inspect} (use: #{KINDS.keys.join(", ")})")
-    end
-  end
 end

@@ -46,7 +46,7 @@ RSpec.describe(Hashira::CLI::Options) do
     end
 
     it "rejects an unknown --fail-on kind, listing the valid ones" do
-      expected = "unknown --fail-on kind \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")})"
+      expected = "unknown --fail-on \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")})"
       expect { described_class.parse(%w[--fail-on typos]) }.to(raise_error(Hashira::Error, expected))
     end
 
@@ -174,6 +174,32 @@ RSpec.describe(Hashira::CLI::Options) do
           .to(raise_error(Hashira::Error, "--format mermaid draws the coupling graph, which --only cannot narrow"))
         expect(described_class.parse(%w[lib/app --only lib/app/x.rb --ratchet]).mode).to(eq(:ratchet))
       end
+    end
+
+    it "reads --kind with the --fail-on vocabulary, defaulting to every kind" do
+      expect(described_class.parse(%w[lib]).kinds).to(eq([]))
+      expect(described_class.parse(%w[lib --kind cycles,dupe]).kinds).to(eq(%w[cycle duplication]))
+      expect(described_class.parse(%w[lib --kind smells]).kinds).to(eq(Hashira::Pipeline::SMELLS))
+      expect(described_class.parse(%w[lib --kind cycles --ratchet]).mode).to(eq(:ratchet))
+      expect(described_class.parse(%w[lib --kind cycles,sdp --fail-on sdp]).fail_on).to(eq(%w[sdp_violation]))
+    end
+
+    it "rejects an unknown --kind, listing the valid ones" do
+      expected = "unknown --kind \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")})"
+      expect { described_class.parse(%w[--kind typos]) }.to(raise_error(Hashira::Error, expected))
+      expect { described_class.parse(["lib", "--kind", ","]) }
+        .to(raise_error(Hashira::Error, "--kind needs at least one kind"))
+    end
+
+    it "refuses --kind where narrowing the findings would mislead" do
+      expect { described_class.parse(%w[lib --kind cycles --update-baseline]) }
+        .to(raise_error(Hashira::Error, "--kind narrows the findings, but --update-baseline records them all"))
+      expect { described_class.parse(%w[lib --kind cycles --format dot]) }
+        .to(raise_error(Hashira::Error, "--format dot draws the coupling graph, which --kind cannot narrow"))
+      expect { described_class.parse(%w[lib --kind cycles --skip coupling]) }
+        .to(raise_error(Hashira::Error, "--kind cycle needs the coupling analyzer, but --skip drops it"))
+      expect { described_class.parse(%w[lib --kind smells --fail-on cycles]) }
+        .to(raise_error(Hashira::Error, "--fail-on cycle can never fire, since --kind leaves it out"))
     end
 
     it "refuses to skip every analyzer" do

@@ -15,7 +15,9 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @_findings ||= accepted.screen(@pipeline.findings)
+  def findings = @_findings ||= accepted.screen(sieve.narrow(@pipeline.findings))
+
+  def sieve = @_sieve ||= Hashira::CLI::Sieve.new(@pipeline.focus, @options.kinds)
 
   def accepted = Hashira::CI::Accepted.build(@options.baseline)
 
@@ -28,7 +30,7 @@ class Hashira::CLI::Run
   def check
     stop = ratchet.blocker
     raise(Hashira::Error, stop) if stop
-    ratchet.check(@pipeline.focus)
+    ratchet.check(sieve)
   end
 
   def guard = gate.check

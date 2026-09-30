@@ -3,6 +3,7 @@
 require_relative "fail_on"
 require_relative "flag"
 require_relative "format"
+require_relative "kinds"
 require_relative "only"
 require_relative "package_by"
 require_relative "skip"
@@ -39,6 +40,14 @@ module Hashira::CLI
         "comma-separated. The whole project is still read,",
         "so cross-file signals stay right. Meant for hooks:",
         "hashira --only $CHANGED --ratchet"
+      ]
+    ),
+    Flag.new(
+      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind"),
+      text: [
+        "keep only the findings of these kinds, named",
+        "as for --fail-on; comma-separated. The tables",
+        "and the graph stay whole"
       ]
     ),
     Flag.new(
