@@ -3,7 +3,7 @@
 class Hashira::Churn
   SITES_THAT_DRIFT_APART = 2
 
-  def self.build(directory) = new(Hashira::GitLog.new(directory).counts)
+  def self.build(directories) = new(Hashira::GitLog.new(directories).counts)
 
   def initialize(counts)
     @counts = counts
@@ -11,7 +11,7 @@ class Hashira::Churn
 
   def history? = @counts.any?
 
-  def hits(file) = @counts.select { |path, _| path.end_with?(file.b) }.values.max || 0
+  def hits(file) = @counts.fetch(file.b, 0)
 
   def hot?(members) = changing(members) >= SITES_THAT_DRIFT_APART
 
