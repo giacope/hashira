@@ -342,8 +342,10 @@ What each one catches:
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
-  adapter. An analyzer or interpreter which deliberately understands a foreign
-  data model can declare and verify that boundary instead.
+  adapter. Classes built into Ruby itself (`String`, `Hash`, `Array`, `Proc`)
+  are the language, not a boundary, so they never count. An analyzer or
+  interpreter which deliberately understands a foreign data model can declare
+  and verify that boundary instead.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.
