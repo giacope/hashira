@@ -21,7 +21,11 @@ class Hashira::Duplication::Delta
     tags.size == 1 ? tags.first : :mixed
   end
 
-  def kinds
-    @cluster.others.flat_map { |other| Hashira::Duplication::Variance.new(@cluster.canonical, other).kinds }.uniq
-  end
+  def kinds = inner.empty? ? variances : inner
+
+  def inner = variances - [:renamed]
+
+  def variances = @_variances ||= @cluster.others.flat_map { variance(it).kinds }.uniq
+
+  def variance(other) = Hashira::Duplication::Variance.new(@cluster.canonical, other)
 end

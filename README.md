@@ -329,26 +329,40 @@ it does inside Ruby:
   is caught, not only whole bodies. Two sibling controllers that drifted apart
   line by line match here and nowhere else: no single subtree of either one is a
   clone of the other. And one statement can be a clone by itself — the block body
-  a view helper repeats verbatim is a single expression.
+  a view helper repeats verbatim is a single expression. A class or module is
+  never a window of its own: its body is windowed like any other, so two files
+  that merely wrap similar code in the same `module` don't match as wholes. A
+  window doesn't open on a bare `private` heading the methods below it, and a
+  site's range runs to the closing line of any heredoc it carries.
 - **Whole methods, `when` arms and `rescue` clauses too.** A one-line method has
   no run of statements at all; without these it would be invisible.
 - **Lists aren't clones.** A run of identically shaped statements — a require
   block, a routes file, a column of registrations — is skipped, so windows cut
-  out of one don't report a match at every offset.
+  out of one don't report a match at every offset. The same goes for the arms of
+  a `case`: three or more identically shaped `when` arms in a row are a dispatch
+  table, not three clones.
 - **Declarations aren't clones either.** A fragment built only from directives —
-  receiverless macro calls with literal arguments, the `has_many` /
-  `validates` / `attribute` spine of a model or a serializer — is a schema, not
-  copied logic; extracting it only hides what the class declares. Two models
-  that open the same way are two models. As soon as a fragment carries logic —
-  a block, a method, a variable, a receiver, a branch — it counts again.
+  receiverless macro calls with literal or constant arguments (`include Foo`, a
+  heredoc with nothing interpolated), the `has_many` / `validates` / `attribute`
+  spine of a model or a serializer, constants assigned a literal (`.freeze`
+  included) — is a schema, not copied logic; extracting it only hides what the
+  class declares. A macro whose block holds only more declarations
+  (`string :host do default "localhost" end`) is one too. Two models that open
+  the same way are two models. As soon as a fragment carries logic — a block
+  parameter, a method, a variable, a receiver, a branch, an interpolation — it
+  counts again.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
-  pairwise matches.
+  pairwise matches. A smaller clone whose copies sit inside a bigger one's is
+  reported only when at least two of its copies lie outside it: one more site is
+  not a new finding.
 - **It tells you how to fix it.** hashira diffs the copies and classifies what
-  varies: only literals → extract a method and pass them as arguments; only the
-  receiver → extract a method taking it, or use polymorphism; a constant →
-  parameterize it; the control flow itself → extract the common core, but verify
-  by hand (flagged lower-confidence).
+  varies: only literals (strings, numbers, symbols, patterns) → extract a method
+  and pass them as arguments; only the receiver or a name → extract a method
+  taking it, or use polymorphism; a constant → parameterize it; nothing but the
+  method's own name → keep one, and alias or call it; the control flow itself,
+  down to a `&.` one copy has and the other lacks → extract the common core, but
+  verify by hand (flagged lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
   Ruby idiom, not duplication, so the mass floor rises as a shape gets more
   common, and rare token types drive matching while common ones don't. The floor
@@ -444,8 +458,9 @@ controllers/orders_controller.rb            8    0      7    56
 ```
 
 Read it as a work queue: the top row is where a day of refactoring buys the most.
-A file carrying a clone is charged per site, by the mass of its own copy, so one
-holding both copies pays twice. Churn floors at one, so a repo with no git history still ranks by cost.
+A file carrying a clone is charged the nodes its copies cover, so one holding both
+copies pays for both — but code that two overlapping clusters share is charged
+once, not once per cluster. Churn floors at one, so a repo with no git history still ranks by cost.
 
 Deliberately not a rating. A letter grade on a healthy codebase is the same
 letter repeated — it tells you nothing about what to open first.
@@ -471,17 +486,19 @@ loose files never merge into one package).
 **Complexity.** Every method body is walked once and scored against the
 cognitive-complexity rules above.
 
-**Duplication.** Candidates are every window of one to twelve sibling statements,
-plus every method, `when` arm and `rescue` clause taken whole. Runs of identically
-shaped statements are skipped as lists. Each candidate is hashed structurally and
+**Duplication.** Candidates are every window of one to twelve sibling statements
+(never a class or module on its own), plus every method, `when` arm and `rescue`
+clause taken whole. Runs of identically shaped statements or `when` arms are
+skipped as lists. Each candidate is hashed structurally and
 matched both exactly and by near-miss — a linear-time bound on the longest common
 subsequence rejects a pair before the real comparison runs — then unioned into
-clusters and reduced to the maximal, non-overlapping ones. All three analyzers
+clusters and reduced to the maximal ones: a smaller cluster survives only if two
+of its sites lie outside every bigger one. All three analyzers
 share a single parse of your source, so running them together costs no more than
 parsing once.
 
 **Hotspots.** Each file is charged the cognitive complexity of its methods and
-the mass of every clone site it holds, then multiplied by how many commits touched
+the distinct nodes its clone sites cover, then multiplied by how many commits touched
 it. Git is asked once, lazily, and only if something needs churn.
 
 ## CI
@@ -542,9 +559,9 @@ A regression prints in full, with the evidence that introduced it:
 ```console
 $ hashira --ratchet
 NEW FINDING:
-  duplication: 2 similar fragments (mass 44) — extract the shared shape and pass what differs as parameters.
-      · billing/refund.rb:1-11
-      · orders/checkout.rb:1-11
+  duplication: 2 similar fragments (mass 35) — differs only in literal values — extract a method, pass them as arguments.
+      · billing/refund.rb:4-8
+      · orders/checkout.rb:4-8
 
 Ratchet FAILED. Either fix what regressed, or — if it is deliberate —
 record the decision: update the baseline, or accept it with a reason.

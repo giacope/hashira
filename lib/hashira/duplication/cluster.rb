@@ -17,8 +17,6 @@ module Hashira
 
         def size = sites.size
 
-        def masses = sites.map { [it.file, it.mass] }
-
         def structural? = others.all? { Variance.new(canonical, it).structural? }
       end
   end

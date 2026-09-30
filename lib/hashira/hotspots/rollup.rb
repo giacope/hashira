@@ -21,11 +21,11 @@ class Hashira::Hotspots::Rollup
 
   def scores = @complexity ? @complexity.ranked : []
 
-  def clusters = @duplication ? @duplication.clusters : []
+  def coverage = @duplication ? @duplication.coverage : {}
 
   def cognitive = @_cognitive ||= bucketed(scores.map { [it.file, it.cognitive] })
 
-  def duplicated = @_duplicated ||= bucketed(clusters.flat_map(&:masses))
+  def duplicated = @_duplicated ||= Hash.new(0).merge(coverage)
 
   def bucketed(charges) = charges.each_with_object(Hash.new(0)) { |(file, cost), total| total[file] += cost }
 end

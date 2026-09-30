@@ -27,6 +27,8 @@ module Hashira::Report::Phrases
     constant: "differs only in a constant — extract a method and parameterize it.",
     structure: "the control flow differs — extract the common core, but verify by hand (lower confidence).",
     mixed: "extract the shared shape and pass what differs as parameters."
+  ).merge(
+    renamed: "the same body under different method names — keep one, and alias it or call it from the others."
   ).freeze
 
   module_function
