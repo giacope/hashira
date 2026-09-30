@@ -107,6 +107,50 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(findings).to(be_empty)
   end
 
+  it "accepts parameters handed on as a value through || or &&" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def label(name) = name || "anonymous"
+
+            def keep(options)
+              @options = options || {}
+            end
+
+            def mark(padded) = @io.puts(padded && "wide")
+
+            def settle(quiet)
+              return @a if quiet == :hush
+              @level = quiet || :loud
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags && standing alone as a statement and || steering a loop" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def bump(deep)
+              deep && @count.step
+              @count
+            end
+
+            def spin(eager)
+              @count.step while eager || @count.low?
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["deep (line 5)"], ["eager (line 10)"]]))
+  end
+
   it "accepts parameters used in an else branch" do
     findings = steered(<<~RUBY)
       module App

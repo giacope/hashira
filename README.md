@@ -348,7 +348,10 @@ What each one catches:
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` modules are exempt — that's what they're for.
 - **control_parameter** — an argument used only to pick an execution path; the
-  caller already knew which branch it wanted.
+  caller already knew which branch it wanted. An argument that `||` or `&&`
+  hands on as a value (`name || "anonymous"`, `@options = options || {}`,
+  `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
+  alone as a statement, or in a loop's condition, still steers.
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing.
 - **repeated_call** — the identical receiver-and-arguments call repeated
