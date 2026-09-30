@@ -17,13 +17,15 @@ class Hashira::Coupling::Catalog
 
   def folders = @definitions.packages
 
+  def lineage = @_lineage ||= Hashira::Coupling::Lineage.new(self)
+
+  def territory = @_territory ||= Hashira::Coupling::Territory.new(self)
+
   private
 
   def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)
 
-  def entries = @_entries ||= @definitions.map { |node, full, folder| entry(node, full, folder) }
+  def entries = @_entries ||= @definitions.map { |node, full, *placing| entry(node, naming.strip(full), *placing) }
 
-  def entry(node, full, folder)
-    Hashira::Coupling::Definition.new(node:, path: naming.strip(full), folder:)
-  end
+  def entry(node, path, folder, scope, file) = Hashira::Coupling::Definition.new(node:, path:, folder:, scope:, file:)
 end

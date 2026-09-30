@@ -24,6 +24,24 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     end
   end
 
+  describe ".static? / .dynamic?" do
+    def node(source) = parse(source).statements.body.first
+
+    it "calls a path static when every link is a constant, down to the root or ::" do
+      expect(%w[A A::B ::A::B].map { described_class.static?(node(it)) }).to(eq([true, true, true]))
+      expect(%w[A A::B ::A::B].map { described_class.dynamic?(node(it)) }).to(eq([false, false, false]))
+    end
+
+    it "calls a path hanging off an expression dynamic, however deep" do
+      expect(%w[self::A foo::A::B a.b::C].map { described_class.dynamic?(node(it)) }).to(eq([true, true, true]))
+      expect(described_class.static?(node("self::A"))).to(be(false))
+    end
+
+    it "calls anything that is not a constant path neither" do
+      expect([described_class.static?(nil), described_class.dynamic?(node("foo"))]).to(eq([false, false]))
+    end
+  end
+
   describe ".anchor" do
     it "anchors compact paths at the innermost scope that defines the root, else top level, else in place" do
       expect(described_class.anchor([%w[Baz]], %w[Baz Bar], Set[%w[Baz Baz]])).to(eq(%w[Baz Baz Bar]))
