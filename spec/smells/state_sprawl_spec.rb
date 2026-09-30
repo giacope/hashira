@@ -114,6 +114,30 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @d @g]))
   end
 
+  it "counts a field that defined? tests as a flag rather than guarding a memo" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def initialize(value, packed)
+              @a, @b, @c = value, 2, 3
+              @packed = true if packed
+              @value = value unless value.nil?
+            end
+
+            def packed? = defined?(@packed)
+
+            def value
+              @value = @a.to_s unless defined?(@value)
+              @value
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @packed @value]))
+  end
+
   it "does not count underscore-prefixed memoization caches as state" do
     findings = crowded(<<~RUBY)
       module App

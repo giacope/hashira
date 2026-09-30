@@ -22,17 +22,26 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def writes = @_writes ||= nodes.select { COUNTED.include?(it.class) }
 
-  def memoized?(name) = probed.include?(name) || (cached.include?(name) && cleared?(name))
+  def memoized?(name) = lazy?(name) && writes.select { it.name == name }.all? { blank?(it) || guarded?(it) }
 
-  def cleared?(name) = writes.select { it.name == name }.all? { blank?(it) }
+  def lazy?(name) = cached.include?(name) || probed.include?(name)
+
+  def probed = @_probed ||= probes(nodes)
 
   def blank?(write) = write.is_a?(Prism::InstanceVariableWriteNode) && write.value.is_a?(Prism::NilNode)
 
+  def guarded?(write) = guarded.any? { it.equal?(write) }
+
+  def guarded = @_guarded ||= nodes.grep(Prism::DefNode).flat_map { shielded(Hashira::Smells::Scope.sweep(it)) }
+
+  def shielded(body)
+    probed = probes(body)
+    body.select { COUNTED.include?(it.class) && probed.include?(it.name) }
+  end
+
   def cached = @_cached ||= nodes.grep(Prism::InstanceVariableOrWriteNode).map(&:name)
 
-  def probed
-    @_probed ||= nodes.grep(Prism::DefinedNode).map(&:value).grep(Prism::InstanceVariableReadNode).map(&:name)
-  end
+  def probes(body) = body.grep(Prism::DefinedNode).map(&:value).grep(Prism::InstanceVariableReadNode).map(&:name)
 
   def detail = { site:, count: names.size }
 

@@ -364,7 +364,8 @@ What each one catches:
   more places; polymorphism is overdue.
 - **state_sprawl** — more than four instance variables per class. Memoization
   doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
-  (and only ever filled by `||=`), not one guarded by `defined?(@x)`.
+  (and only ever filled lazily), not one each method fills only behind its own
+  `defined?(@x)` guard.
 - **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
