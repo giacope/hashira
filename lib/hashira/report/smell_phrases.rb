@@ -25,6 +25,16 @@ module Hashira::Report::Phrases
       "Name the result in a local variable."
   end
 
+  def on_manual_dispatch(finding)
+    "#{finding.package} dispatches manually via respond_to? (#{finding.detail[:site]}). " \
+      "Trust the duck type, or split the callers into two adapters."
+  end
+
+  def on_module_initialize(finding)
+    "#{finding.package} defines initialize in a module (#{finding.detail[:site]}). " \
+      "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
+  end
+
   def on_boundary_sprawl(finding)
     detail = finding.detail
     "#{detail[:count]} methods across #{detail[:files]} files each pick apart #{finding.package}'s " \
@@ -47,16 +57,6 @@ module Hashira::Report::Phrases
   def installing(names)
     return "Assign them where the object is built, or pass the data explicitly." if names.empty?
     "Its subclasses are expected to install #{quoted(names)}; pass #{names.one? ? "it" : "them"} in instead."
-  end
-
-  def on_manual_dispatch(finding)
-    "#{finding.package} dispatches manually via respond_to? (#{finding.detail[:site]}). " \
-      "Trust the duck type, or split the callers into two adapters."
-  end
-
-  def on_module_initialize(finding)
-    "#{finding.package} defines initialize in a module (#{finding.detail[:site]}). " \
-      "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
   end
 
   def on_nil_check(finding)

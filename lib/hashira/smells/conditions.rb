@@ -39,15 +39,17 @@ module Hashira::Smells::Conditions
     [node.statements, node.is_a?(Prism::IfNode) ? node.subsequent : node.else_clause]
   end
 
-  def nested(roots) = roots.compact.flat_map { seek(it) }
+  def nested(roots) = roots.compact.flat_map { tested?(it) ? [it] : seek(it) }
 
-  def seek(node, parent = nil)
-    return [node] if steers?(node, parent)
-    fence?(node) ? [] : node.compact_child_nodes.flat_map { seek(it, node) }
+  def seek(node)
+    return [] if fence?(node)
+    node.compact_child_nodes.flat_map { steers?(it, node) ? [it] : seek(it) }
   end
 
-  def plain(node, parent = nil)
-    return [] if steers?(node, parent) || fence?(node)
-    [node] + node.compact_child_nodes.flat_map { plain(it, node) }
+  def plain(node) = tested?(node) ? [] : spread(node)
+
+  def spread(node)
+    return [] if fence?(node)
+    [node] + node.compact_child_nodes.reject { steers?(it, node) }.flat_map { spread(it) }
   end
 end

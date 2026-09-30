@@ -210,4 +210,23 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     RUBY
     expect(findings.first.evidence).to(eq(["kind (lines 5, 6)"]))
   end
+
+  it "follows an elsif ladder rung by rung, listing the lines in order" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def route(kind)
+              if kind == :a
+                @a
+              elsif kind == :b
+                @b
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.first.evidence).to(eq(["kind (lines 5, 7)"]))
+  end
 end

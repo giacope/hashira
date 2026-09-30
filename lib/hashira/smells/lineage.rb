@@ -31,13 +31,10 @@ class Hashira::Smells::Lineage
 
   def installs(name) = index.fetch(name).flat_map { writes(it) }
 
-  def descendants(name) = brood([name], [])
-
-  def brood(queue, known)
-    return known if queue.empty?
-    name, *rest = queue
-    fresh = children.fetch(name, []) - known
-    brood(rest + fresh, known + fresh)
+  def descendants(name)
+    found = [name]
+    found.each { found.concat(children.fetch(it, []) - found) }
+    found.drop(1)
   end
 
   def children
@@ -45,8 +42,9 @@ class Hashira::Smells::Lineage
   end
 
   def descent(type)
-    found = resolve(type.name, Hashira::Analysis::Syntax.segments(parent(type)))
-    [found, type.name] if found
+    name = type.name
+    found = resolve(name, Hashira::Analysis::Syntax.segments(parent(type)))
+    [found, name] if found
   end
 
   def ancestral(context) = kin(context)&.flat_map { writes(it) }&.uniq
