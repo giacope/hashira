@@ -7,28 +7,30 @@ class Hashira::GitLog
 
   TOP = %w[rev-parse --show-toplevel].freeze
 
-  def initialize(directories)
-    @directories = directories
+  def initialize(project)
+    @project = project
   end
 
-  def counts = prefixes.map { within(it) }.reduce({}) { |found, more| found.merge(more) { |_, *seen| seen.max } }
+  def counts = roots.map { |directory, root| within(directory, root) }.reduce({}, :merge)
 
   private
 
-  def logged = @_logged ||= git(*LOG, "--", *roots).split("\n").map(&:strip).reject(&:empty?).tally
+  def logged = @_logged ||= git(*LOG, "--", *roots.values).split("\n").map(&:strip).reject(&:empty?).tally
 
-  def within(prefix) = logged.select { |path, _| path.start_with?(prefix) }.transform_keys { it.delete_prefix(prefix) }
+  def within(directory, root)
+    prefix = root == top ? "" : "#{root.delete_prefix("#{top}/")}/"
+    shown = @project.shown(directory).b
+    logged.select { |path, _| path.start_with?(prefix) }.transform_keys { shown + it.delete_prefix(prefix) }
+  end
 
-  def prefixes = roots.map { it == top ? "" : "#{it.delete_prefix("#{top}/")}/" }
-
-  def roots = @_roots ||= @directories.map { File.realpath(it).b }.select { inside?(it) }
+  def roots = @_roots ||= @project.directories.to_h { [it, File.realpath(it).b] }.select { |_, root| inside?(root) }
 
   def inside?(root) = root == top || root.start_with?("#{top}/")
 
   def top = @_top ||= git(*TOP).strip
 
   def git(*arguments)
-    IO.popen([*GIT, "-C", @directories.first, *arguments], err: File::NULL, binmode: true, &:read)
+    IO.popen([*GIT, "-C", @project.directories.first, *arguments], err: File::NULL, binmode: true, &:read)
   rescue SystemCallError
     ""
   end

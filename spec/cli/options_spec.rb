@@ -163,7 +163,22 @@ RSpec.describe(Hashira::CLI::Options) do
 
     it "rejects an --only path that is not a file here" do
       expect { described_class.parse(%w[lib --only lib/gone.rb]) }
-        .to(raise_error(Hashira::Error, '--only "lib/gone.rb" is not a file here'))
+        .to(raise_error(Hashira::Error, '--only "lib/gone.rb" is not a file or directory here'))
+    end
+
+    it "expands an --only directory to every Ruby file under it" do
+      within("lib/app/b/y.rb" => "", "lib/app/a/x.rb" => "", "lib/app/a/notes.md" => "", "top.rb" => "") do
+        expect(described_class.parse(%w[lib --only lib/app/,lib/app/b/y.rb]).only)
+          .to(eq(%w[lib/app/a/x.rb lib/app/b/y.rb lib/app/b/y.rb]))
+        expect(described_class.parse(%w[lib --only .]).only).to(eq(%w[lib/app/a/x.rb lib/app/b/y.rb top.rb]))
+      end
+    end
+
+    it "rejects an --only directory holding no Ruby files, rather than silently reporting everything" do
+      within("lib/app/x.rb" => "", "docs/readme.md" => "") do
+        expect { described_class.parse(%w[lib --only docs]) }
+          .to(raise_error(Hashira::Error, '--only "docs" holds no Ruby files'))
+      end
     end
 
     it "refuses --only for runs that report more than findings" do

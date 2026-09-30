@@ -35,7 +35,8 @@ module Hashira::CLI
     Flag.new(
       name: "--only", arg: "PATHS", field: :only, parse: Only,
       text: [
-        "keep only the findings that name these files;",
+        "keep only the findings that name these files",
+        "(a directory stands for every file under it);",
         "comma-separated. The whole project is still read,",
         "so cross-file signals stay right. Meant for hooks:",
         "hashira --only $CHANGED --ratchet"

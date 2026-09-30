@@ -14,7 +14,7 @@ module Hashira::CLI
 
       def pipeline
         chosen = Hashira::Project.new(directories, boundaries: decisions.boundaries)
-        announce(chosen)
+        Hashira::Report::Notices.new.scanning(chosen.files.size, chosen.label)
         Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:).verify
       end
 
@@ -24,12 +24,6 @@ module Hashira::CLI
         recorded = Hashira::CI::Baseline.new(baseline)
         raise(Hashira::Error, recorded.trouble) if recorded.trouble
         recorded
-      end
-
-      def announce(project)
-        told = Hashira::Report::Notices.new
-        told.scanning(project.files.size)
-        told.rails if directories.empty? && File.exist?("config/application.rb")
       end
     end
 end

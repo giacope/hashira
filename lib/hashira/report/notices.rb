@@ -7,13 +7,9 @@ class Hashira::Report::Notices
     @io = io
   end
 
-  def scanning(files) = interactive { @io.puts("hashira: reading #{files} files…") }
+  def scanning(files, label) = progress("reading #{files} files in #{label}…")
 
-  def finished(files, seconds) = interactive { @io.puts("hashira: #{files} files in #{seconds}s") }
-
-  def rails
-    @io.puts("hashira: this looks like a Rails root — `hashira app` reads the application, not just lib/")
-  end
+  def finished(files, seconds) = progress("#{files} files in #{seconds}s")
 
   def churn(label)
     @io.puts("hashira: no git history for #{label} — hotspots are ranked by cost alone")
@@ -31,7 +27,7 @@ class Hashira::Report::Notices
 
   private
 
-  def interactive
-    yield if @io.tty?
+  def progress(line)
+    @io.puts("hashira: #{line}") if @io.tty?
   end
 end

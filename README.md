@@ -66,18 +66,27 @@ Requires Ruby 3.4 or newer.
 
 ## Getting started
 
-Point hashira at your code, or run it with no arguments to auto-detect `lib/<gem>`.
-Single-folder wrapper chains are descended automatically, so `hashira`,
-`hashira lib`, and `hashira lib/gem/core` land on the same package boundaries:
+Point hashira at your code, or run it with no arguments to auto-detect it:
+`lib/<gem>` when `lib/<gem>.rb` sits beside it (the one your `*.gemspec` names,
+if `lib/` holds several), otherwise `lib`; in a Rails root (a
+`config/application.rb`), `app` and `lib`. When one directory is analyzed,
+single-folder wrapper chains are descended automatically, so `hashira`,
+`hashira lib`, and `hashira lib/gem/core` land on the same package boundaries.
+Several directories are taken as given, so they all keep the same granularity.
 
 ```sh
-hashira                        # auto-detects lib/<gem>
+hashira                        # auto-detects lib/<gem>, or app + lib in a Rails root
 hashira lib/myapp              # or point it at a directory
 hashira app lib                # or several — one shared graph
 hashira --skip complexity,duplication   # coupling + smells only
 hashira --skip coupling                 # complexity + duplication + smells
 hashira --top 50                        # longer tables and findings list
 ```
+
+With one directory, files are named relative to it (`models/user.rb` under
+`hashira app`). With several, every file is named as you would open it from
+where hashira runs (`app/models/user.rb`, `activerecord/lib/active_record/base.rb`),
+so two `base.rb`s in different directories never share a row.
 
 The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
@@ -194,7 +203,9 @@ Rails root) or sits beside one (its `app` folder), hashira switches to
 **namespace packaging**: types group by top-level constant
 (`Billing`, `Ci`, `User`) across the layer folders, edges join domains, and the
 findings answer the question a Rails monolith actually has — does `Billing`
-reach into `Ci`?
+reach into `Ci`? Run bare in the Rails root, `hashira` reads `app` and `lib`
+together (files then read `app/models/user.rb`, `lib/tasks/…`); `hashira app`
+reads the application alone, as below.
 
 ```console
 $ hashira app
@@ -417,7 +428,9 @@ each reference to the right side; a bare name declared in exactly one package
 resolves there, and a name several packages claim resolves to nothing rather
 than to a guess. Each edge carries a **weight**: the number of constant
 references backing it. A root-level file `x.rb` folds into package `x` when a
-sibling folder `x/` exists; everything else at the top level lands in `(root)`.
+sibling folder `x/` exists; everything else at the top level lands in `(root)`
+(`lib/(root)`, `app/(root)`, … when several directories are analyzed, so their
+loose files never merge into one package).
 
 **Complexity.** Every method body is walked once and scored against the
 cognitive-complexity rules above.
@@ -530,8 +543,13 @@ that is where removals get celebrated and the baseline gets relocked.
 
 `--only` refuses to combine with `--update-baseline` (which would record a
 baseline missing everything you did not name) or with the diagram formats (which
-draw the graph, not the findings). Paths outside the analyzed directories are
-ignored, so a hook can hand it every changed file without filtering first.
+draw the graph, not the findings). A directory stands for every `.rb` file under
+it (`--only app/models`). Paths outside the analyzed directories are ignored, so
+a hook can hand it every changed file without filtering first. Handed a file
+where a directory belongs (`hashira app/models/problem.rb`), hashira refuses and
+suggests the focused run instead (`hashira --only app/models/problem.rb`), since
+analyzing the file's folder alone would change the packages and miss every
+cross-file signal.
 
 ### Exit codes
 
