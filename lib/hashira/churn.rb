@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Churn
-  SITES_THAT_DRIFT_APART = 2
+  FILES_THAT_DRIFT_APART = 2
 
   def self.build(directories) = new(Hashira::GitLog.new(directories).counts)
 
@@ -13,7 +13,11 @@ class Hashira::Churn
 
   def hits(file) = @counts.fetch(file.b, 0)
 
-  def hot?(members) = changing(members) >= SITES_THAT_DRIFT_APART
+  def hot?(members) = members.map(&:file).uniq.count { often?(it) } >= FILES_THAT_DRIFT_APART
 
-  def changing(members) = members.count { |member| hits(member.file).positive? }
+  def often?(file) = hits(file) > typical
+
+  private
+
+  def typical = @_typical ||= @counts.values.sort.fetch((@counts.size - 1) / 2, 0)
 end

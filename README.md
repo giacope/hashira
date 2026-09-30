@@ -308,7 +308,8 @@ it does inside Ruby:
   rises again when two sites share nothing but their shape: `each_cons(2).min_by
   { }` and `combination(2).select { }` are the same tree by coincidence, and a
   match with no name in common has to be much bigger to mean anything.
-- **Churn overlay.** When git is available, clones whose files both change often
+- **Churn overlay.** When git is available, clones spanning two files that both
+  change more often than the typical file here (above the median commit count)
   are called out — that's where one copy gets fixed and the other silently
   drifts. Silent when git isn't there; no configuration either way.
 

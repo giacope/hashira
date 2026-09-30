@@ -21,9 +21,9 @@ RSpec.describe(Hashira::Duplication::Clones) do
     duplication(files) { |clones| expect(clones.findings).to(be_empty) }
   end
 
-  it "warns, via churn, when both sites of a clone change often" do
+  it "warns, via churn, when both sites of a clone change more often than the typical file" do
     duplication(Fixtures::DUPLICATION_FILES) do |clones|
-      churn = Hashira::Churn.new("orders/checkout.rb" => 5, "billing/refund.rb" => 4)
+      churn = Hashira::Churn.new("orders/checkout.rb" => 5, "billing/refund.rb" => 4, "quiet.rb" => 1, "still.rb" => 1)
       finding = Hashira::Duplication::DuplicationFinding.new(clones.clusters.first, churn).to_finding
       expect(message(finding)).to(include("Both sites change often"))
     end
