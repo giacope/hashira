@@ -11,7 +11,11 @@ class Hashira::Duplication::Clones
 
   def findings = clusters.map { |cluster| Hashira::Duplication::DuplicationFinding.new(cluster, @churn).to_finding }
 
+  def coverage = clusters.flat_map(&:sites).group_by(&:file).transform_values { distinct(it) }
+
   private
 
   def fragments = Hashira::Duplication::Harvest.new(@project, @trees).fragments
+
+  def distinct(sites) = sites.flat_map(&:nodes).uniq(&:object_id).size
 end

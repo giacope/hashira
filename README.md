@@ -411,8 +411,9 @@ controllers/orders_controller.rb            8    0      7    56
 ```
 
 Read it as a work queue: the top row is where a day of refactoring buys the most.
-A file carrying a clone is charged per site, by the mass of its own copy, so one
-holding both copies pays twice. Churn floors at one, so a repo with no git history still ranks by cost.
+A file carrying a clone is charged the nodes its copies cover, so one holding both
+copies pays for both — but code that two overlapping clusters share is charged
+once, not once per cluster. Churn floors at one, so a repo with no git history still ranks by cost.
 
 Deliberately not a rating. A letter grade on a healthy codebase is the same
 letter repeated — it tells you nothing about what to open first.
@@ -448,7 +449,7 @@ share a single parse of your source, so running them together costs no more than
 parsing once.
 
 **Hotspots.** Each file is charged the cognitive complexity of its methods and
-the mass of every clone site it holds, then multiplied by how many commits touched
+the distinct nodes its clone sites cover, then multiplied by how many commits touched
 it. Git is asked once, lazily, and only if something needs churn.
 
 ## CI
