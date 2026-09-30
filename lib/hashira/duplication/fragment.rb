@@ -12,9 +12,10 @@ class Hashira::Duplication::Fragment
     symbol_node string_node integer_node float_node true_node false_node nil_node
   ].freeze
 
-  def initialize(file, roots)
+  def initialize(file, roots, walks)
     @file = file
     @roots = roots
+    @walks = walks
   end
 
   attr_reader :file
@@ -43,7 +44,7 @@ class Hashira::Duplication::Fragment
 
   def touches?(others) = others.any? { overlaps?(it) }
 
-  def nodes = @_nodes ||= @roots.flat_map { Hashira::Analysis::NodeWalk.collect(it) }
+  def nodes = @_nodes ||= @walks.nodes(@roots)
 
   private
 

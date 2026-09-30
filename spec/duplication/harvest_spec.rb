@@ -68,4 +68,17 @@ RSpec.describe(Hashira::Duplication::Harvest) do
     there = fragments("b.rb" => "def m\n a\n b(1)\nend\n").first
     expect(here.overlaps?(there)).to(be(false))
   end
+
+  it "walks each statement's subtree once, however many windows and whole nodes include it" do
+    walked = []
+    allow(Hashira::Analysis::NodeWalk).to(
+      receive(:collect).and_wrap_original do |walk, node|
+        walked << node
+        walk.call(node)
+      end
+    )
+    kinds = fragments("m.rb" => "class M\n  def m\n    a\n    b(1) if c\n  end\n  def n = d\nend\n").map(&:types)
+    expect(walked.map(&:object_id).tally.values.max).to(eq(1))
+    expect(kinds).to(include(%i[def_node statements_node call_node]))
+  end
 end
