@@ -7,6 +7,7 @@ class Hashira::Complexity::CognitiveScore
     .merge(Prism::AndNode => :on_boolean, Prism::OrNode => :on_boolean, Prism::CallNode => :on_call)
     .merge(Prism::UnlessNode => :on_unless, Prism::WhileNode => :on_nester, Prism::UntilNode => :on_nester)
     .merge(Prism::ForNode => :on_nester, Prism::CaseNode => :on_nester, Prism::CaseMatchNode => :on_nester)
+    .merge(Prism::RescueModifierNode => :on_rescue)
     .freeze
 
   LABELS = { Prism::WhileNode => "while", Prism::UntilNode => "until" }
@@ -79,6 +80,8 @@ class Hashira::Complexity::CognitiveScore
   def on_unless(node) = Hashira::Complexity::IfChain.new(self).negated(node)
 
   def on_begin(node) = Hashira::Complexity::RescueScan.new(self).apply(node)
+
+  def on_rescue(node) = Hashira::Complexity::RescueScan.new(self).modifier(node)
 
   def on_boolean(node) = Hashira::Complexity::BooleanRun.new(self).apply(node)
 end

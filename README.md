@@ -237,7 +237,10 @@ messages they send:
 - **Cog** — the cognitive-complexity score. A flat sequence of calls costs nothing;
   each level of nesting deepens the cost of what sits inside it; a `case` counts
   once regardless of arms; a run of one boolean operator counts once, and mixing
-  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding.
+  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding. A
+  ternary is an `if` in disguise, so it pays for its nesting and nests its arms
+  the same way; a `rescue` modifier (`x rescue y`) costs what a `rescue` clause
+  does.
 - **Calls** — the number of message sends, shown side by side. This is what
   call-count metrics rank on; when Cog and Calls disagree, Cog is the honest one.
 - **Per-class rollup** — the total complexity of a class and its method count. A

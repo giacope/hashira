@@ -46,8 +46,27 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
     expect(total("def m\n if a\n  1\n elsif b\n  2\n else\n  3\n end\nend")).to(eq(3))
   end
 
-  it "scores a ternary as a single point" do
+  it "scores a ternary as a single point at the top level" do
     expect(total("def m = a ? b : c")).to(eq(1))
+  end
+
+  it "charges a ternary its nesting like an if, and nests both of its arms" do
+    expect(total("def m\n if a\n  b ? c : d\n end\nend")).to(eq(3))
+    expect(total("def m = a ? (b ? c : d) : e")).to(eq(3))
+    expect(total("def m = a ? b : (c ? d : e)")).to(eq(3))
+    expect(total("def m = xs.map { it ? 1 : 2 }")).to(eq(2))
+  end
+
+  it "leaves the condition of a ternary at the ternary's own level" do
+    expect(total("def m = (a ? b : c) ? d : e")).to(eq(2))
+  end
+
+  it "scores a rescue modifier like a rescue clause, nesting only the fallback" do
+    expect(total("def m = risky rescue nil")).to(eq(1))
+    expect(total("def m\n if a\n  risky rescue nil\n end\nend")).to(eq(3))
+    expect(total("def m = (a ? b : c) rescue d")).to(eq(2))
+    expect(total("def m = risky rescue (a ? b : c)")).to(eq(3))
+    expect(score("def m = risky rescue nil").increments.map(&:label)).to(eq(["rescue"]))
   end
 
   it "scores every loop and guard keyword" do
