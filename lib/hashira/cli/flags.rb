@@ -3,6 +3,7 @@
 require_relative "fail_on"
 require_relative "flag"
 require_relative "format"
+require_relative "kinds"
 require_relative "only"
 require_relative "package_by"
 require_relative "skip"
@@ -43,11 +44,20 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
+      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind"),
+      text: [
+        "keep only the findings of these kinds, named",
+        "as for --fail-on; comma-separated. The tables",
+        "and the graph stay whole"
+      ]
+    ),
+    Flag.new(
       name: "--top", arg: "N", field: :top, parse: Top,
       text: [
         "show at most N rows in each table and N",
         "findings (default: 25 packages and findings,",
-        "10 methods and files)"
+        "10 methods and files). JSON is uncapped",
+        "unless --top is given"
       ]
     ),
     Flag.new(

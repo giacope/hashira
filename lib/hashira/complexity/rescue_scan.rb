@@ -12,12 +12,21 @@ class Hashira::Complexity::RescueScan
     @scorer.visit(node.ensure_clause)
   end
 
+  def modifier(node)
+    @scorer.visit(node.expression)
+    handler(node, node.rescue_expression)
+  end
+
   private
+
+  def handler(node, recovery)
+    @scorer.add(node, 1 + @scorer.nesting, "rescue")
+    @scorer.deeper { @scorer.visit(recovery) }
+  end
 
   def clauses(node)
     return unless node
-    @scorer.add(node, 1 + @scorer.nesting, "rescue")
-    @scorer.deeper { @scorer.visit(node.statements) }
+    handler(node, node.statements)
     clauses(node.subsequent)
   end
 end

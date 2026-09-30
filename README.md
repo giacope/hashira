@@ -81,6 +81,7 @@ hashira app lib                # or several — one shared graph
 hashira --skip complexity,duplication   # coupling + smells only
 hashira --skip coupling                 # complexity + duplication + smells
 hashira --top 50                        # longer tables and findings list
+hashira --kind cycles,complexity        # only the findings of these kinds
 ```
 
 With one directory, files are named relative to it (`models/user.rb` under
@@ -92,7 +93,39 @@ The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
 so a large codebase stays readable — 25 packages and findings, 10 methods and
 files — and every list says how many rows it withheld. `--top N` moves all of
-them at once; `--json` is never capped.
+them at once; `--json` is uncapped unless you pass `--top` yourself. A long class or method name is clipped
+in the middle to keep the columns aligned, but a path never is: every `file` and
+`Loc` cell can be opened exactly as printed.
+
+The findings are dealt out across kinds rather than grouped by kind, so a capped
+list shows the spread of what is wrong instead of 25 of the same thing. Each
+round takes the next finding of every kind — structural kinds (cycles, SDP
+violations, …) first, then complexity, duplication, and the smells — and each
+kind comes worst first where it has a size (cognitive complexity, clone mass,
+sprawl count), in the order found where it does not. When the list is capped, a
+rollup above it states every kind once, withheld findings included:
+
+```console
+Findings (2368):
+  repeated_call         915 in 420 files
+  duplication           376 in 349 files
+  feature_envy          253 in 177 files
+  ...
+```
+
+Hundreds of findings of one kind are then one fact about the codebase, not a
+wall. The dependency map leads with the most connected packages, and packages
+with no edges either way share one line instead of taking a row each.
+
+`--kind` keeps only the findings of the kinds you name, using the `--fail-on`
+names and shorthands (`--kind cycles,dupe`, `--kind smells`), in text and JSON
+alike; the tables and the graph stay whole. It narrows the way `--only` does
+(see [Hooks](#hooks-ratchet-the-files-you-just-touched)). With `--ratchet` it
+judges only those kinds: what is new or worse among them fails, while removals
+and edges are left to the full run. It refuses `--update-baseline`, which would
+record a baseline missing every other kind, and the diagram formats. Every kind
+`--fail-on` gates must be one `--kind` keeps, since a gate on a kind the report
+leaves out could never fire.
 
 The heading names the packaging that ran (`folder` or `namespace`), since the
 baseline is recorded per mode. Anything hashira had to work around goes to
@@ -123,9 +156,9 @@ Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
 Dependencies (DependsUpon(refs) -> | <- UsedBy):
-  (root)       -> complexity(1), coupling(2), duplication(1), hotspots(1), smells(3) <- cli
-  analysis     -> (none)                           <- complexity, coupling, duplication, smells
-  duplication  -> analysis(3)                      <- (root), report
+  (root)       -> analysis(2), complexity(1), coupling(2), duplication(1), hotspots(1), smells(4) <- cli
+  analysis     -> (none)                           <- (root), complexity, coupling, duplication, smells
+  cli          -> (root)(33), ci(5), diagram(1), report(7) <- (none)
   ...
 
 Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends):
@@ -248,7 +281,10 @@ messages they send:
 - **Cog** — the cognitive-complexity score. A flat sequence of calls costs nothing;
   each level of nesting deepens the cost of what sits inside it; a `case` counts
   once regardless of arms; a run of one boolean operator counts once, and mixing
-  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding.
+  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding. A
+  ternary is an `if` in disguise, so it pays for its nesting and nests its arms
+  the same way; a `rescue` modifier (`x rescue y`) costs what a `rescue` clause
+  does.
 - **Calls** — the number of message sends, shown side by side. This is what
   call-count metrics rank on; when Cog and Calls disagree, Cog is the honest one.
 - **Per-class rollup** — the total complexity of a class and its method count. A
@@ -623,7 +659,8 @@ sentence turns every exception into a decision somebody reviewed.
 ## Other formats
 
 ```sh
-hashira --json            # machine format, never capped by --top
+hashira --json            # machine format, every finding and every row
+hashira --json --top 20   # the 20 worst of each list, and how many it withheld
 hashira --json --compact  # the same on one line, for piping
 hashira --format dot      # Graphviz digraph
 hashira --format mermaid  # Mermaid diagram
@@ -631,10 +668,27 @@ hashira --format mermaid  # Mermaid diagram
 
 `--json` opens with what produced it — `version` (the schema, bumped when the
 shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
-`digest`), `accepted`, `packages`, `edges`, `folds` (single-type classes joined
-to a base or domain, `{from, to, via}`), `complexity`, `duplication`, and
-`hotspots`. A package with no edges at all reports `"i": null` rather than
-pretending 0/0 is maximally stable.
+`digest`), `kinds` (each kind's `count` and the number of `files` it touches),
+`accepted`, `packages`, `edges`, `folds` (single-type classes joined to a base
+or domain, `{from, to, via}`), `complexity`, `duplication`, and `hotspots`. A
+package with no edges at all reports `"i": null` rather than pretending 0/0 is
+maximally stable. The findings come in the same order as the text report, dealt
+across kinds.
+
+Given explicitly, `--top N` caps the ranked lists — `findings`, the complexity
+`methods` and `classes`, `duplication`, `hotspots` — and adds `withheld`, how
+many rows each one lost. `kinds` still counts everything. The graph (`packages`,
+`edges`, `folds`) and `accepted` are never cut, since half a graph answers
+questions wrongly.
+
+Each finding carries a `confidence` — not a probability, but how directly the
+finding follows from the code:
+
+| confidence | meaning | findings |
+| ---------- | ------- | -------- |
+| `high` | a measurement of the code as hashira parsed and resolved it | complexity; cycles, SDP violations, mixed audiences, wide edges, roll-calls in the resolved reference graph; clones that differ at most in literals, a receiver or message, or a constant |
+| `medium` | a pattern that usually signals a design problem, but turns on intent the AST cannot show | every code smell; clones that differ in several ways at once |
+| `low` | hashira hedges itself | clones whose control flow differs — "verify by hand" |
 
 Both diagrams declare every package before the arrows, so a package nothing
 depends on still appears. Mermaid node ids are generated (`p0`, `p1`, …) with

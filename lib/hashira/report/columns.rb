@@ -4,6 +4,7 @@ class Hashira::Report::Columns
   CAP = 48
   HEAD = 23
   GAP = "  "
+  LOCATIONS = %w[file Loc].freeze
   NUMBER = /\A-?\d+(?:\.\d+)?\z/
 
   def initialize(headers, rows, io: $stdout)
@@ -25,7 +26,11 @@ class Hashira::Report::Columns
 
   private
 
-  def clipped = @_clipped ||= @raw.map { |cells| cells.map { clip(it) } }
+  def clipped = @_clipped ||= @raw.map { |cells| cells.map.with_index { |cell, column| fit(cell, column) } }
+
+  def fit(cell, column) = located[column] ? cell.to_s : clip(cell.to_s)
+
+  def located = @_located ||= @raw.first.map { LOCATIONS.include?(it) }
 
   def headers = clipped.first
 
@@ -46,8 +51,7 @@ class Hashira::Report::Columns
 
   def down(column) = [headers[column], *rows.map { it[column] }]
 
-  def clip(cell)
-    text = cell.to_s
+  def clip(text)
     return text if text.length <= CAP
     "#{text[0, HEAD]}…#{text[(HEAD + 1 - CAP)..]}"
   end

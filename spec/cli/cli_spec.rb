@@ -143,6 +143,31 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "keeps only the findings of the kinds --kind names, in text and in JSON" do
+    within(Fixtures::CYCLIC_FILES) do
+      text = capture { expect(described_class.new(["lib/app", "--kind", "cycles"]).status).to(eq(0)) }
+      expect(text).to(include("Package (folder) metrics", "Findings (1):", "cycle: alpha"))
+      expect(text).not_to(include("utility_function"))
+      json = capture { expect(described_class.new(["lib/app", "--json", "--kind", "smells"]).status).to(eq(0)) }
+      expect(JSON.parse(json)["findings"].map { it["kind"] }.uniq).to(eq(%w[utility_function]))
+      gate = ["lib/app", "--kind", "cycles,sdp", "--fail-on", "sdp"]
+      expect(capture { expect(described_class.new(gate).status).to(eq(1)) }).not_to(include("cycle:"))
+    end
+  end
+
+  it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
+    within(Fixtures::CYCLIC_FILES) do
+      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
+      methods = %w[help name hash].map { "def #{it}_of = Core::Util.#{it}" }.join("; ")
+      File.write("lib/app/beta/two.rb", "module App; module Beta; class Two; #{methods}; end; end; end\n")
+      capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(1)) }
+      quiet = capture { expect(described_class.new(["lib/app", "--ratchet", "--kind", "cycles"]).status).to(eq(0)) }
+      expect(quiet).to(eq("Ratchet OK: 0 findings, unchanged.\n"))
+      loud = capture { expect(described_class.new(%w[lib/app --ratchet --kind utility_function]).status).to(eq(1)) }
+      expect(loud).to(include("NEW FINDING:", "utility_function: App::Beta::Two#"))
+    end
+  end
+
   it "reports unreadable files as a friendly error" do
     within("lib/app/other.rb" => "class Other; def x = 1; end") do
       File.symlink("gone.rb", "lib/app/thing.rb")
