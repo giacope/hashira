@@ -83,7 +83,7 @@ The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
 so a large codebase stays readable — 25 packages and findings, 10 methods and
 files — and every list says how many rows it withheld. `--top N` moves all of
-them at once; `--json` is never capped. A long class or method name is clipped
+them at once; `--json` is uncapped unless you pass `--top` yourself. A long class or method name is clipped
 in the middle to keep the columns aligned, but a path never is: every `file` and
 `Loc` cell can be opened exactly as printed.
 
@@ -630,7 +630,8 @@ sentence turns every exception into a decision somebody reviewed.
 ## Other formats
 
 ```sh
-hashira --json            # machine format, never capped by --top
+hashira --json            # machine format, every finding and every row
+hashira --json --top 20   # the 20 worst of each list, and how many it withheld
 hashira --json --compact  # the same on one line, for piping
 hashira --format dot      # Graphviz digraph
 hashira --format mermaid  # Mermaid diagram
@@ -638,10 +639,27 @@ hashira --format mermaid  # Mermaid diagram
 
 `--json` opens with what produced it — `version` (the schema, bumped when the
 shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
-`digest`), `accepted`, `packages`, `edges`, `folds` (single-type classes joined
-to a base or domain, `{from, to, via}`), `complexity`, `duplication`, and
-`hotspots`. A package with no edges at all reports `"i": null` rather than
-pretending 0/0 is maximally stable.
+`digest`), `kinds` (each kind's `count` and the number of `files` it touches),
+`accepted`, `packages`, `edges`, `folds` (single-type classes joined to a base
+or domain, `{from, to, via}`), `complexity`, `duplication`, and `hotspots`. A
+package with no edges at all reports `"i": null` rather than pretending 0/0 is
+maximally stable. The findings come in the same order as the text report, dealt
+across kinds.
+
+Given explicitly, `--top N` caps the ranked lists — `findings`, the complexity
+`methods` and `classes`, `duplication`, `hotspots` — and adds `withheld`, how
+many rows each one lost. `kinds` still counts everything. The graph (`packages`,
+`edges`, `folds`) and `accepted` are never cut, since half a graph answers
+questions wrongly.
+
+Each finding carries a `confidence` — not a probability, but how directly the
+finding follows from the code:
+
+| confidence | meaning | findings |
+| ---------- | ------- | -------- |
+| `high` | a measurement of the code as hashira parsed and resolved it | complexity; cycles, SDP violations, mixed audiences, wide edges, roll-calls in the resolved reference graph; clones that differ at most in literals, a receiver or message, or a constant |
+| `medium` | a pattern that usually signals a design problem, but turns on intent the AST cannot show | every code smell; clones that differ in several ways at once |
+| `low` | hashira hedges itself | clones whose control flow differs — "verify by hand" |
 
 Both diagrams declare every package before the arrows, so a package nothing
 depends on still appears. Mermaid node ids are generated (`p0`, `p1`, …) with

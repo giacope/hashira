@@ -1,8 +1,22 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Json) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:)
+  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
+    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:)
+  end
+
+  def full(pipeline, top: nil)
+    findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+    view(
+      pipeline.project, pipeline.graph, findings,
+      complexity: pipeline.complexity, duplication: pipeline.duplication, hotspots: pipeline.hotspots, top:
+    )
+  end
+
+  def lengths(report)
+    { "findings" => report["findings"], "methods" => report["complexity"]["methods"] }
+      .merge("classes" => report["complexity"]["classes"], "duplication" => report["duplication"])
+      .merge("hotspots" => report["hotspots"]).transform_values(&:size)
   end
 
   def emit(view) = JSON.parse(capture { described_class.new(view).print })
@@ -96,6 +110,69 @@ RSpec.describe(Hashira::Report::Json) do
       findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       report = emit(view(pipeline.project, pipeline.graph, findings, duplication: pipeline.duplication))
       expect(report["duplication"].first).to(include("sites" => 2, "kind" => "mixed"))
+    end
+  end
+
+  it "caps every ranked list at an explicit --top and says how many each withheld" do
+    within(Fixtures::DUPLICATION_FILES.merge(Fixtures::COMPLEX_FILES)) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      whole = emit(full(pipeline))
+      capped = emit(full(pipeline, top: 1))
+      expect(lengths(capped).values).to(all(eq(1)))
+      expect(capped["withheld"]).to(eq(lengths(whole).transform_values { it - 1 }))
+      expect(capped["findings"]).to(eq(whole["findings"].first(1)))
+      expect(capped["packages"]).to(eq(whole["packages"]))
+    end
+  end
+
+  it "withholds nothing and says nothing about it unless --top is given" do
+    with_pipeline do |project, graph, findings|
+      report = emit(view(project, graph, findings))
+      expect(report).not_to(have_key("withheld"))
+      expect(emit(view(project, graph, findings, top: 50))["withheld"]).to(eq("findings" => 0))
+    end
+  end
+
+  it "tallies every kind with the files it touches, withheld findings included" do
+    with_pipeline do |project, graph, findings|
+      expect(emit(view(project, graph, findings, top: 1))["kinds"]).to(
+        eq(
+          "utility_function" => { "count" => 4, "files" => 2 },
+          "cycle" => { "count" => 1, "files" => 2 }, "sdp_violation" => { "count" => 1, "files" => 1 }
+        )
+      )
+    end
+  end
+
+  it "deals the findings across kinds in the order the text report shows them" do
+    with_pipeline do |project, graph, findings|
+      expected = Hashira::Report::Spread.new(findings.all).to_a.map(&:package)
+      expect(emit(view(project, graph, findings))["findings"].map { it["package"] }).to(eq(expected))
+    end
+  end
+
+  it "rates each finding's confidence by how directly it follows from the code" do
+    with_pipeline do |project, graph, findings|
+      rated = emit(view(project, graph, findings))["findings"].to_h { [it["kind"], it["confidence"]] }
+      expect(rated).to(eq("cycle" => "high", "sdp_violation" => "high", "utility_function" => "medium"))
+    end
+  end
+
+  describe(Hashira::Report::Confidence) do
+    def clone(variance)
+      detail = Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: variance, hot: false)
+      Hashira::Analysis::Finding.new(kind: "duplication", package: "a.rb:1", detail:, evidence: [])
+    end
+
+    it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
+      rated = %i[identical literal message constant mixed structure].map { described_class.of(clone(it)) }
+      expect(rated).to(eq(%w[high high high high medium low]))
+    end
+
+    it "treats every structural kind and complexity as measured, and every smell as a pattern" do
+      rate = ->(kind) { described_class.of(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])) }
+      expect([*Hashira::Pipeline::STRUCTURAL, "complexity"].map(&rate).uniq).to(eq(["high"]))
+      expect(Hashira::Pipeline::SMELLS.map(&rate).uniq).to(eq(["medium"]))
     end
   end
 end

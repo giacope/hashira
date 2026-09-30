@@ -46,7 +46,8 @@ module Hashira::CLI
       text: [
         "show at most N rows in each table and N",
         "findings (default: 25 packages and findings,",
-        "10 methods and files)"
+        "10 methods and files). JSON is uncapped",
+        "unless --top is given"
       ]
     ),
     Flag.new(
