@@ -350,7 +350,8 @@ What each one catches:
 - **control_parameter** — an argument used only to pick an execution path; the
   caller already knew which branch it wanted.
 - **data_clump** — the same two-plus parameters travel through three or more
-  methods; a value object is missing.
+  methods; a value object is missing. Each clump is listed at its widest: a
+  pair that only ever travels inside a larger set isn't listed again.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
