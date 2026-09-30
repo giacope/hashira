@@ -15,9 +15,9 @@ class Hashira::Coupling::Territory
 
   def claimed?(definition) = definition.created? || !foreign?(root(definition))
 
-  def foreign?(root) = verdicts[root]
+  def foreign?(root) = verdicts.fetch(root) { verdicts[root] = abroad?(root) }
 
-  def verdicts = @_verdicts ||= Hash.new { |known, root| known[root] = abroad?(root) }
+  def verdicts = @_verdicts ||= {}
 
   def abroad?(root) = Hashira::Coupling::Builtin.include?(root) || !(homes.include?(root) || founded.include?(root))
 

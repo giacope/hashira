@@ -138,7 +138,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(emit(view(project, graph, findings, top: 1))["kinds"]).to(
         eq(
           "utility_function" => { "count" => 4, "files" => 2 },
-          "cycle" => { "count" => 1, "files" => 2 }, "sdp_violation" => { "count" => 1, "files" => 1 }
+          "cycle" => { "count" => 1, "files" => 1 }, "sdp_violation" => { "count" => 1, "files" => 1 }
         )
       )
     end
