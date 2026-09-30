@@ -22,25 +22,16 @@ class Hashira::Complexity::Scores
 
   def harvest(path, tree)
     relative = @project.relative(path)
-    sites(tree).map { |full, node| score(relative, full, node) }
+    Hashira::Complexity::Sites.new(tree).to_enum(:each).map { score(relative, it) }
   end
 
-  def sites(tree)
-    found = []
-    Hashira::Analysis::TypeWalk.each(tree) do |type, full|
-      Hashira::Analysis::Syntax.direct(type).each { found << [full, it] }
-    end
-    found
-  end
-
-  def score(relative, full, node)
+  def score(relative, site)
+    node = site.node
     Hashira::Complexity::MethodScore.new(
-      subject: subject(full, node), file: relative, line: node.location.start_line,
+      subject: site.subject, file: relative, line: node.location.start_line,
       **tallies(Hashira::Complexity::CognitiveScore.new(node))
     )
   end
 
   def tallies(score) = { cognitive: score.total, calls: score.calls, increments: score.increments }
-
-  def subject(full, node) = "#{full.join("::")}#{node.receiver ? "." : "#"}#{node.name}"
 end
