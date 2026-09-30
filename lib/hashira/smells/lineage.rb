@@ -19,9 +19,13 @@ class Hashira::Smells::Lineage
     @types = types
   end
 
-  def assigned(context) = kin(context)&.flat_map { writes(it) }&.uniq
+  def assigned(context) = remember(learned, context.name) { ancestral(context) }
 
   private
+
+  def ancestral(context) = kin(context)&.flat_map { writes(it) }&.uniq
+
+  def learned = @_learned ||= {}
 
   def index = @_index ||= @types.group_by(&:name)
 
@@ -84,9 +88,9 @@ class Hashira::Smells::Lineage
 
   def calls(type) = sweep(type).grep(Prism::CallNode).reject(&:receiver).select(&:arguments)
 
-  def sweep(type) = swept.fetch(type.node) { store(it) }
+  def sweep(type) = remember(swept, type.node) { Hashira::Smells::Scope.sweep(it) }
 
-  def store(node) = swept[node] = Hashira::Smells::Scope.sweep(node)
+  def remember(store, key) = store.fetch(key) { store[key] = yield(key) }
 
   def swept = @_swept ||= {}.compare_by_identity
 end

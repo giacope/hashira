@@ -5,9 +5,10 @@ class Hashira::Duplication::Sequence
   MAX_STATEMENTS = 12
   LIST_RUN = 3
 
-  def initialize(file, statements)
+  def initialize(file, statements, walks)
     @file = file
     @statements = statements
+    @walks = walks
   end
 
   def fragments = segments.flat_map { windows(it) }
@@ -30,5 +31,5 @@ class Hashira::Duplication::Sequence
 
   def spans(segment, length) = 0..(segment.size - length)
 
-  def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots)
+  def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots, @walks)
 end

@@ -55,6 +55,57 @@ RSpec.describe(Hashira::Complexity::Scores) do
     end
   end
 
+  it "scores methods wherever the class body declares them, not only its top-level defs" do
+    source = <<~RUBY
+      module App
+        module Hidden
+          class Box
+            private def tucked = a ? b : c
+            protected(def guarded = a ? b : c)
+            class << self
+              def opened = a ? b : c
+            end
+            class << other
+              def elsewhere = a ? b : c
+            end
+            if ENV["X"]
+              def conditional = a ? b : c
+            end
+            Row = Data.define(:x) do
+              def row = a ? b : c
+            end
+            configure do
+              def blocked = a ? b : c
+            end
+            configure(&setup)
+          end
+          class Empty; end
+          module Concern
+            class_methods do
+              def lifted = a ? b : c
+            end
+          end
+        end
+      end
+    RUBY
+    complexity({ "lib/app/hidden/box.rb" => source }) do |scores|
+      expect(scores.ranked.map(&:subject)).to(
+        contain_exactly(
+          "App::Hidden::Box#tucked", "App::Hidden::Box#guarded", "App::Hidden::Box.opened",
+          "App::Hidden::Box#conditional", "App::Hidden::Box::Row#row", "App::Hidden::Box#blocked",
+          "App::Hidden::Concern.lifted"
+        )
+      )
+    end
+  end
+
+  it "leaves a nested class's methods to that class, so none is scored twice" do
+    source = "module App; module Nest; class Outer\nclass << self\nclass Inner; def deep = 1; end\nend\nend; end; end\n"
+    complexity({ "lib/app/nest/outer.rb" => source }) do |scores|
+      expect(scores.ranked.map(&:subject)).to(eq(["App::Nest::Outer::Inner#deep"]))
+    end
+  end
+
   it "reports nothing when every method is under the threshold" do
     files = { "lib/app/tiny/x.rb" => "module App; module Tiny; class X; def a = 1; end; end; end\n" }
     complexity(files) do |scores|

@@ -278,4 +278,19 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "reads a class name's ancestry once, however many files reopen it" do
+    base = "module App\n  module Zone\n    class Base\n      def initialize = @seen = 1\n    end\n  end\nend\n"
+    reopened = "module App\n  module Zone\n    class Thing < Base\n      def report = @seen\n    end\n  end\nend\n"
+    files = { "lib/app/zone/base.rb" => base }.merge((1..3).to_h { ["lib/app/zone/thing#{it}.rb", reopened] })
+    swept = []
+    allow(Hashira::Smells::Scope).to(
+      receive(:sweep).and_wrap_original do |sweep, node|
+        swept << node
+        sweep.call(node)
+      end
+    )
+    smells(files, &:findings)
+    expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 2, report: 3))
+  end
 end

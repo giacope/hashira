@@ -16,11 +16,12 @@ class Hashira::Duplication::Harvest
 
   def scan(relative, tree)
     nodes = Hashira::Analysis::NodeWalk.collect(tree)
-    windows(relative, nodes) + wholes(nodes).map { Hashira::Duplication::Fragment.new(relative, [it]) }
+    walks = Hashira::Duplication::Walks.new
+    windows(relative, nodes, walks) + wholes(nodes).map { Hashira::Duplication::Fragment.new(relative, [it], walks) }
   end
 
-  def windows(relative, nodes)
-    runs(nodes).flat_map { Hashira::Duplication::Sequence.new(relative, it).fragments }
+  def windows(relative, nodes, walks)
+    runs(nodes).flat_map { Hashira::Duplication::Sequence.new(relative, it, walks).fragments }
   end
 
   def runs(nodes) = nodes.filter_map { it.body if it.is_a?(Prism::StatementsNode) }
