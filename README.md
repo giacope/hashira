@@ -367,8 +367,10 @@ What each one catches:
   class it inherits. Usually a typo, or state some other object is expected to
   install. Silent when the class inherits or includes something the codebase
   can't see, because the assignment may live in there.
-- **manual_dispatch** — `respond_to?` then send: a type check wearing a duck
-  costume.
+- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+  after it: asking an object what it can do is a type check wearing a duck
+  costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
+  class that uses `method_missing`.
 - **module_initialize** — `initialize` in a mixin; construction order becomes
   anyone's guess.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
