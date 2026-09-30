@@ -168,6 +168,8 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
 - **SDP violation** — a stable package depends on a less stable one, against the
   Stable Dependencies Principle ("depend in the direction of stability"), one of
   Robert C. Martin's [package principles](https://en.wikipedia.org/wiki/Package_principles).
+  Instabilities are compared as the table shows them, to two decimals: two
+  packages that both read 0.33 are equally stable.
 - **Cycle** — packages depending on each other in a loop.
 - **Mixed audience** — the constants of one package split into parts with
   separate client bases: one set of packages leans on one slice, another set on

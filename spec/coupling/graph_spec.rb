@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Graph) do
+  def source(name, uses)
+    refs = uses.map { "#{it.capitalize}::X" }.join(", ")
+    "module App; module #{name.capitalize}; class X; def c = [#{refs}]; end; end; end\n"
+  end
+
   def with_cycle(&)
     analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
@@ -202,6 +207,16 @@ RSpec.describe(Hashira::Coupling::Graph) do
       }
       analyze(files) do |_project, _census, graph|
         expect(graph.violations).to(be_empty)
+      end
+    end
+
+    it "does not flag a dependency whose instability matches at the precision it is shown" do
+      uses = { "a" => %w[b x1 x2], "b" => %w[y1 y2 y3 y4 y5] }
+      uses.merge!(%w[p1 p2 p3 p4 p5].to_h { [it, %w[a]] }, %w[q1 q2 q3 q4 q5 q6 q7].to_h { [it, %w[b]] })
+      files = (uses.keys | uses.values.flatten).to_h { ["lib/app/#{it}/x.rb", source(it, uses.fetch(it, []))] }
+      analyze(files) do |_project, _census, graph|
+        a, b = graph.metrics.values_at("a", "b")
+        expect([a.instability < b.instability, a.shown, b.shown, graph.violations]).to(eq([true, "0.38", "0.38", []]))
       end
     end
 

@@ -17,7 +17,11 @@ module Hashira
 
         def counts = { tc: types, ca: afferent, ce: efferent }
 
-        def cells = [types, afferent, efferent, isolated? ? "—" : format("%.2f", instability)]
+        def shown = format("%.2f", instability)
+
+        def level = shown.to_f
+
+        def cells = [types, afferent, efferent, isolated? ? "—" : shown]
       end
   end
 end
