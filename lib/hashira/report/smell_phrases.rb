@@ -44,7 +44,7 @@ module Hashira::Report::Phrases
 
   def on_module_initialize(finding)
     "#{finding.package} defines initialize in a module (#{finding.detail[:site]}). " \
-      "Move construction into the including class."
+      "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
   end
 
   def on_nil_check(finding)

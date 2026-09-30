@@ -371,8 +371,9 @@ What each one catches:
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
   class that uses `method_missing`.
-- **module_initialize** — `initialize` in a mixin; construction order becomes
-  anyone's guess.
+- **module_initialize** — `initialize` in a mixin. Even a cooperative one that
+  calls `super` makes the module carry constructor state into every class that
+  includes it: implementation inheritance. Compose a collaborator instead.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
   cheapest type there is.
 

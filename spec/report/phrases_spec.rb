@@ -27,7 +27,8 @@ RSpec.describe(Hashira::Report::Phrases) do
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",
       smell("module_initialize") =>
-        "Cart#price defines initialize in a module (cart.rb:12). Move construction into the including class.",
+        "Cart#price defines initialize in a module (cart.rb:12). " \
+        "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",
       smell("nil_check") => "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
       smell("repeated_conditional", count: 3) =>
         "Cart#price branches on the same test 3 times (cart.rb:12). Replace the scattered checks with polymorphism.",
