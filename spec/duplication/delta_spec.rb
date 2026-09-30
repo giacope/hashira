@@ -32,6 +32,14 @@ RSpec.describe(Hashira::Duplication::Delta) do
     expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:renamed))
   end
 
+  it "does not call methods that relay to super renamed, since each reaches a different parent method" do
+    body = "\n x.compact!\n y = x.map(&:to_s).uniq\n y.select { it }.sort\n y.freeze\nend\n"
+    relay = ->(name, call) { "def #{name}(*keys)\n x = #{call}#{body}" }
+    bare = { "a.rb" => relay.call("slice", "super"), "b.rb" => relay.call("except", "super") }
+    explicit = { "a.rb" => relay.call("slice", "super(*keys)"), "b.rb" => relay.call("except", "super(*keys)") }
+    expect([kind(bare), kind(explicit)]).to(eq(%i[mixed mixed]))
+  end
+
   it "describes the bodies, not the names, once something inside the renamed methods differs too" do
     sources = clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")
     expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:literal))

@@ -14,6 +14,8 @@ class Hashira::Duplication::Variance
     renamed: %i[def_node]
   }.freeze
 
+  RELAYS = %i[super_node forwarding_super_node].freeze
+
   def initialize(canonical, other)
     @canonical = canonical
     @other = other
@@ -43,8 +45,12 @@ class Hashira::Duplication::Variance
 
   def category(left, right)
     return :structure if guarded?(left) != guarded?(right)
-    CATEGORIES.keys.find { CATEGORIES[it].include?(left.type) } || :message
+    type = left.type
+    return :mixed if type == :def_node && relayed?
+    CATEGORIES.keys.find { CATEGORIES[it].include?(type) } || :message
   end
+
+  def relayed? = @canonical.types.any? { RELAYS.include?(it) }
 
   def signature(node) = [*node.deconstruct_keys(FIELDS).values_at(*FIELDS), value(node), guarded?(node)]
 
