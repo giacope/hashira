@@ -83,7 +83,9 @@ The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
 so a large codebase stays readable — 25 packages and findings, 10 methods and
 files — and every list says how many rows it withheld. `--top N` moves all of
-them at once; `--json` is never capped.
+them at once; `--json` is never capped. A long class or method name is clipped
+in the middle to keep the columns aligned, but a path never is: every `file` and
+`Loc` cell can be opened exactly as printed.
 
 The heading names the packaging that ran (`folder` or `namespace`), since the
 baseline is recorded per mode. Anything hashira had to work around goes to
