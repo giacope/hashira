@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
+  NIL_ADVICE = {
+    nil => "Prefer a default, a null object, or polymorphism.",
+    outside: "The value comes from outside; translate the missing value where it enters, at the boundary.",
+    both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
+  }.freeze
+
   module_function
 
   def on_control_parameter(finding)
@@ -54,8 +60,8 @@ module Hashira::Report::Phrases
   end
 
   def on_nil_check(finding)
-    "#{finding.package} checks for nil (#{finding.detail[:site]}). " \
-      "Prefer a default, a null object, or polymorphism."
+    detail = finding.detail
+    "#{finding.package} checks for nil (#{detail[:site]}). #{NIL_ADVICE.fetch(detail[:origin])}"
   end
 
   def on_repeated_conditional(finding)

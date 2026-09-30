@@ -384,7 +384,12 @@ What each one catches:
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is.
+  cheapest type there is. When the method itself read the checked value from
+  outside the program — through a literal key (`params[:id]`, `data["name"]`,
+  `request.headers["X-Token"]`) or from a call on a constant the codebase
+  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
+  changes: translate the missing value where it enters, at the boundary,
+  rather than reach for a null object.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the

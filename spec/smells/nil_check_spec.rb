@@ -48,6 +48,67 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#check", "App::Zone::Thing.peek"]))
   end
 
+  it "advises translating at the boundary when the nil-checked value arrives from outside" do
+    findings = checked(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def keyed(params) = params[:name].nil?
+
+            def header(request)
+              token = request.headers["X-Token"]
+              token.nil?
+            end
+
+            def parsed(body)
+              data = JSON.parse(body)
+              case data
+              when nil then @a
+              end
+            end
+
+            def mixed(params) = params["id"] == nil || @cache.nil?
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.detail[:origin] }).to(eq(%i[outside outside outside both]))
+    expect(message(findings.first)).to(include("comes from outside", "where it enters, at the boundary"))
+    expect(message(findings.last)).to(include("where it enters; elsewhere prefer a null object"))
+  end
+
+  it "keeps the null-object advice for values the method made or was handed" do
+    findings = checked(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def built
+              result = { id: nil }
+              result[:id].nil?
+            end
+
+            def handed(value) = value.nil?
+
+            def mine = nil?
+
+            def owned
+              record = Thing.find(1)
+              record.nil?
+            end
+
+            def blind
+              case
+              when nil then @a
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:detail).uniq(&:keys).map(&:keys)).to(eq([[:site]]))
+    expect(findings.size).to(eq(5))
+  end
+
   it "ignores comparisons that never involve nil" do
     findings = checked(<<~RUBY)
       module App

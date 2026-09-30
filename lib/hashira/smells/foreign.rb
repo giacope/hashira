@@ -32,6 +32,12 @@ class Hashira::Smells::Foreign
     tests { true }.reject { @ownership.owned?(it) }.map(&:first).uniq
   end
 
+  def entering?(node)
+    return inbound?(node) unless node.is_a?(Prism::LocalVariableReadNode)
+    sources = writes(node.name)
+    sources.any? && sources.all? { inbound?(it.value) }
+  end
+
   private
 
   def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
@@ -66,6 +72,10 @@ class Hashira::Smells::Foreign
   def rescued?(name)
     snares(name).any? { alien?(it.exceptions) }
   end
+
+  def inbound?(node) = node.is_a?(Prism::CallNode) && (fetched?(node) || spawned?(node))
+
+  def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
   def keyed?(call)
     names = call.arguments&.arguments
