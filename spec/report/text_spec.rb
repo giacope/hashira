@@ -35,10 +35,8 @@ RSpec.describe(Hashira::Report::Text) do
           core         -> (none)                           <- alpha
 
         Findings (6):
-          cycle: alpha can reach itself: alpha -> beta -> alpha — any change may ripple back around. The lightest edge on this cycle is alpha -> beta (1 ref).
+          cycle: alpha and beta depend on each other in a cycle — any change may ripple back around. The cheapest cut is alpha -> beta (1 ref).
               · alpha/one.rb:4: Beta::Two
-              · beta/two.rb:4: Alpha::One
-              · beta/two.rb:5: App::Alpha::One
           sdp_violation: beta (I=0.50) depends on the LESS stable alpha (I=0.67) — churn in alpha will force churn in beta. Invert the edge or extract the stable part of alpha that beta needs.
               · beta/two.rb:4: Alpha::One
               · beta/two.rb:5: App::Alpha::One
@@ -127,16 +125,16 @@ RSpec.describe(Hashira::Report::Text) do
   end
 
   it "truncates long evidence lists with an overflow marker" do
-    files =
-      (1..7).to_h do |n|
-        succ = (n % 7) + 1
-        ["lib/app/c#{n}/x.rb", "module App; module C#{n}; class X; def c = C#{succ}::X; end; end; end\n"]
-      end
+    refs = ->(other) { (1..6).map { "#{other}::X#{it}" }.join(", ") }
+    files = {
+      "lib/app/a/x.rb" => "module App; module A; class X; def c = [#{refs.call("B")}]; end; end; end\n",
+      "lib/app/b/x.rb" => "module App; module B; class X; def c = [#{refs.call("A")}]; end; end; end\n"
+    }
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       output = capture { described_class.new(view(pipeline.project, pipeline.graph, screened)).print }
-      expect(output).to(include("· … (3 more)"))
+      expect(output).to(include("· … (2 more)"))
     end
   end
 end

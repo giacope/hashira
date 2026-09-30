@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Coupling::Graph) do
   def source(name, uses)
-    refs = uses.map { "#{it.capitalize}::X" }.join(", ")
+    refs = uses.each_with_index.map { |other, index| "#{other.capitalize}::X#{index}" }.join(", ")
     "module App; module #{name.capitalize}; class X; def c = [#{refs}]; end; end; end\n"
   end
 
@@ -180,11 +180,38 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
   end
 
-  describe "#cycles.weakest" do
-    it "picks the lightest edge along the path" do
-      with_cycle do |graph|
-        expect(graph.cycles.weakest(%w[alpha beta alpha])).to(eq(%w[alpha beta]))
+  describe "#cycles.knots" do
+    it "groups the packages that can reach one another, one knot each" do
+      uses = { "a" => %w[b], "b" => %w[a c], "c" => %w[d], "d" => %w[c e], "e" => [] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.knots).to(eq([%w[a b], %w[c d]]))
       end
+    end
+
+    it "finds a ring as one knot, whichever member it starts from" do
+      uses = { "a" => [], "b" => %w[d], "c" => %w[b], "d" => %w[c] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.knots).to(eq([%w[b c d]]))
+      end
+    end
+  end
+
+  describe "#cycles.cut" do
+    def cut(uses)
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        members = graph.cycles.knots.first
+        yield(graph.cycles.cut(members))
+      end
+    end
+
+    it "cuts the thin link between two heavy clusters" do
+      uses = { "a" => %w[b b], "b" => %w[a a c], "c" => %w[d d], "d" => %w[c c a] }
+      cut(uses) { expect(it).to(eq([["b", "c", 1]])) }
+    end
+
+    it "gives back an edge the cut turned out not to need" do
+      uses = { "a" => %w[b b c], "b" => %w[c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["a", "b", 2]])) }
     end
   end
 

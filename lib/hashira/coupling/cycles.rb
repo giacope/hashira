@@ -10,5 +10,19 @@ class Hashira::Coupling::Cycles
 
   def path(package) = Hashira::Coupling::CycleSearch.new(@dependencies, package).path
 
-  def weakest(trail) = trail.each_cons(2).min_by { |from, to| @graph.weight(from, to) }
+  def knots = @_knots ||= @graph.packages.sort.map { component(it) }.reject(&:empty?).uniq
+
+  def cut(members) = Hashira::Coupling::Cut.new(members, inside(members)).edges
+
+  private
+
+  def component(package) = (reach(package, @dependencies) & reach(package, backward)).sort
+
+  def reach(package, links) = Hashira::Coupling::Reach.from(package, links)
+
+  def backward = @_backward ||= Hashira::Coupling::Reach.invert(@dependencies)
+
+  def inside(members) = members.flat_map { |from| links(from, members) }
+
+  def links(from, members) = (@dependencies.fetch(from, []).to_a & members).map { [from, it, @graph.weight(from, it)] }
 end

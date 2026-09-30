@@ -29,9 +29,8 @@ billing    1   1   1  0.50  YES
 shipping   1   1   1  0.50  YES
 
 Findings (1):
-  cycle: billing can reach itself: billing -> shipping -> billing — any change may ripple back around. The lightest edge on this cycle is billing -> shipping (1 ref).
+  cycle: billing and shipping depend on each other in a cycle — any change may ripple back around. The cheapest cut is billing -> shipping (1 ref).
       · billing/client.rb:5: Shipping::Rate
-      · shipping/rate.rb:8: Billing::Client
 ```
 
 A healthy project reports `Findings (0): none ✓ — structure is healthy`.
@@ -184,8 +183,13 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   is maintained by hand in three or more files across packages. The list wants
   to be data with a single owner — a registry the other sites derive from.
 
-Each finding comes with file-level evidence; for cycles, the shortest cycle
-path and its lightest edge. What a finding means for your design is your call.
+Each finding comes with file-level evidence. A cycle is reported once per knot
+of packages that can all reach one another (a strongly connected component),
+keyed by its alphabetically first member, with the cheapest cut: the lightest
+set of edges whose removal splits the knot, found by dropping the lightest
+edges until it splits and then giving back any it did not need. The evidence
+is the references on those edges — the lines to change. What a finding means
+for your design is your call.
 
 ## Rails apps
 
@@ -208,10 +212,9 @@ Account   26  21  18  0.46  YES
 Billing  116  12  11  0.48  YES
 Ci       107   9  16  0.64  YES
 ...
-  cycle: Account can reach itself: Account -> User -> Account — any change
-  may ripple back around. The lightest edge on this cycle is Account -> User (1 ref).
+  cycle: Account, Billing, Ci, User and Webhook depend on each other in a cycle
+  — any change may ripple back around. The cheapest cut is Account -> User (1 ref).
       · models/account.rb:36: User
-      · models/user/signup.rb:32: Account
 ```
 
 Under namespace packaging, references to app-defined `Application*` base
