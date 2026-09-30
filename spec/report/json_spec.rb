@@ -95,7 +95,7 @@ RSpec.describe(Hashira::Report::Json) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       report = emit(view(pipeline.project, pipeline.graph, findings, duplication: pipeline.duplication))
-      expect(report["duplication"].first).to(include("sites" => 2, "kind" => "mixed"))
+      expect(report["duplication"].first).to(include("sites" => 2, "kind" => "literal"))
     end
   end
 end

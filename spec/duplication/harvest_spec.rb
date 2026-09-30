@@ -29,8 +29,38 @@ RSpec.describe(Hashira::Duplication::Harvest) do
   end
 
   it "skips the list even when a statement of another shape follows it" do
-    ranges = ranges("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\nmodule M\nend\n").uniq
+    ranges = ranges("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\ndef m\nend\n").uniq
     expect(ranges).to(contain_exactly("m.rb:4-5"))
+  end
+
+  it "never takes a type definition as a fragment — its body is windowed on its own" do
+    source = "require \"x\"\nmodule M\n class C\n  def m\n   a(1)\n  end\n end\n class << self\n  b(2)\n end\nend\n"
+    ranges = ranges("m.rb" => source).uniq
+    expect(ranges).to(contain_exactly("m.rb:1-1", "m.rb:4-6", "m.rb:5-5", "m.rb:9-9"))
+  end
+
+  it "skips a run of identically shaped when arms — a dispatch table is a list" do
+    table = "case x\nwhen :a then run(1)\nwhen :b then run(2)\nwhen :c then run(3)\nwhen :d then stop(x, 4)\nend\n"
+    arms = fragments("m.rb" => table).select { it.types.first == :when_node }
+    expect(arms.map(&:range)).to(eq(["m.rb:5-5"]))
+  end
+
+  it "keeps when arms that are not a list, each as a whole" do
+    arms = fragments("m.rb" => "case x\nwhen :a then run(1)\nwhen :b then run(2)\nend\n")
+    arms = arms.select { it.types.first == :when_node }
+    expect(arms.map(&:range)).to(eq(["m.rb:2-2", "m.rb:3-3"]))
+  end
+
+  it "does not start a window on a bare visibility line that heads a method" do
+    source = "class C\n def a = x(1)\n private\n def b = y(2)\n audited\n z(3)\nend\n"
+    starts = fragments("m.rb" => source).reject { it.mass == 1 }.map(&:line).uniq
+    expect(starts).to(include(2, 4, 5))
+    expect(starts).not_to(include(3))
+  end
+
+  it "ends a fragment on the closing line of a heredoc it carries" do
+    fragment = fragments("m.rb" => "def m\n emit(<<~SQL, 1)\n  select 1\n SQL\nend\n").find { it.line == 2 }
+    expect(fragment.range).to(eq("m.rb:2-4"))
   end
 
   it "windows each side of a list on its own, never across it" do
@@ -61,6 +91,14 @@ RSpec.describe(Hashira::Duplication::Harvest) do
   it "knows when two fragments overlap within the same file" do
     early, late = fragments("m.rb" => "def m\n a\n b(1)\n c\nend\n").select { |f| f.mass == 4 }.sort_by(&:line)
     expect(early.overlaps?(late)).to(be(true))
+  end
+
+  it "knows when a fragment lies within another, even one sharing its first or last line" do
+    all = fragments("m.rb" => "def m\n a(1)\n b = 2\n c(:x)\nend\n")
+    body, head, tail, whole = %w[m.rb:2-4 m.rb:2-3 m.rb:3-4 m.rb:1-5].map { |range| all.find { it.range == range } }
+    expect([head, tail, body].map { it.within?([body]) }).to(eq([true, true, true]))
+    expect(whole.within?([body])).to(be(false))
+    expect(fragments("n.rb" => "def m\n a(1)\n b(2)\n c(3)\nend\n").first.within?([body])).to(be(false))
   end
 
   it "treats fragments in different files as non-overlapping" do

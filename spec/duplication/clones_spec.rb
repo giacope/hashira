@@ -9,8 +9,8 @@ RSpec.describe(Hashira::Duplication::Clones) do
       expect(message(finding)).to(include("2 similar fragments"))
       expect(finding.evidence).to(
         include(
-          a_string_matching(%r{orders/checkout\.rb:1-11}),
-          a_string_matching(%r{billing/refund\.rb:1-11})
+          a_string_matching(%r{orders/checkout\.rb:4-8}),
+          a_string_matching(%r{billing/refund\.rb:4-8})
         )
       )
     end

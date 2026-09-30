@@ -14,9 +14,25 @@ RSpec.describe(Hashira::Duplication::Variance) do
     expect(variance("a.map { |x| f(x) }", "a.map { |y| g(y) }").structural?).to(be(false))
   end
 
-  it "ignores a method's own name, which labels the fragment rather than sitting inside it" do
+  it "names a method's own name as the difference when it is the only one" do
     definer = ->(name) { "def #{name}(x)\n  x.map { |y| f(y) }\nend" }
-    expect(variance(definer["total"], definer["sum"]).kinds).to(be_empty)
+    expect(variance(definer["total"], definer["sum"]).kinds).to(eq([:renamed]))
+    expect(variance(definer["total"], definer["total"]).kinds).to(be_empty)
+  end
+
+  it "sees renamed parameters and variables, including an op-write, as a different name" do
+    expect(variance("def m(a) = f(a)", "def m(b) = f(b)").kinds).to(eq([:message]))
+    expect(variance("@memo ||= load", "@cache ||= load").kinds).to(eq([:message]))
+    expect(variance("total += 1", "total -= 1").kinds).to(eq([:message]))
+  end
+
+  it "sees a renamed constant assignment as a constant, and a changed pattern as a literal" do
+    expect(variance("LIMIT = compute", "MAX = compute").kinds).to(eq([:constant]))
+    expect(variance("s.match?(/\\Aa+/)", "s.match?(/\\Ab+/)").kinds).to(eq([:literal]))
+  end
+
+  it "sees safe navigation added to a call as a change in control flow" do
+    expect(variance("client.trace_id", "client&.trace_id").kinds).to(eq([:structure]))
   end
 
   it "is not shape-only when the structure itself differs" do
