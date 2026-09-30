@@ -1,7 +1,24 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::FeatureEnvy) do
-  def envy(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "feature_envy")
+  def lexicon
+    <<~RUBY
+      module App
+        module Zone
+          class Lexicon
+            attr_accessor :net, :tax, :fee, :load, :store, :sync, :name, :receiver, :arguments, :predicate,
+                          :unescaped, :id, :size, :kind, :message, :backtrace, :cause, :trim, :sort, :pack,
+                          :warm, :serve, :chomp, :strip, :merge, :delete, :fetch, :push
+          end
+        end
+      end
+    RUBY
+  end
+
+  def envy(source) = sniffed({ "lib/app/zone/thing.rb" => source, "lib/app/zone/words.rb" => lexicon }, "feature_envy")
+
+  def said = "more than to self, 2 to 1 (zone/thing.rb:4). The behavior may belong on order."
+
   it "flags a method that talks to a parameter more than to self" do
     findings = envy(<<~RUBY)
       module App
@@ -17,11 +34,11 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.package).to(eq("App::Zone::Thing#total"))
-    expect(message(finding)).to(include("refers to 'order' more than to self", "zone/thing.rb:4"))
-    expect(finding.evidence).to(eq(["order (line 5)"]))
+    expect(message(finding)).to(eq("#{finding.package} refers to 'order' #{said}"))
+    expect(finding.evidence).to(eq(["order (line 5)", "self (line 5)"]))
   end
 
-  it "counts compound assignments against the assigned name" do
+  it "does not read compound assignments as envy of the assigned name" do
     findings = envy(<<~RUBY)
       module App
         module Zone
@@ -35,8 +52,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#bump"]))
-    expect(findings.flat_map(&:evidence)).to(eq(["count (lines 5, 6)"]))
+    expect(findings).to(be_empty)
   end
 
   it "lists every equally envied receiver with plural line evidence" do
@@ -55,8 +71,10 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         end
       end
     RUBY
-    expect(message(findings.first)).to(include("'left', 'right'"))
-    expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)"]))
+    expect(message(findings.first)).to(
+      include("'left', 'right' more than to self, 2 each to 1", "may belong on whichever of them it serves")
+    )
+    expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)", "self (line 5)"]))
   end
 
   it "stays quiet when self is referenced at least as often" do
@@ -163,7 +181,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
             end
           end
         RUBY
-        "lib/app/zone/widget.rb" => <<~RUBY
+        "lib/app/zone/widget.rb" => <<~RUBY,
           module App
             module Zone
               class Widget
@@ -171,6 +189,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
             end
           end
         RUBY
+        "lib/app/zone/lexicon.rb" => lexicon
       },
       "feature_envy"
     )
@@ -219,18 +238,17 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
           class Thing
             def pick(row, keys)
               @seen = true
-              row[keys.first] && row["kind"] && row["name"] && row["size"]
+              row.fetch(keys.first) && row.fetch("kind") && row.fetch("name")
             end
 
             def bump(tally)
               tally += 1
-              @log.push(tally["a"], tally["b"])
+              @log.push(tally.fetch("a"), tally.fetch("b"))
             end
 
             def scoop(bag)
               @seen = true
-              bag.fetch && bag["kind"] && bag["name"]
-              bag.is_a?
+              bag.fetch && bag.fetch("kind") && bag.fetch("name")
             end
           end
         end
@@ -251,7 +269,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["order (line 5)"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["order (line 5)", "self (line 5)"]))
   end
 
   it "still flags a name when the guard or lookup is about something else" do
@@ -420,7 +438,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
             end
           end
         RUBY
-        "lib/app/zone/widget.rb" => <<~RUBY
+        "lib/app/zone/widget.rb" => <<~RUBY,
           module App
             module Zone
               class Widget
@@ -428,6 +446,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
             end
           end
         RUBY
+        "lib/app/zone/lexicon.rb" => lexicon
       },
       "feature_envy"
     )
@@ -570,5 +589,195 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
       ]
       )
     )
+  end
+
+  it "counts only messages the codebase itself defines, never operators or what every object answers" do
+    parcel = <<~RUBY
+      module App
+        module Zone
+          Pair = Data.define(:left, :right)
+
+          class Parcel
+            has_many :lines
+            attr_reader :label
+            alias tag label
+
+            def pack = send(:ghost)
+
+            def to_s = "parcel"
+
+            def [](key) = key
+
+            def +(other) = other
+
+            private
+
+            def seal = 1
+
+            def hush = 1
+          end
+
+          class Box
+            def hush = 2
+          end
+        end
+      end
+    RUBY
+    thing = <<~RUBY
+      module App
+        module Zone
+          class Thing
+            def ship(order)
+              @seen = true
+              stamp
+              order.to_s && order[:id] && (order + order) && order.frobnicate
+              order.ghost && order.ghost(1) && order.ghost(2)
+            end
+
+            def wrap(order)
+              @seen = true
+              stamp
+              order.seal && order.seal(1) && order.seal(2)
+            end
+
+            def muffle(order)
+              @seen = true
+              stamp
+              order.hush && order.hush(1) && order.hush(2)
+            end
+
+            def bundle(order)
+              @seen = true
+              order.pack
+              order.lines
+              order.tag
+              order.label = 1
+              order.left
+            end
+          end
+        end
+      end
+    RUBY
+    findings = sniffed({ "lib/app/zone/thing.rb" => thing, "lib/app/zone/parcel.rb" => parcel }, "feature_envy")
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
+    expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
+  end
+
+  it "keeps apart block variables that merely share a name, and follows outer names into blocks" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def tidy(rows)
+              @seen = true
+              stamp
+              rows.each { |r| r.load }
+              rows.each { |r| r.store }
+              rows.each { |r| r.sync }
+            end
+
+            def fill(order)
+              @seen = true
+              [1].each { order.load }
+              [2].each { [3].each { order.store } }
+              -> { order.sync }
+            end
+
+            def nest(order)
+              @seen = true
+              stamp
+              order.load
+              def helper(order) = order.load && order.store && order.sync
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#fill"]))
+    expect(findings.first.evidence).to(eq(["order (lines 14, 15, 16)", "self (line 13)"]))
+  end
+
+  it "treats what a foreign constructor or chain yields to its block as foreign" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def connection
+              @connection ||= Faraday.new(url) do |f|
+                f.load
+                f.store
+                f.sync
+              end
+            end
+
+            def boot
+              @seen = true
+              Rails.application.tap { |app| app.warm && app.serve }
+            end
+
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags what an owned constructor yields, and locals the block binds itself" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Widget
+          end
+
+          class Thing
+            def forge
+              @seen = true
+              Widget.new { |w| w.load && w.store }
+            end
+
+            def wire
+              @seen = true
+              Faraday.new do |f|
+                part = Widget.build
+                part.load && part.store && f
+              end
+            end
+
+            def weld
+              @seen = true
+              Faraday.new do
+                part = Widget.build
+                part.load && part.store
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#forge App::Zone::Thing#wire App::Zone::Thing#weld]))
+  end
+
+  it "sees block parameters referenced together, as in a comparator, as peers rather than a destination" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def ranked
+              @items.sort { |a, b| a.load <=> b.load && a.store <=> b.store }
+            end
+
+            def ranks(left, right)
+              @seen = true
+              left.load <=> right.load && left.store <=> right.store
+            end
+
+            def grouped
+              @items.each_slice(2).map { |pair| pair.load && pair.store }
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ranks App::Zone::Thing#grouped]))
   end
 end

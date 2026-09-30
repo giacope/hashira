@@ -18,8 +18,16 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("data_clump") =>
         "Cart#price passes the same parameters between methods (cart.rb:12). Introduce a parameter object.",
       smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
-      smell("feature_envy", names: %w[item order]) =>
-        "Cart#price refers to 'item', 'order' more than to self (cart.rb:12). The behavior may belong on item.",
+      smell("feature_envy", names: %w[item], count: 3, ego: 1) =>
+        "Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.",
+      smell("feature_envy", names: %w[item order], count: 2, ego: 1) =>
+        "Cart#price refers to 'item', 'order' more than to self, 2 each to 1 (cart.rb:12). " \
+        "The behavior may belong on whichever of them it serves.",
+      smell("utility_function", owner: :class) =>
+        "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
+      smell("utility_function", owner: :module) =>
+        "Cart#price touches no instance state (cart.rb:12). " \
+        "Move it onto the object it serves, or make it a module function.",
       smell("assumed_state") =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Assign them where the object is built, or pass the data explicitly.",

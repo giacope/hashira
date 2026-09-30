@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
+  UTILITY_ADVICE = { module: "make it a module function", class: "make it private" }.freeze
+
   module_function
 
   def on_control_parameter(finding)
@@ -26,11 +28,13 @@ module Hashira::Report::Phrases
   end
 
   def on_feature_envy(finding)
-    detail = finding.detail
+    detail = finding.detail.to_h
     names = detail[:names]
-    "#{finding.package} refers to #{quoted(names)} more than to self (#{detail[:site]}). " \
-      "The behavior may belong on #{names.first}."
+    "#{finding.package} refers to #{quoted(names)} more than to self, #{balance(names, detail)} " \
+      "(#{detail[:site]}). The behavior may belong on #{names.one? ? names.first : "whichever of them it serves"}."
   end
+
+  def balance(names, detail) = "#{detail[:count]}#{" each" unless names.one?} to #{detail[:ego]}"
 
   def on_assumed_state(finding)
     "#{finding.package} reads instance variables nothing in the class assigns (#{finding.detail[:site]}). " \
@@ -61,8 +65,9 @@ module Hashira::Report::Phrases
   end
 
   def on_utility_function(finding)
-    "#{finding.package} touches no instance state (#{finding.detail[:site]}). " \
-      "Move it onto the object it serves, or make it a module function."
+    detail = finding.detail
+    "#{finding.package} touches no instance state (#{detail[:site]}). " \
+      "Move it onto the object it serves, or #{UTILITY_ADVICE.fetch(detail[:owner])}."
   end
 
   def tally(finding, event, advice)

@@ -21,6 +21,10 @@ class Hashira::Smells::Lineage
 
   def assigned(context) = remember(learned, context.name) { ancestral(context) }
 
+  def pointed(type) = references(type).map { resolve(type.name, it) }
+
+  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
+
   private
 
   def ancestral(context) = kin(context)&.flat_map { writes(it) }&.uniq
@@ -51,15 +55,11 @@ class Hashira::Smells::Lineage
 
   def extensions(type) = named(type, EXTENSIONS)
 
-  def pointed(type) = references(type).map { resolve(type.name, it) }
-
   def references(type)
     (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.segments(it) }
   end
 
   def parent(type) = (type.node.superclass if type.kind == :class)
-
-  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def candidates(owner, segments)
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }

@@ -16,25 +16,18 @@ class Hashira::Smells::Census
 
   def placed(found) = settled(found, Hashira::Smells::Lineage.new(found))
 
-  def settled(found, lineage) = found.map { it.with(assigned: lineage.assigned(it)) }
+  def settled(found, lineage)
+    kinship = Hashira::Smells::Kinship.new(found, lineage)
+    found.map { it.settle(assigned: lineage.assigned(it), protocol: kinship.protocol(it), ownership:) }
+  end
 
   def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)
 
   def harvest(file, tree)
     found = []
-    Hashira::Analysis::TypeWalk.each(tree, roots:) { |node, full| found << context(file, node, full.join("::")) }
+    Hashira::Analysis::TypeWalk.each(tree, roots:) { |node, full| found << Hashira::Smells::Sketch.new(full.join("::"), node, kind(node), file) }
     found
   end
 
-  def context(file, node, name)
-    Hashira::Smells::TypeContext.new(name:, node:, kind: kind(node), file:, defs: defs(name, node, file))
-  end
-
   def kind(node) = node.is_a?(Prism::ModuleNode) ? :module : :class
-
-  def defs(name, node, file)
-    Hashira::Smells::Visibility.new(node).entries.map do |definition, section|
-      Hashira::Smells::MethodContext.new(owner: name, node: definition, file:, section:, ownership:)
-    end
-  end
 end
