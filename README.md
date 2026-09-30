@@ -359,10 +359,10 @@ What each one catches:
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
   `SecureRandom.hex`) are meant to differ, and so is a call fed one
   (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
-  an `if`, two `when` branches, a body and its `rescue` — has nothing to hoist;
-  and a command, a call whose result the method throws away (`@out << row`,
-  `raise`, `log.info(...)` as a statement), is repeated on purpose. A repeated
-  chain is listed once, at its longest.
+  an `if`, two `when` branches, a body and its `rescue`, two `return`s — has
+  nothing to hoist; and a command, a call whose result the method throws away
+  (`@out << row`, `raise`, `log.info(...)` as a statement), is repeated on
+  purpose. A repeated chain is listed once, at its longest.
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue. A test on the object's own state
   counts across the whole class; a test on a local variable only within the

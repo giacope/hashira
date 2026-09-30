@@ -56,7 +56,13 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def contains?(outer, node) = Hashira::Smells::Scope.inside(outer).any? { it.equal?(node) }
 
-  def together(groups) = groups.select { |_handle, nodes| branches.together?(nodes) }
+  def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
+
+  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !parting?(pair) }
+
+  def parting?(pair) = pair.all? { exits.include?(it) }
+
+  def exits = @_exits ||= Hashira::Smells::Exits.new(subject.node)
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 

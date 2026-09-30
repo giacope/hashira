@@ -545,4 +545,34 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       )
     )
   end
+
+  it "excuses the same call at two exits, since a run leaves the method once" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def create(one, two)
+              return head(:ok) unless one
+              return if two
+              return head(:ok) if @late.ready?(two)
+              save
+              head(:ok)
+            end
+
+            def kept(one)
+              kept = @io.tick(1)
+              return @io.tick(1) if one
+              kept
+            end
+
+            def looped(rows)
+              rows.each { |row| return @io.tick(2) if row }
+              rows.each { |row| return @io.tick(2) if row }
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
+  end
 end
