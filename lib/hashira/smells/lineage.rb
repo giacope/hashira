@@ -38,14 +38,10 @@ class Hashira::Smells::Lineage
   end
 
   def children
-    @_children ||= @types.filter_map { descent(it) }.uniq.group_by(&:first).transform_values { it.map(&:last) }
+    @_children ||= @types.map { [descent(it), it.name] }.uniq.group_by(&:first).transform_values { it.map(&:last) }
   end
 
-  def descent(type)
-    name = type.name
-    found = resolve(name, Hashira::Analysis::Syntax.segments(parent(type)))
-    [found, name] if found
-  end
+  def descent(type) = resolve(type.name, Hashira::Analysis::Syntax.segments(parent(type)))
 
   def ancestral(context) = kin(context)&.flat_map { writes(it) }&.uniq
 

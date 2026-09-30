@@ -194,6 +194,22 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(findings).to(be_empty)
   end
 
+  it "does not take a nested definition's read of a same-named local as real work" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def install(mode)
+              return @a if mode == :fast
+              def announce(mode) = @io.puts(mode)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["mode (line 5)"]))
+  end
+
   it "reports each controlling parameter with every deciding line" do
     findings = steered(<<~RUBY)
       module App
