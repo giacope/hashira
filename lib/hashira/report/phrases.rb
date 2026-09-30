@@ -31,16 +31,27 @@ module Hashira::Report::Phrases
     renamed: "the same body under different method names — keep one, and alias it or call it from the others."
   ).freeze
 
+  ROSTER = 6
+
   module_function
 
   def message(finding) = public_send("on_#{finding.kind}", finding)
 
   def on_cycle(finding)
     detail = finding.detail
-    from, to = detail[:weak]
-    weight = detail[:weight]
-    "#{finding.package} can reach itself: #{finding.cycle.join(" -> ")} — any change may ripple back " \
-      "around. The lightest edge on this cycle is #{from} -> #{to} (#{weight} ref#{"s" unless weight == 1})."
+    "#{roster(detail[:members])} depend on each other in a cycle — any change may ripple back around. " \
+      "The cheapest cut is #{detail[:cut].map { link(it) }.join(", ")}."
+  end
+
+  def roster(members)
+    shown = members.first(ROSTER)
+    rest = members.size - shown.size
+    rest.positive? ? "#{shown.join(", ")} and #{rest} more" : "#{shown[..-2].join(", ")} and #{shown.last}"
+  end
+
+  def link(edge)
+    weight = edge[:weight]
+    "#{edge[:from]} -> #{edge[:to]} (#{weight} ref#{"s" unless weight == 1})"
   end
 
   def on_sdp_violation(finding)

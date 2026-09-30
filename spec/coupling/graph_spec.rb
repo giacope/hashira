@@ -1,6 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Graph) do
+  def source(name, uses)
+    refs = uses.each_with_index.map { |other, index| "#{other.capitalize}::X#{index}" }.join(", ")
+    "module App; module #{name.capitalize}; class X; def c = [#{refs}]; end; end; end\n"
+  end
+
   def with_cycle(&)
     analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
@@ -175,11 +180,38 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
   end
 
-  describe "#cycles.weakest" do
-    it "picks the lightest edge along the path" do
-      with_cycle do |graph|
-        expect(graph.cycles.weakest(%w[alpha beta alpha])).to(eq(%w[alpha beta]))
+  describe "#cycles.knots" do
+    it "groups the packages that can reach one another, one knot each" do
+      uses = { "a" => %w[b], "b" => %w[a c], "c" => %w[d], "d" => %w[c e], "e" => [] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.knots).to(eq([%w[a b], %w[c d]]))
       end
+    end
+
+    it "finds a ring as one knot, whichever member it starts from" do
+      uses = { "a" => [], "b" => %w[d], "c" => %w[b], "d" => %w[c] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.knots).to(eq([%w[b c d]]))
+      end
+    end
+  end
+
+  describe "#cycles.cut" do
+    def cut(uses)
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        members = graph.cycles.knots.first
+        yield(graph.cycles.cut(members))
+      end
+    end
+
+    it "cuts the thin link between two heavy clusters" do
+      uses = { "a" => %w[b b], "b" => %w[a a c], "c" => %w[d d], "d" => %w[c c a] }
+      cut(uses) { expect(it).to(eq([["b", "c", 1]])) }
+    end
+
+    it "gives back an edge the cut turned out not to need" do
+      uses = { "a" => %w[b b c], "b" => %w[c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["a", "b", 2]])) }
     end
   end
 
@@ -202,6 +234,16 @@ RSpec.describe(Hashira::Coupling::Graph) do
       }
       analyze(files) do |_project, _census, graph|
         expect(graph.violations).to(be_empty)
+      end
+    end
+
+    it "does not flag a dependency whose instability matches at the precision it is shown" do
+      uses = { "a" => %w[b x1 x2], "b" => %w[y1 y2 y3 y4 y5] }
+      uses.merge!(%w[p1 p2 p3 p4 p5].to_h { [it, %w[a]] }, %w[q1 q2 q3 q4 q5 q6 q7].to_h { [it, %w[b]] })
+      files = (uses.keys | uses.values.flatten).to_h { ["lib/app/#{it}/x.rb", source(it, uses.fetch(it, []))] }
+      analyze(files) do |_project, _census, graph|
+        a, b = graph.metrics.values_at("a", "b")
+        expect([a.instability < b.instability, a.shown, b.shown, graph.violations]).to(eq([true, "0.38", "0.38", []]))
       end
     end
 

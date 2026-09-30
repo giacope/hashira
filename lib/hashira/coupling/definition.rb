@@ -5,7 +5,7 @@ require "prism"
 module Hashira
   module Coupling
     Definition =
-      Data.define(:node, :path, :folder) do
+      Data.define(:node, :path, :folder, :scope, :file) do
         def name = path.first
 
         def nested? = path.length > 1
@@ -19,6 +19,8 @@ module Hashira
         def module? = node.is_a?(Prism::ModuleNode)
 
         def type? = klass? || module?
+
+        def created? = node.is_a?(Prism::ConstantWriteNode) || (klass? && !superclass.nil?)
 
         def counted? = klass? || (module? && !Hashira::Analysis::Syntax.direct(node).empty?)
       end

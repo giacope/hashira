@@ -17,6 +17,18 @@ module Hashira
 
       def label(node) = [node.name.to_s]
 
+      def static?(node)
+        case node
+        when Prism::ConstantReadNode then true
+        when Prism::ConstantPathNode then anchored?(node.parent)
+        else false
+        end
+      end
+
+      def anchored?(parent) = !parent || static?(parent)
+
+      def dynamic?(node) = node.is_a?(Prism::ConstantPathNode) && !static?(node)
+
       def rooted?(node)
         return false unless node.is_a?(Prism::ConstantPathNode)
         parent = node.parent

@@ -21,8 +21,8 @@ RSpec.describe(Hashira::Coupling::Census) do
 
   it "keeps a domain namespace that shares its folder with top-level classes" do
     files = {
-      "app/models/billing_alert.rb" => "module Billing\n  class Alert\n    def a = 1\n  end\nend\n",
-      "app/models/billing_charge.rb" => "module Billing\n  class Charge\n    def c = Alert.new\n  end\nend\n",
+      "app/models/billing/alert.rb" => "module Billing\n  class Alert\n    def a = 1\n  end\nend\n",
+      "app/models/billing/charge.rb" => "module Billing\n  class Charge\n    def c = Alert.new\n  end\nend\n",
       "app/models/user.rb" => "class User\n  def u = Billing::Charge.new\nend\n",
       "app/models/order.rb" => "class Order\n  def o = 1\nend\n"
     }
@@ -110,7 +110,7 @@ RSpec.describe(Hashira::Coupling::Census) do
 
   it "records top-level constants outside the root namespace" do
     files = Fixtures::CYCLIC_FILES.merge(
-      "lib/app/helpers/extra.rb" => "module AppHelpers; class Extra; def a = 1; end; end\n"
+      "lib/app/helpers/app_helpers.rb" => "module AppHelpers; class Extra; def a = 1; end; end\n"
     )
     analyze(files) do |_project, census, _graph|
       expect(census.origins).to(include("AppHelpers" => "helpers"))
@@ -158,8 +158,11 @@ RSpec.describe(Hashira::Coupling::Census) do
         end
       end
 
-      it "resolves a bare name declared in exactly one package" do
-        mirror { |_project, census, _graph| expect(census.resolve(%w[Skill])).to(eq("app/models/agent")) }
+      it "resolves a bare name through the namespace that encloses it, not by its suffix alone" do
+        mirror do |_project, census, _graph|
+          expect(census.resolve(%w[Skill], [%w[Agent]])).to(eq("app/models/agent"))
+          expect(census.resolve(%w[Skill])).to(be_nil)
+        end
       end
 
       it "refuses to guess for contested names" do

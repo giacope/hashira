@@ -18,11 +18,12 @@ class Hashira::Coupling::Definitions
 
   private
 
+  def path(full, node) = node.is_a?(Prism::ConstantWriteNode) ? full + [node.name.to_s] : full
+
   def scan(file, tree)
     package = @project.package(file)
-    Hashira::Analysis::TypeWalk.each(tree, roots: roots) do |node, full|
-      yield(node, full, package)
-      Hashira::Analysis::Syntax.constants(node).each { yield(it, full + [it.name.to_s], package) }
+    Hashira::Analysis::TypeWalk.each(tree, roots: roots) do |node, full, stack|
+      [node, *Hashira::Analysis::Syntax.constants(node)].each { yield(it, path(full, it), package, stack + [full], file) }
     end
   end
 end
