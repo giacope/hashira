@@ -43,6 +43,21 @@ RSpec.describe(Hashira::Churn) do
     end
   end
 
+  it "counts a side branch's commit even when the merge leaves the directory as the main line had it" do
+    within("lib/a.rb" => "1\n") do
+      git("init", "-q", "-b", "main")
+      commit("x")
+      git("checkout", "-qb", "side")
+      File.write("lib/a.rb", "2\n")
+      commit("side")
+      git("checkout", "-q", "main")
+      File.write("lib/a.rb", "2\n")
+      commit("main")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "merge", "-q", "--no-edit", "side")
+      expect(described_class.build(["lib"]).hits("a.rb")).to(eq(3))
+    end
+  end
+
   it "keeps a directory outside the repository from voiding the history of one inside it" do
     within("repo/a.rb" => "1\n", "loose/b.rb" => "1\n") do
       git("-C", "repo", "init", "-q")

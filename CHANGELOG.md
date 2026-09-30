@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Found by running hashira against fifteen MIT-licensed Rails apps and gems
+(rails, rubocop, chatwoot, feedbin, rubygems.org, huginn, …).
+
+### Fixed
+
+- Complexity scores every method a class body declares, not only its
+  top-level `def`s: `private def` / `protected def`, methods inside
+  `class << self` and `class_methods do` (named `Class.method`), behind an
+  `if`, and in a `Const = Data.define do … end` block (owned by `Const`).
+  They were invisible, so writing `private def` made a complexity
+  regression vanish from the ratchet. Expect `--ratchet` to report methods
+  it could not see before as new findings.
+- Churn charges a file its own commits. It matched by bare file-name suffix
+  across the whole repository and took the maximum, so rails'
+  `action_view/base.rb` got activerecord's 1218 commits (its own: 352), a
+  model took its spec's churn, and `base.rb` matched `database.rb`. Every
+  analyzed directory's history is read now, not only the first one's.
+- A clone is flagged "Both sites change often" only when two distinct files
+  it spans change more often than the typical analyzed file (above the
+  median commit count). Any committed file used to qualify, so the flag was
+  on every clone in a git repository.
+
+### Performance
+
+- Duplication walks each statement's subtree once per file instead of once
+  per window that holds it; smells read a class name's ancestry once instead
+  of once per file that reopens it; churn lookups are exact instead of a
+  scan over every path in history. Output is unchanged; a full run on
+  rubocop drops from about 49s to 19s, and on rails from 93s to 43s.
+
 ## [0.10.1] - 2026-09-26
 
 ### Fixed

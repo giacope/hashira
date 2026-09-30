@@ -3,7 +3,7 @@
 class Hashira::GitLog
   GIT = %w[git --literal-pathspecs -c core.quotePath=false].freeze
 
-  LOG = %w[log --no-renames --name-only --format=].freeze
+  LOG = %w[log --full-history --no-renames --name-only --format=].freeze
 
   TOP = %w[rev-parse --show-toplevel].freeze
 
@@ -21,7 +21,7 @@ class Hashira::GitLog
 
   def prefixes = roots.map { it == top ? "" : "#{it.delete_prefix("#{top}/")}/" }
 
-  def roots = @_roots ||= top.empty? ? [] : @directories.map { File.realpath(it).b }.select { inside?(it) }
+  def roots = @_roots ||= @directories.map { File.realpath(it).b }.select { inside?(it) }
 
   def inside?(root) = root == top || root.start_with?("#{top}/")
 
