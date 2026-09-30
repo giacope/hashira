@@ -115,4 +115,13 @@ RSpec.describe(Hashira::Smells::Report) do
     findings = sniffed(files, "assumed_state")
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing"]))
   end
+
+  it "judges a class's state across every file that reopens it" do
+    files = {
+      "lib/app/zone/thing.rb" => "class Thing\n  def fill = [@a = 1, @b = 2, @c = 3]\nend\n",
+      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\nend\n"
+    }
+    findings = sniffed(files, "state_sprawl")
+    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c @d @e]]))
+  end
 end

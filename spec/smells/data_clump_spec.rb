@@ -83,4 +83,17 @@ RSpec.describe(Hashira::Smells::DataClump) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "judges a reopened class once, across every file that opens it" do
+    findings = sniffed(
+      {
+        "lib/app/zone/thing.rb" => "class Thing\n  def one(alfa, bravo) = [alfa, bravo]\nend\n",
+        "lib/app/zone/thing/two.rb" => "class Thing\n  def two(alfa, bravo) = [alfa, bravo]\nend\n",
+        "lib/app/zone/thing/three.rb" => "class Thing\n  def three(alfa, bravo) = [alfa, bravo]\nend\n"
+      },
+      "data_clump"
+    )
+    expect(findings.size).to(eq(1))
+    expect(findings.first.evidence).to(eq(["(alfa, bravo) → 3 methods: one, three, two"]))
+  end
 end

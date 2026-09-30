@@ -361,7 +361,10 @@ What each one catches:
   `raise`, `log.info(...)` as a statement), is repeated on purpose. A repeated
   chain is listed once, at its longest.
 - **repeated_conditional** — one class testing the same condition in three or
-  more places; polymorphism is overdue.
+  more places; polymorphism is overdue. A test on the object's own state
+  counts across the whole class; a test on a local variable only within the
+  method or block that binds it, since `all` in one method isn't `all` in the
+  next.
 - **state_sprawl** — more than four per class. Memoization
   (`@x ||=`) doesn't count as state.
 - **assumed_state** — an ivar read that nothing the class can
@@ -376,6 +379,10 @@ What each one catches:
   anyone's guess.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
   cheapest type there is.
+
+The class-level kinds (data_clump, repeated_conditional, state_sprawl,
+assumed_state, module_initialize) judge a class across every file that opens
+it, and report it once.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the

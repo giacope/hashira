@@ -16,8 +16,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def names
     @_names ||=
-      Hashira::Smells::Scope.sweep(subject.node).select { COUNTED.include?(it.class) }
-        .map(&:name).reject { it.start_with?("@_") }.uniq.sort
+      subject.sweep.select { COUNTED.include?(it.class) }.map(&:name).reject { it.start_with?("@_") }.uniq.sort
   end
 
   def detail = { site:, count: names.size }
