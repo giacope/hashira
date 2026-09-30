@@ -18,7 +18,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
     @_names ||= writes.map(&:name).uniq.reject { it.start_with?("@_") || memoized?(it) }.sort
   end
 
-  def nodes = @_nodes ||= Hashira::Smells::Scope.sweep(subject.node)
+  def nodes = @_nodes ||= subject.sweep
 
   def writes = @_writes ||= nodes.select { COUNTED.include?(it.class) }
 

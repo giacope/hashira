@@ -11,9 +11,11 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def candidates = @_candidates ||= subject.owned.map { [it, it.arguments.sort] }
 
-  def clumps = @_clumps ||= shared.map { |clump| [clump, holders(clump)] }
+  def clumps = @_clumps ||= maximal.map { |clump| [clump, holders(clump)] }
 
-  def shared = candidates.combination(MAX_COPIES + 1).filter_map { |group| clump(group) }.uniq
+  def maximal = shared.reject { |clump| shared.any? { |other| other != clump && (clump - other).empty? } }
+
+  def shared = @_shared ||= candidates.combination(MAX_COPIES + 1).filter_map { |group| clump(group) }.uniq
 
   def clump(group)
     names = group.map(&:last).inject(:&)

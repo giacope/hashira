@@ -22,6 +22,16 @@ RSpec.describe(Hashira::Smells::BoundarySprawl) do
     expect(sniffed(spread(methods: 12, files: 2), "boundary_sprawl")).to(be_empty)
   end
 
+  it "counts a foreign root the codebase never defines, whether or not hashira has it loaded" do
+    findings = sniffed(spread(methods: 12, files: 3, tested: "Rubydex::Graph"), "boundary_sprawl")
+    expect(findings.map(&:package)).to(eq(["Rubydex"]))
+  end
+
+  it "never counts a class built into Ruby itself, which has no adapter to be missing" do
+    expect(sniffed(spread(methods: 12, files: 3, tested: "Hash"), "boundary_sprawl")).to(be_empty)
+    expect(sniffed(spread(methods: 12, files: 3, tested: "Process::Status"), "boundary_sprawl")).to(be_empty)
+  end
+
   it "never counts a type the codebase defines" do
     files = spread(methods: 12, files: 3, tested: "Zone::Probe0")
     expect(sniffed(files, "boundary_sprawl")).to(be_empty)

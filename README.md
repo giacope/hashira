@@ -414,8 +414,10 @@ What each one catches:
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
-  adapter. An analyzer or interpreter which deliberately understands a foreign
-  data model can declare and verify that boundary instead.
+  adapter. Classes built into Ruby itself (`String`, `Hash`, `Array`, `Proc`)
+  are the language, not a boundary, so they never count. An analyzer or
+  interpreter which deliberately understands a foreign data model can declare
+  and verify that boundary instead.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
   `module_function` and `extend self` modules are exempt — that's what they're
@@ -431,15 +433,22 @@ What each one catches:
   `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
   alone as a statement, or in a loop's condition, still steers.
 - **data_clump** — the same two-plus parameters travel through three or more
-  methods; a value object is missing.
+  methods; a value object is missing. Each clump is listed at its widest: a
+  pair that only ever travels inside a larger set isn't listed again.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
-  `SecureRandom.hex`) are meant to differ, and a repeat no single run can reach
-  twice — the two arms of an `if`, two `when` branches, a body and its `rescue`
-  — has nothing to hoist.
+  `SecureRandom.hex`) are meant to differ, and so is a call fed one
+  (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
+  an `if`, two `when` branches, a body and its `rescue`, two `return`s — has
+  nothing to hoist; and a command, a call whose result the method throws away
+  (`@out << row`, `raise`, `log.info(...)` as a statement), is repeated on
+  purpose. A repeated chain is listed once, at its longest.
 - **repeated_conditional** — one class testing the same condition in three or
-  more places; polymorphism is overdue.
+  more places; polymorphism is overdue. A test on the object's own state
+  counts across the whole class; a test on a local variable only within the
+  method or block that binds it, since `all` in one method isn't `all` in the
+  next.
 - **state_sprawl** — more than four instance variables per class. Memoization
   doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
   (and only ever filled lazily), not one each method fills only behind its own
@@ -469,6 +478,10 @@ What each one catches:
   doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
   changes: translate the missing value where it enters, at the boundary,
   rather than reach for a null object.
+
+The class-level kinds (data_clump, repeated_conditional, state_sprawl,
+assumed_state, module_initialize) judge a class across every file that opens
+it, and report it once.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the
