@@ -221,10 +221,18 @@ Under namespace packaging, references to app-defined `Application*` base
 classes (`ApplicationRecord`, `ApplicationJob`, …) are skipped as framework
 plumbing; `--package-by folder` keeps them, so the legacy layer view stays
 complete. Constant resolution
-follows Ruby's lexical nesting everywhere — a bare `Authentication` inside
-`class User` is `User::Authentication`, not a top-level namesake in another
-package — which matters most in Rails apps, where nested concerns routinely
-shadow top-level names.
+follows Ruby everywhere: the lexical nesting first — a bare `Authentication`
+inside `class User` is `User::Authentication`, not a top-level namesake in
+another package — then the superclasses and included modules of the innermost
+class, then top level. A name that is only the tail of some other namespace
+(`I18n` vs. `Crm::I18n`) does not match, and `self::X` or `namespace::X` is
+left unresolved. Ruby's own constants (core and standard library, loaded or
+not) never count as a package's, even where the project reopens them, and
+neither does a library namespace the project only patches: one opened in files
+not named for it, with no class derived inside it (`class Rufus::Scheduler` in
+`huginn_scheduler.rb`, `module Rack` in `action_dispatch.rb`). Only what the
+project provably creates there — a class with a superclass, a constant
+assignment — stays its own.
 
 Either grouping can be forced anywhere:
 
