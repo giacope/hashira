@@ -75,6 +75,11 @@ RSpec.describe(Hashira::Report::Phrases) do
     )
   end
 
+  it "keeps every method name when the renamed copies differ inside too, rather than passing names as arguments" do
+    said = "differs in its method names and in literal values — keep each name, calling one shared method"
+    expect(message(clone(:renamed_literal, hot: false))).to(end_with("#{said} that takes the literals as arguments."))
+  end
+
   it "warns when both sites of a clone churn" do
     expect(message(clone(:identical, hot: true))).to(
       end_with("call it from each site. Both sites change often — fix one, miss the other.")

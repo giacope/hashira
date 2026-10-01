@@ -56,7 +56,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     )
   end
 
-  it "flags identical literal blocks once, and shared calls whose blocks differ" do
+  it "flags identical literal blocks once, but not calls whose blocks differ" do
     findings = repeated(<<~RUBY)
       module App
         module Zone
@@ -71,10 +71,17 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
               [kept, @rows.map { compute }]
             end
 
-            def varied
-              kept = @rows.each { poke }
-              [kept, @rows.each { prod }]
+            def varied(child, assign)
+              at = @kids.index { it.equal?(child) }
+              [at, @kids.index { it.equal?(assign) }]
             end
+
+            def named
+              kept = @rows.map { |row| row.name }
+              [kept, @rows.map { |row| row.name }]
+            end
+
+            def lambdas = [->(x) { x.succ }.call(1), ->(x) { x.succ }.call(1)]
           end
         end
       end
@@ -82,12 +89,99 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(
       eq(
         [
-          "transaction { save } × 2 (lines 5, 6)",
-          "@rows.map { compute } × 2 (lines 10, 11)",
-          "@rows.each × 2 (lines 15, 16)"
+          "transaction { save } × 2 (lines 5, 6)", "@rows.map { compute } × 2 (lines 10, 11)",
+          "@rows.map { |row| row.name } × 2 (lines 20, 21)", "->(x) { x.succ }.call(1) × 2 (line 24)"
         ]
       )
     )
+  end
+
+  it "counts a name bound in two blocks as two variables, and the one name inside one block as one" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def apart(left, right)
+              [left.map { it.name.upcase }, right.map { it.name.upcase }]
+            end
+
+            def sliced(rows)
+              [rows.map { |list| list.size }, rows.select { |list| list.size }]
+            end
+
+            def numbered(left, right)
+              [left.map { _1.name }, right.map { _1.name }]
+            end
+
+            def shadowed(name, rows)
+              rows.each { |name| @out.puts(name.size) }
+              name.size
+            end
+
+            def together(rows)
+              rows.map { [it.name, it.name] }
+            end
+
+            def captured(node, rows)
+              rows.map { node.name } + rows.select { node.name }
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 2 (line 22)", "node.name × 2 (line 26)"]))
+  end
+
+  it "counts a variable reassigned between two calls as two values" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def climb(parent)
+              seen = parent.type
+              parent = parent.parent while parent.type == :begin
+              [seen, parent.type]
+            end
+
+            def bumped(count)
+              before = count.succ
+              count += 1
+              between = count.succ
+              count += 1
+              [before, between, count.succ]
+            end
+
+            def swapped(node, rows)
+              first = node.name
+              rows.each { node = it }
+              [first, node.name]
+            end
+
+            def walked(parent)
+              until parent.type == :def
+                parent = parent.parent
+                @out.puts(parent.type)
+              end
+            end
+
+            def steady(parent)
+              while parent
+                seen = parent.type
+                @out.puts(seen, parent.type)
+                parent = parent.parent
+              end
+            end
+
+            def fenced(node)
+              first = node.name
+              def reset(node) = (node = nil)
+              [first, node.name]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["parent.type × 2 (lines 33, 34)", "node.name × 2 (lines 40, 42)"]))
   end
 
   it "excuses constructors, bare calls, and calls that differ in arguments" do

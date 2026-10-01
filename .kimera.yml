@@ -8,10 +8,25 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 1
+max_ignored: 4
 ignore:
 - file: lib/hashira/coupling/echo.rb
   line: 18
   label: condition => false
   reason: RollCall keeps only word sets at least 3 files share (MIN_WORDS = MIN_FILES = 3), so a file with no words never
     joins a roll; the filter only keeps such files out of the pairwise scan (about 30% of coupling time on a 2,600-file app)
+- file: lib/hashira/smells/bindings.rb
+  line: 42
+  label: "<= => <"
+  reason: A write and a later read of the same local are separate nodes with at least one token between them (an
+    operator, a newline, a separator), so no write ever ends at the offset where a read begins and < agrees with <=
+- file: lib/hashira/smells/check.rb
+  line: 11
+  label: condition => true
+  reason: Finding#trace reads the shape only when the evidence is empty and to_h drops it, so a shape computed for a
+    finding with evidence is never observed; the guard only skips fingerprinting it (about 10% of smells time on rubocop)
+- file: lib/hashira/smells/repeated_call.rb
+  line: 73
+  label: delete `nodes.one?`
+  reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
+    groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)

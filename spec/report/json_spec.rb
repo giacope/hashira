@@ -165,8 +165,9 @@ RSpec.describe(Hashira::Report::Json) do
     end
 
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
-      rated = %i[identical literal message constant mixed structure].map { described_class.of(clone(it)) }
-      expect(rated).to(eq(%w[high high high high medium low]))
+      kinds = %i[identical literal message constant mixed renamed renamed_literal structure]
+      rated = kinds.map { described_class.of(clone(it)) }
+      expect(rated).to(eq(%w[high high high high medium medium medium low]))
     end
 
     it "treats every structural kind and complexity as measured, and every smell as a pattern" do
