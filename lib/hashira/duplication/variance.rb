@@ -3,12 +3,18 @@
 require "prism"
 
 class Hashira::Duplication::Variance
-  LITERALS = %i[integer_node float_node string_node symbol_node].freeze
   VALUED = %i[integer_node float_node].freeze
+  FIELDS = %i[name unescaped binary_operator].freeze
   NAMED = %i[call_node constant_read_node constant_path_node
     local_variable_read_node local_variable_write_node
     instance_variable_read_node instance_variable_write_node].freeze
-  CONSTANTS = %i[constant_read_node constant_path_node].freeze
+  CATEGORIES = {
+    literal: %i[integer_node float_node string_node symbol_node regular_expression_node x_string_node],
+    constant: %i[constant_read_node constant_path_node constant_write_node constant_or_write_node],
+    renamed: %i[def_node]
+  }.freeze
+
+  RELAYS = %i[super_node forwarding_super_node].freeze
 
   def initialize(canonical, other)
     @canonical = canonical
@@ -17,7 +23,7 @@ class Hashira::Duplication::Variance
 
   def kinds
     return [:structure] if @canonical.types != @other.types
-    differing.map { |node| category(node) }.uniq
+    differing.map { |left, right| category(left, right) }.uniq
   end
 
   def structural?
@@ -35,21 +41,20 @@ class Hashira::Duplication::Variance
 
   def nested = @_nested ||= @canonical.nodes.grep(Prism::ConstantPathNode).filter_map(&:parent)
 
-  def differing = pairs.select { |pair| varies?(*pair) }.map(&:first)
+  def differing = pairs.reject { |left, right| signature(left) == signature(right) }
 
-  def varies?(left, right) = signature(left) != signature(right)
-
-  def category(node)
-    type = node.type
-    return :literal if LITERALS.include?(type)
-    CONSTANTS.include?(type) ? :constant : :message
+  def category(left, right)
+    return :structure if guarded?(left) != guarded?(right)
+    type = left.type
+    return :mixed if type == :def_node && relayed?
+    CATEGORIES.keys.find { CATEGORIES[it].include?(type) } || :message
   end
 
-  def signature(node)
-    LITERALS.include?(node.type) ? literal(node) : label(node)
-  end
+  def relayed? = @canonical.types.any? { RELAYS.include?(it) }
 
-  def label(node) = (node.name if NAMED.include?(node.type))
+  def signature(node) = [*node.deconstruct_keys(FIELDS).values_at(*FIELDS), value(node), guarded?(node)]
 
-  def literal(node) = VALUED.include?(node.type) ? node.value : node.unescaped
+  def value(node) = (node.value if VALUED.include?(node.type))
+
+  def guarded?(node) = node.is_a?(Prism::CallNode) && node.safe_navigation?
 end

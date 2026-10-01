@@ -32,7 +32,7 @@ module Hashira
     end
 
     MethodContext =
-      Data.define(:owner, :node, :file, :section, :ownership) do
+      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol) do
         def subject = "#{owner}#{singleton? ? "." : "#"}#{node.name}"
 
         def line = node.location.start_line
@@ -40,6 +40,8 @@ module Hashira
         def singleton? = node.receiver.is_a?(Prism::Node) || section == :singleton
 
         def mixin? = section == :module_function
+
+        def polymorphic? = protocol.include?(node.name)
 
         def public? = section == :public && !singleton?
 
@@ -50,9 +52,26 @@ module Hashira
         def site = "#{file}:#{line}"
       end
 
+    Sketch =
+      Data.define(:name, :node, :kind, :file) do
+        def superclass = kind == :class ? Hashira::Analysis::Syntax.segments(node.superclass) : []
+
+        def owner = kind == :module ? name.delete_suffix("::#{Visibility::CLASS_LEVEL}") : name
+
+        def settle(assigned:, heirs:, protocol:, ownership:)
+          TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), assigned:, heirs:)
+        end
+
+        def defs(protocol, ownership)
+          Visibility.new(node).entries.map do |definition, section|
+            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:)
+          end
+        end
+      end
+
     TypeContext =
-      Data.define(:name, :node, :kind, :file, :defs, :assigned) do
-        def initialize(assigned: nil, **rest) = super
+      Data.define(:name, :node, :kind, :file, :defs, :assigned, :heirs) do
+        def initialize(assigned: nil, heirs: [], **rest) = super
 
         def line = node.location.start_line
 

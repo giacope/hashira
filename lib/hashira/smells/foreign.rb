@@ -23,13 +23,19 @@ class Hashira::Smells::Foreign
     @ownership = ownership
   end
 
-  def dismiss?(name)
-    convert? || fenced?(name) || wire?(name) || built?(name) ||
-      derived?(name) || rescued?(name)
+  def dismiss?(local)
+    name = local.name
+    convert? || fenced?(name) || wire?(name) || built?(name) || derived?(local) || rescued?(name)
   end
 
   def reaches
     tests { true }.reject { @ownership.owned?(it) }.map(&:first).uniq
+  end
+
+  def entering?(node)
+    return inbound?(node) unless node.is_a?(Prism::LocalVariableReadNode)
+    sources = writes(node.name)
+    sources.any? && sources.all? { inbound?(it.value) }
   end
 
   private
@@ -55,17 +61,27 @@ class Hashira::Smells::Foreign
     calls.any? && calls.all? { keyed?(it) } && reassignments(name).none?
   end
 
-  def built?(name)
-    writes(name).any? { LITERALS.include?(it.value.class) }
+  def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
+
+  def derived?(local)
+    (writes(local.name).map(&:value) + yielders(local)).any? { spawned?(it) }
   end
 
-  def derived?(name)
-    writes(name).any? { spawned?(it.value) }
+  def yielders(local)
+    scope = local.scope
+    offered(scope).include?(local.name) ? body.grep(Prism::CallNode).select { it.block == scope } : []
   end
 
-  def rescued?(name)
-    snares(name).any? { alien?(it.exceptions) }
+  def offered(block)
+    given = block.parameters
+    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.names(given) : []
   end
+
+  def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
+
+  def inbound?(node) = node.is_a?(Prism::CallNode) && (fetched?(node) || spawned?(node))
+
+  def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
   def keyed?(call)
     names = call.arguments&.arguments
@@ -77,33 +93,25 @@ class Hashira::Smells::Foreign
 
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 
-  def among(kind, name)
-    body.grep(kind).select { it.name == name }
-  end
+  def among(kind, name) = body.grep(kind).select { it.name == name }
 
-  def snares(name)
-    body.grep(Prism::RescueNode).select { it.reference&.name == name }
-  end
+  def snares(name) = body.grep(Prism::RescueNode).select { it.reference&.name == name }
 
   def alien?(exceptions)
     exceptions.map { Hashira::Analysis::Syntax.segments(it) }.none? { @ownership.owned?(it) }
   end
 
-  def spawned?(value)
-    value.is_a?(Prism::CallNode) && stranger?(value.receiver)
-  end
+  def spawned?(value) = value.is_a?(Prism::CallNode) && stranger?(value.receiver)
 
   def stranger?(node)
     case node
     when Prism::LocalVariableReadNode then fenced?(node.name)
     when Prism::ConstantReadNode, Prism::ConstantPathNode then unowned?(node)
-    else false
+    else node.is_a?(Prism::CallNode) && stranger?(node.receiver)
     end
   end
 
-  def unowned?(node)
-    !@ownership.owned?(Hashira::Analysis::Syntax.segments(node))
-  end
+  def unowned?(node) = !@ownership.owned?(Hashira::Analysis::Syntax.segments(node))
 
   def tests(&)
     (probes(&) + arms(&)).map { Hashira::Analysis::Syntax.segments(it) }.reject(&:empty?) + lookups(&)

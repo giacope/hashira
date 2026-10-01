@@ -9,10 +9,23 @@ RSpec.describe(Hashira::Duplication::Clones) do
       expect(message(finding)).to(include("2 similar fragments"))
       expect(finding.evidence).to(
         include(
-          a_string_matching(%r{orders/checkout\.rb:1-11}),
-          a_string_matching(%r{billing/refund\.rb:1-11})
+          a_string_matching(%r{orders/checkout\.rb:4-8}),
+          a_string_matching(%r{billing/refund\.rb:4-8})
         )
       )
+    end
+  end
+
+  it "measures a file's coverage in distinct nodes, so lines two clusters share are counted once" do
+    shared = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
+    tail = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n " \
+      "r.notify(users.map(&:email), subject: :done)\n"
+    whole = %w[a b].to_h { ["lib/app/#{it}.rb", "def #{it}(r)\n#{shared}#{tail}end\n"] }
+    files = whole.merge(%w[c d].to_h { ["lib/app/#{it}.rb", "def #{it}(r)\n#{shared} r.close(:#{it})\nend\n"] })
+    duplication(files) do |clones|
+      masses = clones.clusters.flat_map(&:sites).select { it.file.end_with?("a.rb") }.map(&:mass)
+      expect(masses).to(eq([56, 52]))
+      expect(clones.coverage.transform_keys { File.basename(it) }).to(include("a.rb" => 56, "c.rb" => 28))
     end
   end
 

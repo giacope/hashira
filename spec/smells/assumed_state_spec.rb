@@ -244,6 +244,79 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     expect(findings).to(be_empty)
   end
 
+  it "stays quiet when the class body calls a macro that neither Ruby nor the codebase defines" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Base
+            pattr_initialize [:late]
+          end
+
+          class Thing < Base
+            def report = @late.to_s
+          end
+
+          class Other
+            acts_as_list
+
+            def report = @late.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a class whose macros Ruby or the codebase defines, or that only a mixin's body calls" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          module Fields
+            def fields(*) = nil
+          end
+
+          module Delegated
+            delegate :size, to: :list
+          end
+
+          class Thing
+            extend Fields
+            include Delegated
+            attr_reader :late
+            fields :late
+            private
+
+            def report = @late.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["@late"]]))
+  end
+
+  it "says when the subclasses are the ones expected to install what the base class reads" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Base
+            def report = [@late, @seen]
+          end
+
+          class Middle < Base
+          end
+
+          class Leaf < Middle
+            def initialize = @late = 1
+          end
+        end
+      end
+    RUBY
+    finding = findings.first
+    expect(findings.size).to(eq(1))
+    expect(finding.evidence).to(eq(%w[@late @seen]))
+    expect(message(finding)).to(include("subclasses are expected to install '@late'; pass it in instead"))
+  end
+
   it "does not count singleton writes or extended modules as instance initialization" do
     findings = assumed(<<~RUBY)
       module App
@@ -291,6 +364,6 @@ RSpec.describe(Hashira::Smells::AssumedState) do
       end
     )
     smells(files, &:findings)
-    expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 2, report: 3))
+    expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 1, report: 3))
   end
 end

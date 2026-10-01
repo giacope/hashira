@@ -15,13 +15,41 @@ class Hashira::Smells::Lineage
     Prism::InstanceVariableTargetNode
   ].freeze
 
+  NATIVE = Class.new.then { it.methods + it.private_methods }.to_set.freeze
+
   def initialize(types)
     @types = types
   end
 
   def assigned(context) = remember(learned, context.name) { ancestral(context) }
 
+  def settle(sketch, **) = sketch.settle(assigned: assigned(sketch), heirs: heirs(sketch), **)
+
+  def heirs(context) = remember(bequeathed, context.name) { descendants(it).flat_map { installs(it) }.uniq }
+
+  def pointed(type) = references(type).map { resolve(type.name, it) }
+
+  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
+
+  def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
+
   private
+
+  def bequeathed = @_bequeathed ||= {}
+
+  def installs(name) = index.fetch(name).flat_map { writes(it) }
+
+  def descendants(name)
+    found = [name]
+    found.each { found.concat(children.fetch(it, []) - found) }
+    found.drop(1)
+  end
+
+  def children
+    @_children ||= @types.map { [descent(it), it.name] }.uniq.group_by(&:first).transform_values { it.map(&:last) }
+  end
+
+  def descent(type) = resolve(type.name, Hashira::Analysis::Syntax.segments(parent(type)))
 
   def ancestral(context) = kin(context)&.flat_map { writes(it) }&.uniq
 
@@ -47,19 +75,27 @@ class Hashira::Smells::Lineage
     found unless found.include?(nil) || kin.any? { opaque?(it) }
   end
 
-  def opaque?(type) = extensions(type).any? { !resolve(type.name, Hashira::Analysis::Syntax.segments(it)) }
+  def opaque?(type) = veiled?(type) || extensions(type).any? { stray?(type, it) }
+
+  def stray?(type, node) = !resolve(type.name, Hashira::Analysis::Syntax.segments(node))
+
+  def veiled?(type) = type.kind == :class && macros(type).any? { !NATIVE.include?(it) && !vocabulary.include?(it) }
+
+  def macros(type)
+    Hashira::Analysis::Syntax.statements(type.node).grep(Prism::CallNode).reject(&:receiver).map(&:name)
+  end
+
+  def vocabulary
+    @_vocabulary ||= @types.flat_map { Hashira::Smells::Visibility.new(it.node).entries }.to_set { |definition, _| definition.name }
+  end
 
   def extensions(type) = named(type, EXTENSIONS)
-
-  def pointed(type) = references(type).map { resolve(type.name, it) }
 
   def references(type)
     (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.segments(it) }
   end
 
   def parent(type) = (type.node.superclass if type.kind == :class)
-
-  def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def candidates(owner, segments)
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }
@@ -70,11 +106,9 @@ class Hashira::Smells::Lineage
     parts.size.downto(0).map { parts.first(it) }
   end
 
-  def writes(type)
-    definitions(type).flat_map { setters(it) } + attributes(type)
-  end
+  def writes(type) = remember(written, type.node) { definitions(type).flat_map { setters(it) } + attributes(type) }
 
-  def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
+  def written = @_written ||= {}.compare_by_identity
 
   def setters(node) = Hashira::Smells::Scope.sweep(node).select { SETTERS.include?(it.class) }.map(&:name)
 

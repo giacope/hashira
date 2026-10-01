@@ -34,13 +34,15 @@ class Hashira::Smells::Report
     @boundaries = boundaries
   end
 
-  def findings = @_findings ||= sniff(types, JUDGES) + sniff(methods, PROBES) + sprawl
+  def findings = @_findings ||= sniff(wholes, JUDGES) + sniff(methods, PROBES) + sprawl
 
   private
 
   def census = @_census ||= Hashira::Smells::Census.new(@project, @trees)
 
   def types = @_types ||= census.types
+
+  def wholes = types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it) }
 
   def methods = types.flat_map(&:defs)
 

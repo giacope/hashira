@@ -10,6 +10,8 @@ class Hashira::Smells::Ownership
     @_suffixes.include?(segments.join("::"))
   end
 
+  def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
+
   def keys(segments)
     surveyed
     @_tables.fetch(segments.join("::"), [])

@@ -4,8 +4,8 @@ RSpec.describe(Hashira::Duplication::Delta) do
   def kind(sources) = described_class.new(cluster(sources)).kind
 
   def clone(first, second)
-    body = ->(name, recv) { "def #{name}\n #{recv}\n #{recv}\n #{recv}\nend\n" }
-    { "a.rb" => body.call("a", first), "b.rb" => body.call("b", second) }
+    body = ->(recv) { "def run\n #{recv}\n #{recv}\n #{recv}\nend\n" }
+    { "a.rb" => body.call(first), "b.rb" => body.call(second) }
   end
   it "reports :identical when the sites are byte-for-byte the same" do
     expect(kind(clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))"))).to(eq(:identical))
@@ -25,6 +25,28 @@ RSpec.describe(Hashira::Duplication::Delta) do
 
   it "reports :literal when only a string differs" do
     expect(kind(clone('emit(fetch(:h), "one")', 'emit(fetch(:h), "two")'))).to(eq(:literal))
+  end
+
+  it "reports :renamed, not :identical, when the same body sits under different method names" do
+    sources = clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))")
+    expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:renamed))
+  end
+
+  it "does not call methods that relay to super renamed, since each reaches a different parent method" do
+    body = "\n x.compact!\n y = x.map(&:to_s).uniq\n y.select { it }.sort\n y.freeze\nend\n"
+    relay = ->(name, call) { "def #{name}(*keys)\n x = #{call}#{body}" }
+    bare = { "a.rb" => relay.call("slice", "super"), "b.rb" => relay.call("except", "super") }
+    explicit = { "a.rb" => relay.call("slice", "super(*keys)"), "b.rb" => relay.call("except", "super(*keys)") }
+    expect([kind(bare), kind(explicit)]).to(eq(%i[mixed mixed]))
+  end
+
+  it "describes the bodies, not the names, once something inside the renamed methods differs too" do
+    sources = clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")
+    expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:literal))
+  end
+
+  it "reports :structure when one copy guards a call with safe navigation and the other does not" do
+    expect(kind(clone("g.client.emit(fetch(:h), 1)", "g.client&.emit(fetch(:h), 1)"))).to(eq(:structure))
   end
 
   it "reports :mixed when more than one kind of thing differs" do

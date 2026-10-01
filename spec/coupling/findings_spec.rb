@@ -1,20 +1,27 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Pipeline, "#findings") do
+  def ring(size, extra)
+    (1..size).to_h do |n|
+      uses = "[C#{(n % size) + 1}::X, #{extra}]"
+      ["lib/app/c#{n}/x.rb", "module App; module C#{n}; class X; def c = #{uses}; end; end; end\n"]
+    end
+  end
+
   def verdicts(files, directories: ["lib/app"])
     within(files) do
       yield(Hashira::Pipeline.new(Hashira::Project.new(directories)).findings)
     end
   end
-  it "reports cycles with path, weakest edge, and evidence" do
+  it "reports cycles with members, a sample path, the cheapest cut, and its evidence" do
     verdicts(Fixtures::CYCLIC_FILES) do |all|
       cycles = all.select { it.kind == "cycle" }
       expect(cycles.map(&:package)).to(eq(%w[alpha]))
       finding = cycles.first
       expect(finding.cycle).to(eq(%w[alpha beta alpha]))
-      expect(message(finding)).to(include("alpha can reach itself: alpha -> beta -> alpha"))
-      expect(message(finding)).to(include("The lightest edge on this cycle is alpha -> beta (1 ref)."))
-      expect(finding.evidence).to(include("alpha/one.rb:4: Beta::Two"))
+      expect(message(finding)).to(include("alpha and beta depend on each other in a cycle"))
+      expect(message(finding)).to(include("The cheapest cut is alpha -> beta (1 ref)."))
+      expect(finding.evidence).to(eq(["alpha/one.rb:4: Beta::Two"]))
     end
   end
 
@@ -38,14 +45,29 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
-  it "names the lightest edge wherever it sits on the cycle" do
+  it "names the cheapest cut wherever it sits on the cycle" do
     files = {
       "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
       "lib/app/b/x.rb" => "module App; module B; class X; def c = A::X; end; end; end\n"
     }
     verdicts(files) do |all|
       cycle = all.find { it.kind == "cycle" }
-      expect(message(cycle)).to(include("The lightest edge on this cycle is b -> a (1 ref)."))
+      expect(message(cycle)).to(include("The cheapest cut is b -> a (1 ref)."))
+    end
+  end
+
+  it "reports a knot of packages once, from its smallest member, whatever loops run through it" do
+    verdicts(ring(8, "C1::X")) do |all|
+      cycles = all.select { it.kind == "cycle" }
+      expect(cycles.map { [it.package, it.detail[:members].size] }).to(eq([["c1", 8]]))
+      expect(message(cycles.first)).to(start_with("c1, c2, c3, c4, c5, c6 and 2 more depend on each other in a cycle"))
+    end
+  end
+
+  it "lists a three-package knot in full" do
+    verdicts(ring(3, "nil")) do |all|
+      cycle = all.find { it.kind == "cycle" }
+      expect(message(cycle)).to(start_with("c1, c2 and c3 depend on each other in a cycle"))
     end
   end
 

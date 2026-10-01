@@ -39,8 +39,8 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def spread
-              @io.tick(1)
-              @io.tick(1)
+              first = @io.tick(1)
+              [first, @io.tick(1)]
             end
           end
         end
@@ -62,18 +62,18 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         module Zone
           class Thing
             def wrapped
-              transaction { save }
-              transaction { save }
+              kept = transaction { save }
+              [kept, transaction { save }]
             end
 
             def joined
-              @rows.map { compute }
-              @rows.map { compute }
+              kept = @rows.map { compute }
+              [kept, @rows.map { compute }]
             end
 
             def varied
-              @rows.each { poke }
-              @rows.each { prod }
+              kept = @rows.each { poke }
+              [kept, @rows.each { prod }]
             end
           end
         end
@@ -196,8 +196,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         module Zone
           class Thing
             def sifted(one, two)
-              @io.tick(1) if one
-              @io.tick(1) if two
+              left = @io.tick(1) if one
+              right = @io.tick(1) if two
+              [left, right]
             end
           end
         end
@@ -213,14 +214,15 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
           class Thing
             def guarded
               begin
-                @io.tick(1)
+                left = @io.tick(1)
               rescue StandardError
                 @io.warn
               else
-                @io.tick(1)
+                right = @io.tick(1)
               ensure
                 cleanup
               end
+              [left, right]
             end
           end
         end
@@ -254,9 +256,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             def guarded
               work
             rescue IOError
-              @io.close(1)
+              @log.write(@io.close(1))
             ensure
-              @io.close(1)
+              @log.write(@io.close(1))
             end
           end
         end
@@ -276,5 +278,301 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       end
     RUBY
     expect(findings).to(be_empty)
+  end
+
+  it "leaves repeated commands alone: calls whose result the method throws away" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def said
+              @io.tick(1)
+              @io.tick(1)
+              nil
+            end
+
+            def guarded(one)
+              @io.tick(1) if one
+              @io.tick(1) if one
+              one ? nil : @io.tick(2)
+              one ? nil : @io.tick(2)
+              @io.tick(3) unless one
+              @io.tick(3) unless one
+              nil
+            end
+
+            def otherwise(one)
+              unless one then nil else @io.tick(1) end
+              unless one then nil else @io.tick(1) end
+              nil
+            end
+
+            def switched(one)
+              case one
+              when 1 then @io.tick(1)
+              end
+              case one
+              when 1 then @io.tick(1)
+              end
+              case one
+              when 1 then nil
+              else @io.tick(2)
+              end
+              case one
+              when 1 then nil
+              else @io.tick(2)
+              end
+              nil
+            end
+
+            def matched(one)
+              case one
+              in 1 then @io.tick(1)
+              end
+              case one
+              in 1 then @io.tick(1)
+              end
+              case one
+              in 1 then nil
+              else @io.tick(2)
+              end
+              case one
+              in 1 then nil
+              else @io.tick(2)
+              end
+              nil
+            end
+
+            def begun(one)
+              begin
+                @io.tick(1)
+              end
+              begin
+                @io.tick(1)
+              end
+              nil
+            end
+
+            def rescued(one)
+              begin
+                one
+              rescue KeyError
+                @io.tick(1)
+              end
+              begin
+                one
+              rescue KeyError
+                @io.tick(1)
+              end
+              nil
+            end
+
+            def chained(one)
+              begin
+                one
+              rescue KeyError
+                one
+              rescue IndexError
+                @io.tick(1)
+              end
+              begin
+                one
+              rescue KeyError
+                one
+              rescue IndexError
+                @io.tick(1)
+              end
+              nil
+            end
+
+            def settled(one)
+              begin
+                one
+              rescue KeyError
+                one
+              else
+                @io.tick(1)
+              end
+              begin
+                one
+              rescue KeyError
+                one
+              else
+                @io.tick(1)
+              end
+              nil
+            end
+
+            def ensured(one)
+              begin
+                one
+              ensure
+                @io.tick(1)
+              end
+              begin
+                one
+              ensure
+                @io.tick(1)
+              end
+            end
+
+            def wrapped(one)
+              (one; @io.tick(1))
+              (one; @io.tick(1))
+              nil
+            end
+
+            def modified(one)
+              @io.tick(1) rescue one
+              @io.tick(1) rescue one
+              one rescue @io.tick(2)
+              one rescue @io.tick(2)
+              nil
+            end
+
+            def joined(one)
+              one && @io.tick(1)
+              one && @io.tick(1)
+              one || @io.tick(2)
+              one || @io.tick(2)
+              nil
+            end
+
+            def marked(rows)
+              rows.each { @io.tick(1) }
+              rows.each { @io.tick(1) }
+              nil
+            end
+
+            def looped(one)
+              while one
+                @io.tick(1)
+              end
+              while one
+                @io.tick(1)
+              end
+            end
+
+            def awaited(one)
+              until one
+                @io.tick(1)
+              end
+              until one
+                @io.tick(1)
+              end
+            end
+
+            def walked(rows)
+              for row in rows
+                @io.tick(1)
+              end
+              for row in rows
+                @io.tick(1)
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a call whose value flows on: returned, assigned, passed, or a kept block's result" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def returned
+              kept = @io.tick(1)
+              @io.tick(1)
+            end
+
+            def passed
+              @log.write(@io.tick(2))
+              @log.write(@io.tick(2))
+              nil
+            end
+
+            def yielded(rows)
+              [rows.map { @io.tick(3) }, rows.select { @io.tick(3) }]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@io.tick(1) × 2 (lines 5, 6)", "@io.tick(2) × 2 (lines 10, 11)", "@io.tick(3) × 2 (line 16)"])
+    )
+  end
+
+  it "excuses calls fed a freshly minted value as an argument, but not calls on one" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def shown = [render(Other.new), render(Other.new)]
+
+            def wrapped = [wrap(label("".b)), wrap(label("".b))]
+
+            def named = [Other.new.name, Other.new.name]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["Other.new.name × 2 (line 8)"]))
+  end
+
+  it "reports a repeated chain once, not again for each prefix repeated on the same calls" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def stamped = [DateTime.now.utc, DateTime.now.utc]
+
+            def shown = [format(@params[:id]), format(@params[:id])]
+
+            def stray = [Time.now.utc, Time.now.utc, Time.now]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "DateTime.now.utc × 2 (line 4)", "format(@params[:id]) × 2 (line 6)",
+          "Time.now.utc × 2 (line 8)", "Time.now × 3 (line 8)"
+        ]
+      )
+    )
+  end
+
+  it "excuses the same call at two exits, since a run leaves the method once" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def create(one, two)
+              return head(:ok) unless one
+              return if two
+              return head(:ok) if @late.ready?(two)
+              save
+              head(:ok)
+            end
+
+            def kept(one)
+              kept = @io.tick(1)
+              return @io.tick(1) if one
+              kept
+            end
+
+            def looped(rows)
+              rows.each { |row| return @io.tick(2) if row }
+              rows.each { |row| return @io.tick(2) if row }
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
   end
 end

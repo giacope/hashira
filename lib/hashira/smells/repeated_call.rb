@@ -17,8 +17,18 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   def smelly? = repeats.any?
 
   def calls
-    @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode).reject { minted?(it) }
+    @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode).reject { commanded?(it) || fresh?(it) }
   end
+
+  def commanded?(node) = discards.include?(node)
+
+  def discards = @_discards ||= Hashira::Smells::Discards.new(subject.node)
+
+  def fresh?(node) = minted?(node) || fed(node).any? { minted?(it) }
+
+  def fed(node) = Array(node.arguments).flat_map { beneath(it) }.grep(Prism::CallNode)
+
+  def beneath(node) = [node] + Hashira::Smells::Scope.inside(node)
 
   def minted?(node) = mints?(node.name) || spawns?(node.receiver)
 
@@ -31,10 +41,28 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   end
 
   def repeats
-    @_repeats ||= together(usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole))
+    @_repeats ||= outermost(together(usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole)))
   end
 
-  def together(groups) = groups.select { |_handle, nodes| branches.together?(nodes) }
+  def outermost(groups) = groups.reject { |_handle, nodes| echoed?(nodes, groups) }
+
+  def echoed?(nodes, groups) = groups.each_value.any? { echoes?(nodes, it) }
+
+  def echoes?(inner, outer) = inner.size == outer.size && inside?(inner, outer)
+
+  def inside?(inner, outer) = inner.all? { nested?(it, outer) }
+
+  def nested?(node, outer) = outer.any? { contains?(it, node) }
+
+  def contains?(outer, node) = Hashira::Smells::Scope.inside(outer).any? { it.equal?(node) }
+
+  def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
+
+  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !parting?(pair) }
+
+  def parting?(pair) = pair.all? { exits.include?(it) }
+
+  def exits = @_exits ||= Hashira::Smells::Exits.new(subject.node)
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 

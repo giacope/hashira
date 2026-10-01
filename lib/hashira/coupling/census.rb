@@ -71,5 +71,8 @@ class Hashira::Coupling::Census
 
   def translate(package) = folding.map.fetch(package, package)
 
-  def scope = Hashira::Coupling::Scope.new(roster.registry, catalog, placement)
+  def scope
+    current = roster
+    (@_scopes ||= {})[current] ||= Hashira::Coupling::Scope.new(current.registry, catalog, placement)
+  end
 end

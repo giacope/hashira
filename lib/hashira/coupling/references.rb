@@ -24,6 +24,7 @@ class Hashira::Coupling::References
 
   def collect(node, home = nesting)
     return unless node
+    return collect(node.parent, home) if syntax.dynamic?(node)
     return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
     node.compact_child_nodes.each { collect(it, home) }

@@ -5,9 +5,18 @@ require "prism"
 module Hashira::Smells::Conditions
   TESTED = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode, Prism::AndNode, Prism::OrNode].freeze
 
+  LOOPS = [Prism::WhileNode, Prism::UntilNode].freeze
+
   module_function
 
   def tested?(node) = TESTED.include?(node.class)
+
+  def steers?(node, parent) = tested?(node) && !(couple?(node) && carried?(node, parent))
+
+  def carried?(node, parent)
+    return !LOOPS.include?(parent.class) unless parent.is_a?(Prism::StatementsNode)
+    node.is_a?(Prism::OrNode)
+  end
 
   def fence?(node) = Hashira::Smells::Scope::FENCES.include?(node.class)
 
@@ -30,15 +39,17 @@ module Hashira::Smells::Conditions
     [node.statements, node.is_a?(Prism::IfNode) ? node.subsequent : node.else_clause]
   end
 
-  def nested(roots) = roots.compact.flat_map { seek(it) }
+  def nested(roots) = roots.compact.flat_map { tested?(it) ? [it] : seek(it) }
 
   def seek(node)
-    return [node] if tested?(node)
-    fence?(node) ? [] : node.compact_child_nodes.flat_map { seek(it) }
+    return [] if fence?(node)
+    node.compact_child_nodes.flat_map { steers?(it, node) ? [it] : seek(it) }
   end
 
-  def plain(node)
-    return [] if tested?(node) || fence?(node)
-    [node] + node.compact_child_nodes.flat_map { plain(it) }
+  def plain(node) = tested?(node) ? [] : spread(node)
+
+  def spread(node)
+    return [] if fence?(node)
+    [node] + node.compact_child_nodes.reject { steers?(it, node) }.flat_map { spread(it) }
   end
 end

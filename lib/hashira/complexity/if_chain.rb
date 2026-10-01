@@ -44,7 +44,8 @@ class Hashira::Complexity::IfChain
   end
 
   def ternary(node)
-    @scorer.add(node, 1, "ternary")
-    node.compact_child_nodes.each { @scorer.visit(it) }
+    @scorer.add(node, 1 + @scorer.nesting, "ternary")
+    @scorer.visit(node.predicate)
+    @scorer.deeper { [node.statements, node.subsequent].each { @scorer.visit(it) } }
   end
 end

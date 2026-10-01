@@ -18,16 +18,28 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("data_clump") =>
         "Cart#price passes the same parameters between methods (cart.rb:12). Introduce a parameter object.",
       smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
-      smell("feature_envy", names: %w[item order]) =>
-        "Cart#price refers to 'item', 'order' more than to self (cart.rb:12). The behavior may belong on item.",
-      smell("assumed_state") =>
+      smell("feature_envy", names: %w[item], count: 3, ego: 1) =>
+        "Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.",
+      smell("feature_envy", names: %w[item order], count: 2, ego: 1) =>
+        "Cart#price refers to 'item', 'order' more than to self, 2 each to 1 (cart.rb:12). " \
+        "The behavior may belong on whichever of them it serves.",
+      smell("utility_function", owner: :class) =>
+        "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
+      smell("utility_function", owner: :module) =>
+        "Cart#price touches no instance state (cart.rb:12). " \
+        "Move it onto the object it serves, or make it a module function.",
+      smell("assumed_state", installed: []) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Assign them where the object is built, or pass the data explicitly.",
+      smell("assumed_state", installed: %w[@a @b]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Its subclasses are expected to install '@a', '@b'; pass them in instead.",
       smell("manual_dispatch") =>
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",
       smell("module_initialize") =>
-        "Cart#price defines initialize in a module (cart.rb:12). Move construction into the including class.",
+        "Cart#price defines initialize in a module (cart.rb:12). " \
+        "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",
       smell("nil_check") => "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
       smell("repeated_conditional", count: 3) =>
         "Cart#price branches on the same test 3 times (cart.rb:12). Replace the scattered checks with polymorphism.",

@@ -115,4 +115,62 @@ RSpec.describe(Hashira::Smells::Report) do
     findings = sniffed(files, "assumed_state")
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing"]))
   end
+
+  it "names what a concern or class << self defines for the class with a dot, private ones included" do
+    files = {
+      "lib/app/zone/greets.rb" => <<~RUBY
+        module App
+          module Zone
+            module Greets
+              class_methods do
+                def summon(duck) = (duck.honk if duck.respond_to?(:honk))
+
+                private
+
+                def stash(duck) = (duck.honk if duck.respond_to?(:honk))
+              end
+
+              module ClassMethods
+                def gather(duck) = (duck.honk if duck.respond_to?(:honk))
+              end
+
+              class << self
+                private def shelve(duck) = (duck.honk if duck.respond_to?(:honk))
+              end
+
+              def greet(duck) = (duck.honk if duck.respond_to?(:honk))
+            end
+
+            module ClassMethods
+              def bare(duck) = (duck.honk if duck.respond_to?(:honk))
+            end
+
+            class Styles
+              class ClassMethods
+                def check(duck) = (duck.honk if duck.respond_to?(:honk))
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    findings = sniffed(files, "manual_dispatch")
+    expect(findings.map(&:package)).to(
+      eq(
+        %w[
+          App::Zone::Greets.summon App::Zone::Greets.stash App::Zone::Greets.shelve App::Zone::Greets#greet
+          App::Zone::Greets.gather App::Zone.bare App::Zone::Styles::ClassMethods#check
+        ]
+      )
+    )
+  end
+
+  it "judges a class's state across every file that reopens it" do
+    files = {
+      "lib/app/zone/thing.rb" => "class Thing\n  def fill = [@a = 1, @b = 2, @c = 3]\nend\n",
+      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\nend\n"
+    }
+    findings = sniffed(files, "state_sprawl")
+    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c @d @e]]))
+  end
 end

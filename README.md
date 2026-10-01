@@ -29,9 +29,8 @@ billing    1   1   1  0.50  YES
 shipping   1   1   1  0.50  YES
 
 Findings (1):
-  cycle: billing can reach itself: billing -> shipping -> billing — any change may ripple back around. The lightest edge on this cycle is billing -> shipping (1 ref).
+  cycle: billing and shipping depend on each other in a cycle — any change may ripple back around. The cheapest cut is billing -> shipping (1 ref).
       · billing/client.rb:5: Shipping::Rate
-      · shipping/rate.rb:8: Billing::Client
 ```
 
 A healthy project reports `Findings (0): none ✓ — structure is healthy`.
@@ -66,24 +65,66 @@ Requires Ruby 3.4 or newer.
 
 ## Getting started
 
-Point hashira at your code, or run it with no arguments to auto-detect `lib/<gem>`.
-Single-folder wrapper chains are descended automatically, so `hashira`,
-`hashira lib`, and `hashira lib/gem/core` land on the same package boundaries:
+Point hashira at your code, or run it with no arguments to auto-detect it:
+`lib/<gem>` when `lib/<gem>.rb` sits beside it (the one your `*.gemspec` names,
+if `lib/` holds several), otherwise `lib`; in a Rails root (a
+`config/application.rb`), `app` and `lib`. When one directory is analyzed,
+single-folder wrapper chains are descended automatically, so `hashira`,
+`hashira lib`, and `hashira lib/gem/core` land on the same package boundaries.
+Several directories are taken as given, so they all keep the same granularity.
 
 ```sh
-hashira                        # auto-detects lib/<gem>
+hashira                        # auto-detects lib/<gem>, or app + lib in a Rails root
 hashira lib/myapp              # or point it at a directory
 hashira app lib                # or several — one shared graph
 hashira --skip complexity,duplication   # coupling + smells only
 hashira --skip coupling                 # complexity + duplication + smells
 hashira --top 50                        # longer tables and findings list
+hashira --kind cycles,complexity        # only the findings of these kinds
 ```
+
+With one directory, files are named relative to it (`models/user.rb` under
+`hashira app`). With several, every file is named as you would open it from
+where hashira runs (`app/models/user.rb`, `activerecord/lib/active_record/base.rb`),
+so two `base.rb`s in different directories never share a row.
 
 The full text report is the coupling tables, the complexity tables, the hotspot
 rollup, and the findings (which include any duplication clusters). It is capped
 so a large codebase stays readable — 25 packages and findings, 10 methods and
 files — and every list says how many rows it withheld. `--top N` moves all of
-them at once; `--json` is never capped.
+them at once; `--json` is uncapped unless you pass `--top` yourself. A long class or method name is clipped
+in the middle to keep the columns aligned, but a path never is: every `file` and
+`Loc` cell can be opened exactly as printed.
+
+The findings are dealt out across kinds rather than grouped by kind, so a capped
+list shows the spread of what is wrong instead of 25 of the same thing. Each
+round takes the next finding of every kind — structural kinds (cycles, SDP
+violations, …) first, then complexity, duplication, and the smells — and each
+kind comes worst first where it has a size (cognitive complexity, clone mass,
+sprawl count), in the order found where it does not. When the list is capped, a
+rollup above it states every kind once, withheld findings included:
+
+```console
+Findings (2368):
+  repeated_call         915 in 420 files
+  duplication           376 in 349 files
+  feature_envy          253 in 177 files
+  ...
+```
+
+Hundreds of findings of one kind are then one fact about the codebase, not a
+wall. The dependency map leads with the most connected packages, and packages
+with no edges either way share one line instead of taking a row each.
+
+`--kind` keeps only the findings of the kinds you name, using the `--fail-on`
+names and shorthands (`--kind cycles,dupe`, `--kind smells`), in text and JSON
+alike; the tables and the graph stay whole. It narrows the way `--only` does
+(see [Hooks](#hooks-ratchet-the-files-you-just-touched)). With `--ratchet` it
+judges only those kinds: what is new or worse among them fails, while removals
+and edges are left to the full run. It refuses `--update-baseline`, which would
+record a baseline missing every other kind, and the diagram formats. Every kind
+`--fail-on` gates must be one `--kind` keeps, since a gate on a kind the report
+leaves out could never fire.
 
 The heading names the packaging that ran (`folder` or `namespace`), since the
 baseline is recorded per mode. Anything hashira had to work around goes to
@@ -114,9 +155,9 @@ Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
         I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
 Dependencies (DependsUpon(refs) -> | <- UsedBy):
-  (root)       -> complexity(1), coupling(2), duplication(1), hotspots(1), smells(3) <- cli
-  analysis     -> (none)                           <- complexity, coupling, duplication, smells
-  duplication  -> analysis(3)                      <- (root), report
+  (root)       -> analysis(2), complexity(1), coupling(2), duplication(1), hotspots(1), smells(4) <- cli
+  analysis     -> (none)                           <- (root), complexity, coupling, duplication, smells
+  cli          -> (root)(33), ci(5), diagram(1), report(7) <- (none)
   ...
 
 Cognitive complexity — worst methods (Cog = how hard to read, Calls = message sends):
@@ -168,6 +209,8 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
 - **SDP violation** — a stable package depends on a less stable one, against the
   Stable Dependencies Principle ("depend in the direction of stability"), one of
   Robert C. Martin's [package principles](https://en.wikipedia.org/wiki/Package_principles).
+  Instabilities are compared as the table shows them, to two decimals: two
+  packages that both read 0.33 are equally stable.
 - **Cycle** — packages depending on each other in a loop.
 - **Mixed audience** — the constants of one package split into parts with
   separate client bases: one set of packages leans on one slice, another set on
@@ -182,8 +225,13 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   is maintained by hand in three or more files across packages. The list wants
   to be data with a single owner — a registry the other sites derive from.
 
-Each finding comes with file-level evidence; for cycles, the shortest cycle
-path and its lightest edge. What a finding means for your design is your call.
+Each finding comes with file-level evidence. A cycle is reported once per knot
+of packages that can all reach one another (a strongly connected component),
+keyed by its alphabetically first member, with the cheapest cut: the lightest
+set of edges whose removal splits the knot, found by dropping the lightest
+edges until it splits and then giving back any it did not need. The evidence
+is the references on those edges — the lines to change. What a finding means
+for your design is your call.
 
 ## Rails apps
 
@@ -194,7 +242,9 @@ Rails root) or sits beside one (its `app` folder), hashira switches to
 **namespace packaging**: types group by top-level constant
 (`Billing`, `Ci`, `User`) across the layer folders, edges join domains, and the
 findings answer the question a Rails monolith actually has — does `Billing`
-reach into `Ci`?
+reach into `Ci`? Run bare in the Rails root, `hashira` reads `app` and `lib`
+together (files then read `app/models/user.rb`, `lib/tasks/…`); `hashira app`
+reads the application alone, as below.
 
 ```console
 $ hashira app
@@ -206,20 +256,27 @@ Account   26  21  18  0.46  YES
 Billing  116  12  11  0.48  YES
 Ci       107   9  16  0.64  YES
 ...
-  cycle: Account can reach itself: Account -> User -> Account — any change
-  may ripple back around. The lightest edge on this cycle is Account -> User (1 ref).
+  cycle: Account, Billing, Ci, User and Webhook depend on each other in a cycle
+  — any change may ripple back around. The cheapest cut is Account -> User (1 ref).
       · models/account.rb:36: User
-      · models/user/signup.rb:32: Account
 ```
 
 Under namespace packaging, references to app-defined `Application*` base
 classes (`ApplicationRecord`, `ApplicationJob`, …) are skipped as framework
 plumbing; `--package-by folder` keeps them, so the legacy layer view stays
 complete. Constant resolution
-follows Ruby's lexical nesting everywhere — a bare `Authentication` inside
-`class User` is `User::Authentication`, not a top-level namesake in another
-package — which matters most in Rails apps, where nested concerns routinely
-shadow top-level names.
+follows Ruby everywhere: the lexical nesting first — a bare `Authentication`
+inside `class User` is `User::Authentication`, not a top-level namesake in
+another package — then the superclasses and included modules of the innermost
+class, then top level. A name that is only the tail of some other namespace
+(`I18n` vs. `Crm::I18n`) does not match, and `self::X` or `namespace::X` is
+left unresolved. Ruby's own constants (core and standard library, loaded or
+not) never count as a package's, even where the project reopens them, and
+neither does a library namespace the project only patches: one opened in files
+not named for it, with no class derived inside it (`class Rufus::Scheduler` in
+`huginn_scheduler.rb`, `module Rack` in `action_dispatch.rb`). Only what the
+project provably creates there — a class with a superclass, a constant
+assignment — stays its own.
 
 Either grouping can be forced anywhere:
 
@@ -237,7 +294,10 @@ messages they send:
 - **Cog** — the cognitive-complexity score. A flat sequence of calls costs nothing;
   each level of nesting deepens the cost of what sits inside it; a `case` counts
   once regardless of arms; a run of one boolean operator counts once, and mixing
-  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding.
+  `&&`/`||` costs more; `elsif`/`else` stay flat instead of compounding. A
+  ternary is an `if` in disguise, so it pays for its nesting and nests its arms
+  the same way; a `rescue` modifier (`x rescue y`) costs what a `rescue` clause
+  does.
 - **Calls** — the number of message sends, shown side by side. This is what
   call-count metrics rank on; when Cog and Calls disagree, Cog is the honest one.
 - **Per-class rollup** — the total complexity of a class and its method count. A
@@ -282,26 +342,40 @@ it does inside Ruby:
   is caught, not only whole bodies. Two sibling controllers that drifted apart
   line by line match here and nowhere else: no single subtree of either one is a
   clone of the other. And one statement can be a clone by itself — the block body
-  a view helper repeats verbatim is a single expression.
+  a view helper repeats verbatim is a single expression. A class or module is
+  never a window of its own: its body is windowed like any other, so two files
+  that merely wrap similar code in the same `module` don't match as wholes. A
+  window doesn't open on a bare `private` heading the methods below it, and a
+  site's range runs to the closing line of any heredoc it carries.
 - **Whole methods, `when` arms and `rescue` clauses too.** A one-line method has
   no run of statements at all; without these it would be invisible.
 - **Lists aren't clones.** A run of identically shaped statements — a require
   block, a routes file, a column of registrations — is skipped, so windows cut
-  out of one don't report a match at every offset.
+  out of one don't report a match at every offset. The same goes for the arms of
+  a `case`: three or more identically shaped `when` arms in a row are a dispatch
+  table, not three clones.
 - **Declarations aren't clones either.** A fragment built only from directives —
-  receiverless macro calls with literal arguments, the `has_many` /
-  `validates` / `attribute` spine of a model or a serializer — is a schema, not
-  copied logic; extracting it only hides what the class declares. Two models
-  that open the same way are two models. As soon as a fragment carries logic —
-  a block, a method, a variable, a receiver, a branch — it counts again.
+  receiverless macro calls with literal or constant arguments (`include Foo`, a
+  heredoc with nothing interpolated), the `has_many` / `validates` / `attribute`
+  spine of a model or a serializer, constants assigned a literal (`.freeze`
+  included) — is a schema, not copied logic; extracting it only hides what the
+  class declares. A macro whose block holds only more declarations
+  (`string :host do default "localhost" end`) is one too. Two models that open
+  the same way are two models. As soon as a fragment carries logic — a block
+  parameter, a method, a variable, a receiver, a branch, an interpolation — it
+  counts again.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
-  pairwise matches.
+  pairwise matches. A smaller clone whose copies sit inside a bigger one's is
+  reported only when at least two of its copies lie outside it: one more site is
+  not a new finding.
 - **It tells you how to fix it.** hashira diffs the copies and classifies what
-  varies: only literals → extract a method and pass them as arguments; only the
-  receiver → extract a method taking it, or use polymorphism; a constant →
-  parameterize it; the control flow itself → extract the common core, but verify
-  by hand (flagged lower-confidence).
+  varies: only literals (strings, numbers, symbols, patterns) → extract a method
+  and pass them as arguments; only the receiver or a name → extract a method
+  taking it, or use polymorphism; a constant → parameterize it; nothing but the
+  method's own name → keep one, and alias or call it; the control flow itself,
+  down to a `&.` one copy has and the other lacks → extract the common core, but
+  verify by hand (flagged lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
   Ruby idiom, not duplication, so the mass floor rises as a shape gets more
   common, and rare token types drive matching while common ones don't. The floor
@@ -323,8 +397,9 @@ same parse trees the other analyzers already built:
 
 ```console
 Findings (2):
-  feature_envy: Cart#price refers to 'item' more than to self (cart.rb:12). The behavior may belong on item.
+  feature_envy: Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.
       · item (lines 13, 14)
+      · self (line 14)
   control_parameter: Report#write is steered by 'quoted' (report.rb:31). Split the method, or pass a strategy instead of a flag.
       · quoted (line 32)
 ```
@@ -332,47 +407,94 @@ Findings (2):
 What each one catches:
 
 - **feature_envy** — a method refers to another object more than to itself; the
-  behavior probably belongs over there. Stays quiet when the method's own body
-  proves the envied thing is foreign — type-guarded (or table-dispatched) only
-  against constants the codebase never defines, read purely through literal
-  keys (`msg["id"]`), built from a literal or derived from a foreign call in
-  the method itself, rescued from a foreign error class, or consumed by a
-  stateless converter that ends by building a typed object — because "move
-  the method" needs a destination you own.
+  behavior probably belongs over there. Only messages the codebase itself
+  defines count as references: a `def`, an `attr_*`, or a name its class
+  bodies declare through a macro (`has_many :lines`, `delegate :total`,
+  `Data.define(:x)`) — but not one it only ever defines privately. Operators (`==`, `+`, `[]`) and
+  what every object answers (`to_s`, `is_a?`, `tap`) never count, and neither
+  does `x += 1`. Each binding counts on its own — three blocks that each name
+  their parameter `r` are three variables, not one — and the evidence lists
+  self's references too, so "more than" can be checked. Stays quiet when the
+  method's own body proves the envied thing is foreign — type-guarded (or
+  table-dispatched) only against constants the codebase never defines, read
+  purely through literal keys (`msg["id"]`), built from a literal, derived
+  from a foreign call (or a call chain rooted in one) in the method itself,
+  handed to a block by one (`Faraday.new do |f|`), rescued from a foreign
+  error class, or consumed by a stateless converter that ends by building a
+  typed object — because "move the method" needs a destination you own. Block
+  parameters referenced together, as in a comparator (`sort { |a, b| ... }`),
+  are peers, not a destination.
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
-  adapter. An analyzer or interpreter which deliberately understands a foreign
-  data model can declare and verify that boundary instead.
+  adapter. Classes built into Ruby itself (`String`, `Hash`, `Array`, `Proc`)
+  are the language, not a boundary, so they never count. An analyzer or
+  interpreter which deliberately understands a foreign data model can declare
+  and verify that boundary instead.
 - **utility_function** — a public instance method that touches no instance state;
   it isn't really a method of this class. Private stateless helpers are fine, and
-  `module_function` modules are exempt — that's what they're for.
+  `module_function` and `extend self` modules are exempt — that's what they're
+  for. So is polymorphism: a method an owned ancestor or descendant also
+  defines, or one a sibling class under the same superclass defines too (every
+  job's `perform`), fills a role rather than hiding a function. What a concern
+  defines for its host class — in `class_methods do` or a `ClassMethods`
+  module — is class-level, named `Concern.method` in every smell. The advice
+  follows the owner: a module function in a module, private or moved in a class.
 - **control_parameter** — an argument used only to pick an execution path; the
-  caller already knew which branch it wanted.
+  caller already knew which branch it wanted. An argument that `||` or `&&`
+  hands on as a value (`name || "anonymous"`, `@options = options || {}`,
+  `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
+  alone as a statement, or in a loop's condition, still steers.
 - **data_clump** — the same two-plus parameters travel through three or more
-  methods; a value object is missing.
+  methods; a value object is missing. Each clump is listed at its widest: a
+  pair that only ever travels inside a larger set isn't listed again.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
-  `SecureRandom.hex`) are meant to differ, and a repeat no single run can reach
-  twice — the two arms of an `if`, two `when` branches, a body and its `rescue`
-  — has nothing to hoist.
+  `SecureRandom.hex`) are meant to differ, and so is a call fed one
+  (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
+  an `if`, two `when` branches, a body and its `rescue`, two `return`s — has
+  nothing to hoist; and a command, a call whose result the method throws away
+  (`@out << row`, `raise`, `log.info(...)` as a statement), is repeated on
+  purpose. A repeated chain is listed once, at its longest.
 - **repeated_conditional** — one class testing the same condition in three or
-  more places; polymorphism is overdue.
-- **state_sprawl** — more than four per class. Memoization
-  (`@x ||=`) doesn't count as state.
+  more places; polymorphism is overdue. A test on the object's own state
+  counts across the whole class; a test on a local variable only within the
+  method or block that binds it, since `all` in one method isn't `all` in the
+  next.
+- **state_sprawl** — more than four instance variables per class. Memoization
+  doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
+  (and only ever filled lazily), not one each method fills only behind its own
+  `defined?(@x)` guard.
 - **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
   class it inherits. Usually a typo, or state some other object is expected to
   install. Silent when the class inherits or includes something the codebase
-  can't see, because the assignment may live in there.
-- **manual_dispatch** — `respond_to?` then send: a type check wearing a duck
-  costume.
-- **module_initialize** — `initialize` in a mixin; construction order becomes
-  anyone's guess.
+  can't see, or when its body (or a superclass's) calls a macro that neither
+  Ruby nor the codebase defines (`pattr_initialize [:user]`), because the
+  assignment may live in there. When the ivar is one the class's own
+  subclasses assign, the finding says so: a base class that waits for its
+  subclasses to install its state is a fragile base class, so pass the value in
+  instead.
+- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+  after it: asking an object what it can do is a type check wearing a duck
+  costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
+  class that uses `method_missing`.
+- **module_initialize** — `initialize` in a mixin. Even a cooperative one that
+  calls `super` makes the module carry constructor state into every class that
+  includes it: implementation inheritance. Compose a collaborator instead.
 - **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is.
+  cheapest type there is. When the method itself read the checked value from
+  outside the program — through a literal key (`params[:id]`, `data["name"]`,
+  `request.headers["X-Token"]`) or from a call on a constant the codebase
+  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
+  changes: translate the missing value where it enters, at the boundary,
+  rather than reach for a null object.
+
+The class-level kinds (data_clump, repeated_conditional, state_sprawl,
+assumed_state, module_initialize) judge a class across every file that opens
+it, and report it once.
 
 Smell findings gate and ratchet like every other kind — `--fail-on smells` covers
 all twelve, or name one (`--fail-on feature_envy`); `--skip smells` drops the
@@ -397,8 +519,9 @@ controllers/orders_controller.rb            8    0      7    56
 ```
 
 Read it as a work queue: the top row is where a day of refactoring buys the most.
-A file carrying a clone is charged per site, by the mass of its own copy, so one
-holding both copies pays twice. Churn floors at one, so a repo with no git history still ranks by cost.
+A file carrying a clone is charged the nodes its copies cover, so one holding both
+copies pays for both — but code that two overlapping clusters share is charged
+once, not once per cluster. Churn floors at one, so a repo with no git history still ranks by cost.
 
 Deliberately not a rating. A letter grade on a healthy codebase is the same
 letter repeated — it tells you nothing about what to open first.
@@ -417,22 +540,26 @@ each reference to the right side; a bare name declared in exactly one package
 resolves there, and a name several packages claim resolves to nothing rather
 than to a guess. Each edge carries a **weight**: the number of constant
 references backing it. A root-level file `x.rb` folds into package `x` when a
-sibling folder `x/` exists; everything else at the top level lands in `(root)`.
+sibling folder `x/` exists; everything else at the top level lands in `(root)`
+(`lib/(root)`, `app/(root)`, … when several directories are analyzed, so their
+loose files never merge into one package).
 
 **Complexity.** Every method body is walked once and scored against the
 cognitive-complexity rules above.
 
-**Duplication.** Candidates are every window of one to twelve sibling statements,
-plus every method, `when` arm and `rescue` clause taken whole. Runs of identically
-shaped statements are skipped as lists. Each candidate is hashed structurally and
+**Duplication.** Candidates are every window of one to twelve sibling statements
+(never a class or module on its own), plus every method, `when` arm and `rescue`
+clause taken whole. Runs of identically shaped statements or `when` arms are
+skipped as lists. Each candidate is hashed structurally and
 matched both exactly and by near-miss — a linear-time bound on the longest common
 subsequence rejects a pair before the real comparison runs — then unioned into
-clusters and reduced to the maximal, non-overlapping ones. All three analyzers
+clusters and reduced to the maximal ones: a smaller cluster survives only if two
+of its sites lie outside every bigger one. All three analyzers
 share a single parse of your source, so running them together costs no more than
 parsing once.
 
 **Hotspots.** Each file is charged the cognitive complexity of its methods and
-the mass of every clone site it holds, then multiplied by how many commits touched
+the distinct nodes its clone sites cover, then multiplied by how many commits touched
 it. Git is asked once, lazily, and only if something needs churn.
 
 ## CI
@@ -493,9 +620,9 @@ A regression prints in full, with the evidence that introduced it:
 ```console
 $ hashira --ratchet
 NEW FINDING:
-  duplication: 2 similar fragments (mass 44) — extract the shared shape and pass what differs as parameters.
-      · billing/refund.rb:1-11
-      · orders/checkout.rb:1-11
+  duplication: 2 similar fragments (mass 35) — differs only in literal values — extract a method, pass them as arguments.
+      · billing/refund.rb:4-8
+      · orders/checkout.rb:4-8
 
 Ratchet FAILED. Either fix what regressed, or — if it is deliberate —
 record the decision: update the baseline, or accept it with a reason.
@@ -530,8 +657,13 @@ that is where removals get celebrated and the baseline gets relocked.
 
 `--only` refuses to combine with `--update-baseline` (which would record a
 baseline missing everything you did not name) or with the diagram formats (which
-draw the graph, not the findings). Paths outside the analyzed directories are
-ignored, so a hook can hand it every changed file without filtering first.
+draw the graph, not the findings). A directory stands for every `.rb` file under
+it (`--only app/models`). Paths outside the analyzed directories are ignored, so
+a hook can hand it every changed file without filtering first. Handed a file
+where a directory belongs (`hashira app/models/problem.rb`), hashira refuses and
+suggests the focused run instead (`hashira --only app/models/problem.rb`), since
+analyzing the file's folder alone would change the packages and miss every
+cross-file signal.
 
 ### Exit codes
 
@@ -605,7 +737,8 @@ sentence turns every exception into a decision somebody reviewed.
 ## Other formats
 
 ```sh
-hashira --json            # machine format, never capped by --top
+hashira --json            # machine format, every finding and every row
+hashira --json --top 20   # the 20 worst of each list, and how many it withheld
 hashira --json --compact  # the same on one line, for piping
 hashira --format dot      # Graphviz digraph
 hashira --format mermaid  # Mermaid diagram
@@ -613,10 +746,27 @@ hashira --format mermaid  # Mermaid diagram
 
 `--json` opens with what produced it — `version` (the schema, bumped when the
 shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
-`digest`), `accepted`, `packages`, `edges`, `folds` (single-type classes joined
-to a base or domain, `{from, to, via}`), `complexity`, `duplication`, and
-`hotspots`. A package with no edges at all reports `"i": null` rather than
-pretending 0/0 is maximally stable.
+`digest`), `kinds` (each kind's `count` and the number of `files` it touches),
+`accepted`, `packages`, `edges`, `folds` (single-type classes joined to a base
+or domain, `{from, to, via}`), `complexity`, `duplication`, and `hotspots`. A
+package with no edges at all reports `"i": null` rather than pretending 0/0 is
+maximally stable. The findings come in the same order as the text report, dealt
+across kinds.
+
+Given explicitly, `--top N` caps the ranked lists — `findings`, the complexity
+`methods` and `classes`, `duplication`, `hotspots` — and adds `withheld`, how
+many rows each one lost. `kinds` still counts everything. The graph (`packages`,
+`edges`, `folds`) and `accepted` are never cut, since half a graph answers
+questions wrongly.
+
+Each finding carries a `confidence` — not a probability, but how directly the
+finding follows from the code:
+
+| confidence | meaning | findings |
+| ---------- | ------- | -------- |
+| `high` | a measurement of the code as hashira parsed and resolved it | complexity; cycles, SDP violations, mixed audiences, wide edges, roll-calls in the resolved reference graph; clones that differ at most in literals, a receiver or message, or a constant |
+| `medium` | a pattern that usually signals a design problem, but turns on intent the AST cannot show | every code smell; clones that differ in several ways at once |
+| `low` | hashira hedges itself | clones whose control flow differs — "verify by hand" |
 
 Both diagrams declare every package before the arrows, so a package nothing
 depends on still appears. Mermaid node ids are generated (`p0`, `p1`, …) with

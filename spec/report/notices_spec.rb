@@ -10,12 +10,6 @@ RSpec.describe(Hashira::Report::Notices) do
     expect(io.string).to(eq("hashira: no git history for lib/app — hotspots are ranked by cost alone\n"))
   end
 
-  it "points a bare run in a Rails root at the application" do
-    io = piped
-    described_class.new(io:).rails
-    expect(io.string).to(include("this looks like a Rails root", "hashira app"))
-  end
-
   it "names the files Prism could not parse, and how many there were" do
     io = piped
     described_class.new(io:).unparsed(4, "a.rb, b.rb, c.rb")
@@ -34,15 +28,15 @@ RSpec.describe(Hashira::Report::Notices) do
 
   it "keeps progress off a pipe, so a captured log is unchanged" do
     io = piped
-    described_class.new(io:).scanning(3222)
+    described_class.new(io:).scanning(3222, "app, lib")
     described_class.new(io:).finished(1247, "8.7")
     expect(io.string).to(be_empty)
   end
 
   it "shows progress on a terminal, where the wait is felt" do
     io = terminal
-    described_class.new(io:).scanning(3222)
+    described_class.new(io:).scanning(3222, "app, lib")
     described_class.new(io:).finished(1247, "8.7")
-    expect(io.string).to(eq("hashira: reading 3222 files…\nhashira: 1247 files in 8.7s\n"))
+    expect(io.string).to(eq("hashira: reading 3222 files in app, lib…\nhashira: 1247 files in 8.7s\n"))
   end
 end

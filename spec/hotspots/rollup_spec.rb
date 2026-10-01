@@ -5,24 +5,20 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
     instance_double(Hashira::Complexity::MethodScore, file:, cognitive:)
   end
 
-  def cluster(mass, *files)
-    instance_double(Hashira::Duplication::Cluster, masses: files.map { [it, mass] })
-  end
-
   def complexity(scores) = instance_double(Hashira::Complexity::Scores, ranked: scores)
 
-  def duplication(clusters) = instance_double(Hashira::Duplication::Clones, clusters:)
+  def duplication(coverage) = instance_double(Hashira::Duplication::Clones, coverage:)
 
-  def rollup(scores: [], clusters: [], churn: {})
-    described_class.new(complexity(scores), duplication(clusters), Hashira::Churn.new(churn))
+  def rollup(scores: [], coverage: {}, churn: {})
+    described_class.new(complexity(scores), duplication(coverage), Hashira::Churn.new(churn))
   end
   it "sums cognitive complexity per file across a file's methods" do
     files = rollup(scores: [score("a.rb", 3), score("a.rb", 4), score("b.rb", 2)], churn: { "a.rb" => 1, "b.rb" => 1 })
     expect(files.files.map { [it.file, it.cognitive] }).to(eq([["a.rb", 7], ["b.rb", 2]]))
   end
 
-  it "charges a file the mass of every clone site it holds" do
-    files = rollup(clusters: [cluster(10, "a.rb", "a.rb"), cluster(6, "a.rb", "b.rb")]).files
+  it "charges a file the clone coverage duplication measured for it" do
+    files = rollup(coverage: { "a.rb" => 26, "b.rb" => 6 }).files
     expect(files.map { [it.file, it.duplication] }).to(contain_exactly(["a.rb", 26], ["b.rb", 6]))
   end
 
@@ -49,7 +45,7 @@ RSpec.describe(Hashira::Hotspots::Rollup) do
   end
 
   it "zeroes the column of a skipped analyzer rather than breaking" do
-    dupes = described_class.new(nil, duplication([cluster(9, "a.rb")]), Hashira::Churn.new({}))
+    dupes = described_class.new(nil, duplication("a.rb" => 9), Hashira::Churn.new({}))
     expect(dupes.files.map { [it.file, it.cognitive, it.duplication] }).to(eq([["a.rb", 0, 9]]))
     costs = described_class.new(complexity([score("b.rb", 4)]), nil, Hashira::Churn.new({}))
     expect(costs.files.map { [it.file, it.cognitive, it.duplication] }).to(eq([["b.rb", 4, 0]]))

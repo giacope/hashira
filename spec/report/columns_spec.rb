@@ -40,4 +40,15 @@ RSpec.describe(Hashira::Report::Columns) do
     expect(cell.length).to(eq(described_class::CAP))
     expect(render(%w[a], [[cell]]).last).to(eq(cell))
   end
+
+  it "never clips a location, so every path in a table can be opened as printed" do
+    path = "controllers/users/omniauth_callbacks_controller.rb:58"
+    line = render(%w[method Cog Loc], [["#{"Users::" * 5}Callbacks#google_oauth2_with_a_long_tail", 1, path]]).last
+    expect(line).to(end_with(path))
+    expect(line).to(include("Users::Users::Users::Us…_oauth2_with_a_long_tail"))
+  end
+
+  it "keeps a whole file path under the file header" do
+    expect(render(%w[file Rank], [["#{"deep/" * 10}file.rb", 1]]).last).to(start_with("#{"deep/" * 10}file.rb"))
+  end
 end

@@ -10,6 +10,127 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Found by running hashira against fifteen MIT-licensed Rails apps and gems
 (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn, …).
 
+### Upgrading
+
+Three changes move what a recorded baseline expects; run `--update-baseline`
+once after upgrading, after reading what the ratchet reports:
+
+- With several directories (every Rails app run as `hashira app lib`), paths
+  are now named from where hashira runs, so every recorded path changes.
+- Cycles are one finding per knot, keyed by its alphabetically first member.
+- Complexity scores methods it could not see before (`private def`,
+  `class << self`, `class_methods do`) and charges nesting for ternaries and
+  rescue modifiers, so more methods cross the threshold.
+
+Across the fifteen field repos, findings fell from 15,557 to 12,711. Every
+true positive the earlier triage confirmed still fires.
+
+### Added
+
+- `--kind KINDS` keeps only the findings of the kinds named, in text and
+  JSON, with the `--fail-on` names and shorthands (`cycles`, `sdp`, `dupe`,
+  `smells`, or one smell). It narrows the way `--only` does: under
+  `--ratchet` it judges only those kinds, leaving removals and edges to the
+  full run, and it refuses `--update-baseline`, the diagram formats, a kind
+  whose analyzer `--skip` drops, and a `--fail-on` kind it leaves out.
+- JSON findings carry a `confidence`: `high` for measurements (complexity,
+  the structural kinds, clones that differ in one narrow way), `medium` for
+  patterns that turn on intent (every smell, clones that differ several
+  ways), `low` where hashira already hedges (clones whose control flow
+  differs). It is a category, not a probability.
+- JSON gains `kinds`, each kind's count and the number of files it touches.
+- When the text findings list is capped, a rollup above it states every
+  kind once — `nil_check  113 in 92 files` — withheld findings included.
+
+### Changed
+
+- With several directories, every file is named as you would open it from
+  where hashira runs: `app/models/user.rb`, `activerecord/lib/active_record/base.rb`.
+  Paths were relative to each directory, so in rails `railtie.rb`,
+  `callbacks.rb` and `test_case.rb` each named two or three files, their
+  hotspot rows merged (activemodel's and activesupport's `callbacks.rb` became
+  one row), and a Rails app's `lib/hoptoad/v2.rb` really meant
+  `app/lib/hoptoad/v2.rb`. Findings, duplication sites, complexity rows,
+  hotspots, churn and `--only` all use the same name. A single directory keeps
+  its directory-relative names. **Multi-directory baselines (`hashira app lib`)
+  need one `--update-baseline`**, since every recorded path changes.
+- Folder packaging gives each directory's loose files their own root package
+  (`lib/(root)`, `app/(root)`) when several are analyzed, instead of merging
+  them all into one `(root)`.
+- Single-folder wrapper chains are descended only when one directory is
+  analyzed. Each of several directories was descended on its own, so in rails
+  three gems dropped to `lib/<gem>` while nine stayed at `lib`, and package
+  granularity differed from gem to gem. Rails now reads as 25 gem-level
+  packages and 15 cycles (was 60 and 45).
+- A bare `hashira` analyzes `lib/<gem>` when `lib/<gem>.rb` sits beside it,
+  preferring the name a `*.gemspec` gives if `lib/` holds several. It used to
+  stop at `lib/` whenever `lib/` also held `generators/`, `ruby_lsp/` or
+  `helpers/`, so rubocop's 949 files read as 2 packages (now 13), devise 2
+  (now 10), faker 2 (now 17).
+- A bare `hashira` in a Rails root (`config/application.rb`) analyzes `app`
+  and `lib` instead of printing a hint and reading `lib/` alone. The progress
+  line on a terminal now names the directories it reads.
+- Handed a file, hashira suggests a focused run (`hashira --only
+  app/models/problem.rb`) instead of the file's folder, which silently
+  changed the packages and the scope.
+- `--only` accepts directories and expands them to every `.rb` file under
+  them. It still refuses paths that do not exist, and an `--only` directory
+  with no Ruby files, which would have reported everything.
+
+- The findings list is dealt across kinds instead of grouped by kind: each
+  round takes the next finding of every kind, structural kinds first, and
+  each kind comes worst first where it has a size. The capped top 25 on
+  rails, chatwoot and feedbin was all cycles; it now shows every kind
+  found. JSON findings come in the same order.
+- An explicit `--top N` caps the JSON's ranked lists too (findings,
+  complexity methods and classes, duplication, hotspots) and adds
+  `withheld`, how many rows each lost. The graph and `accepted` stay whole;
+  without `--top` the JSON is uncapped as before.
+- The dependency map honours `--top` and says how many rows it withheld.
+  It leads with the most connected packages, and packages with no edges
+  either way share one line instead of a row each — 341 lines on chatwoot.
+- Cognitive complexity charges a ternary like an `if`: it pays for the
+  nesting it sits at, and its arms nest one level deeper. A `x rescue y`
+  modifier costs what a `rescue` clause does. Scores rise where ternaries
+  and rescue modifiers nest; across fifteen field repos complexity findings
+  went from 571 to 614.
+- An unknown `--fail-on` kind reads like the other choice flags:
+  `unknown --fail-on "typos" (use: …)`.
+
+- **One cycle finding per knot.** A cycle used to be reported once for every
+  package that could reach itself, so one 119-package tangle in chatwoot read
+  as 104 findings ("Account can reach itself…", "AccountEmailRateLimitable
+  can reach itself…"). Each strongly connected component is now reported
+  once. The finding names its members and the cheapest cut, found by dropping
+  the lightest edges until the knot splits and then putting back any edge the
+  split did not need. The evidence is the references on the cut edges, which
+  are the lines to change. Across fifteen field repos, cycle findings fell
+  from 270 to 26.
+  The finding's `detail` is now `{members:, cut: [{from:, to:, weight:}]}` in
+  place of `{weak:, weight:}`. It is keyed by its alphabetically first member
+  (`cycle:<member>`), so a two-package cycle keeps the key it had. For a
+  larger knot, a saved baseline reports the other members' old `cycle:` keys
+  as resolved. Re-record it with `--update-baseline`.
+
+- `nil_check` words its advice for where the checked value came from. When
+  the method itself read it from outside the program (a literal-key read
+  such as `params[:id]` or `request.headers["X-Token"]`, or a call on a
+  constant the codebase doesn't define, such as `JSON.parse`), it says to
+  translate the missing value where it enters, at the boundary, rather than
+  reach for a null object. Such findings are still reported, and their JSON
+  `detail` carries `origin: "outside"` (or `"both"`).
+- `module_initialize` gives a reason that holds even when the initializer
+  calls `super`: a mixin that carries constructor state is implementation
+  inheritance, so compose a collaborator. "Construction order becomes
+  anyone's guess" was false for the cooperative initializers that are most
+  of them.
+- `assumed_state` says when the ivar a base class reads is one its own
+  subclasses assign (`detail.installed`): a base class waiting for
+  subclasses to install its state is a fragile base class, so pass the
+  value in.
+- The README now describes `manual_dispatch` as what it always checked: any
+  `respond_to?`, not only `respond_to?` followed by `send`.
+
 ### Fixed
 
 - Complexity scores every method a class body declares, not only its
@@ -28,6 +149,148 @@ Found by running hashira against fifteen MIT-licensed Rails apps and gems
   it spans change more often than the typical analyzed file (above the
   median commit count). Any committed file used to qualify, so the flag was
   on every clone in a git repository.
+
+- Table cells under `file` and `Loc` are never clipped. A 48-character cap
+  printed paths like `controllers/users/omnia…llbacks_controller.rb:58`
+  that could not be opened; only names are clipped now.
+
+- Constants resolve the way Ruby resolves them. Lookup goes through the
+  lexical scopes first, then the superclass chain and the included or
+  prepended modules of the innermost class, then top level. A bare name no
+  longer falls back to any namespace that happens to end in it. In
+  fat_free_crm, `I18n` in a top-level `ApplicationController` had resolved to
+  `FatFreeCRM::I18n`, which accounted for 6 of 13 cycles and 8 of 12 SDP
+  violations. The same fallback sent postal's `Process.exit` to
+  `Worker::Process` (8 of 18 cycles). In rails it caught `Queue`,
+  `ConnectionPool` and `Logger`'s inherited `ERROR`. A constant a class
+  inherits from a superclass or mixin inside the project now resolves to that
+  class's package.
+- Ruby's core and standard-library constants are detected at runtime without
+  loading anything. That covers constants with no Ruby source file, plus
+  names that have a library on Ruby's own shelves. `Process` and `Set` used
+  to slip through, and so did `JSON`, `Logger`, `URI` and `Date` whenever
+  they were not loaded. Such a constant never belongs to a package that
+  reopens it. rails' `core_ext` no longer owns `String`, `Hash` or `File`,
+  which removes 28 of rails' 60 wide edges. What the project creates inside
+  one, such as `Time::DATE_FORMATS` or a derived class, stays its own.
+- A library namespace the project only patches is left to the library. Such a
+  namespace is opened only in files not named for it, and the project derives
+  no class inside it. Examples are huginn's `class Rufus::Scheduler` in
+  `huginn_scheduler.rb` and actionpack's `module Rack` stub. `::Rack::BodyProxy`
+  no longer resolves to `action_dispatch`, and `Mail` no longer resolves to
+  `action_mailbox`.
+- `self::VERSIONS`, `namespace::Service` and any other `expr::Const` are
+  dynamic and stay unresolved. They were read as a bare constant, which made
+  false cycles such as rubygems' `CompactIndexVersions` <-> `GemInfo`.
+  hashira still walks the receiver expression.
+- An SDP violation now needs a gap the report can show. Instabilities are
+  compared at the two decimals the table prints, so "Feed (I=0.33) depends on
+  LESS stable WebSub (I=0.33)" is no longer reported.
+
+- Duplication stops reporting declarations as clones in more of their
+  forms. A macro whose block holds only more declarations counts as one
+  (`string :host do description "…"; default "…" end` — postal's config
+  schema was that repo's top hotspot at cognitive 0), and so do constant
+  arguments (`include Foo`), constants assigned a literal (`.freeze`
+  included) and heredocs with nothing interpolated (rubocop's
+  `def_node_matcher :x, <<~PATTERN`).
+- A class or module is never a clone fragment of its own. Files that wrap
+  similar code in the same `module Faker … end` matched as whole files; the
+  body is now windowed like any other.
+- Three or more identically shaped `when` arms in a row are a dispatch
+  table, and follow the same list rule as a run of identical statements.
+- Duplication labels say what actually differs. Method and parameter names,
+  `||=` and other op-writes, constant assignments, regex text and `&.` were
+  invisible to the diff, so "byte-for-byte identical" and "differs only in
+  literal values" were often false. Copies that differ only in the method's
+  name are now labelled as such, with their own advice; `&.` against `.` is
+  a control-flow change (postal's `client.trace_id` / `client&.trace_id`
+  was called identical).
+- A smaller clone nested inside a bigger one is reported only when at least
+  two of its copies lie outside it. One extra site kept whole families
+  alive: rails' routing mapper `get`/`post`/`patch`/`put`/`delete` was five
+  findings.
+- Hotspots charge a file each cloned node once. The Dup column summed every
+  cluster's site mass, so code shared by overlapping clusters was paid for
+  again and again: rails' `routing/mapper.rb` was charged 3802 for 1766
+  distinct nodes.
+- A clone's range runs to the closing line of a heredoc it carries, and no
+  longer opens on a bare `private` line heading the methods below it.
+
+- feature_envy keeps the promise that it only speaks when the destination is
+  yours: `x.m` counts only when `m` is a message the codebase publicly
+  defines — a `def`, an `attr_*`, an `alias`, or a name a class body hands to
+  a macro (`has_many :lines`, `delegate :total`, `Data.define(:x)`).
+  Operators (`==`, `+`, `[]`), what every object answers (`to_s`, `is_a?`,
+  `tap`) and `x += 1` never count. Across fifteen field-test repos this
+  drops findings from 2,497 to 1,030 while every sampled true positive
+  still fires.
+- feature_envy tallies each variable binding on its own: three blocks that
+  each name their parameter `r` are three variables, not one.
+- feature_envy treats a block parameter handed over by a foreign constructor
+  or call chain (`Faraday.new do |f|`, `Rails.application.tap { |app| }`)
+  as foreign, and block parameters referenced together, as in a comparator
+  (`sort { |a, b| ... }`), as peers rather than a destination.
+- The feature_envy message states both counts ("more than to self, 3 to 1")
+  and the evidence lists self's references, so the claim can be checked; a
+  tie no longer names the first variable as the place the behavior belongs.
+- utility_function reads polymorphism as polymorphism: a method an owned
+  ancestor or descendant also defines, or that a sibling under the same
+  superclass defines too (every job's `perform`), is not flagged.
+  `extend self` modules are exempt like `module_function` ones. Findings
+  drop from 980 to 612 on the field-test repos.
+- Methods defined in `class_methods do` blocks and `ClassMethods` modules are
+  class-level: every smell names them `Concern.method`, not
+  `Concern#method` (or `Concern::ClassMethods#method`). A bare `private`
+  inside `included do` no longer makes the rest of the module private, and
+  `private def` inside `class << self` is no longer skipped.
+- utility_function advice follows the owner: "make it a module function" for
+  a module, "make it private" for a class.
+
+- `control_parameter` no longer counts `param || default` or `param && x`
+  as steering when the result is assigned, passed, or returned. Such a
+  parameter is handed on as data, so it is no control parameter anywhere in
+  the method. An `&&` standing alone as a statement (`flag && run`) or in a
+  loop's condition still steers (832 → 670 findings on the fifteen repos).
+- `manual_dispatch` skips `respond_to_missing?`, which Ruby requires of any
+  class that uses `method_missing` and which has to ask `respond_to?`.
+- `state_sprawl` doesn't count a memo predeclared as `@x = nil` and filled
+  by `||=`, or one filled behind `return @x if defined?(@x)`, as state; the
+  README already said memoization doesn't count. A `defined?`-tested flag
+  still counts.
+- `assumed_state` stays quiet when the class body (or a superclass's) calls
+  a macro that neither Ruby nor the codebase defines, such as attr_extras'
+  `pattr_initialize [:user]`, just as it already did for an unseen
+  superclass or mixin, since the assignment may live in the macro
+  (30 → 10 findings, 20 of them `pattr_initialize`).
+
+- `repeated_call` flags repeated queries only. A call whose result the
+  method throws away is a command (`render …`, `@out << row`, `raise`, a
+  log line as a statement, the body of a loop or `ensure`), and repeating a
+  command is deliberate; hashira reads that from the call's position in the
+  AST, not from a list of method names. A call fed a freshly minted
+  argument (`render(Row.new)`) no longer counts as identical, a call
+  repeated only at the method's exits (`return head(:ok) unless …` twice,
+  then `head :ok`) runs once per call and is left alone, and a repeated
+  chain is listed once at its longest: `DateTime.now.utc × 3` no longer
+  drags `DateTime.now × 3` along. On the fifteen field repos: 4689 → 4571
+  findings, 7271 → 6424 evidence lines.
+- `repeated_conditional` no longer treats one local variable name in
+  different methods as the same test: feedbin's `Import` had `all == 0 × 4`
+  across four methods with four different `all`s. A test that reads a local
+  groups only within the method or block that binds it; tests on the
+  object's own state still group across the class. Each line is listed
+  once, in order (`lines 18, 18, 39` was possible). 238 → 144 findings.
+- `data_clump` lists each clump at its widest: `(a, b)` is no longer listed
+  beside `(a, b, c)` in the same finding (134 of 612 evidence rows).
+- Class-level smells (data_clump, repeated_conditional, state_sprawl,
+  assumed_state, module_initialize) judge a class across every file that
+  opens it and report it once. rails' `FormBuilder`, reopened in three
+  helper files, got three data_clump findings under one key.
+- `boundary_sprawl` no longer reports classes built into Ruby (`String`,
+  `Hash`, `Array`, `Proc`): 9 of its 12 field findings. A root counts as
+  built in when hashira's own runtime defines it without a source file, so
+  gems such as `Parser` or `Rubydex` still count.
 
 ### Performance
 

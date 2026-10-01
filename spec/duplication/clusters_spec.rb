@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters.first.size).to(eq(2))
     expect(clusters.first.mass).to(eq(23))
     expect(clusters.first.canonical.range).to(eq("a.rb:1-5"))
-    expect(clusters.first.masses).to(eq([["a.rb", 23], ["b.rb", 23]]))
+    expect(clusters.first.sites.map(&:file)).to(eq(["a.rb", "b.rb"]))
   end
 
   it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
@@ -43,9 +43,9 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(cluster.sites.map(&:types).uniq.size).to(eq(2))
   end
 
-  it "charges each site of a near-miss cluster the mass of its own copy" do
+  it "measures each site of a near-miss cluster by its own copy" do
     cluster = clusters(near).first
-    expect(cluster.masses.sort).to(eq([["c.rb", 40], ["d.rb", 44]]))
+    expect(cluster.sites.map { [it.file, it.mass] }.sort).to(eq([["c.rb", 40], ["d.rb", 44]]))
   end
 
   it "suppresses a near-miss below the raised near-miss floor" do
@@ -171,15 +171,15 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       "a.rb" => <<~RUBY,
         class A
           add feature_enabled?(enabled?, enabled?)
-          add feature_enabled?(enabled?, enabled?)
-          add feature_enabled?(enabled?, enabled?)
+          drop feature_enabled?(enabled?)
+          flag feature_enabled?(enabled?, enabled?, enabled?)
         end
       RUBY
       "b.rb" => <<~RUBY
         class B
           add feature_enabled?(enabled?, enabled?)
-          add feature_enabled?(enabled?, enabled?)
-          add feature_enabled?(enabled?, enabled?)
+          drop feature_enabled?(enabled?)
+          flag feature_enabled?(enabled?, enabled?, enabled?)
         end
       RUBY
     }
@@ -232,6 +232,84 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     }
     expect(clusters(bare)).to(be_empty)
   end
+
+  it "leaves a macro alone whose block holds only more declarations" do
+    settings =
+      lambda do |group, host, port|
+        "group :#{group} do\n string :host do\n  description \"#{host}\"\n  default \"#{host}.local\"\n end\n " \
+          "integer :port do\n  description \"port\"\n  default #{port}\n end\n " \
+          "boolean :tls do\n  description \"tls\"\n  default false\n end\nend\n"
+      end
+    expect(clusters("a.rb" => settings[:smtp, "mx", 25], "b.rb" => settings[:imap, "mail", 143])).to(be_empty)
+  end
+
+  it "reads a macro block as code once it takes a parameter or holds logic" do
+    settings =
+      lambda do |group, body|
+        "group :#{group} do |g|\n string :host do\n  description \"host\"\n  #{body}\n end\n " \
+          "integer :port do\n  description \"port\"\n  default 25\n end\nend\n"
+      end
+    expect(clusters("a.rb" => settings[:smtp, "default 1"], "b.rb" => settings[:imap, "default 2"])).not_to(be_empty)
+    logic = ->(group) { settings[group, "default { ENV.fetch(\"HOST\") }"].sub(" |g|", "") }
+    expect(clusters("a.rb" => logic[:smtp], "b.rb" => logic[:imap])).not_to(be_empty)
+  end
+
+  it "leaves mixins, frozen constants and plain heredoc arguments alone — they declare, they do not compute" do
+    header =
+      lambda do |name, limit|
+        "class #{name}\n include Comparable\n extend Forwardable\n MSG = \"Use #{name}.\".freeze\n " \
+          "LIMIT = #{limit}\n KINDS = %i[a b].freeze\n " \
+          "def_node_matcher :bad?, <<~PATTERN\n  (send nil? :#{name}\n    " \
+          "(int #{limit}))\n PATTERN\nend\n"
+      end
+    expect(clusters("a.rb" => header["A", 1], "b.rb" => header["B", 2])).to(be_empty)
+  end
+
+  it "reads a heredoc that interpolates, or a constant built by a message, as code" do
+    header =
+      lambda do |name, value|
+        "class #{name}\n include Comparable\n extend Forwardable\n MSG = #{value}\n " \
+          "LIMIT = 10\n KINDS = %i[a b].freeze\n def_node_matcher :bad?, <<~PATTERN\n  (send nil? :\#{x}\n    " \
+          "(int 1))\n PATTERN\nend\n"
+      end
+    expect(clusters("a.rb" => header["A", "1"], "b.rb" => header["B", "2"])).not_to(be_empty)
+    %w[Set.new "Use".ljust(20)].each do |value|
+      built = ->(name) { header[name, value].sub("\#{x}", "x") }
+      expect(clusters("a.rb" => built["A"], "b.rb" => built["B"])).not_to(be_empty)
+    end
+  end
+
+  it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
+    expect(nested(1).map { it.sites.map(&:file) }).to(eq([%w[a.rb b.rb]]))
+  end
+
+  it "keeps a smaller clone that two sites outside the bigger clone share" do
+    expect(nested(2).map { it.sites.map(&:file).sort }).to(eq([%w[a.rb b.rb], %w[a.rb b.rb c0.rb c1.rb]]))
+  end
+
+  it "keeps a clone whose site only shares a line with a bigger clone, rather than sitting inside it" do
+    one, two, three, four, five = [
+      "r.configure(host: fetch(:h), port: fetch(:p))", "r.connect(retries: 3, timeout: 30)",
+      "r.authorize(token: load(:t), scope: :admin)", "r.archive(path: join(root, name), mode: :append)",
+      "r.notify(users.map(&:email), subject: :done)"
+    ].map { " #{it}\n" }
+    sources = {
+      "a.rb" => "def a(r)\n#{one}#{two}#{three}#{four}#{five}end\n",
+      "b.rb" => "def b(r)\n#{one}#{two}#{three} r.x\nend\n",
+      "c.rb" => "def c(r)\n#{three}#{four}#{five} r.y\nend\n"
+    }
+    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([%w[a.rb:2-5 b.rb:2-5], %w[a.rb:3-6 c.rb:2-5]]))
+  end
+
+  def nested(extra) = clusters(wholes.merge((0...extra).to_h { ["c#{it}.rb", "def c(r)\n#{head} r.x(#{it})\nend\n"] }))
+
+  def wholes
+    tail = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n " \
+      "r.notify(users.map(&:email), subject: :done)\n"
+    %w[a b].to_h { ["#{it}.rb", "def #{it}(r)\n#{head}#{tail}end\n"] }
+  end
+
+  def head = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
 
   describe(Hashira::Duplication::Index) do
     it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do

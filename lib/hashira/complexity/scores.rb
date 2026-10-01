@@ -12,6 +12,8 @@ class Hashira::Complexity::Scores
 
   def classes = Hashira::Complexity::Rollup.new(scores).classes.sort_by { -it.cognitive }
 
+  def lists = { methods: ranked, classes: }
+
   def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding }
 
   private

@@ -17,12 +17,18 @@ class Hashira::Project
   def files = directories.flat_map { Dir["#{it}/**/*.rb"] }.sort
 
   def package(path)
-    first, rest = relative(path).delete_suffix(".rb").split("/", 2)
-    return ROOT_PACKAGE unless rest || folder?(path, first)
-    contested.include?(first) ? "#{parent(path)}/#{first}" : first
+    home = parent(path)
+    first, rest = path.delete_prefix("#{home}/").delete_suffix(".rb").split("/", 2)
+    return "#{shown(home)}#{ROOT_PACKAGE}" unless rest || Dir.exist?("#{home}/#{first}")
+    contested.include?(first) ? "#{home}/#{first}" : first
   end
 
-  def relative(path) = path.delete_prefix("#{parent(path)}/")
+  def relative(path)
+    home = parent(path)
+    "#{shown(home)}#{path.delete_prefix("#{home}/")}"
+  end
+
+  def shown(directory) = directories.one? ? "" : "#{directory}/"
 
   def label = directories.join(", ")
 
@@ -31,18 +37,26 @@ class Hashira::Project
   private
 
   def resolved
-    chosen = (@requested.empty? ? defaults : @requested).map { descend(it.delete_suffix("/")) }
-    vet(chosen)
-    survivors = distinct(chosen)
+    chosen = distinct(named)
+    survivors = chosen.one? ? [descend(chosen.first)] : chosen
     raise(Hashira::Error, "no Ruby files under #{survivors.join(", ")}") if bare?(survivors)
     survivors
   end
 
+  def named
+    chosen = (@requested.empty? ? defaults : @requested).map { tidy(it) }
+    vet(chosen)
+    chosen
+  end
+
+  def tidy(path) = path.delete_suffix("/").delete_prefix("#{Dir.pwd}/").delete_prefix("./")
+
   def bare?(survivors) = survivors.flat_map { Dir["#{it}/**/*.rb"] }.empty?
 
   def defaults
-    return ["lib"] if Dir["lib/*/"].any? || Dir["lib/*.rb"].any?
-    raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly")
+    found = Hashira::Layout.new.targets
+    raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly") if found.empty?
+    found
   end
 
   def descend(directory)
@@ -57,11 +71,13 @@ class Hashira::Project
   end
 
   def vet(directories)
-    file = directories.find { File.file?(it) }
-    raise(Hashira::Error, "#{file} is a file — hashira takes directories (try: hashira #{File.dirname(file)})") if file
+    files = directories.select { File.file?(it) }
+    raise(Hashira::Error, "#{files.first} is a file — hashira takes directories (try: #{hint(files)})") if files.any?
     missing = directories.reject { Dir.exist?(it) }
     raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
   end
+
+  def hint(files) = Hashira::Layout.new.suggestion(files)
 
   def distinct(directories)
     pairs = directories.map { [it, File.realpath(it)] }.uniq(&:last)
@@ -73,8 +89,6 @@ class Hashira::Project
   def config?(directory)
     ["config/application.rb", "../config/application.rb"].any? { File.exist?(File.expand_path(it, directory)) }
   end
-
-  def folder?(path, name) = Dir.exist?("#{parent(path)}/#{name}")
 
   def contested
     @_contested ||=

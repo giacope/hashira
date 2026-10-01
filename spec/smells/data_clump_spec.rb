@@ -83,4 +83,44 @@ RSpec.describe(Hashira::Smells::DataClump) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "lists only the widest clumps, not every smaller set inside them" do
+    findings = clumped(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def one(alfa, bravo, charlie) = @a.use(alfa, bravo, charlie)
+
+            def two(alfa, bravo, charlie) = @a.use(alfa, bravo, charlie)
+
+            def three(alfa, bravo, charlie) = @a.use(alfa, bravo, charlie)
+
+            def four(alfa, bravo) = @a.use(alfa, bravo)
+
+            def five(delta, echo) = @a.use(delta, echo)
+
+            def six(delta, echo) = @a.use(delta, echo)
+
+            def seven(delta, echo) = @a.use(delta, echo)
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["(alfa, bravo, charlie) → 3 methods: one, two, three", "(delta, echo) → 3 methods: five, six, seven"])
+    )
+  end
+
+  it "judges a reopened class once, across every file that opens it" do
+    findings = sniffed(
+      {
+        "lib/app/zone/thing.rb" => "class Thing\n  def one(alfa, bravo) = [alfa, bravo]\nend\n",
+        "lib/app/zone/thing/two.rb" => "class Thing\n  def two(alfa, bravo) = [alfa, bravo]\nend\n",
+        "lib/app/zone/thing/three.rb" => "class Thing\n  def three(alfa, bravo) = [alfa, bravo]\nend\n"
+      },
+      "data_clump"
+    )
+    expect(findings.size).to(eq(1))
+    expect(findings.first.evidence).to(eq(["(alfa, bravo) → 3 methods: one, three, two"]))
+  end
 end

@@ -16,7 +16,7 @@ class Hashira::Smells::BoundarySprawl
   end
 
   def findings
-    reaches.except(*@interpreted).filter_map { |root, contexts| finding(root, contexts) }
+    foreign.filter_map { |root, contexts| finding(root, contexts) }
   end
 
   private
@@ -26,6 +26,12 @@ class Hashira::Smells::BoundarySprawl
       Hashira::Smells::Foreign.new(subject, @ownership).reaches.each { (map[it] ||= []) << subject }
     end
   end
+
+  def foreign = reaches.except(*@interpreted).reject { |root, _| builtin?(root) }
+
+  def builtin?(root) = Object.const_defined?(root) && !written?(root)
+
+  def written?(root) = File.file?(Object.const_source_location(root).first.to_s)
 
   def finding(root, contexts)
     files = contexts.map(&:file).uniq

@@ -5,27 +5,16 @@ require_relative "rule"
 class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   KIND = "cycle"
 
-  def list
-    loops.map { entry(it) }
-  end
+  def list = graph.cycles.knots.map { entry(it) }
 
   private
 
-  def loops
-    cycles = graph.cycles
-    graph.packages.select { cycles.through?(it) }.sort.map { cycles.path(it) }.uniq { it[..-2].sort }
+  def entry(members) = knot(members.first, members, graph.cycles)
+
+  def knot(key, members, cycles)
+    cut = cycles.cut(members).map { |from, to, weight| { from:, to:, weight: } }
+    finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail: { members:, cut: })
   end
 
-  def entry(path)
-    finding(package: path.first, cycle: path, evidence: evidence(path), detail: detail(graph.cycles.weakest(path)))
-  end
-
-  def detail(weak)
-    from, to = weak
-    { weak:, weight: graph.weight(from, to) }
-  end
-
-  def evidence(path)
-    path.each_cons(2).flat_map { |from, to| graph.evidence(from, to).to_a.first(2) }
-  end
+  def evidence(cut) = cut.flat_map { graph.evidence(it[:from], it[:to]).to_a.sort }
 end

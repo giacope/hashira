@@ -3,7 +3,7 @@
 class Hashira::Churn
   FILES_THAT_DRIFT_APART = 2
 
-  def self.build(directories) = new(Hashira::GitLog.new(directories).counts)
+  def self.build(project) = new(Hashira::GitLog.new(project).counts)
 
   def initialize(counts)
     @counts = counts

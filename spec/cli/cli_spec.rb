@@ -143,6 +143,31 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "keeps only the findings of the kinds --kind names, in text and in JSON" do
+    within(Fixtures::CYCLIC_FILES) do
+      text = capture { expect(described_class.new(["lib/app", "--kind", "cycles"]).status).to(eq(0)) }
+      expect(text).to(include("Package (folder) metrics", "Findings (1):", "cycle: alpha"))
+      expect(text).not_to(include("utility_function"))
+      json = capture { expect(described_class.new(["lib/app", "--json", "--kind", "smells"]).status).to(eq(0)) }
+      expect(JSON.parse(json)["findings"].map { it["kind"] }.uniq).to(eq(%w[utility_function]))
+      gate = ["lib/app", "--kind", "cycles,sdp", "--fail-on", "sdp"]
+      expect(capture { expect(described_class.new(gate).status).to(eq(1)) }).not_to(include("cycle:"))
+    end
+  end
+
+  it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
+    within(Fixtures::CYCLIC_FILES) do
+      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
+      methods = %w[help name hash].map { "def #{it}_of = Core::Util.#{it}" }.join("; ")
+      File.write("lib/app/beta/two.rb", "module App; module Beta; class Two; #{methods}; end; end; end\n")
+      capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(1)) }
+      quiet = capture { expect(described_class.new(["lib/app", "--ratchet", "--kind", "cycles"]).status).to(eq(0)) }
+      expect(quiet).to(eq("Ratchet OK: 0 findings, unchanged.\n"))
+      loud = capture { expect(described_class.new(%w[lib/app --ratchet --kind utility_function]).status).to(eq(1)) }
+      expect(loud).to(include("NEW FINDING:", "utility_function: App::Beta::Two#"))
+    end
+  end
+
   it "reports unreadable files as a friendly error" do
     within("lib/app/other.rb" => "class Other; def x = 1; end") do
       File.symlink("gone.rb", "lib/app/thing.rb")
@@ -152,13 +177,32 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
-  it "points a bare run in a Rails root at app, without changing what it analyzes" do
-    files = { "lib/mygem/x.rb" => "class X; def a = 1; end\n", "config/application.rb" => "" }
+  it "reads the application and lib/ on a bare run in a Rails root, naming every file from the root" do
+    files = {
+      "app/models/user.rb" => "class User; def a = 1; end\n", "lib/tools/x.rb" => "class X; def a = 1; end\n",
+      "config/application.rb" => ""
+    }
     within(files) do
-      capture do
-        expect { expect(described_class.new([]).status).to(eq(0)) }.to(output(/looks like a Rails root/).to_stderr)
-        expect { expect(described_class.new(["lib"]).status).to(eq(0)) }.not_to(output(/Rails root/).to_stderr)
-      end
+      report = JSON.parse(capture { expect(described_class.new(["--json"]).status).to(eq(0)) })
+      expect(report["targets"]).to(eq(%w[app lib]))
+      files = report.dig("complexity", "methods").map { it["file"] }
+      expect(files).to(contain_exactly("app/models/user.rb", "lib/tools/x.rb"))
+    end
+  end
+
+  it "names files, churn and --only by the same full path when several directories hold same-named files" do
+    tangle = Fixtures::COMPLEX_FILES.fetch("lib/app/knot/tangle.rb")
+    within("one/lib/knot/tangle.rb" => tangle, "two/lib/knot/tangle.rb" => tangle.sub("Tangle", "Snarl")) do
+      git("init", "-q")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      report = JSON.parse(capture { expect(described_class.new(%w[one/lib two/lib --json]).status).to(eq(0)) })
+      expect(report["hotspots"].to_h { [it["file"], it["churn"]] })
+        .to(eq("one/lib/knot/tangle.rb" => 1, "two/lib/knot/tangle.rb" => 1))
+      focused = JSON.parse(capture { described_class.new(%w[one/lib two/lib --json --only two/lib]).status })
+      expect(focused["findings"].map { it["package"] }).to(include("App::Knot::Snarl#tangled"))
+      expect(focused["findings"].map { it["package"] }).not_to(include("App::Knot::Tangle#tangled"))
+      expect(focused["findings"].map { it["detail"]["site"] }.compact.uniq).to(eq(["two/lib/knot/tangle.rb:8"]))
     end
   end
 
@@ -178,7 +222,7 @@ RSpec.describe(Hashira::CLI::Session) do
       expect(told.lines).to(
         match(
           [
-            "hashira: reading 3 files…\n",
+            "hashira: reading 3 files in lib/app…\n",
             "hashira: no git history for lib/app — hotspots are ranked by cost alone\n",
             /\Ahashira: 3 files in \d+\.\ds\n\z/
           ]
