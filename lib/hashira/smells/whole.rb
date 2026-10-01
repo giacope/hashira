@@ -18,6 +18,8 @@ module Hashira
 
         def nodes = openings.map(&:node)
 
+        def content = nodes.filter_map(&:body)
+
         def sweep = nodes.flat_map { Scope.sweep(it) }
 
         def first = openings.first

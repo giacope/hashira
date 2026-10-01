@@ -50,6 +50,8 @@ module Hashira
         def arguments = Parameters.arguments(node)
 
         def site = "#{file}:#{line}"
+
+        def content = [node.parameters, node.body].compact
       end
 
     Sketch =

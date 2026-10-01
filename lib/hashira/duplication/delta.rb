@@ -6,8 +6,10 @@ class Hashira::Duplication::Delta
   end
 
   def kind
-    tags = kinds
-    tags.empty? ? :identical : label(tags)
+    return :identical if variances.empty?
+    return :structure if variances.include?(:structure)
+    return :renamed if inner.empty?
+    renamed? ? :"renamed_#{body}" : body
   end
 
   def to_h
@@ -16,12 +18,9 @@ class Hashira::Duplication::Delta
 
   private
 
-  def label(tags)
-    return :structure if tags.include?(:structure)
-    tags.size == 1 ? tags.first : :mixed
-  end
+  def renamed? = variances.include?(:renamed)
 
-  def kinds = inner.empty? ? variances : inner
+  def body = inner.one? ? inner.first : :mixed
 
   def inner = variances - [:renamed]
 

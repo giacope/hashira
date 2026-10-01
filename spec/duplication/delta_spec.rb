@@ -40,9 +40,18 @@ RSpec.describe(Hashira::Duplication::Delta) do
     expect([kind(bare), kind(explicit)]).to(eq(%i[mixed mixed]))
   end
 
-  it "describes the bodies, not the names, once something inside the renamed methods differs too" do
-    sources = clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")
-    expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:literal))
+  it "keeps the different method names in view once something inside the renamed methods differs too" do
+    literal = clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")
+    mixed = clone("x.emit(fetch(:h), 1)", "y.emit(fetch(:h), 9)")
+    renamed = [literal, mixed].map { kind(it.merge("b.rb" => it["b.rb"].sub("def run", "def call"))) }
+    expect(renamed).to(eq(%i[renamed_literal renamed_mixed]))
+  end
+
+  it "does not pass a callback's name off as a literal when two callbacks differ in a literal too" do
+    line = ->(type) { "\n g.emit(fetch(:h), node.identifier.short_name, #{type})" }
+    callback = ->(name, type) { "def #{name}(node)#{line[type] * 3}\nend\n" }
+    sources = { "a.rb" => callback.call("on_class", ":class"), "b.rb" => callback.call("on_module", ":module") }
+    expect(kind(sources)).to(eq(:renamed_literal))
   end
 
   it "reports :structure when one copy guards a call with safe navigation and the other does not" do

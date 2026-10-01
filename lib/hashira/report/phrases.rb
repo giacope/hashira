@@ -19,18 +19,6 @@ module Hashira::Report::Phrases
     "ternary" => "extract the nested ternary into a named method."
   ).freeze
 
-  DUPLICATION_ADVICE = {
-    identical: "byte-for-byte identical — extract a shared method and call it from each site.",
-    literal: "differs only in literal values — extract a method, pass them as arguments.",
-    message: "differs only in the receiver or message — extract a method taking the receiver."
-  }.merge(
-    constant: "differs only in a constant — extract a method and parameterize it.",
-    structure: "the control flow differs — extract the common core, but verify by hand (lower confidence).",
-    mixed: "extract the shared shape and pass what differs as parameters."
-  ).merge(
-    renamed: "the same body under different method names — keep one, and alias it or call it from the others."
-  ).freeze
-
   ROSTER = 6
 
   module_function
@@ -91,12 +79,6 @@ module Hashira::Report::Phrases
       "(#{detail.site}). #{COMPLEXITY_ADVICE.fetch(detail.dominant)}"
   end
 
-  def on_duplication(finding)
-    detail = finding.detail
-    "#{detail.size} similar fragments (mass #{detail.mass}) — " \
-      "#{DUPLICATION_ADVICE.fetch(detail.kind)}#{footnote(detail)}"
-  end
-
   def score(value) = format("%.2f", value)
 
   def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"
@@ -112,9 +94,5 @@ module Hashira::Report::Phrases
 
   def addendum(parts)
     parts.any? { it[:shared] } ? ", keeping the shared constants as the base layer the rest builds on" : ""
-  end
-
-  def footnote(detail)
-    detail.hot ? " Both sites change often — fix one, miss the other." : ""
   end
 end

@@ -249,8 +249,8 @@ RSpec.describe(Hashira::CI::Ratchet) do
 
   def focused = Hashira::Focus.new(nil, ["a.rb"])
 
-  def smell(kind, package)
-    Hashira::Analysis::Finding.new(kind:, package:, evidence: [], detail: { site: "a.rb:1" })
+  def smell(kind, package, shape: nil)
+    Hashira::Analysis::Finding.new(kind:, package:, evidence: [], detail: { site: "a.rb:1" }, shape:)
   end
 
   it "carries a finding across a rename instead of calling it resolved and new at once" do
@@ -274,6 +274,29 @@ RSpec.describe(Hashira::CI::Ratchet) do
 
       expect(output.scan("NEW FINDING:").size).to(eq(1))
       expect(output).not_to(include("Findings resolved"))
+    end
+  end
+
+  it "tells a finding fixed in one method and arrived in another from a rename, when neither carries evidence" do
+    with_graph do |graph|
+      ratchet(graph, [smell("nil_check", "Shop#tax", shape: "tax-body")]).update
+      arrived = [smell("nil_check", "Shop#discount", shape: "discount-body")]
+
+      output = capture { expect(ratchet(graph, arrived, "baseline.json", io: $stdout).check(sweeping)).to(eq(1)) }
+
+      expect(output).to(include("NEW FINDING:", "Findings resolved (improvement!): nil_check:Shop#tax"))
+    end
+  end
+
+  it "still carries a rename across when the renamed method's code is unchanged" do
+    with_graph do |graph|
+      io = StringIO.new
+      ratchet(graph, [smell("nil_check", "Shop#tax", shape: "tax-body")]).update
+
+      renamed = [smell("nil_check", "Shop#levy", shape: "tax-body")]
+      expect(ratchet(graph, renamed, "baseline.json", io:).check(sweeping)).to(eq(0))
+
+      expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
     end
   end
 

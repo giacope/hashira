@@ -33,9 +33,18 @@ class Hashira::Smells::Lineage
 
   def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
+  def messages(type) = sweep(type).filter_map { message(it) }
+
   private
 
   def bequeathed = @_bequeathed ||= {}
+
+  def message(node)
+    case node
+    when Prism::CallNode then node.name
+    when Prism::SymbolNode then node.unescaped.to_sym
+    end
+  end
 
   def installs(name) = index.fetch(name).flat_map { writes(it) }
 

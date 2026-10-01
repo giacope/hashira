@@ -40,9 +40,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
   end
 
-  def repeats
-    @_repeats ||= outermost(together(usual.reject { |_handle, nodes| whole.value?(nodes) }.merge(whole)))
-  end
+  def repeats = @_repeats ||= outermost(together(alike(usual).merge(alike(whole))))
 
   def outermost(groups) = groups.reject { |_handle, nodes| echoed?(nodes, groups) }
 
@@ -66,13 +64,17 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 
-  def usual
-    calls.reject { plain?(it) }.group_by { handle(it) }
-  end
+  def usual = calls.reject { plain?(it) || literal?(it) }.group_by { handle(it) }
 
-  def whole
-    @_whole ||= calls.select { it.block.is_a?(Prism::BlockNode) }.group_by { it.slice.gsub(/\s+/, " ") }
-  end
+  def whole = calls.select { literal?(it) }.group_by { it.slice.gsub(/\s+/, " ") }
+
+  def literal?(node) = node.block.is_a?(Prism::BlockNode)
+
+  def alike(groups) = groups.reject { |_text, nodes| nodes.one? }.flat_map { |text, nodes| split(text, nodes) }.to_h
+
+  def split(text, nodes) = nodes.group_by { bindings.free(it) }.map { |held, same| [[text, held], same] }
+
+  def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
 
   def handle(node) = "#{title(node)}#{signature(node)}"
 
@@ -89,7 +91,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   def wrap(parts) = parts.empty? ? "" : "(#{parts.join(", ")})"
 
   def evidence
-    repeats.map { |handle, nodes| "#{handle} × #{nodes.size} (#{stamp(lines(nodes))})" }
+    repeats.map { |(handle, _), nodes| "#{handle} × #{nodes.size} (#{stamp(lines(nodes))})" }
   end
 
   def lines(nodes) = nodes.map { it.location.start_line }.uniq

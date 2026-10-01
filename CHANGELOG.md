@@ -291,6 +291,36 @@ true positive the earlier triage confirmed still fires.
   `Hash`, `Array`, `Proc`): 9 of its 12 field findings. A root counts as
   built in when hashira's own runtime defines it without a source file, so
   gems such as `Parser` or `Rubydex` still count.
+- The ratchet no longer lets a new finding through as a rename. A finding
+  that carries no evidence (utility_function, nil_check, manual_dispatch,
+  module_initialize) left a trace of nothing but its kind and file, so
+  fixing `Shop#tax` and adding a stateless `Shop#discount` in the same file
+  paired the two and printed "unchanged". Such a finding is now traced by
+  the code it names, its parameters and body without its name, so a method
+  renamed with its body intact still pairs and a different method does not.
+  Traces recorded for these kinds before this no longer match; the next
+  `--update-baseline` rewrites them.
+- `repeated_call` compares calls, not their text. A literal block is part of
+  the call, so `kids.index { it.equal?(child) }` and `kids.index {
+  it.equal?(assign) }` are two calls. A local counts by its binding, the way
+  feature_envy already counted it: `it`, `_1` or `|list|` in two separate
+  blocks are different variables, and a variable reassigned between two
+  calls (`parent = parent.parent`, `count += 1`, a write inside a block or
+  a loop) holds a different value in each.
+- A duplication cluster whose copies sit under different method names and
+  also differ inside no longer reads as "differs only in literal values —
+  extract a method, pass them as arguments", which hid the names and
+  proposed passing a callback's name (`on_class` / `on_module`) as an
+  argument. It now says the names differ too, and advises keeping each
+  name as a call into one shared method (kinds `renamed_literal`,
+  `renamed_message`, `renamed_constant`, `renamed_mixed`; confidence
+  `medium`, like `renamed`).
+- `utility_function` stays quiet on a library's hooks. A class whose
+  ancestry reaches a superclass or mixin the codebase does not define
+  (`class Plugin < LintRoller::Plugin`) may be overriding methods the
+  library calls, which can be neither made private nor moved; a public
+  method there that nothing in the codebase calls (or names as a symbol) is
+  read as such a hook. `LintRoller::Plugin#about` was flagged.
 
 ### Performance
 

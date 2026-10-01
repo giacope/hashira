@@ -128,6 +128,10 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
             def lonely(id) = Feed.find(id)
           end
 
+          class Drain
+            def run(id) = @pull.lonely(id)
+          end
+
           class Solo
             def perform(id) = Feed.find(id)
           end
@@ -151,6 +155,53 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     RUBY
     findings = sniffed({ "lib/app/zone/jobs.rb" => jobs, "lib/app/zone/speech.rb" => speech }, "utility_function")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
+  end
+
+  it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
+    plugin = <<~RUBY
+      module App
+        class Plugin < LintRoller::Plugin
+          def about = LintRoller::About.new(name: "app")
+
+          def supported?(context) = context.engine == :rubocop
+
+          def label(name) = name.to_s
+
+          def badge(name) = name.to_s
+        end
+
+        class Base < Library::Thing
+        end
+
+        class Leaf < Base
+          def hook(name) = name.to_s
+        end
+
+        class Mixed
+          include Library::Hooks
+
+          def setup(name) = name.to_s
+        end
+
+        class Plain
+          def orphan(name) = name.to_s
+        end
+
+        class User
+          def show(names) = @plugin.label(names.map(&:badge))
+        end
+      end
+    RUBY
+    findings = sniffed({ "lib/app/plugin.rb" => plugin }, "utility_function")
+    expect(findings.map(&:package)).to(eq(%w[App::Plugin#label App::Plugin#badge App::Plain#orphan]))
+  end
+
+  it "traces a finding by the code it names, so a rename still matches and a different method does not" do
+    shop = ->(name, body) { "module App\n  class Shop\n    def #{name}(price) = #{body}\n  end\nend\n" }
+    traced = ->(name, body) { sniffed({ "lib/app/shop.rb" => shop[name, body] }, "utility_function").first.trace }
+    tax = traced["tax", "price.round(2)"]
+    alike = [traced["levy", "price.round(2)"], traced["discount", "price.floor(9)"]].map { it == tax }
+    expect(alike).to(eq([true, false]))
   end
 
   it "treats what a concern defines for its host class as class-level" do

@@ -48,7 +48,15 @@ class Hashira::Smells::Kinship
 
   def words(name) = said[name]
 
-  def shared = @_shared ||= Hash.new { |memo, name| memo[name] = words(name) & kindred(name) }
+  def shared = @_shared ||= Hash.new { |memo, name| memo[name] = (words(name) & kindred(name)) | hooks(name) }
+
+  def hooks(name) = adopted?(name) ? words(name) - sent : Set.new
+
+  def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
+
+  def foreign?(name) = index.fetch(name).any? { @lineage.pointed(it).include?(nil) }
+
+  def sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
 

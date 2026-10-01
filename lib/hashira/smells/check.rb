@@ -7,7 +7,8 @@ class Hashira::Smells::Check
 
   def finding
     return unless smelly?
-    Hashira::Analysis::Finding.new(kind:, package: label, detail:, evidence:)
+    found = evidence
+    Hashira::Analysis::Finding.new(kind:, package: label, detail:, evidence: found, shape: (shape if found.empty?))
   end
 
   private
@@ -25,6 +26,8 @@ class Hashira::Smells::Check
   def spots(nodes) = "#{subject.file}:#{nodes.map { it.location.start_line }.uniq.join(", ")}"
 
   def evidence = []
+
+  def shape = Hashira::Smells::Shape.of(subject.content)
 
   def tally(name, lines) = "#{name} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
 end

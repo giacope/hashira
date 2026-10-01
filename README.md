@@ -373,7 +373,9 @@ it does inside Ruby:
   varies: only literals (strings, numbers, symbols, patterns) → extract a method
   and pass them as arguments; only the receiver or a name → extract a method
   taking it, or use polymorphism; a constant → parameterize it; nothing but the
-  method's own name → keep one, and alias or call it; the control flow itself,
+  method's own name → keep one, and alias or call it; the name and something
+  inside → keep every name (a callback's is fixed), each calling one shared
+  method that takes what else differs; the control flow itself,
   down to a `&.` one copy has and the other lacks → extract the common core, but
   verify by hand (flagged lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
@@ -436,7 +438,10 @@ What each one catches:
   `module_function` and `extend self` modules are exempt — that's what they're
   for. So is polymorphism: a method an owned ancestor or descendant also
   defines, or one a sibling class under the same superclass defines too (every
-  job's `perform`), fills a role rather than hiding a function. What a concern
+  job's `perform`), fills a role rather than hiding a function. So is a hook: on
+  a class built on a superclass or mixin from outside the codebase
+  (`class Plugin < LintRoller::Plugin`), a method nothing in the codebase calls
+  is one the library calls, and can be neither made private nor moved. What a concern
   defines for its host class — in `class_methods do` or a `ClassMethods`
   module — is class-level, named `Concern.method` in every smell. The advice
   follows the owner: a module function in a module, private or moved in a class.
@@ -449,7 +454,10 @@ What each one catches:
   methods; a value object is missing. Each clump is listed at its widest: a
   pair that only ever travels inside a larger set isn't listed again.
 - **repeated_call** — the identical receiver-and-arguments call repeated
-  inside one method; name the result once. Quiet wherever naming it would be
+  inside one method; name the result once. Identical means the same call on the
+  same values, not the same text: a literal block is part of the call, and a
+  local counts by its binding, so `it` in two blocks is two variables, and
+  `parent` before and after `parent = parent.parent` is two values. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
   `SecureRandom.hex`) are meant to differ, and so is a call fed one
   (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
@@ -605,13 +613,16 @@ Baselines written by earlier versions still work: they record identity only, so
 they ratchet on appearance until the next `--update-baseline` records magnitudes.
 
 It also records a *trace* of each finding — the file it sits in and what it says,
-with the line numbers left out. A finding is keyed by what it names
+with the line numbers left out. A finding that says nothing beyond its name (a
+utility function, a nil check) is traced by the code it names instead: its
+parameters and body, without the name. A finding is keyed by what it names
 (`Class#method`), so renaming a class, or adding a `?` to four predicates, would
 otherwise report every finding under it as resolved and new in the same breath.
 When a key disappears and another appears carrying the same trace, the ratchet
 reads them as one finding that changed name. The match is one for one: a rename
-that *brought* a new finding with it still fails, and a renamed method that also
-got more complex still reports WORSE. Moving the file changes the trace, because
+that *brought* a new finding with it still fails, as does fixing one method and
+adding another like it in the same file, and a renamed method that also got more
+complex still reports WORSE. Moving the file changes the trace, because
 that is a relocation rather than a rename — re-record it. Baselines without
 traces behave exactly as they did before.
 
