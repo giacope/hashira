@@ -78,6 +78,15 @@ module Hashira::CLI
       name: "--baseline", arg: "PATH", field: :baseline, default: "hashira_baseline.json",
       text: ["baseline file (default: hashira_baseline.json)"]
     ),
+    Flag.new(
+      name: "--config", arg: "PATH",
+      text: [
+        "read default options from PATH (default:",
+        ".hashira.yml, when there is one); a flag on",
+        "the command line wins over its setting"
+      ]
+    ),
+    Flag.new(name: "--no-config", text: ["ignore .hashira.yml"]),
     Flag.new(name: "-h, --help", mode: :help, text: ["print this help"]),
     Flag.new(name: "--version", mode: :version, text: ["print the version"])
   ].freeze

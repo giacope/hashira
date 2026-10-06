@@ -56,6 +56,15 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "gates a plain run on the config file's fail-on, and leaves --json alone" do
+    within(Fixtures::CYCLIC_FILES.merge(".hashira.yml" => "directories: lib/app\nfail-on: cycles\n")) do
+      gate = capture { expect(described_class.new([]).status).to(eq(1)) }
+      expect(gate).to(include("Gate FAILED"))
+      json = capture { expect(described_class.new(["--json"]).status).to(eq(0)) }
+      expect(JSON.parse(json)["targets"]).to(eq(%w[lib/app]))
+    end
+  end
+
   it "treats a verified interpreted model as compliant architecture" do
     within(interpretation) do
       args = %w[lib/app --json --skip duplication,complexity,coupling]

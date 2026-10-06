@@ -222,4 +222,101 @@ RSpec.describe(Hashira::CLI::Options) do
         .to(raise_error(Hashira::Error, "cannot skip every analyzer"))
     end
   end
+
+  describe "with a config file" do
+    def configured(yaml, &) = within(".hashira.yml" => yaml, &)
+
+    def read(*argv, fields) = described_class.parse(argv).to_h.slice(*fields)
+
+    it "reads every setting from .hashira.yml as if its flag were typed" do
+      yaml = <<~YAML
+        directories: [app, lib]
+        fail-on: [cycles, sdp]
+        skip: duplication
+        kind: cycles,sdp,complexity
+        top: 3
+        package-by: namespace
+        baseline: ci/baseline.json
+      YAML
+      configured(yaml) do
+        expect(read(%i[directories mode fail_on skip kinds top packaging baseline])).to(
+          eq(
+            directories: %w[app lib], mode: :fail_on, fail_on: %w[cycle sdp_violation], skip: [:duplication],
+            kinds: %w[cycle sdp_violation complexity], top: 3, packaging: :namespace, baseline: "ci/baseline.json"
+          )
+        )
+      end
+    end
+
+    it "lets a flag on the command line replace its setting" do
+      configured("directories: app\nskip: smells\ntop: 3\n") do
+        expect(read("lib", "--skip", "complexity", "--top", "7", %i[directories skip top]))
+          .to(eq(directories: %w[lib], skip: [:complexity], top: 7))
+        expect(read(%i[directories])).to(eq(directories: %w[app]))
+      end
+    end
+
+    it "steps a setting aside when the command line rules it out, keeping the rest" do
+      configured("fail-on: cycles\nkind: cycles,sdp\nskip: smells\n") do
+        expect(read("--json", %i[mode fail_on kinds])).to(eq(mode: :json, fail_on: [], kinds: %w[cycle sdp_violation]))
+        expect(read("--ratchet", %i[mode fail_on])).to(eq(mode: :ratchet, fail_on: []))
+        expect(read("--update-baseline", %i[mode kinds skip])).to(eq(mode: :update, kinds: [], skip: [:smells]))
+        expect(read("--skip", "coupling", %i[mode fail_on kinds])).to(eq(mode: :text, fail_on: [], kinds: []))
+        expect(read("--fail-on", "feature_envy", %i[fail_on skip kinds]))
+          .to(eq(fail_on: %w[feature_envy], skip: [], kinds: []))
+      end
+      configured("skip: coupling\n") { expect(read("--format", "dot", %i[mode skip])).to(eq(mode: :dot, skip: [])) }
+    end
+
+    it "reads another file with --config, and none with --no-config" do
+      within(".hashira.yml" => "top: 3\n", "ci/hashira.yml" => "top: 9\n", "empty.yml" => "") do
+        expect(read("--config", "ci/hashira.yml", %i[top])).to(eq(top: 9))
+        expect(read("--no-config", %i[top])).to(eq(top: nil))
+        expect(read("--config", "empty.yml", %i[top])).to(eq(top: nil))
+      end
+    end
+
+    it "refuses a --config it cannot read" do
+      within("ci/hashira.yml" => "top: 9\n") do
+        {
+          %w[--config ci/hashira.yml --no-config] => "conflicting options: --config and --no-config",
+          %w[--config ci] => '--config "ci" is not a file here',
+          %w[--config gone.yml] => '--config "gone.yml" is not a file here',
+          %w[--config] => "--config needs a value",
+          %w[--config ci/hashira.yml --config ci/hashira.yml] => "--config given more than once"
+        }.each { |argv, message| expect { described_class.parse(argv) }.to(raise_error(Hashira::Error, message)) }
+      end
+    end
+
+    it "names the file in every complaint about it" do
+      {
+        "skipp: x\n" => 'unknown setting "skipp" (use: directories, fail-on, skip, kind, top, package-by, baseline)',
+        "- top\n" => 'expected key: value settings, not ["top"]',
+        "top: {n: 3}\n" => 'top takes a value or a list of values, not {"n" => 3}',
+        "directories: [app, [lib]]\n" => 'directories takes a value or a list of values, not ["app", ["lib"]]',
+        "skip: true\n" => "skip takes a value or a list of values, not true",
+        "skip:\n" => "--skip needs a value",
+        "top: 0\n" => '--top "0" is not a positive whole number',
+        "skip: coupling\nfail-on: cycles\n" => "--fail-on cycle needs the coupling analyzer, but --skip drops it"
+      }.each do |yaml, message|
+        configured(yaml) { expect { described_class.parse([]) }.to(raise_error(Hashira::Error, ".hashira.yml: #{message}")) }
+      end
+    end
+
+    it "refuses a file that is not plain YAML" do
+      {
+        "skip: [\n" => "did not find expected node content while parsing a flow node at line 2 column 1",
+        "skip: :coupling\n" => "Tried to load unspecified class: Symbol"
+      }.each do |yaml, problem|
+        configured(yaml) do
+          expect { described_class.parse([]) }
+            .to(raise_error(Hashira::Error, ".hashira.yml is not plain YAML (#{problem})"))
+        end
+      end
+    end
+
+    it "prints help even when the file is broken" do
+      configured("skipp: x\n") { expect(described_class.parse(%w[--help]).mode).to(eq(:help)) }
+    end
+  end
 end

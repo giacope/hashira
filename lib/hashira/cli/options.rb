@@ -3,7 +3,7 @@
 module Hashira::CLI
   Options =
     Data.define(:directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact) do
-      def self.parse(argv) = CommandLine.new(argv).options
+      def self.parse(argv) = Settings.new(argv).options
 
       def self.build(mode)
         new(

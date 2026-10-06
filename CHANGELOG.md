@@ -27,6 +27,14 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- A `.hashira.yml` where hashira runs holds the options you would otherwise
+  type every time: `directories`, `fail-on`, `skip`, `kind`, `top`,
+  `package-by` and `baseline`, each named as its flag. The file is checked on
+  its own, naming itself in any error. A flag on the command line replaces its
+  setting, and a setting the command line rules out steps aside instead of
+  failing the run, so `fail-on` from the file leaves `--json`, `--ratchet`
+  and `--update-baseline` alone. `--config PATH` reads another file;
+  `--no-config` ignores it.
 - `--kind KINDS` keeps only the findings of the kinds named, in text and
   JSON, with the `--fail-on` names and shorthands (`cycles`, `sdp`, `dupe`,
   `smells`, or one smell). It narrows the way `--only` does: under
