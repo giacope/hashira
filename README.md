@@ -39,7 +39,7 @@ A healthy project reports `Findings (0): none ✓ — structure is healthy`.
 
 ## Contents
 
-[Install](#install) · [Getting started](#getting-started) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Code smells](#code-smells) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
+[Install](#install) · [Getting started](#getting-started) · [Config file](#config-file) · [Coupling: how to read the numbers](#coupling-how-to-read-the-numbers) · [Rails apps](#rails-apps) · [Cognitive complexity](#cognitive-complexity) · [Duplication](#duplication) · [Code smells](#code-smells) · [Hotspots](#hotspots) · [How it works](#how-it-works) · [CI](#ci) · [Other formats](#other-formats) · [Why cognitive complexity](#why-cognitive-complexity) · [Why no A, D, or zones](#why-no-a-d-or-zones)
 
 ## Install
 
@@ -191,6 +191,40 @@ report/text.rb             8    0      4    32
 Findings (0):
   none ✓ — structure is healthy
 ```
+
+## Config file
+
+The flags you pass on every run can live in a `.hashira.yml` where hashira
+runs. Each key is a flag named without its dashes, and `directories` stands
+for the directories you would list:
+
+```yaml
+directories: [app, lib]
+skip: duplication
+kind: [cycles, sdp, complexity]
+fail-on: cycles
+top: 50
+package-by: namespace
+baseline: ci/hashira_baseline.json
+```
+
+A value is a word, a number, or a list (`skip: [smells, duplication]` and
+`skip: smells,duplication` say the same thing). With that file, a bare `hashira`
+reads `app` and `lib` without duplication, reports cycles, SDP violations and
+complexity, and exits 1 on a cycle.
+
+The file is checked on its own first, the same way the flags are, so a typo or a
+contradiction (`skip: coupling` with `fail-on: cycles`) fails the run with the
+file named. After that, the command line wins:
+
+- A flag you type replaces its key. Directories you name replace `directories`.
+- A key your flags rule out sits the run out. `fail-on` decides how the run
+  ends, so `hashira --json`, `--ratchet` or `--update-baseline` runs without
+  it. `kind` steps aside for `--update-baseline`, which records every kind, and
+  `--fail-on feature_envy` brings back the `smells` analyzer the file skips.
+
+`--config PATH` reads another file, and `--no-config` ignores `.hashira.yml`.
+Paths in the file are read from where hashira runs, as on the command line.
 
 ## Coupling: how to read the numbers
 

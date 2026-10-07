@@ -26,6 +26,12 @@ module Hashira::CLI::Usage
     — they leave reports and gates, keeping a one-line reminder each.
     Clones are named by "digest" instead of "package", so an acceptance
     survives the lines above it moving. Read digests from --json.
+
+    A .hashira.yml where hashira runs sets default options, each key a
+    flag without its dashes (fail-on, skip, kind, top, package-by,
+    baseline) plus directories. A flag typed on the command line wins,
+    and a setting the command line rules out (fail-on under --json)
+    sits that run out.
   TEXT
 
   module_function
