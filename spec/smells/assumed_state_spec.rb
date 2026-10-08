@@ -314,7 +314,29 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(finding.evidence).to(eq(%w[@late @seen]))
+    expect(finding.detail).to(include(installed: %w[@late], unassigned: %w[@seen]))
     expect(message(finding)).to(include("subclasses are expected to install '@late'; pass it in instead"))
+    expect(message(finding)).to(include("Nothing ever assigns '@seen', so it reads nil: a typo or a dead hook"))
+  end
+
+  it "tells a dead extension hook nothing assigns from state only the subclasses install" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Base
+            def report = @hook
+          end
+
+          class Leaf < Base
+            def initialize = @other = 1
+          end
+        end
+      end
+    RUBY
+    finding = findings.first
+    expect(finding.detail).to(include(installed: [], unassigned: %w[@hook]))
+    expect(message(finding)).to(include("Nothing ever assigns '@hook'"))
+    expect(message(finding)).not_to(include("subclasses"))
   end
 
   it "does not count singleton writes or extended modules as instance initialization" do

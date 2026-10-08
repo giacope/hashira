@@ -54,11 +54,17 @@ module Hashira::Report::Phrases
   def on_assumed_state(finding)
     detail = finding.detail
     "#{finding.package} reads instance variables nothing in the class assigns (#{detail[:site]}). " \
-      "#{installing(detail[:installed])}"
+      "#{[orphaned(detail[:unassigned]), installing(detail[:installed])].compact.join(" ")}"
+  end
+
+  def orphaned(names)
+    return if names.empty?
+    "Nothing ever assigns #{quoted(names)}, so #{names.one? ? "it reads" : "they read"} nil: a typo or a dead hook. " \
+      "Assign #{names.one? ? "it" : "them"} where the object is built, or delete the read."
   end
 
   def installing(names)
-    return "Assign them where the object is built, or pass the data explicitly." if names.empty?
+    return if names.empty?
     "Its subclasses are expected to install #{quoted(names)}; pass #{names.one? ? "it" : "them"} in instead."
   end
 

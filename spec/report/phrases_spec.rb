@@ -28,12 +28,18 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("utility_function", owner: :module) =>
         "Cart#price touches no instance state (cart.rb:12). " \
         "Move it onto the object it serves, or make it a module function.",
-      smell("assumed_state", installed: []) =>
+      smell("assumed_state", installed: [], unassigned: %w[@a]) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
-        "Assign them where the object is built, or pass the data explicitly.",
-      smell("assumed_state", installed: %w[@a @b]) =>
+        "Nothing ever assigns '@a', so it reads nil: a typo or a dead hook. " \
+        "Assign it where the object is built, or delete the read.",
+      smell("assumed_state", installed: %w[@a @b], unassigned: []) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Its subclasses are expected to install '@a', '@b'; pass them in instead.",
+      smell("assumed_state", installed: %w[@a], unassigned: %w[@b @c]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Nothing ever assigns '@b', '@c', so they read nil: a typo or a dead hook. " \
+        "Assign them where the object is built, or delete the read. " \
+        "Its subclasses are expected to install '@a'; pass it in instead.",
       smell("manual_dispatch") =>
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",

@@ -518,7 +518,8 @@ What each one catches:
   assignment may live in there. When the ivar is one the class's own
   subclasses assign, the finding says so: a base class that waits for its
   subclasses to install its state is a fragile base class, so pass the value in
-  instead.
+  instead. An ivar that not even a subclass assigns is told apart from those:
+  it always reads nil, so it is a typo or a dead extension hook.
 - **manual_dispatch** — any `respond_to?` check, with or without a `send`
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a

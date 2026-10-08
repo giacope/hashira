@@ -32,7 +32,9 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
 
   def read = subject.owned.flat_map { Harvest.reads(it.node) }
 
-  def detail = { site:, installed: (assumed & subject.heirs).map(&:to_s) }
+  def installed = assumed & subject.heirs
+
+  def detail = { site:, installed: installed.map(&:to_s), unassigned: (assumed - installed).map(&:to_s) }
 
   def evidence = assumed.map(&:to_s)
 end
