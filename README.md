@@ -520,10 +520,19 @@ What each one catches:
   counts across the whole class; a test on a local variable only within the
   method or block that binds it, since `all` in one method isn't `all` in the
   next.
-- **state_sprawl** — more than four instance variables per class. Memoization
-  doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
-  (and only ever filled lazily), not one each method fills only behind its own
-  `defined?(@x)` guard.
+- **state_sprawl** — a class whose instance state weighs more than four. Each
+  instance variable weighs one, and one first assigned in an ordinary instance
+  method rather than the constructor weighs two: it parks an intermediate result
+  between method calls, which is the real sprawl. The constructor includes the
+  methods `initialize` calls on itself, and class-level state (assigned in the
+  class body or in `def self.x`) weighs one. A class whose variables are all set
+  at construction is quiet when its methods use them together: link two
+  variables whenever one method (other than `initialize`) touches both, and if
+  that joins them all into one group, the class is one cohesive handle (an IO
+  stream holding `@socket`, `@reader`, `@on_event`, `@closed`, `@exited`), not
+  sprawl. Memoization doesn't count as state: not `@x ||=`, not a memo
+  predeclared as `@x = nil` (and only ever filled lazily), not one each method
+  fills only behind its own `defined?(@x)` guard.
 - **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
