@@ -248,8 +248,9 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
 
     it "does not flag an edge whose ends share a cycle" do
-      analyze(Fixtures::CYCLIC_FILES) do |_project, _census, graph|
-        expect(graph.violations).to(be_empty)
+      uses = { "a" => %w[b], "b" => %w[a p q], "c1" => %w[a], "c2" => %w[a], "p" => [], "q" => [] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect([graph.metric("a").level, graph.metric("b").level, graph.violations]).to(eq([0.25, 0.75, []]))
       end
     end
 
