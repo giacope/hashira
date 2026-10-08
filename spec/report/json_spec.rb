@@ -67,7 +67,7 @@ RSpec.describe(Hashira::Report::Json) do
           "from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]
         )
       )
-      kinds = %w[cycle sdp_violation] + (["utility_function"] * 4)
+      kinds = %w[cycle] + (["utility_function"] * 4)
       expect(report["findings"].map { it["kind"] }).to(eq(kinds))
     end
   end
@@ -80,7 +80,7 @@ RSpec.describe(Hashira::Report::Json) do
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
-      expect(report["folds"]).to(include("from" => "SandboxResource", "to" => "Sandbox", "via" => "suffix"))
+      expect(report["folds"]).to(include("from" => "SandboxPolicy", "to" => "Sandbox", "via" => "suffix"))
     end
   end
 
@@ -138,7 +138,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(emit(view(project, graph, findings, top: 1))["kinds"]).to(
         eq(
           "utility_function" => { "count" => 4, "files" => 2 },
-          "cycle" => { "count" => 1, "files" => 1 }, "sdp_violation" => { "count" => 1, "files" => 1 }
+          "cycle" => { "count" => 1, "files" => 1 }
         )
       )
     end
@@ -154,7 +154,7 @@ RSpec.describe(Hashira::Report::Json) do
   it "rates each finding's confidence by how directly it follows from the code" do
     with_pipeline do |project, graph, findings|
       rated = emit(view(project, graph, findings))["findings"].to_h { [it["kind"], it["confidence"]] }
-      expect(rated).to(eq("cycle" => "high", "sdp_violation" => "high", "utility_function" => "medium"))
+      expect(rated).to(eq("cycle" => "high", "utility_function" => "medium"))
     end
   end
 

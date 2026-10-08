@@ -45,6 +45,10 @@ module Hashira
         roots.include?(segments.first(1)) ? segments : (stack.last || []) + segments
       end
 
+      def macro?(node, names) = node.is_a?(Prism::CallNode) && names.include?(node.name) && bare?(node)
+
+      def bare?(call) = !call.receiver && call.arguments
+
       def direct(type) = statements(type).grep(Prism::DefNode)
 
       def constants(type) = statements(type).grep(Prism::ConstantWriteNode)

@@ -128,6 +128,15 @@ module Fixtures
     RUBY
   }.freeze
 
+  UNSTABLE_FILES = {
+    "lib/app/shop/x.rb" => "module App; module Shop; class X; def c = Stock::X; end; end; end\n",
+    "lib/app/cart/x.rb" => "module App; module Cart; class X; def c = Stock::X; end; end; end\n",
+    "lib/app/stock/x.rb" => "module App; module Stock; class X; def c = Pricing::X; end; end; end\n",
+    "lib/app/pricing/x.rb" => "module App; module Pricing; class X; def c = [Tax::X, Rates::X]; end; end; end\n",
+    "lib/app/tax/x.rb" => "module App; module Tax; class X; def c = 1; end; end; end\n",
+    "lib/app/rates/x.rb" => "module App; module Rates; class X; def c = 1; end; end; end\n"
+  }.freeze
+
   NESTED_FILES = {
     "lib/app/core/search/finder.rb" => <<~RUBY,
       module App
@@ -164,8 +173,7 @@ module Fixtures
   SANDBOX_FILES = {
     "app/models/sandbox.rb" => "class Sandbox\n  def run = 1\nend\n",
     "app/models/sandbox/lifecycle.rb" => "module Sandbox::Lifecycle\n  def cycle = 1\nend\n",
-    "app/resources/sandbox_resource.rb" =>
-      "class SandboxResource < ApplicationResource\n  attributes :name\nend\n"
+    "app/policies/sandbox_policy.rb" => "class SandboxPolicy < ApplicationPolicy\n  def show? = true\nend\n"
   }.freeze
 
   NOTIFY_FILES = {

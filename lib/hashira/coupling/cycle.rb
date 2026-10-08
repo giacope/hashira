@@ -13,8 +13,11 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
 
   def knot(key, members, cycles)
     cut = cycles.cut(members).map { |from, to, weight| { from:, to:, weight: } }
-    finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail: { members:, cut: })
+    detail = { members:, folded: folded(members), cut: }
+    finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail:)
   end
+
+  def folded(members) = (members & graph.folds.map { it[:to] }).reject { graph.unfolded.cycles.through?(it) }
 
   def evidence(cut) = cut.flat_map { graph.evidence(it[:from], it[:to]).to_a.sort }
 end

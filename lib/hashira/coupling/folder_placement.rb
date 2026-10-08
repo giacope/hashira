@@ -13,5 +13,7 @@ class Hashira::Coupling::FolderPlacement < Hashira::Coupling::Placement
 
   def skip?(_segments) = false
 
+  def web?(_package) = false
+
   def folding(_census) = Hashira::Coupling::NoFolding
 end

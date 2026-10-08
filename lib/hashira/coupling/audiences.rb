@@ -3,17 +3,22 @@
 class Hashira::Coupling::Audiences
   MIN = 2
 
+  FLOOR = 3
+
   Part = Data.define(:users, :constants, :shared)
 
-  def initialize(usage)
+  def initialize(usage, sizes = {})
     @usage = usage
+    @sizes = sizes
   end
 
   def split? = parts.size >= 2
 
-  def parts = @_parts ||= [common, *slices].select { it.constants.size >= MIN }
+  def parts = @_parts ||= [common, *slices].select { it.constants.size >= MIN && weight(it) >= FLOOR }
 
   private
+
+  def weight(part) = part.users.sum { @sizes.fetch(it, FLOOR) }
 
   def clients = @_clients ||= @usage.keys.sort
 

@@ -12,6 +12,8 @@ class Hashira::Coupling::Cycles
 
   def knots = @_knots ||= @graph.packages.sort.map { component(it) }.reject(&:empty?).uniq
 
+  def tied?(from, to) = knots.any? { it.include?(from) && it.include?(to) }
+
   def cut(members) = Hashira::Coupling::Cut.new(members, inside(members)).edges
 
   private

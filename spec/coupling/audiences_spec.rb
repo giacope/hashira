@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Audiences) do
-  def audiences(usage) = described_class.new(usage.transform_values(&:to_set))
+  def audiences(usage, sizes = {}) = described_class.new(usage.transform_values(&:to_set), sizes)
+
   it "splits disjoint client bases into separate audiences" do
     split = audiences("a" => %w[X Y], "b" => %w[X Y], "c" => %w[P Q], "d" => %w[P Q])
     expect(split).to(be_split)
@@ -19,6 +20,12 @@ RSpec.describe(Hashira::Coupling::Audiences) do
     kernel, slice = split.parts
     expect(kernel.to_h).to(eq(users: %w[complexity duplication smells], constants: %w[Finding Walk], shared: true))
     expect(slice.to_h).to(eq(users: %w[root], constants: %w[Census Graph], shared: false))
+  end
+
+  it "ignores a part whose clients together define fewer than three types" do
+    usage = { "a" => %w[X Y], "b" => %w[X Y], "satellite" => %w[P Q] }
+    expect(audiences(usage, { "a" => 2, "b" => 1, "satellite" => 2 })).not_to(be_split)
+    expect(audiences(usage, { "a" => 2, "b" => 1, "satellite" => 3 })).to(be_split)
   end
 
   it "keeps a package whole when client slices overlap" do

@@ -26,7 +26,7 @@ class Hashira::Report::Text
 
   def folded(folds)
     return if folds.empty?
-    @io.puts("Folded (single-type classes joined to their base or domain):")
+    @io.puts("Folded (packages joined to the one they belong to):")
     folds.each { @io.puts("  #{it[:from]} -> #{it[:to]} (#{it[:via]})") }
     @io.puts
   end

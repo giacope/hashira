@@ -9,7 +9,9 @@ module Hashira
           total.zero? ? 0.0 : efferent.fdiv(total)
         end
 
-        def isolated? = (efferent + afferent).zero?
+        def degree = efferent + afferent
+
+        def isolated? = degree.zero?
 
         def order = [isolated? ? 1 : 0, instability]
 

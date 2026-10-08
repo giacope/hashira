@@ -7,7 +7,7 @@ RSpec.describe(Hashira::CI::Gate) do
     Hashira::Analysis::Finding.new(
       kind:, package: "a", cycle: %w[a b a], evidence:,
       detail: {
-        members: %w[a b], cut: [{ from: "a", to: "b", weight: 1 }],
+        members: %w[a b], folded: [], cut: [{ from: "a", to: "b", weight: 1 }],
         from: "a", to: "b", from_instability: 0.0, to_instability: 1.0
       }
     )
