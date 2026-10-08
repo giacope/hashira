@@ -398,6 +398,12 @@ it does inside Ruby:
   the same way are two models. As soon as a fragment carries logic — a block
   parameter, a method, a variable, a receiver, a branch, an interpolation — it
   counts again.
+- **A lone log line isn't a clone.** A method, `rescue` or statement whose only
+  statement is a log call (`logger.error`, `Rails.logger.warn`) or an error
+  report (`Rails.error.report`, `Sentry.capture_exception`, `Honeybadger.notify`)
+  is skipped: its message is its whole meaning. Next to other statements it
+  counts, but whatever its interpolated messages hold weighs nothing — the string
+  counts once.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
   pairwise matches. A smaller clone whose copies sit inside a bigger one's is

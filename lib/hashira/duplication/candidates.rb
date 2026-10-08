@@ -10,7 +10,7 @@ class Hashira::Duplication::Candidates
     @tree = tree
   end
 
-  def fragments = windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], walks) }
+  def fragments = (windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], walks) }).reject(&:sink?)
 
   private
 

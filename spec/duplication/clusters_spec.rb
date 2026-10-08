@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Duplication::Clusters) do
-  def clusters(sources) = described_class.new(fragments(sources)).sorted
+  def clusters(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted
 
   def exact
     {
@@ -316,6 +316,68 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
       buckets = described_class.new(fragments(sources)).buckets.map { it.map(&:file) }
       expect(buckets).to(include(%w[a.rb b.rb], %w[c.rb d.rb]))
+    end
+  end
+
+  describe(Hashira::Duplication::Sink) do
+    def call(source) = Prism.parse(source).value.statements.body.first
+
+    def pair(source)
+      { "a.rb" => public_send(source, "charge", "Charge"), "b.rb" => public_send(source, "refund", "Refund") }
+    end
+
+    def logged(name, what)
+      "class Checkout\n def #{name}_failed(error)\n  logger.error(\"#{what} failed for order \#{order.id} " \
+        "(\#{order.customer.email}): \#{error.message} at \#{error.backtrace.first}\")\n end\nend\n"
+    end
+
+    def reported(name, _)
+      "class Sync\n def #{name}(e)\n  error_reporter.report(e, context: { order_id: order.id, " \
+        "customer_id: order.customer_id, amount: order.total, at: Time.current })\n end\nend\n"
+    end
+
+    def rescued(name, what)
+      "def #{name}\n run\nrescue Timeout::Error => e\n Rails.logger.warn(\"#{what} timed out after " \
+        "\#{e.elapsed.round(2)} seconds on \#{host.name}:\#{host.port}\")\nend\n"
+    end
+
+    def alerted(_, what)
+      "if order.failed?(attempts: config.fetch(:attempts), since: Time.current - config.fetch(:window))\n " \
+        "logger.error(\"#{what} failed for order \#{order.id}\")\nend\n"
+    end
+
+    def retried(name, _)
+      "class Sync\n def #{name}(order)\n  logger.warn(\"retrying \#{order.id}\")\n  " \
+        "order.retry_payment(attempts: fetch(:attempts), backoff: :exponential)\n  " \
+        "notify(order.customer, :failed)\n end\nend\n"
+    end
+
+    it "skips a method or rescue clause whose one statement is a log line or an error report" do
+      expect(%i[logged reported rescued].map { clusters(pair(it)) }).to(all(be_empty))
+    end
+
+    it "still reports a log line among other statements, counting its interpolated message as one string" do
+      cluster = clusters(pair(:retried)).first
+      expect(cluster.sites.map(&:range)).to(eq(%w[a.rb:2-6 b.rb:2-6]))
+      expect(cluster.mass).to(eq(25))
+    end
+
+    it "still reports a lone call that is not a sink, or a sink under a condition of its own" do
+      plain = pair(:logged).transform_values { it.sub("logger.error", "ledger.record") }
+      guarded = pair(:alerted)
+      expect([plain, guarded].map { clusters(it).size }).to(eq([1, 1]))
+    end
+
+    it "knows a log or error-report call by its message and its receiver" do
+      sinks = %w[logger.error(x) Rails.logger.info(x) Sentry.capture_exception(e) Rails.error.report(e) @log.debug(x)]
+      others = %w[logger.flush(x) order.error(x) error(x) x]
+      judged = [sinks, others].map { |group| group.map { described_class.new(call(it)).sink? }.uniq }
+      expect(judged).to(eq([[true], [false]]))
+    end
+
+    it "discounts every node a sink's interpolated messages hold, nested ones counted once" do
+      fragment = fragments("a.rb" => "logger.info(\"a \#{\"b \#{c.d}\"}\", e)\nf\n").find { it.range == "a.rb:1-2" }
+      expect([fragment.types.size, fragment.mass]).to(eq([15, 6]))
     end
   end
 end
