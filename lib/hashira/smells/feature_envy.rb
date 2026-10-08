@@ -13,7 +13,9 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def refs = @_refs ||= Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 
-  def envied = @_envied ||= refs.envious.reject { foreign.dismiss?(it) || paired?(it) }
+  def envied = @_envied ||= refs.envious.reject { foreign.dismiss?(it) || paired?(it) || transit.passing?(it) }
+
+  def transit = @_transit ||= Hashira::Smells::Transit.new(subject.node, refs)
 
   def paired?(holder) = partners(holder.scope) > 1
 

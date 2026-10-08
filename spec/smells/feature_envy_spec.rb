@@ -867,6 +867,74 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick"]))
   end
 
+  it "stays quiet about a mapper whose reads all feed a hash literal or a constructor, render, or update" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def error_body(error)
+              @seen = true
+              { code: error.id, message: error.message.to_s, retry_after: error.cause&.size }
+            end
+
+            def wrap(error)
+              @last = Result.new(code: error.id, message: error.message, at: error.cause)
+            end
+
+            def parse(row)
+              @last = Result.from(id: row.id, name: row.name, size: row.size)
+            end
+
+            def show(error)
+              @seen = true
+              render json: { code: error.id }, status: error.kind, layout: error.name
+            end
+
+            def respond(error)
+              @seen = true
+              render_error(code: error.id, status: error.kind, layout: error.name)
+            end
+
+            def assign(form)
+              @record.assign_attributes(name: form.name, size: form.size, kind: form.kind)
+            end
+
+            def save(form)
+              @record.update!(name: form.name, size: form.size, kind: form.kind)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a mapper once a read computes, escapes the mapping, or feeds another call's keywords" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def total(order)
+              @seen = true
+              { total: order.net + order.tax, fee: order.fee }
+            end
+
+            def notify(error)
+              @seen = true
+              deliver(code: error.id, message: error.message, at: error.cause)
+            end
+
+            def wrap(error)
+              @last = error.id
+              Result.new(message: error.message, at: error.cause)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#total App::Zone::Thing#notify App::Zone::Thing#wrap]))
+  end
+
   it "stays quiet about a sum type normalised with a type test and a keyed read" do
     findings = envy(<<~RUBY)
       module App
@@ -889,5 +957,53 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
       end
     RUBY
     expect(findings).to(be_empty)
+  end
+
+  it "does not blame a local whose fields go to the same call as the local itself" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def record(entry, log)
+              @seen = true
+              log.record!(entry: entry, size: entry.size, kind: entry.kind)
+            end
+
+            def store(entry, log)
+              @seen = true
+              log.store(entry, entry.size, entry.kind.to_s)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still blames a local whose fields travel without it, or apart from it" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def record(entry, log)
+              @seen = true
+              log.record!(size: entry.size, kind: entry.kind)
+            end
+
+            def store(entry, log)
+              @seen = true
+              log.store(entry)
+              log.note(entry.size, entry.kind)
+            end
+
+            def keep(entry)
+              @seen = true
+              entry.store(entry, entry.size)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#record App::Zone::Thing#store App::Zone::Thing#keep]))
   end
 end

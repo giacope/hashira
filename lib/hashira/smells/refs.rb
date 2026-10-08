@@ -23,9 +23,11 @@ class Hashira::Smells::Refs
     @vocabulary = vocabulary
   end
 
-  def ego = lines(SELF).size
+  def ego = reads(SELF).size
 
-  def lines(holder) = tallies.fetch(holder, [])
+  def lines(holder) = reads(holder).map { it.location.start_line }
+
+  def reads(holder) = tallies.fetch(holder, [])
 
   def envious
     peak = tallies.values.map(&:size).max
@@ -69,5 +71,5 @@ class Hashira::Smells::Refs
 
   def local?(node) = node.is_a?(Prism::CallNode) && LOCALS.include?(node.receiver.class) && node.name != :new
 
-  def note(holder, node) = (@_tallies[holder] ||= []) << node.location.start_line
+  def note(holder, node) = (@_tallies[holder] ||= []) << node
 end
