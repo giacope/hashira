@@ -483,7 +483,12 @@ What each one catches:
   caller already knew which branch it wanted. An argument that `||` or `&&`
   hands on as a value (`name || "anonymous"`, `@options = options || {}`,
   `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
-  alone as a statement, or in a loop's condition, still steers.
+  alone as a statement, or in a loop's condition, still steers. A comparison
+  steers only against a literal or a constant (`mode == :fast`); compared with
+  another value (`current_epoch == expected_epoch`, or `a != b` behind the nil
+  guards `a && b`) the argument is data. So is one a conditional only maps to
+  a value, every branch a literal, a constant or a translation key
+  (`status = dry_run ? "dry_run" : "applied"`, `when :a then t(".alpha")`).
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing. Each clump is listed at its widest: a
   pair that only ever travels inside a larger set isn't listed again. It needs

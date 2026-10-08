@@ -245,4 +245,141 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     RUBY
     expect(findings.first.evidence).to(eq(["kind (lines 5, 7)"]))
   end
+
+  it "takes a comparison against another value as data, not a switch" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def renew(expected_epoch)
+              return false unless current_epoch == expected_epoch
+              @epoch += 1
+            end
+
+            def swap(seen)
+              @value = @next if @value != seen
+            end
+
+            def changed?(before, after)
+              return false unless before && after && before != after
+              @log.write(:changed)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still takes a comparison against a literal or a constant as a switch" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def pick(mode)
+              return @a if mode == FAST
+              return @b if Speed::SLOW == mode
+              @c if mode =~ /x/ && @low == @high
+            end
+
+            def odd(mode) = (@a if mode.==)
+
+            def guard(level)
+              return unless level && level != :off
+              @log.write(:on)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["mode (lines 5, 6, 7)", "mode (line 10)", "level (line 13)"]))
+  end
+
+  it "takes a conditional that only maps the parameter to literal values as a lookup" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def apply(dry_run)
+              status = dry_run ? "dry_run" : "applied"
+              @log.write(status)
+            end
+
+            def label(kind)
+              case kind
+              when :a then t(".alpha")
+              when :b then I18n.t(:beta)
+              else Labels::OTHER
+              end
+            end
+
+            def tone(loud)
+              @io.puts(if loud then :high end)
+            end
+
+            def tier(size)
+              if size == :big
+                3
+              elsif size == :mid
+                2
+              else
+                1
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a conditional any of whose branches does more than name a value" do
+    findings = steered(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def apply(dry_run) = dry_run ? @a : "applied"
+
+            def label(kind)
+              case kind
+              when :a then t(@key)
+              else :other
+              end
+            end
+
+            def bare(kind)
+              case kind
+              when :b then t
+              else :other
+              end
+            end
+
+            def blank(kind)
+              case kind
+              when :c
+              else :other
+              end
+            end
+
+            def steps(fast)
+              if fast
+                :one
+                :two
+              end
+            end
+
+            def guard(on) = on && "wide"
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(
+        %w[
+          App::Zone::Thing#apply App::Zone::Thing#label App::Zone::Thing#bare App::Zone::Thing#blank
+          App::Zone::Thing#steps App::Zone::Thing#guard
+        ]
+      )
+    )
+  end
 end
