@@ -233,6 +233,40 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters(bare)).to(be_empty)
   end
 
+  def resource(name, owner)
+    "class #{name}Resource\n attribute :id\n attribute :#{owner}_name do |r| r.#{owner}.name end\n " \
+      "attribute(:created, &:created_at)\n attribute :email do |r| r.#{owner}.contact.email end\n " \
+      "belongs_to :tenant, default: -> { Current.tenant }\n attribute :state do it.status end\nend\n"
+  end
+
+  it "leaves a class's macros alone when their blocks only read, or their lambdas make one call" do
+    expect(clusters("a.rb" => resource("Order", "buyer"), "b.rb" => resource("Invoice", "payer"))).to(be_empty)
+  end
+
+  it "reads the same macros as code outside a class body, or once a block or lambda carries logic" do
+    outside = ->(name) { resource(name, "owner").sub(/\Aclass \w+/, "def #{name.downcase}") }
+    logic = ->(name) { resource(name, "owner").sub("contact.email", "email || r.no").sub("Current.tenant", "a if b") }
+    sites = [outside, logic].map { clusters("a.rb" => it["Order"], "b.rb" => it["Invoice"]).first.size }
+    expect(sites).to(eq([2, 2]))
+  end
+
+  def attributes(name, param, methods)
+    one, two, three, four, five, six = methods.split
+    "class #{name}\n attribute :id\n attribute :a do |#{param}| #{param}.#{one}.#{two} || #{param}.#{three}(:a) " \
+      "end\n attribute :b do |#{param}| #{param}.#{four}.#{five} if #{param}.#{six} end\nend\n"
+  end
+
+  it "does not count a macro name the class repeats three times as a name two copies share" do
+    mine = "strip presence fallback to_s upcase visible?"
+    sources = {
+      "a.rb" => attributes("A", "r", mine),
+      "b.rb" => attributes("B", "x", "squish first default to_sym downcase shown?")
+    }
+    expect(clusters(sources)).to(be_empty)
+    expect(clusters(sources.transform_values { it.sub(" attribute :id\n", "") }).first.size).to(eq(2))
+    expect(clusters(sources.merge("b.rb" => attributes("B", "x", mine))).first.size).to(eq(2))
+  end
+
   it "leaves a macro alone whose block holds only more declarations" do
     settings =
       lambda do |group, host, port|
@@ -316,6 +350,32 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
       buckets = described_class.new(fragments(sources)).buckets.map { it.map(&:file) }
       expect(buckets).to(include(%w[a.rb b.rb], %w[c.rb d.rb]))
+    end
+  end
+
+  describe(Hashira::Duplication::Macro) do
+    def pardons?(source) = described_class.new(Prism.parse(source).value.statements.body.first).pardoned.any?
+
+    it "pardons a block that passes a symbol, or reads a chain of up to three plain calls off its parameter" do
+      readers = ["a(&:id)", "a { |r| r.b.c.d }", "a { it.b }", "a { _1.b }", "a { b.c }", "a { |r| r&.b }"]
+      expect(readers.map { pardons?(it) }.uniq).to(eq([true]))
+    end
+
+    it "keeps a block that computes: a longer chain, an argument, a block, a constant, a branch, a second statement" do
+      computed = [
+        "a(&b)", "a { |r| r.b.c.d.e }", "a { |r| r.b(1) }", "a { |r| r.b { 1 } }", "a { B.c }",
+        "a { |r| r.b ? 1 : 2 }", "a { |r| r.b\n r.c }", "a { }", "a"
+      ]
+      expect(computed.map { pardons?(it) }.uniq).to(eq([false]))
+    end
+
+    it "pardons a keyword lambda whose body is one call or an ||, and nothing else" do
+      pardoned = ["a :b, c: -> { D.e }", "a :b, c: -> { d || e }", "a(c: ->(x) { x.y(1) })"]
+      kept = [
+        "a :b, -> { d }", "a :b, c: -> { d if e }", "a :b, c: -> { d\n e }", "a :b, c: -> {}", "a :b, c: d",
+        "a :b, **c"
+      ]
+      expect([pardoned, kept].map { |group| group.map { pardons?(it) }.uniq }).to(eq([[true], [false]]))
     end
   end
 

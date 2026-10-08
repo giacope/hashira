@@ -17,10 +17,11 @@ class Hashira::Duplication::Fragment
 
   HEREDOCS = [Prism::StringNode, Prism::InterpolatedStringNode, Prism::XStringNode, Prism::InterpolatedXStringNode].freeze
 
-  def initialize(file, roots, walks)
+  def initialize(file, roots, walks, setting = Hashira::Duplication::Setting::CODE)
     @file = file
     @roots = roots
     @walks = walks
+    @setting = setting
   end
 
   attr_reader :file
@@ -33,7 +34,7 @@ class Hashira::Duplication::Fragment
 
   def mass = @_mass ||= types.size - muted.size
 
-  def schema? = nodes.all? { directive?(it) }
+  def schema? = nodes.all? { pardoned.include?(it) || directive?(it) }
 
   def sink? = statements.one? && Hashira::Duplication::Sink.new(statements.first).sink?
 
@@ -59,11 +60,17 @@ class Hashira::Duplication::Fragment
 
   def nodes = @_nodes ||= @walks.nodes(@roots)
 
+  def recurring = @setting.recurring
+
   private
 
   def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
 
   def opened? = @roots.one? && OPENED.include?(@roots.first.class)
+
+  def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
+
+  def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
 
   def muted = sinks.flat_map(&:message).uniq
 
@@ -84,5 +91,5 @@ class Hashira::Duplication::Fragment
 
   def constant?(call) = !call.arguments && !call.block && Hashira::Duplication::Literal.new(call.receiver).literal?
 
-  def literals?(arguments) = Hashira::Duplication::Literal.new(arguments).literals?
+  def literals?(arguments) = Hashira::Duplication::Literal.new(arguments, pardoned).literals?
 end

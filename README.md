@@ -394,10 +394,14 @@ it does inside Ruby:
   spine of a model or a serializer, constants assigned a literal (`.freeze`
   included) — is a schema, not copied logic; extracting it only hides what the
   class declares. A macro whose block holds only more declarations
-  (`string :host do default "localhost" end`) is one too. Two models that open
-  the same way are two models. As soon as a fragment carries logic — a block
-  parameter, a method, a variable, a receiver, a branch, an interpolation — it
-  counts again.
+  (`string :host do default "localhost" end`) is one too. So, in a class body,
+  is a macro whose block only names a reader — `attribute(:id, &:id)`, or a
+  chain of up to three plain calls off its parameter
+  (`attribute :owner_name do |r| r.owner.name end`) — or whose keyword lambda
+  makes one call (`belongs_to :tenant, default: -> { Current.tenant }`, an `||`
+  included). Two models that open the same way are two models. As soon as a
+  fragment carries logic — a method, a variable, a receiver, a branch, an
+  interpolation, a block or lambda that computes — it counts again.
 - **A lone log line isn't a clone.** A method, `rescue` or statement whose only
   statement is a log call (`logger.error`, `Rails.logger.warn`) or an error
   report (`Rails.error.report`, `Sentry.capture_exception`, `Honeybadger.notify`)
@@ -424,7 +428,9 @@ it does inside Ruby:
   common, and rare token types drive matching while common ones don't. The floor
   rises again when two sites share nothing but their shape: `each_cons(2).min_by
   { }` and `combination(2).select { }` are the same tree by coincidence, and a
-  match with no name in common has to be much bigger to mean anything.
+  match with no name in common has to be much bigger to mean anything. A macro a
+  class body calls three or more times (`attribute`, `belongs_to`, `scope`) is
+  not a name in common: every line of that class shares it.
 - **Churn overlay.** When git is available, clones spanning two files that both
   change more often than the typical file here (above the median commit count)
   are called out — that's where one copy gets fixed and the other silently

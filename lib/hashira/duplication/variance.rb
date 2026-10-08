@@ -35,7 +35,9 @@ class Hashira::Duplication::Variance
 
   def pairs = @canonical.nodes.zip(@other.nodes)
 
-  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) }
+  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) && !recurring?(left) }
+
+  def recurring?(node) = (@canonical.recurring | @other.recurring).include?(node.name)
 
   def inner?(node) = nested.any? { it.equal?(node) }
 
