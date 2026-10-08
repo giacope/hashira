@@ -13,5 +13,7 @@ class Hashira::Report::Spread
 
   def deepest = piles.map(&:size).max.to_i
 
-  def ranked(pile) = pile.each_with_index.sort_by { |finding, index| [-finding.magnitude.to_i, index] }.map(&:first)
+  def ranked(pile) = pile.each_with_index.sort_by { |finding, index| [order(finding), index] }.map(&:first)
+
+  def order(finding) = [finding.doubted? ? 1 : 0, -finding.magnitude.to_i]
 end

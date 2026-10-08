@@ -170,6 +170,11 @@ RSpec.describe(Hashira::Report::Json) do
       expect(rated).to(eq(%w[high high high high medium medium medium low]))
     end
 
+    it "takes the confidence a finding states over the one its kind implies" do
+      stated = %i[low high].map { Hashira::Analysis::Finding.new(kind: "nil_check", package: "p", evidence: [], confidence: it) }
+      expect(stated.map { described_class.of(it) }).to(eq(%w[low high]))
+    end
+
     it "treats every structural kind and complexity as measured, and every smell as a pattern" do
       rate = ->(kind) { described_class.of(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])) }
       expect([*Hashira::Pipeline::STRUCTURAL, "complexity"].map(&rate).uniq).to(eq(["high"]))

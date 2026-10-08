@@ -168,6 +168,12 @@ RSpec.describe(Hashira::Report::Text) do
       )
     end
 
+    it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do
+      doubted = complex("doubted", 50).with(confidence: :low)
+      dealt = Hashira::Report::Spread.new([doubted, complex("plain", 12), smell("nil_check", "n1")]).to_a
+      expect(packages(dealt)).to(eq(%w[A#plain A#n1 A#doubted]))
+    end
+
     it "deals nothing from nothing" do
       expect(Hashira::Report::Spread.new([]).to_a).to(eq([]))
     end

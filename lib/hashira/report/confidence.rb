@@ -14,6 +14,11 @@ module Hashira::Report::Confidence
   module_function
 
   def of(finding)
+    stated = finding.confidence
+    stated ? stated.to_s : inferred(finding)
+  end
+
+  def inferred(finding)
     kind = finding.kind
     return copied(finding.detail.kind) if kind == "duplication"
     MEASURED.include?(kind) ? HIGH : MEDIUM
