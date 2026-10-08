@@ -164,8 +164,7 @@ module Fixtures
   SANDBOX_FILES = {
     "app/models/sandbox.rb" => "class Sandbox\n  def run = 1\nend\n",
     "app/models/sandbox/lifecycle.rb" => "module Sandbox::Lifecycle\n  def cycle = 1\nend\n",
-    "app/resources/sandbox_resource.rb" =>
-      "class SandboxResource < ApplicationResource\n  attributes :name\nend\n"
+    "app/policies/sandbox_policy.rb" => "class SandboxPolicy < ApplicationPolicy\n  def show? = true\nend\n"
   }.freeze
 
   NOTIFY_FILES = {

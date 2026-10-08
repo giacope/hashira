@@ -80,7 +80,7 @@ RSpec.describe(Hashira::Report::Json) do
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
-      expect(report["folds"]).to(include("from" => "SandboxResource", "to" => "Sandbox", "via" => "suffix"))
+      expect(report["folds"]).to(include("from" => "SandboxPolicy", "to" => "Sandbox", "via" => "suffix"))
     end
   end
 

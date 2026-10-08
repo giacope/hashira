@@ -34,6 +34,8 @@ class Hashira::Coupling::Census
 
   def charge(file, nesting) = translate(placement.charge(file, nesting))
 
+  def web?(package) = placement.web?(package)
+
   private
 
   def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))

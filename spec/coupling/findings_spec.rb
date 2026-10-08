@@ -184,6 +184,21 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "leaves the presentation layer's edge into the domain it exposes out of wide edges" do
+    billing = %w[A B C D E].to_h do |name|
+      ["app/models/billing/#{name.downcase}.rb", "module Billing\n  class #{name}\n    def x = 1\n  end\nend\n"]
+    end
+    reach = "[Billing::A, Billing::B, Billing::C, Billing::D, Billing::E]"
+    files = billing.merge(
+      "config/application.rb" => "module Shop; class Application; end; end\n",
+      "app/models/order.rb" => "class Order\n  def bill = #{reach}\nend\n",
+      "app/controllers/bills_controller.rb" => "class BillsController\n  def index = #{reach}\nend\n"
+    )
+    verdicts(files, directories: ["app"]) do |all|
+      expect(all.select { it.kind == "wide_edge" }.map(&:digest)).to(eq(["Order -> Billing"]))
+    end
+  end
+
   it "reports a roll-call of words kept in sync across packages" do
     files = {
       "lib/app/one/a.rb" => "module One; class A; KINDS = %w[red blue lime]; def a = KINDS; end; end\n",

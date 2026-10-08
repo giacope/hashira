@@ -9,7 +9,7 @@ class Hashira::Coupling::Graph
 
   attr_reader :trees
 
-  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(map.dependencies, self)
+  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
 
   def charge(file) = @census.charge(file, [])
 
@@ -21,7 +21,7 @@ class Hashira::Coupling::Graph
 
   def outgoing(package) = dependencies[package].to_a.sort
 
-  def incoming(package) = packages.select { dependencies[it].include?(package) }.sort
+  def incoming(package) = sources(dependencies, package)
 
   def edges
     dependencies.sort.flat_map { |from, tos| tos.sort.map { Hashira::Coupling::Edge.new(from:, to: it) } }
@@ -36,7 +36,9 @@ class Hashira::Coupling::Graph
 
   def evidence(from, to) = map.evidence[[from, to]]
 
-  def usage(package) = incoming(package).to_h { [it, map.usage[[it, package]]] }
+  def domain = edges.reject { web?(it.from) || web?(it.to) }
+
+  def usage(package) = clients(package).to_h { [it, map.usage[[it, package]]] }
 
   def constants(edge)
     from, to = edge.deconstruct
@@ -46,14 +48,14 @@ class Hashira::Coupling::Graph
   def metric(package)
     Hashira::Coupling::Metric.new(
       types: @census.types[package],
-      afferent: incoming(package).size,
-      efferent: dependencies[package].size
+      afferent: clients(package).size,
+      efferent: links[package].size
     )
   end
 
   def metrics = packages.to_h { [it, metric(it)] }
 
-  def violations = Hashira::Coupling::SdpCheck.new(dependencies, metrics).violations
+  def violations = Hashira::Coupling::SdpCheck.new(links, metrics).violations
 
   def weight(from, to) = evidence(from, to).size
 
@@ -67,4 +69,12 @@ class Hashira::Coupling::Graph
   end
 
   def dependencies = map.dependencies
+
+  def links = @_links ||= packages.to_h { |package| [package, dependencies[package].reject { web?(it) }.to_set] }
+
+  def clients(package) = sources(links, package)
+
+  def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
+
+  def web?(package) = @census.web?(package)
 end

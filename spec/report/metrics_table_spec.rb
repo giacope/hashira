@@ -84,7 +84,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       )
       output = capture { Hashira::Report::Text.new(view).print }
       expect(output).to(include("Folded (single-type classes joined to their base or domain):"))
-      expect(output).to(include("  SandboxResource -> Sandbox (suffix)\n\nFindings ("))
+      expect(output).to(include("  SandboxPolicy -> Sandbox (suffix)\n\nFindings ("))
     end
   end
 end
