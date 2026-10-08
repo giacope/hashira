@@ -42,8 +42,9 @@ true positive the earlier triage confirmed still fires.
   checks on library objects and clone conventions are `low`, and a low
   finding is listed after the confident ones of its kind.
 - `manual_dispatch` also catches `case`/`is_a?` dispatch over two or more of
-  the project's own types, and a `case` on a status, state, type or kind
-  value; dispatch over a library's types stays boundary_sprawl's.
+  the project's own types, and a `case` that does more than map the object's
+  own status, state, type or kind to a value; dispatch over a library's types
+  stays boundary_sprawl's.
 - `nil_check` also sees `blank?`, and `&.`, `x || default` and `unless x` on
   a local, ivar or parameter the code itself leaves nil.
 - Duplication names two new variances: `nil_guard`, twins that differ only by

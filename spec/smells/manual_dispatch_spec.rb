@@ -247,43 +247,57 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     )
   end
 
-  it "flags a case over a status, state, type or kind value with two or more literal arms" do
+  it "flags a case over the object's own status, state, type or kind with two or more literal arms" do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
           class Thing
-            def label(order)
-              case order.status
-              when :paid then @paid
-              when :open, :held then @open
-              end
-            end
-
             def step
               case @state
-              when "a" then @a
-              when "b" then @b
+              when "a" then @a.run
+              when "b" then @b.run
               end
             end
 
-            def pick(payment_kind)
+            def charge
               case payment_kind
-              when 1 then @a
-              when 2 then @b
+              when 1 then @a.run
+              when 2 then @b.run
               end
             end
 
-            def paint(color)
+            def settle
+              case self.status
+              when :paid then @a.run
+              when :open, :held then @b.run
+              end
+            end
+
+            def label(order)
+              case order.status
+              when :paid then @paid.run
+              when :open then @open.run
+              end
+            end
+
+            def pick(kind)
+              case kind
+              when 1 then @a.run
+              when 2 then @b.run
+              end
+            end
+
+            def paint
               case color
-              when :red then @a
-              when :blue then @b
+              when :red then @a.run
+              when :blue then @b.run
               end
             end
 
-            def single(status)
+            def single
               case status
-              when :paid then @a
-              when PAID then @b
+              when :paid then @a.run
+              when PAID then @b.run
               end
             end
 
@@ -294,19 +308,45 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
               end
             end
 
-            def computed(order)
-              case order.kinds.first
-              when :a then @a
-              when :b then @b
+            def computed
+              case kinds.first
+              when :a then @a.run
+              when :b then @b.run
               end
             end
           end
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#label App::Zone::Thing#step App::Zone::Thing#pick]))
-    expect(findings.first.evidence).to(eq(["order.status: :paid, :open, :held (lines 6, 7)"]))
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#step App::Zone::Thing#charge App::Zone::Thing#settle]))
+    expect(findings.last.evidence).to(eq(["self.status: :paid, :open, :held (lines 20, 21)"]))
     expect(message(findings.first)).to(include("dispatches manually via a status switch"))
+  end
+
+  it "leaves a status that only maps to a value, or one read off another object, to the other kinds" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def title
+              case @state
+              when :draft then "Draft"
+              when :live then t(".live")
+              else LIVE
+              end
+            end
+
+            def tag(node)
+              case node.type
+              when :def then @a.run
+              when :send then @b.run
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
   end
 
   it "names every way one method dispatches, and leaves the confidence to the switch" do
@@ -317,15 +357,15 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
           class Square; end
 
           class Thing
-            def draw(shape, kind)
+            def draw(shape)
               return @canvas.paint(shape) if respond_to?(:paint)
               case shape
               when Circle then @a
               when Square then @b
               end
-              case kind
-              when :a then @a
-              when :b then @b
+              case @kind
+              when :a then @a.run
+              when :b then @b.run
               end
             end
           end

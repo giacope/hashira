@@ -16,8 +16,6 @@ class Hashira::Smells::Switches
 
   STATUS = /(?:\A@?|_)(?:status|state|type|kind)\z/
 
-  NAMED = [Prism::CallNode, Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
-
   VALUES = [Prism::SymbolNode, Prism::StringNode, Prism::IntegerNode].freeze
 
   TYPE_NAME = /[a-z]/
@@ -29,7 +27,7 @@ class Hashira::Smells::Switches
 
   def typed = @_typed ||= gathered(cased { type?(it) } + probed)
 
-  def statuses = @_statuses ||= gathered(cased { VALUES.include?(it.class) }.select { status?(it.subject) })
+  def statuses = @_statuses ||= gathered(cased(dispatches) { VALUES.include?(it.class) }.select { status?(it.subject) })
 
   private
 
@@ -40,9 +38,13 @@ class Hashira::Smells::Switches
       .select { it.labels.size >= MIN_ARMS }
   end
 
-  def cased(&)
-    body.grep(Prism::CaseNode).select(&:predicate).flat_map { |node| arms(node, &) }
-  end
+  def cased(cases = selected, &) = cases.flat_map { |node| arms(node, &) }
+
+  def selected = body.grep(Prism::CaseNode).select(&:predicate)
+
+  def dispatches = selected.reject { lookup?(it) }
+
+  def lookup?(node) = [*node.conditions, node.else_clause].compact.all? { Hashira::Smells::Mapping.literal?(it) }
 
   def arms(node)
     node.conditions.flat_map { |branch| branch.conditions.select { yield(it) }.map { arm(node.predicate, it) } }
@@ -63,5 +65,13 @@ class Hashira::Smells::Switches
     segments.any? && TYPE_NAME.match?(segments.last) && @ownership.owned?(segments)
   end
 
-  def status?(node) = NAMED.include?(node.class) && STATUS.match?(node.name)
+  def status?(node) = own?(node) && STATUS.match?(node.name)
+
+  def own?(node)
+    case node
+    when Prism::InstanceVariableReadNode then true
+    when Prism::CallNode then [nil, Prism::SelfNode].include?(node.receiver&.class)
+    else false
+    end
+  end
 end

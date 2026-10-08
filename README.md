@@ -676,8 +676,10 @@ What each one catches:
   also catches the dispatch `respond_to?` stands in for: a `case` or `is_a?`
   ladder over two or more of the codebase's own classes (over a library's,
   `case node when Prism::CallNode`, it is boundary_sprawl's to judge), and a
-  `case` over a `status`, `state`, `type` or `kind` value with two or more
-  literal arms.
+  `case` over the object's own `status`, `state`, `type` or `kind` (`@state`,
+  `self.status`) with two or more literal arms. A `case` whose every arm only
+  names a value (`when :draft then "Draft"`) is a lookup, and one over another
+  object's tag (`node.type`) is a question for that object's own type.
 - **module_initialize** — `initialize` in a mixin. Even a cooperative one that
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.
