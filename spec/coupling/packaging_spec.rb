@@ -37,6 +37,60 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
   end
 
+  describe "top-level statements that write a namespaced constant" do
+    def payments(source)
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/payments/ledger.rb" => "module Payments\n  class Ledger\n    def l = 1\n  end\nend\n",
+        "app/models/payments/rate.rb" => source
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) { |_project, _census, graph| yield(graph) }
+    end
+
+    it "charges a top-level constant write to the constant it writes, not to (root)" do
+      payments("Payments::Rate = Data.define(:amount) do\n  def bill = Billing::Invoice\nend\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("Payments -> Billing"))
+        expect(graph.edges.map(&:to_s)).not_to(include("(root) -> Payments", "(root) -> Billing"))
+      end
+    end
+
+    it "charges every compound write the same way" do
+      ["||=", "&&=", "+="].each do |operator|
+        payments("Payments::Rate #{operator} Billing::Invoice\n") do |graph|
+          expect(graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
+        end
+      end
+    end
+
+    it "charges a declaration sent to a namespaced constant to that constant" do
+      %w[private_constant public_constant include extend prepend].each do |declaration|
+        payments("Payments::Ledger.#{declaration}(Billing::Invoice)\n") do |graph|
+          expect(graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
+        end
+      end
+    end
+
+    it "keeps an ordinary call on a constant charged to where it is made" do
+      payments("Payments::Ledger.register(Billing::Invoice)\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing", "(root) -> Payments"))
+      end
+    end
+
+    it "keeps a declaration sent to an expression charged to where it is made" do
+      payments("ledger.include(Billing::Invoice)\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing"))
+      end
+    end
+
+    it "falls back to the enclosing package when the written constant is not the project's" do
+      payments("Rails::Engine.include(Billing::Invoice)\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing"))
+      end
+      payments("module Payments\n  Rails::Engine.include(Billing::Invoice)\nend\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("Payments -> Billing"))
+      end
+    end
+  end
+
   describe "Rails awareness" do
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do
       within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).rails?).to(be(true)) }

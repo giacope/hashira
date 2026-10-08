@@ -15,7 +15,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   def baseline = []
 
   def charge(_file, nesting)
-    nesting.reverse_each.filter_map { catalog.strip(it).first }.first || project.root
+    nesting.reverse_each.filter_map { catalog.strip(it).first }.find { names.include?(it) } || project.root
   end
 
   def skip?(segments) = project.rails? && RAILS_BASES.include?(segments.first)
@@ -23,6 +23,8 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   def folding(census) = Hashira::Coupling::Folding.new(catalog, census, suffixes: suffixes)
 
   private
+
+  def names = @_names ||= catalog.to_set(&:name)
 
   def suffixes = project.rails? ? Hashira::Coupling::Folding::SUFFIXES : []
 end

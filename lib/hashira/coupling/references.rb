@@ -3,6 +3,13 @@
 require "prism"
 
 class Hashira::Coupling::References
+  WRITES = [
+    Prism::ConstantPathWriteNode, Prism::ConstantPathOrWriteNode,
+    Prism::ConstantPathAndWriteNode, Prism::ConstantPathOperatorWriteNode
+  ].freeze
+
+  DECLARATIONS = %i[private_constant public_constant include extend prepend].freeze
+
   def initialize(roots = nil)
     @roots = roots
   end
@@ -27,8 +34,24 @@ class Hashira::Coupling::References
     return collect(node.parent, home) if syntax.dynamic?(node)
     return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
-    node.compact_child_nodes.each { collect(it, home) }
+    spread(node, home + claimed(node))
   end
+
+  def claimed(node)
+    target = written(node)
+    target ? [syntax.anchor(nesting, syntax.segments(target), @roots)] : []
+  end
+
+  def spread(node, scope) = node.compact_child_nodes.each { collect(it, scope) }
+
+  def written(node)
+    case node
+    when *WRITES then node.target
+    when Prism::CallNode then node.receiver if declaration?(node)
+    end
+  end
+
+  def declaration?(call) = DECLARATIONS.include?(call.name) && syntax.static?(call.receiver)
 
   def sighting(node, home)
     [syntax.segments(node), node.location.start_line, syntax.rooted?(node) ? nil : nesting, home]
