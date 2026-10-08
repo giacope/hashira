@@ -43,8 +43,8 @@ class Hashira::Coupling::Graph
   def usage(package) = clients(package).to_h { [it, map.usage[[it, package]]] }
 
   def constants(edge)
-    from, to = edge.deconstruct
-    map.usage[[from, to]].sort
+    names = map.usage[edge.deconstruct]
+    names.reject { |name| names.any? { inside?(name, it) } }.sort
   end
 
   def metric(package)
@@ -79,4 +79,6 @@ class Hashira::Coupling::Graph
   def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
 
   def web?(package) = @census.web?(package)
+
+  def inside?(name, outer) = name.start_with?("#{outer}::") && @census.classes.include?(outer)
 end

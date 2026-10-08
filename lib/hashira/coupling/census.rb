@@ -39,6 +39,8 @@ class Hashira::Coupling::Census
 
   def web?(package) = placement.web?(package)
 
+  def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
+
   private
 
   def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))

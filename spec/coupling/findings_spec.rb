@@ -240,6 +240,24 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "counts a class and the types nested in it as one constant of an edge" do
+    gate = "module App; module Core; class Gate; class Policy; end; class Exceeded; end; end; end; end\n"
+    kit = "module App; module Core; module Kit; class One; end; class Two; end; end; end; end\n"
+    core = %w[A B C].to_h { ["lib/app/core/#{it.downcase}.rb", "module App; module Core; class #{it}; end; end; end"] }
+    uses = ->(list) { "module App; module Main; class Uses; def go = [#{list}]; end; end; end\n" }
+    files = core.merge("lib/app/core/gate.rb" => gate, "lib/app/core/kit.rb" => kit)
+    main = ->(list) { files.merge("lib/app/main/uses.rb" => uses.call("#{list}, Core::A, Core::B")) }
+    one = main.call("Core::Gate, Core::Gate::Policy, Core::Gate::Exceeded")
+    loose = main.call("Core::Gate::Policy, Core::Gate::Exceeded, Core::C")
+    kits = main.call("Core::Kit, Core::Kit::One, Core::Kit::Two")
+    verdicts(one) { |all| expect(all.map(&:kind)).not_to(include("wide_edge")) }
+    verdicts(loose) do |all|
+      expect(all.find { it.kind == "wide_edge" }.detail[:constants])
+        .to(eq(%w[Core::A Core::B Core::C Core::Gate::Exceeded Core::Gate::Policy]))
+    end
+    verdicts(kits) { |all| expect(all.find { it.kind == "wide_edge" }.detail[:constants].size).to(eq(5)) }
+  end
+
   it "leaves the presentation layer's edge into the domain it exposes out of wide edges" do
     billing = %w[A B C D E].to_h { ["app/models/billing/#{it.downcase}.rb", "module Billing; class #{it}; end; end\n"] }
     reach = "[Billing::A, Billing::B, Billing::C, Billing::D, Billing::E]"
