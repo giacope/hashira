@@ -129,7 +129,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 2 (line 22)", "node.name × 2 (line 26)"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 2 (line 22)"]))
   end
 
   it "counts a variable reassigned between two calls as two values" do
@@ -588,7 +588,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def yielded(rows)
-              [rows.map { @io.tick(3) }, rows.select { @io.tick(3) }]
+              rows.map { [@io.tick(3), @io.tick(3)] }
             end
           end
         end
@@ -668,5 +668,431 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       end
     RUBY
     expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
+  end
+
+  it "excuses a call inside an exit's value and its twin after the exit, which never both run" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def label(user)
+              return format(user.account.name) unless user.active?
+              user.account.name
+            end
+
+            def owner(record)
+              return record.owner if record.orphan?
+              record.owner.name
+            end
+
+            def scan(rows)
+              rows.each { |row| return wrap(@io.tick(1)) if row }
+              @io.tick(1)
+            end
+
+            def waited(flag)
+              while flag
+                return wrap(@io.tick(2)) if flag.ready?
+                flag = flag.next
+              end
+              @io.tick(2)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a call made before the exit, one a loop brings round again, or one an ensure runs after it" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def label(user)
+              shown = user.account.name
+              return format(user.account.name) unless user.active?
+              shown
+            end
+
+            def scan(rows)
+              rows.map do |row|
+                return wrap(@io.tick(1)) if row
+                [row, @io.tick(1)]
+              end
+            end
+
+            def polled(flag)
+              while flag
+                return wrap(@io.tick(2)) if flag.ready?
+                flag = flag.next(@io.tick(2))
+              end
+            end
+
+            def closed(one)
+              return wrap(@io.tick(3)) if one
+              one
+            ensure
+              @log.write(@io.tick(3))
+            end
+
+            def guarded(job, flag)
+              before = job.status
+              return if flag
+              [before, job.status]
+            end
+
+            def paired(one)
+              return wrap(@io.tick(4), @io.tick(4)) if one
+              one
+            end
+
+            def tested(one)
+              return wrap(@io.tick(5)) if @io.tick(5)
+              one
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "user.account.name × 2 (lines 5, 6)", "@io.tick(1) × 2 (lines 12, 13)", "@io.tick(2) × 2 (lines 19, 20)",
+          "@io.tick(3) × 2 (lines 25, 28)", "job.status × 2 (lines 32, 34)", "@io.tick(4) × 2 (line 38)",
+          "@io.tick(5) × 2 (line 43)"
+        ]
+      )
+    )
+  end
+
+  it "does not count the operand of defined?, which Ruby never evaluates" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def notify(error)
+              Rails.error.report(error) if defined?(Rails.error)
+              nil
+            end
+
+            def probe(error)
+              Rails.error.report(error) if Rails.error
+              nil
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#probe"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["Rails.error × 2 (line 10)"]))
+  end
+
+  it "counts two reads as two values when a command on the receiver, or a call handed it, runs between them" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def finish(job)
+              before = job.status
+              job.finalize!
+              log(:noop) if job.status == before
+            end
+
+            def handed(job)
+              before = job.status
+              Finalizer.run(job)
+              job.status == before
+            end
+
+            def keyed(job)
+              before = job.status
+              Finalizer.run(force: true, job: job)
+              job.status == before
+            end
+
+            def profile(auth)
+              response = http.get("/me", token: auth.token)
+              return response unless response.status == 401
+              auth.invalidate!
+              http.get("/me", token: auth.token)
+            end
+
+            def pair(cursor)
+              first = cursor.current
+              cursor.advance
+              [first, cursor.current]
+            end
+
+            def deep(job)
+              before = job.run.status
+              job.reset!
+              job.run.status == before
+            end
+
+            def stamped(job)
+              job.update job.status
+              job.status
+            end
+
+            def assigned(job)
+              before = job.status
+              result = Finalizer.call(job)
+              [result, job.status == before]
+            end
+
+            def stored(job)
+              before = job.status
+              @result = Finalizer.call(job)
+              job.status == before
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts two reads when what runs between them leaves the receiver alone" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def logged(job)
+              before = job.status
+              @log.write(before)
+              job.status == before
+            end
+
+            def sized(job)
+              before = job.status
+              Finalizer.run(job.id)
+              job.status == before
+            end
+
+            def spread(job, **)
+              before = job.status
+              Finalizer.run(**)
+              job.status == before
+            end
+
+            def apart(job, flag)
+              if flag
+                before = job.status
+              else
+                job.finalize!
+              end
+              job.status == before
+            end
+
+            def later(job, flag)
+              before = job.status
+              job.status == before
+            ensure
+              job.finalize!
+            end
+
+            def kept(job)
+              before = job.status
+              done = job.finalize!
+              job.status == done
+            end
+
+            def told(job)
+              before = job.status
+              log(job.id)
+              job.status == before
+            end
+
+            def wrapped(job)
+              before = job.status
+              job.log(job.status == before)
+              nil
+            end
+
+            def itself(job) = [job.with(job).status, job.with(job).status]
+
+            def shown(job) = { before: job.status, text: format(job), after: job.status }
+
+            def settled(job, flag)
+              before = job.status
+              label = flag ? job : before
+              [label, job.status]
+            end
+
+            def updated(job)
+              before = job.status
+              job.update job.status
+              before
+            end
+
+            def blocked(job)
+              before = job.status { job.reset!; 1 }
+              [before, job.status { job.reset!; 1 }]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "job.status × 2 (lines 5, 7)", "job.status × 2 (lines 11, 13)", "job.status × 2 (lines 17, 19)",
+          "job.status × 2 (lines 24, 28)", "job.status × 2 (lines 32, 33)", "job.status × 2 (lines 39, 41)",
+          "job.status × 2 (lines 45, 47)", "job.status × 2 (lines 51, 52)",
+          "job.with(job).status × 2 (line 56)", "job.status × 2 (line 58)", "job.status × 2 (lines 61, 63)",
+          "job.status × 2 (lines 67, 68)",
+          "job.status { job.reset!; 1 } × 2 (lines 73, 74)"
+        ]
+      )
+    )
+  end
+
+  it "excuses generated values and reads of the last regexp match, which any match replaces" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def tokens = [Token.generate(8), Token.generate(8)]
+
+            def found(text) = [text =~ /a/ && Regexp.last_match(1), text =~ /b/ && Regexp.last_match(1)]
+
+            def global(text) = [text =~ /a/ && $~[1], text =~ /b/ && $~[1]]
+
+            def numbered(text) = [text =~ /a/ && $1.to_i, text =~ /b/ && $1.to_i]
+
+            def whole(text) = [text =~ /a/ && $&.size, text =~ /b/ && $&.size]
+
+            def english(text) = [text =~ /a/ && $LAST_MATCH_INFO[1], text =~ /b/ && $LAST_MATCH_INFO[1]]
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a repeated call on Regexp or a global other than the last match" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def escaped(text) = [Regexp.escape(text), Regexp.escape(text)]
+
+            def stdout(text) = [$stdout.write(text), $stdout.write(text)]
+
+            def nested(text) = [Regexp.union(text).last_match, Regexp.union(text).last_match]
+
+            def own = [last_match(1), last_match(1)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "Regexp.escape(text) × 2 (line 4)", "$stdout.write(text) × 2 (line 6)",
+          "Regexp.union(text).last_match × 2 (line 8)", "last_match(1) × 2 (line 10)"
+        ]
+      )
+    )
+  end
+
+  it "compares calls only within one block, since a block may run at another time" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def watched(job)
+              before = job.status
+              on(:done) { notify(before, job.status) }
+            end
+
+            def nested(job)
+              on(:done) { on(:fail) { notify(job.status) } && job.status }
+            end
+
+            def lambdas(job) = [-> { job.status }, -> { job.status }]
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "rates a finding low when each repeat is a cheap read: a plain reader or a literal-key lookup" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def reader(job) = [job.status, job.status]
+
+            def keyed = [@params[:id], @params[:id], fetch("host"), fetch("host")]
+
+            def both(job) = [job&.status, job&.status, params.dig(:a, :b), params.dig(:a, :b)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:confidence)).to(eq(%i[low low low]))
+  end
+
+  it "keeps clock reads, reach-through chains, and calls with blocks or computed keys at full confidence" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def stamped = [Time.now, Time.now]
+
+            def current = [Time.current, Time.current]
+
+            def dated = [Date.current, Date.current]
+
+            def today = [Date.today, Date.today]
+
+            def ticked = [clock.now, clock.now]
+
+            def spun = [Process.clock_gettime(1), Process.clock_gettime(1)]
+
+            def chained(job) = [job.run.status, job.run.status]
+
+            def computed(key) = [@params[key], @params[key]]
+
+            def mixed(key) = [@params[:id], @params[:id], @params[key], @params[key]]
+
+            def passed(rows) = [rows.map(&:name), rows.map(&:name)]
+
+            def called = [compute(1), compute(1)]
+
+            def cursor(page) = [page.current, page.current]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:confidence)).to(eq(([nil] * 11) + [:low]))
+  end
+
+  it "rates a repeat low when one of the pair is a parameter default, which runs only when the argument is left out" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def run(at: clock.now)
+              schedule(at, clock.now)
+            end
+
+            def twice(at: clock.now)
+              schedule(at, clock.now, clock.now)
+            end
+
+            def plain(at)
+              schedule(at, clock.now, clock.now)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { [it.package, it.confidence] }).to(
+      eq([["App::Zone::Thing#run", :low], ["App::Zone::Thing#twice", nil], ["App::Zone::Thing#plain", nil]])
+    )
   end
 end

@@ -10,9 +10,48 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
+  TOUCHED = (COUNTED + [Prism::InstanceVariableReadNode, Prism::InstanceVariableOrWriteNode]).freeze
+
+  CONSTRUCTOR = :initialize
+
   private
 
-  def smelly? = subject.kind == :class && names.size > LIMIT
+  def smelly? = subject.kind == :class && weight > LIMIT && !cohesive?
+
+  def weight = names.size + parked.size
+
+  def parked = @_parked ||= names.intersection(written(strays)) - written(founders)
+
+  def strays = methods.reject(&:receiver) - founders
+
+  def written(methods) = sweeps(methods).select { COUNTED.include?(it.class) }.map(&:name)
+
+  def founders = methods.select { founding.include?(it.name) }
+
+  def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name)
+
+  def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
+
+  def sweeps(methods) = methods.flat_map { within(it) }
+
+  def within(method) = nodes.select { Hashira::Smells::Scope.covers?(method, it) }
+
+  def constructors = methods.select { it.name == CONSTRUCTOR }
+
+  def methods = @_methods ||= nodes.grep(Prism::DefNode)
+
+  def cohesive? = parked.empty? && clusters.one?
+
+  def clusters = touches.reduce(names.zip) { |groups, used| fuse(groups, used) }
+
+  def touches = (methods - constructors).map { touched(it) }.reject(&:empty?)
+
+  def touched(method) = within(method).select { TOUCHED.include?(it.class) }.map(&:name) & names
+
+  def fuse(groups, used)
+    joined, apart = groups.partition { it.intersect?(used) }
+    apart + [joined.flatten]
+  end
 
   def names
     @_names ||= writes.map(&:name).uniq.reject { it.start_with?("@_") || memoized?(it) }.sort
@@ -32,7 +71,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def guarded?(write) = guarded.any? { it.equal?(write) }
 
-  def guarded = @_guarded ||= nodes.grep(Prism::DefNode).flat_map { shielded(Hashira::Smells::Scope.sweep(it)) }
+  def guarded = @_guarded ||= methods.flat_map { shielded(Hashira::Smells::Scope.sweep(it)) }
 
   def shielded(body)
     probed = probes(body)

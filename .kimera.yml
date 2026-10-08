@@ -26,7 +26,7 @@ ignore:
   reason: Finding#trace reads the shape only when the evidence is empty and to_h drops it, so a shape computed for a
     finding with evidence is never observed; the guard only skips fingerprinting it (about 10% of smells time on rubocop)
 - file: lib/hashira/smells/repeated_call.rb
-  line: 73
+  line: 102
   label: delete `nodes.one?`
   reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
     groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)
