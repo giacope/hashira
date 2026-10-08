@@ -486,7 +486,13 @@ What each one catches:
   alone as a statement, or in a loop's condition, still steers.
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing. Each clump is listed at its widest: a
-  pair that only ever travels inside a larger set isn't listed again.
+  pair that only ever travels inside a larger set isn't listed again. It needs
+  the group to actually travel: one of those methods must hand all of it on to
+  another (`def patch(path, body) = post(path, body)`), so a shared signature
+  convention alone (`(path, body)` on every HTTP verb) isn't a clump.
+  `_`-prefixed and defaulted parameters don't count (`as_of = @as_of` is
+  already receiver state), and neither do methods that fill a role a related
+  class defines too, as every driver behind one port does.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Identical means the same call on the
   same values, not the same text: a literal block is part of the call, and a

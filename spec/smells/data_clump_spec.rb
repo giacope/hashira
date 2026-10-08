@@ -11,7 +11,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
 
             def two(alfa, bravo, delta) = @a.use(alfa, bravo, delta)
 
-            def three(bravo, alfa) = @a.use(alfa, bravo)
+            def three(bravo, alfa) = one(alfa, bravo, @c)
 
             def four(echo) = @a.use(echo)
           end
@@ -30,11 +30,11 @@ RSpec.describe(Hashira::Smells::DataClump) do
       module App
         module Zone
           class Thing
-            def one(alfa:, bravo: 1) = @a.use(alfa, bravo)
+            def one(alfa:, bravo:) = @a.use(alfa, bravo)
 
-            def two(alfa:, bravo: 2) = @a.use(alfa, bravo)
+            def two(alfa:, bravo:) = @a.use(alfa, bravo)
 
-            def three(alfa:, bravo: 3) = @a.use(alfa, bravo)
+            def three(alfa:, bravo:) = one(alfa:, bravo:)
 
             def self.four(alfa, bravo) = new(alfa, bravo)
           end
@@ -59,7 +59,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
 
             def five(echo, foxtrot) = @a.use(echo, foxtrot)
 
-            def six(echo, foxtrot) = @a.use(echo, foxtrot)
+            def six(echo, foxtrot) = self.five(echo, foxtrot)
           end
         end
       end
@@ -74,7 +74,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
           class Thing
             def one(alfa, bravo) = @a.use(alfa, bravo)
 
-            def two(alfa, bravo) = @a.use(alfa, bravo)
+            def two(alfa, bravo) = one(alfa, bravo)
 
             def three(alfa, charlie) = @a.use(alfa, charlie)
           end
@@ -93,7 +93,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
 
             def two(alfa, bravo, charlie) = @a.use(alfa, bravo, charlie)
 
-            def three(alfa, bravo, charlie) = @a.use(alfa, bravo, charlie)
+            def three(alfa, bravo, charlie) = one(alfa, bravo, charlie)
 
             def four(alfa, bravo) = @a.use(alfa, bravo)
 
@@ -101,7 +101,7 @@ RSpec.describe(Hashira::Smells::DataClump) do
 
             def six(delta, echo) = @a.use(delta, echo)
 
-            def seven(delta, echo) = @a.use(delta, echo)
+            def seven(delta, echo) = five(delta, echo)
           end
         end
       end
@@ -116,11 +116,81 @@ RSpec.describe(Hashira::Smells::DataClump) do
       {
         "lib/app/zone/thing.rb" => "class Thing\n  def one(alfa, bravo) = [alfa, bravo]\nend\n",
         "lib/app/zone/thing/two.rb" => "class Thing\n  def two(alfa, bravo) = [alfa, bravo]\nend\n",
-        "lib/app/zone/thing/three.rb" => "class Thing\n  def three(alfa, bravo) = [alfa, bravo]\nend\n"
+        "lib/app/zone/thing/three.rb" => "class Thing\n  def three(alfa, bravo) = one(alfa, bravo)\nend\n"
       },
       "data_clump"
     )
     expect(findings.size).to(eq(1))
     expect(findings.first.evidence).to(eq(["(alfa, bravo) → 3 methods: one, three, two"]))
+  end
+
+  it "drops underscore-prefixed and defaulted parameters from the group" do
+    findings = clumped(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def one(resource, _content, as_of = @as_of) = @a.use(resource, as_of)
+
+            def two(resource, _content, as_of = @as_of) = @a.use(resource, as_of)
+
+            def three(resource, _content, as_of: @as_of) = one(resource, _content, as_of)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "skips methods that fill a role a related class defines too, as every driver behind one port does" do
+    findings = clumped(<<~RUBY)
+      module App
+        module Zone
+          class Port
+            def create(resource, name) = raise(NotImplementedError)
+
+            def destroy(resource, name) = raise(NotImplementedError)
+
+            def rename(resource, name) = create(resource, name)
+          end
+
+          class Disk < Port
+            def create(resource, name) = @disk.touch(resource, name)
+
+            def destroy(resource, name) = @disk.rm(resource, name)
+
+            def rename(resource, name) = create(resource, name)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "needs one holder to hand the group on to another, not just share a signature convention" do
+    findings = clumped(<<~RUBY)
+      module App
+        module Zone
+          class Client
+            def get(path, body) = @http.call(:get, path, body)
+
+            def post(path, body) = @tries.zero? ? @http.post(path, body) : post(path, body)
+
+            def patch(path, body)
+              get
+              @http.patch(path, body)
+            end
+          end
+
+          class Relay
+            def get(path, body) = @http.call(:get, path, body)
+
+            def post(path, body) = @http.call(:post, path, body)
+
+            def patch(path, body) = post(path, body)
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Relay"]))
   end
 end

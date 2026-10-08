@@ -59,8 +59,9 @@ module Hashira::Report::Phrases
 
   def orphaned(names)
     return if names.empty?
-    "Nothing ever assigns #{quoted(names)}, so #{names.one? ? "it reads" : "they read"} nil: a typo or a dead hook. " \
-      "Assign #{names.one? ? "it" : "them"} where the object is built, or delete the read."
+    single = names.one?
+    "Nothing ever assigns #{quoted(names)}, so #{single ? "it reads" : "they read"} nil: a typo or a dead hook. " \
+      "Assign #{single ? "it" : "them"} where the object is built, or delete the read."
   end
 
   def installing(names)
