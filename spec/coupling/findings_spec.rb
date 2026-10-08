@@ -82,6 +82,33 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "names the members that are in a cycle only through what was folded into them" do
+    alert = "module Billing\n  class Alert\n    def a = Notification\n  end\nend\n"
+    files = Fixtures::RAILS_FILES.merge(Fixtures::NOTIFY_FILES, "app/models/billing/alert.rb" => alert)
+    verdicts(files, directories: ["app"]) do |all|
+      cycle = all.find { it.kind == "cycle" }
+      expect(cycle.detail).to(include(members: %w[Billing Notification], folded: %w[Notification]))
+      expect(message(cycle)).to(
+        start_with("Billing and Notification depend on each other in a cycle (Notification is in it only through")
+      )
+    end
+  end
+
+  it "lists several fold-only members together, and none when the loop survives unfolded" do
+    policy = "class BillingPolicy\n  def p = Notification\nend\n"
+    files = Fixtures::RAILS_FILES.merge(Fixtures::NOTIFY_FILES, "app/policies/billing_policy.rb" => policy)
+    loop = files.merge(
+      "app/models/notification.rb" => "class Notification\n  def read = Billing::Invoice\nend\n",
+      "app/models/billing/alert.rb" => "module Billing; class Alert; def a = Notification; end; end\n"
+    )
+    verdicts(files, directories: ["app"]) do |all|
+      expect(message(all.find { it.kind == "cycle" })).to(include("(Billing and Notification are in it only through"))
+    end
+    verdicts(loop, directories: ["app"]) do |all|
+      expect(all.find { it.kind == "cycle" }.detail[:folded]).to(eq([]))
+    end
+  end
+
   it "reports SDP violations with instabilities and evidence" do
     verdicts(Fixtures::UNSTABLE_FILES) do |all|
       violations = all.select { it.kind == "sdp_violation" }

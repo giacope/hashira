@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Census
-  def initialize(project, trees, packaging: :folder)
+  def initialize(project, trees, packaging: :folder, folded: true)
     @project = project
     @trees = trees
     @packaging = packaging
+    @folded = folded
   end
+
+  def unfolded = self.class.new(@project, @trees, packaging: @packaging, folded: false)
 
   def packaging = placement.mode
 
@@ -57,7 +60,7 @@ class Hashira::Coupling::Census
     @_settled = true
     @_folding = Hashira::Coupling::NoFolding
     @_roster = tally
-    refold
+    refold if @folded
   end
 
   def refold

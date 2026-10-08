@@ -9,6 +9,8 @@ class Hashira::Coupling::Graph
 
   attr_reader :trees
 
+  def unfolded = @_unfolded ||= self.class.new(@project, @trees, @census.unfolded)
+
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
 
   def charge(file) = @census.charge(file, [])

@@ -27,7 +27,8 @@ module Hashira::Report::Phrases
 
   def on_cycle(finding)
     detail = finding.detail
-    "#{roster(detail[:members])} depend on each other in a cycle — any change may ripple back around. " \
+    "#{roster(detail[:members])} depend on each other in a cycle#{joined(detail[:folded])} — " \
+      "any change may ripple back around. " \
       "The cheapest cut is #{detail[:cut].map { link(it) }.join(", ")}."
   end
 
@@ -35,6 +36,11 @@ module Hashira::Report::Phrases
     shown = members.first(ROSTER)
     rest = members.size - shown.size
     rest.positive? ? "#{shown.join(", ")} and #{rest} more" : "#{shown[..-2].join(", ")} and #{shown.last}"
+  end
+
+  def joined(folded)
+    return "" if folded.empty?
+    " (#{folded.one? ? "#{folded.first} is" : "#{roster(folded)} are"} in it only through folded types)"
   end
 
   def link(edge)
