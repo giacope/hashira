@@ -45,7 +45,9 @@ class Hashira::Smells::Course
 
   private
 
-  def receivers(call) = beneath(call).grep(Prism::CallNode).filter_map { it.receiver&.slice }
+  def receivers(call) = sent(call).filter_map { it.receiver&.slice }
+
+  def sent(call) = beneath(call).grep(Prism::CallNode)
 
   def beneath(node) = [node] + Hashira::Smells::Scope.inside(node)
 
@@ -62,11 +64,13 @@ class Hashira::Smells::Course
 
   def nodes = @_nodes ||= Hashira::Smells::Scope.inside(@definition)
 
-  def returns = @_returns ||= nodes.grep(Prism::ReturnNode)
+  def sorted = @_sorted ||= nodes.group_by(&:class)
 
-  def loops = @_loops ||= nodes.select { LOOPS.include?(it.class) }
+  def returns = sorted.fetch(Prism::ReturnNode, [])
 
-  def ensures = @_ensures ||= nodes.grep(Prism::EnsureNode)
+  def loops = sorted.values_at(*LOOPS).compact.flatten
+
+  def ensures = sorted.fetch(Prism::EnsureNode, [])
 
   def disturbed?(stretch)
     disturbs?(stretch, commands) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) }

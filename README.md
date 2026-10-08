@@ -592,7 +592,9 @@ What each one catches:
 - **state_sprawl** — a class whose instance state weighs more than four. Each
   instance variable weighs one, and one first assigned in an ordinary instance
   method rather than the constructor weighs two: it parks an intermediate result
-  between method calls, which is the real sprawl. The constructor includes the
+  between method calls, which is the real sprawl — except in a class built on a
+  `*Controller`, `*Mailer` or `*Component`, whose actions set variables to hand
+  them to a template. The constructor includes the
   methods `initialize` calls on itself, and class-level state (assigned in the
   class body or in `def self.x`) weighs one. A class whose variables are all set
   at construction is quiet when its methods use them together: link two

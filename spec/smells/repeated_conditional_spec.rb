@@ -278,12 +278,18 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
             def other = claimed? ? 1 : 2
 
             def more = claimed? ? 1 : 2
+
+            def release
+              return if @job.claimed?
+              @job.unlock!
+              true
+            end
           end
         end
       end
     RUBY
     expect(findings.flat_map(&:evidence)).to(
-      eq(["@job.claimed? × 3 (lines 9, 13, 15)", "claimed? × 3 (lines 20, 23, 25)"])
+      eq(["@job.claimed? × 4 (lines 9, 13, 15, 28)", "claimed? × 3 (lines 20, 23, 25)"])
     )
   end
 end

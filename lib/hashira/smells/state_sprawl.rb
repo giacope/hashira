@@ -14,11 +14,15 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   CONSTRUCTOR = :initialize
 
+  RENDERERS = /(?:Controller|Mailer|Component)\z/
+
   private
 
   def smelly? = subject.kind == :class && weight > LIMIT && !cohesive?
 
-  def weight = names.size + parked.size
+  def weight = names.size + (rendering? ? 0 : parked.size)
+
+  def rendering? = subject.nodes.any? { RENDERERS.match?(Hashira::Analysis::Syntax.segments(it.superclass).last.to_s) }
 
   def parked = @_parked ||= names.intersection(written(strays)) - written(founders)
 

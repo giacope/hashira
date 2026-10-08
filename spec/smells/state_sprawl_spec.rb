@@ -250,6 +250,27 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     expect(finding.evidence).to(eq(%w[@cache @path @rows @summary @valid]))
   end
 
+  def assigns(base)
+    crowded(<<~RUBY)
+      class Orders < #{base}
+        def show
+          @order = Order.find(params[:id])
+          @items = @order.items
+        end
+
+        def edit = @form = OrderForm.new(@order)
+      end
+    RUBY
+  end
+
+  it "does not weigh a view's assigns double: a controller, mailer or component action hands them to a template" do
+    expect(%w[ApplicationController ApplicationMailer Admin::BaseComponent].flat_map { assigns(it) }).to(be_empty)
+  end
+
+  it "weighs the same actions double on a class that renders no view" do
+    expect(assigns("Pipeline::Step").map(&:package)).to(eq(["Orders"]))
+  end
+
   it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do
     findings = crowded(<<~RUBY)
       module App
