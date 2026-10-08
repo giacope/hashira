@@ -165,9 +165,10 @@ RSpec.describe(Hashira::Report::Json) do
     end
 
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
-      kinds = %i[identical literal message constant mixed renamed renamed_literal structure]
+      kinds = %i[identical literal message constant mixed renamed renamed_literal nil_guard renamed_nil_guard structure
+        convention]
       rated = kinds.map { described_class.of(clone(it)) }
-      expect(rated).to(eq(%w[high high high high medium medium medium low]))
+      expect(rated).to(eq(%w[high high high high medium medium medium medium medium low low]))
     end
 
     it "takes the confidence a finding states over the one its kind implies" do

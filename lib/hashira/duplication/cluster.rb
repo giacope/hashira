@@ -2,6 +2,8 @@
 
 module Hashira
   module Duplication
+    CONVENTION = 10
+
     Cluster =
       Data.define(:sites) do
         def canonical = sites.max_by { |site| [shapes(site), site.mass] }
@@ -18,6 +20,10 @@ module Hashira
         def size = sites.size
 
         def structural? = others.all? { Variance.new(canonical, it).structural? }
+
+        def uniform? = sites.map(&:types).uniq.one?
+
+        def convention? = size >= CONVENTION && uniform? && !structural?
       end
   end
 end

@@ -9,7 +9,7 @@ module Hashira::Report::Confidence
 
   NARROW = %i[identical literal message constant].freeze
 
-  HEDGED = :structure
+  HEDGED = %i[structure convention].freeze
 
   module_function
 
@@ -25,7 +25,7 @@ module Hashira::Report::Confidence
   end
 
   def copied(variance)
-    return LOW if variance == HEDGED
+    return LOW if HEDGED.include?(variance)
     NARROW.include?(variance) ? HIGH : MEDIUM
   end
 end

@@ -13,15 +13,18 @@ class Hashira::Duplication::Fragment
     integer_node float_node true_node false_node nil_node
   ].freeze
 
+  OPENED = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze
+
   HEREDOCS = [Prism::StringNode, Prism::InterpolatedStringNode, Prism::XStringNode, Prism::InterpolatedXStringNode].freeze
 
-  def initialize(file, roots, walks)
+  def initialize(file, roots, walks, setting = Hashira::Duplication::Setting::CODE)
     @file = file
     @roots = roots
     @walks = walks
+    @setting = setting
   end
 
-  attr_reader :file
+  attr_reader :file, :roots
 
   def types = @_types ||= nodes.map(&:type)
 
@@ -29,9 +32,13 @@ class Hashira::Duplication::Fragment
 
   def shape = types.join(",")
 
-  def mass = types.size
+  def mass = @_mass ||= types.size - muted.size
 
-  def schema? = nodes.all? { directive?(it) }
+  def schema? = nodes.all? { pardoned.include?(it) || directive?(it) }
+
+  def sink? = statements.one? && Hashira::Duplication::Sink.new(statements.first).sink?
+
+  def statements = body&.body || @roots
 
   def sectioned? = bare?(@roots.first) && @roots[1].is_a?(Prism::DefNode)
 
@@ -53,7 +60,23 @@ class Hashira::Duplication::Fragment
 
   def nodes = @_nodes ||= @walks.nodes(@roots)
 
+  def recurring = @setting.recurring
+
+  def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
+
   private
+
+  def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
+
+  def opened? = @roots.one? && OPENED.include?(@roots.first.class)
+
+  def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
+
+  def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
+
+  def muted = sinks.flat_map(&:message).uniq
+
+  def sinks = nodes.grep(Prism::CallNode).map { Hashira::Duplication::Sink.new(it) }.select(&:sink?)
 
   def covers?(other) = file == other.file && other.line <= line && finish <= other.finish
 
@@ -70,5 +93,5 @@ class Hashira::Duplication::Fragment
 
   def constant?(call) = !call.arguments && !call.block && Hashira::Duplication::Literal.new(call.receiver).literal?
 
-  def literals?(arguments) = Hashira::Duplication::Literal.new(arguments).literals?
+  def literals?(arguments) = Hashira::Duplication::Literal.new(arguments, pardoned).literals?
 end

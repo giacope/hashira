@@ -394,30 +394,62 @@ it does inside Ruby:
   spine of a model or a serializer, constants assigned a literal (`.freeze`
   included) — is a schema, not copied logic; extracting it only hides what the
   class declares. A macro whose block holds only more declarations
-  (`string :host do default "localhost" end`) is one too. Two models that open
-  the same way are two models. As soon as a fragment carries logic — a block
-  parameter, a method, a variable, a receiver, a branch, an interpolation — it
-  counts again.
+  (`string :host do default "localhost" end`) is one too. So, in a class body,
+  is a macro whose block only names a reader — `attribute(:id, &:id)`, or a
+  chain of up to three plain calls off its parameter
+  (`attribute :owner_name do |r| r.owner.name end`) — or whose keyword lambda
+  makes one call (`belongs_to :tenant, default: -> { Current.tenant }`, an `||`
+  included). Two models that open the same way are two models. As soon as a
+  fragment carries logic — a method, a variable, a receiver, a branch, an
+  interpolation, a block or lambda that computes — it counts again.
+- **A lone log line isn't a clone.** A method, `rescue` or statement whose only
+  statement is a log call (`logger.error`, `Rails.logger.warn`) or an error
+  report (`Rails.error.report`, `Sentry.capture_exception`, `Honeybadger.notify`)
+  is skipped: its message is its whole meaning. Next to other statements it
+  counts, but whatever its interpolated messages hold weighs nothing — the string
+  counts once.
+- **Calls into an abstraction you already have aren't clones.** `def post(path,
+  body) = request(:post, path, body)` next to `def patch` is already factored:
+  when a fragment is one call to a method defined in the analyzed code and the
+  copies differ only in what they pass it (and in their own names and
+  parameters), it is skipped. A call to a library's method, or copies that
+  differ in the receiver, the block or nothing but their names, still count.
+- **Inverse pairs aren't clones.** `lock!`/`unlock!`, `enable_feature`/
+  `disable_feature`, `mark_as_read`/`mark_as_unread` share their shape by design.
+  A two-site clone whose sites sit in methods whose names differ in one word, and
+  that word is a known antonym or the other with `un`, `de` or `dis` in front, is
+  skipped — the whole methods and any stretch they share.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
   pairwise matches. A smaller clone whose copies sit inside a bigger one's is
   reported only when at least two of its copies lie outside it: one more site is
   not a new finding.
+- **Conventions, once.** A fragment ten or more files repeat, sharing its names
+  rather than only its shape, is a convention — usually on purpose. It pays no
+  recurrence penalty and is reported as one lower-confidence finding listing every
+  site (`14 sites follow one convention (mass 17)`), and a clone that is little
+  more than that line (less than the base floor heavier) folds into it rather
+  than surfacing as an arbitrary pair of files that hold it. When copies tie on
+  size, the ones whose names another copy shares are taken first, so a real twin
+  pair is not crowded out by look-alikes of the same shape.
 - **It tells you how to fix it.** hashira diffs the copies and classifies what
   varies: only literals (strings, numbers, symbols, patterns) → extract a method
   and pass them as arguments; only the receiver or a name → extract a method
   taking it, or use polymorphism; a constant → parameterize it; nothing but the
   method's own name → keep one, and alias or call it; the name and something
   inside → keep every name (a callback's is fixed), each calling one shared
-  method that takes what else differs; the control flow itself,
-  down to a `&.` one copy has and the other lacks → extract the common core, but
-  verify by hand (flagged lower-confidence).
+  method that takes what else differs; nothing but a `&.` one copy has and the
+  other lacks → extract a method and decide once whether the receiver can be nil;
+  the control flow itself → extract the common core, but verify by hand (flagged
+  lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
   Ruby idiom, not duplication, so the mass floor rises as a shape gets more
   common, and rare token types drive matching while common ones don't. The floor
   rises again when two sites share nothing but their shape: `each_cons(2).min_by
   { }` and `combination(2).select { }` are the same tree by coincidence, and a
-  match with no name in common has to be much bigger to mean anything.
+  match with no name in common has to be much bigger to mean anything. A macro a
+  class body calls three or more times (`attribute`, `belongs_to`, `scope`) is
+  not a name in common: every line of that class shares it.
 - **Churn overlay.** When git is available, clones spanning two files that both
   change more often than the typical file here (above the median commit count)
   are called out — that's where one copy gets fixed and the other silently

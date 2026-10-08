@@ -6,6 +6,7 @@ class Hashira::Duplication::Delta
   end
 
   def kind
+    return :convention if @cluster.convention?
     return :identical if variances.empty?
     return :structure if variances.include?(:structure)
     return :renamed if inner.empty?
