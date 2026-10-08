@@ -45,6 +45,8 @@ class Hashira::Smells::Foreign
     sources.any? && sources.all? { inbound?(it.value) }
   end
 
+  def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
+
   private
 
   def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)

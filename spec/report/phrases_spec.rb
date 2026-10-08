@@ -28,19 +28,31 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("utility_function", owner: :module) =>
         "Cart#price touches no instance state (cart.rb:12). " \
         "Move it onto the object it serves, or make it a module function.",
-      smell("assumed_state", installed: []) =>
+      smell("assumed_state", installed: [], unassigned: %w[@a]) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
-        "Assign them where the object is built, or pass the data explicitly.",
-      smell("assumed_state", installed: %w[@a @b]) =>
+        "Nothing ever assigns '@a', so it reads nil: a typo or a dead hook. " \
+        "Assign it where the object is built, or delete the read.",
+      smell("assumed_state", installed: %w[@a @b], unassigned: []) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Its subclasses are expected to install '@a', '@b'; pass them in instead.",
-      smell("manual_dispatch") =>
+      smell("assumed_state", installed: %w[@a], unassigned: %w[@b @c]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Nothing ever assigns '@b', '@c', so they read nil: a typo or a dead hook. " \
+        "Assign them where the object is built, or delete the read. " \
+        "Its subclasses are expected to install '@a'; pass it in instead.",
+      smell("manual_dispatch", via: ["respond_to?"]) =>
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",
+      smell("manual_dispatch", via: ["a status switch"]) =>
+        "Cart#price dispatches manually via a status switch (cart.rb:12). " \
+        "Move each branch onto the type or state it tests, and let polymorphism pick.",
       smell("module_initialize") =>
         "Cart#price defines initialize in a module (cart.rb:12). " \
         "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",
       smell("nil_check") => "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
+      smell("nil_check", origin: :absence) =>
+        "Cart#price checks for nil (cart.rb:12). " \
+        "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil.",
       smell("repeated_conditional", count: 3) =>
         "Cart#price branches on the same test 3 times (cart.rb:12). Replace the scattered checks with polymorphism.",
       smell("state_sprawl", count: 5) =>

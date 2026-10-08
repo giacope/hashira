@@ -502,10 +502,21 @@ What each one catches:
   caller already knew which branch it wanted. An argument that `||` or `&&`
   hands on as a value (`name || "anonymous"`, `@options = options || {}`,
   `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
-  alone as a statement, or in a loop's condition, still steers.
+  alone as a statement, or in a loop's condition, still steers. A comparison
+  steers only against a literal or a constant (`mode == :fast`); compared with
+  another value (`current_epoch == expected_epoch`, or `a != b` behind the nil
+  guards `a && b`) the argument is data. So is one a conditional only maps to
+  a value, every branch a literal, a constant or a translation key
+  (`status = dry_run ? "dry_run" : "applied"`, `when :a then t(".alpha")`).
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing. Each clump is listed at its widest: a
-  pair that only ever travels inside a larger set isn't listed again.
+  pair that only ever travels inside a larger set isn't listed again. It needs
+  the group to actually travel: one of those methods must hand all of it on to
+  another (`def patch(path, body) = post(path, body)`), so a shared signature
+  convention alone (`(path, body)` on every HTTP verb) isn't a clump.
+  `_`-prefixed and defaulted parameters don't count (`as_of = @as_of` is
+  already receiver state), and neither do methods that fill a role a related
+  class defines too, as every driver behind one port does.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Identical means the same call on the
   same values, not the same text: a literal block is part of the call, and a
@@ -537,21 +548,50 @@ What each one catches:
   assignment may live in there. When the ivar is one the class's own
   subclasses assign, the finding says so: a base class that waits for its
   subclasses to install its state is a fragile base class, so pass the value in
-  instead.
-- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+  instead. An ivar that not even a subclass assigns is told apart from those:
+  it always reads nil, so it is a typo or a dead extension hook.
+- **manual_dispatch** — a `respond_to?` check, with or without a `send`
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
-  class that uses `method_missing`.
+  class that uses `method_missing`, and inside the `method_missing` it pairs
+  with. Quiet, too, for a probe of one of Ruby's own protocols (`:close`,
+  `:read`, `:rewind`, `:each`, `:call`, `:to_hash`, `:to_str`, `:to_unsafe_h`,
+  ...), for a probe of a method only Ruby's core values answer
+  (`v.respond_to?(:positive?)` asks whether `v` is a number, a nil check in
+  disguise), and for a probe of a library's object: a rescued library
+  exception (`rescue => e; e.respond_to?(:code)`), the result of a call on a
+  library constant, or a value type-guarded against one. A probe of `self`, an
+  ivar or a collaborator the method stores in one is stated with high
+  confidence; one of what the request carries (`params`, `request`), low. It
+  also catches the dispatch `respond_to?` stands in for: a `case` or `is_a?`
+  ladder over two or more of the codebase's own classes (over a library's,
+  `case node when Prism::CallNode`, it is boundary_sprawl's to judge), and a
+  `case` over a `status`, `state`, `type` or `kind` value with two or more
+  literal arms.
 - **module_initialize** — `initialize` in a mixin. Even a cooperative one that
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.
-- **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is. When the method itself read the checked value from
-  outside the program — through a literal key (`params[:id]`, `data["name"]`,
-  `request.headers["X-Token"]`) or from a call on a constant the codebase
-  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
-  changes: translate the missing value where it enters, at the boundary,
-  rather than reach for a null object.
+- **nil_check** — `nil?`, `== nil`, `when nil`, `blank?` on a variable:
+  simulated polymorphism on the cheapest type there is. Safe navigation
+  (`@user&.name`), a literal fallback (`@limit || 10`) and `unless x` count too,
+  but only on a local, ivar or parameter the codebase itself leaves nil (it
+  assigns it `nil`, or defaults the parameter to `nil`) and never assigns
+  `true` or `false`: on anything else they are as likely a flag, a library's
+  nil contract, or the remedy. `@x ||=` is memoization, not a check. When
+  the method itself read the checked value from outside the program — through
+  a literal key (`params[:id]`, `data["name"]`, `request.headers["X-Token"]`)
+  or from a call on a constant the codebase doesn't define
+  (`JSON.parse(body)`) — the finding stays, but the advice changes: translate
+  the missing value where it enters, at the boundary, rather than reach for a
+  null object. A check that already is that translation, a parameter or
+  payload value replaced by a default (`return DEFAULT_TTL if
+  params[:ttl].nil?`), is quiet, and so is a validator's guard
+  (`return if starts_at.nil?` in a method registered with `validate`) on an
+  attribute a presence validation or a required `belongs_to` already
+  reports — unless the check adds the error itself. A check on a library's
+  object (a rescued library exception, a foreign call's result) is stated with
+  low confidence, and a predicate that fetches a record only to test it for
+  nil (`Record.find_by(id:).nil?`) is told to ask `exists?` instead.
 
 The class-level kinds (data_clump, repeated_conditional, state_sprawl,
 assumed_state, module_initialize) judge a class across every file that opens
