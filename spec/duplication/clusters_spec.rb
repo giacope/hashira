@@ -387,9 +387,9 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   end
 
   it "keeps a bigger clone that holds the convention line, once it outweighs the line by the base floor" do
-    heavier = "render_thing(seed: fetch(:a), kind: fetch(:b), key: :k"
-    longer = authorized(10).transform_values { it.sub("render_thing(:k", heavier) }
-    expect(clusters(longer).map(&:size)).to(eq([8, 10]))
+    weighed = ->(args) { clusters(authorized(10).transform_values { it.sub(/render_thing\(:k\d+/, "\\0#{args}") }) }
+    expect(weighed[", d, a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[8, 32], [10, 16]]))
+    expect(weighed[", a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[10, 16]]))
   end
 
   it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
