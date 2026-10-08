@@ -780,4 +780,114 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ranks App::Zone::Thing#grouped]))
   end
+
+  it "stays quiet about locals holding core values: literals, constants, permitted params, or a .to_h or .map" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def count
+              size = 0
+              @seen = true
+              size.size && size.kind
+            end
+
+            def label
+              tag = :draft
+              title = "\#{tag}-1"
+              @seen = true
+              tag.size && tag.name && title.size && title.strip
+            end
+
+            def steps(extra)
+              plan = STEPS
+              rules = Zone::RULES
+              @seen = true
+              plan.merge(extra) && plan.size && rules.merge(extra) && rules.size
+            end
+
+            def ids
+              permitted = params.require(:order).permit(:ids)
+              @seen = true
+              permitted.size && permitted.merge(extra) && permitted.delete(:ids)
+            end
+
+            def shapes(rows)
+              table = rows.to_h
+              list = rows.to_a
+              names = rows.map(&:name)
+              flat = rows.flat_map(&:name)
+              kept = rows.filter_map(&:name)
+              @seen = true
+              table.size && table.merge(rows) && list.size && list.push(1) && names.size && names.sort
+              flat.size && flat.sort && kept.size && kept.sort
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a local assigned from a call that is not a core conversion" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def ship(rows)
+              order = rows.fetch_order
+              @seen = true
+              order.net && order.tax && order.fee
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#ship"]))
+  end
+
+  it "reads fetch with a literal key and a default as a keyed read" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def picks(permitted)
+              @seen = true
+              permitted.fetch(:ids, []) && permitted.fetch("name", nil) && permitted.fetch(:kind, 0)
+            end
+
+            def pick(row, keys)
+              @seen = true
+              row.fetch(keys.first, []) && row.fetch(keys.last, nil)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick"]))
+  end
+
+  it "stays quiet about a sum type normalised with a type test and a keyed read" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Order
+          end
+
+          class Thing
+            def ident(arg)
+              @seen = true
+              arg.is_a?(Order) ? arg.id && arg.name : arg[:id]
+            end
+
+            def ident_with_default(arg)
+              @seen = true
+              arg.is_a?(Order) ? arg.id && arg.name : arg.fetch(:id, nil)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end
