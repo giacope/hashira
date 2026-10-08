@@ -53,6 +53,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       end
     end
 
+    it "charges what a constant write holds to that constant, even inside another namespace" do
+      payments("module Billing\n  Payments::Rate = Data.define(:amount) do\n    def run = Ci::Runner\n  end\nend\n") do |graph|
+        expect(graph.edges.map(&:to_s)).to(include("Payments -> Ci"))
+        expect(graph.edges.map(&:to_s)).not_to(include("Billing -> Payments"))
+      end
+    end
+
     it "charges every compound write the same way" do
       ["||=", "&&=", "+="].each do |operator|
         payments("Payments::Rate #{operator} Billing::Invoice\n") do |graph|
