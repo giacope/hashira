@@ -313,6 +313,50 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     end
   end
 
+  def client(patch = "def patch(path, body, headers: {}) = request(:patch, path, body: body.to_json, headers:)")
+    "class Client\n def post(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)\n " \
+      "#{patch}\n def request(verb, path, body:, headers:) = run(verb, path, body, headers)\nend\n"
+  end
+
+  it "leaves alone calls to the project's own method that differ only in what they pass it" do
+    renamed = "def patch(route, data, headers: {}) = request(:patch, route, body: data.to_json, headers:)"
+    expect([client, client(renamed)].map { clusters("c.rb" => it) }).to(all(be_empty))
+  end
+
+  it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
+    external = client.sub(/ def request.*\n/, "")
+    renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")
+    blocked = client.sub("headers:)\n", "headers:) { it.retry }\n").sub("headers:)\n", "headers:) { it.fail }\n")
+    expect([external, renamed, blocked].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2]))
+  end
+
+  def toggles(one, two)
+    body = "(by) = update!(state: :on, changed_by: by, changed_at: Time.current, note: \"\")"
+    clusters("m.rb" => "class Member\n def #{one}#{body}\n def #{two}#{body.sub(":on", ":off")}\nend\n")
+  end
+
+  it "leaves alone a method and its inverse, which share their shape by design" do
+    inverses = [
+      %w[lock! unlock!], %w[activate deactivate], %w[enable_feature disable_feature],
+      %w[mark_as_read mark_as_unread]
+    ]
+    expect(inverses.map { toggles(*it) }).to(all(be_empty))
+    expect([%w[disconnect connect], %w[open close?]].map { toggles(*it) }).to(all(be_empty))
+  end
+
+  it "still reports two methods whose names are not each other's inverse" do
+    pairs = [%w[lock! freeze!], %w[lock_account unlock_user], %w[lock unlock_now], %w[relock unlock]]
+    expect(pairs.map { toggles(*it).size }).to(eq([1, 1, 1, 1]))
+  end
+
+  it "leaves alone a stretch two inverse methods share, and reports it outside them" do
+    body = ->(word) { " update!(at: now, why:)\n audit(:#{word}, why:, at: clock.now)\n notify(:#{word}, why)\n" }
+    inverse = "class A\n def lock!(why)\n#{body["lock"]} end\n def unlock!(why)\n#{body["unlock"]} end\nend\n"
+    expect(clusters("a.rb" => inverse)).to(be_empty)
+    expect(clusters("a.rb" => inverse.sub("def unlock!", "def freeze!")).first.size).to(eq(2))
+    expect(clusters("a.rb" => inverse, "b.rb" => "def c(why)\n#{body["lock"]}end\n").first.size).to(eq(3))
+  end
+
   it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
     expect(nested(1).map { it.sites.map(&:file) }).to(eq([%w[a.rb b.rb]]))
   end

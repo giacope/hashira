@@ -14,10 +14,18 @@ class Hashira::Duplication::Clusters
   def sorted
     fragments.group_by(&:types).each_value { |group| chain(group) }
     Hashira::Duplication::NearMiss.new(fragments).pairs.each { |left, right| sets.union(left, right) }
-    Hashira::Duplication::Maximal.new(sized).reduced.sort_by { -it.mass }
+    Hashira::Duplication::Maximal.new(sized).reduced.reject { excused?(it) }.sort_by { -it.mass }
   end
 
   private
+
+  def excused?(cluster) = relay?(cluster) || Hashira::Duplication::Inverse.new(cluster, definitions).inverse?
+
+  def relay?(cluster) = Hashira::Duplication::Relay.new(cluster, defined).relay?
+
+  def defined = @_defined ||= definitions.to_set { it.roots.first.name }
+
+  def definitions = @_definitions ||= @all.select { it.roots in [Prism::DefNode] }
 
   def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
 
@@ -42,11 +50,9 @@ class Hashira::Duplication::Clusters
 
   def base(cluster) = thin?(cluster) ? NEAR_MASS : BASE_MASS
 
-  def thin?(cluster) = !uniform?(cluster) || cluster.structural?
+  def thin?(cluster) = !cluster.uniform? || cluster.structural?
 
   def penalty(cluster) = recurrences(cluster) * PENALTY_PER_RECURRENCE
 
   def recurrences(cluster) = [cluster.size - PAIR, 0].max
-
-  def uniform?(cluster) = cluster.sites.map(&:types).uniq.size == 1
 end

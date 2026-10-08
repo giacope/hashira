@@ -18,6 +18,8 @@ module Hashira
         def size = sites.size
 
         def structural? = others.all? { Variance.new(canonical, it).structural? }
+
+        def uniform? = sites.map(&:types).uniq.one?
       end
   end
 end

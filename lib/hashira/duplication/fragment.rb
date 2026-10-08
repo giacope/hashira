@@ -24,7 +24,7 @@ class Hashira::Duplication::Fragment
     @setting = setting
   end
 
-  attr_reader :file
+  attr_reader :file, :roots
 
   def types = @_types ||= nodes.map(&:type)
 

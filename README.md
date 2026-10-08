@@ -408,6 +408,17 @@ it does inside Ruby:
   is skipped: its message is its whole meaning. Next to other statements it
   counts, but whatever its interpolated messages hold weighs nothing — the string
   counts once.
+- **Calls into an abstraction you already have aren't clones.** `def post(path,
+  body) = request(:post, path, body)` next to `def patch` is already factored:
+  when a fragment is one call to a method defined in the analyzed code and the
+  copies differ only in what they pass it (and in their own names and
+  parameters), it is skipped. A call to a library's method, or copies that
+  differ in the receiver, the block or nothing but their names, still count.
+- **Inverse pairs aren't clones.** `lock!`/`unlock!`, `enable_feature`/
+  `disable_feature`, `mark_as_read`/`mark_as_unread` share their shape by design.
+  A two-site clone whose sites sit in methods whose names differ in one word, and
+  that word is a known antonym or the other with `un`, `de` or `dis` in front, is
+  skipped — the whole methods and any stretch they share.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
   pairwise matches. A smaller clone whose copies sit inside a bigger one's is

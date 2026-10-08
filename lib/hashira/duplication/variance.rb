@@ -26,6 +26,8 @@ class Hashira::Duplication::Variance
     differing.map { |left, right| category(left, right) }.uniq
   end
 
+  def drifts = differing.map(&:first)
+
   def structural?
     return false unless @canonical.types == @other.types
     named.any? && named.all? { |left, right| left.name != right.name }
