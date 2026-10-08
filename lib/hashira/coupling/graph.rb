@@ -40,7 +40,7 @@ class Hashira::Coupling::Graph
 
   def domain = edges.reject { web?(it.from) || web?(it.to) }
 
-  def usage(package) = clients(package).to_h { [it, map.usage[[it, package]]] }
+  def usage(package) = clients(package).reject { it.end_with?(@project.root) }.to_h { [it, map.usage[[it, package]]] }
 
   def constants(edge)
     names = map.usage[edge.deconstruct]

@@ -8,6 +8,11 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  def padded(files)
+    stub = ->(folder, name) { "module App; module #{folder.capitalize}; class #{name}; end; end; end\n" }
+    files.merge(%w[main/E main/F one/E].to_h { ["lib/app/#{it.downcase}.rb", stub.call(*it.split("/"))] })
+  end
+
   def verdicts(files, directories: ["lib/app"])
     within(files) do
       yield(Hashira::Pipeline.new(Hashira::Project.new(directories)).findings)
@@ -166,7 +171,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
         "main alone uses Core::Chart, Core::Graph — " \
         "parts with separate client bases are separate packages in disguise. " \
         "Split core along that seam, keeping the shared constants as the base layer the rest builds on."
-    verdicts(files) do |all|
+    verdicts(padded(files)) do |all|
       finding = all.find { it.kind == "mixed_audience" }
       expect(finding.package).to(eq("core"))
       expect(message(finding)).to(eq(message))
@@ -191,10 +196,26 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
         "one, two use Core::Score, Core::Walk — " \
         "parts with separate client bases are separate packages in disguise. " \
         "Split core along that seam."
-    verdicts(files) do |all|
+    verdicts(padded(files)) do |all|
       finding = all.find { it.kind == "mixed_audience" }
       expect(message(finding)).to(eq(message))
     end
+  end
+
+  it "does not count the root package as an audience" do
+    type = ->(name) { "module App; module Core; class #{name}; end; end; end" }
+    core = %w[Walk Score Graph Chart].to_h { ["lib/app/core/#{it}.rb", type.call(it)] }
+    files = core.merge(
+      "lib/app/one/a.rb" => "module App; module One; class A; def c = [Core::Walk, Core::Score]; end; end; end\n",
+      "lib/app/two/b.rb" => "module App; module Two; class B; def c = [Core::Walk, Core::Score]; end; end; end\n",
+      "lib/app/boot.rb" => "module App; class Boot; def c = [Core::Graph, Core::Chart]; end; end",
+      "lib/app/boot_extra.rb" => "module App; class E; end; class F; end; end"
+    )
+    named = files.except("lib/app/boot.rb").merge(
+      "lib/app/main/d.rb" => "module App; module Main; class D; def c = [Core::Graph, Core::Chart]; end; end; end\n"
+    )
+    verdicts(padded(files)) { |all| expect(all.map(&:kind)).not_to(include("mixed_audience")) }
+    verdicts(padded(named)) { |all| expect(all.map(&:kind)).to(include("mixed_audience")) }
   end
 
   it "backs an audience with evidence when its clients reach only nested constants" do
@@ -210,7 +231,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       "lib/app/three/c.rb" => "module App; module Three; class C; def c = [Core::Graph, Core::Chart]; end; end; end\n",
       "lib/app/main/d.rb" => "module App; module Main; class D; def c = [Core::Graph, Core::Chart]; end; end; end\n"
     }
-    verdicts(files) do |all|
+    verdicts(padded(files)) do |all|
       finding = all.find { it.kind == "mixed_audience" }
       expect(finding.evidence).to(
         eq(["main/d.rb:1: Core::Graph", "main/d.rb:1: Core::Chart", "one/a.rb:1: Core::Walk::LIMIT", "one/a.rb:1: Core::Score::LIMIT"])

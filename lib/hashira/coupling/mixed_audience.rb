@@ -12,9 +12,11 @@ class Hashira::Coupling::MixedAudience < Hashira::Coupling::Rule
   private
 
   def verdict(package)
-    audiences = Hashira::Coupling::Audiences.new(graph.usage(package))
+    audiences = Hashira::Coupling::Audiences.new(graph.usage(package), sizes)
     detail(package, audiences.parts) if audiences.split?
   end
+
+  def sizes = @_sizes ||= metrics.transform_values(&:types)
 
   def detail(package, parts)
     finding(
