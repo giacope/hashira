@@ -210,7 +210,17 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
 
     it "gives back an edge the cut turned out not to need" do
+      uses = { "a" => %w[b c c c], "b" => %w[c c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["c", "a", 2]])) }
+    end
+
+    it "breaks a small knot outright, leaving no loop behind" do
       uses = { "a" => %w[b b c], "b" => %w[c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["a", "c", 1], ["a", "b", 2]])) }
+    end
+
+    it "does not count detaching one leaf as a cut" do
+      uses = { "a" => %w[b b], "b" => %w[a a c c], "c" => %w[b b d], "d" => %w[a] }
       cut(uses) { expect(it).to(eq([["a", "b", 2]])) }
     end
   end
