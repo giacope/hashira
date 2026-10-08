@@ -44,7 +44,7 @@ class Hashira::Duplication::Variance
   def differing = pairs.reject { |left, right| signature(left) == signature(right) }
 
   def category(left, right)
-    return :structure if guarded?(left) != guarded?(right)
+    return :nil_guard if guarded?(left) != guarded?(right)
     type = left.type
     return :mixed if type == :def_node && relayed?
     CATEGORIES.keys.find { CATEGORIES[it].include?(type) } || :message

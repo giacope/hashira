@@ -19,6 +19,11 @@ module Hashira::Report::Phrases
   ).merge(
     renamed_constant: "differs in its method names and in a constant — #{RETITLE} the constant.",
     renamed_mixed: "differs in its method names and in several other ways — #{RETITLE} what else differs as parameters."
+  ).merge(
+    nil_guard: "differs only in a `&.` one copy has and the other lacks — extract a method, and decide once " \
+      "whether the receiver can be nil.",
+    renamed_nil_guard: "differs in its method names and in a `&.` one copy has — keep each name, calling one " \
+      "shared method that decides once whether the receiver can be nil."
   ).freeze
 
   module_function

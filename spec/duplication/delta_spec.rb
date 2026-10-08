@@ -54,8 +54,11 @@ RSpec.describe(Hashira::Duplication::Delta) do
     expect(kind(sources)).to(eq(:renamed_literal))
   end
 
-  it "reports :structure when one copy guards a call with safe navigation and the other does not" do
-    expect(kind(clone("g.client.emit(fetch(:h), 1)", "g.client&.emit(fetch(:h), 1)"))).to(eq(:structure))
+  it "reports :nil_guard when one copy guards a call with safe navigation and the other does not" do
+    sources = clone("g.client.emit(fetch(:h), 1)", "g.client&.emit(fetch(:h), 1)")
+    expect(kind(sources)).to(eq(:nil_guard))
+    expect(kind(sources.merge("b.rb" => sources["b.rb"].sub("def run", "def call")))).to(eq(:renamed_nil_guard))
+    expect(kind(clone("g.client.emit(fetch(:h), 1)", "g.client&.emit(fetch(:h), 2)"))).to(eq(:mixed))
   end
 
   it "reports :mixed when more than one kind of thing differs" do

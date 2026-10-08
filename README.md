@@ -409,9 +409,10 @@ it does inside Ruby:
   taking it, or use polymorphism; a constant → parameterize it; nothing but the
   method's own name → keep one, and alias or call it; the name and something
   inside → keep every name (a callback's is fixed), each calling one shared
-  method that takes what else differs; the control flow itself,
-  down to a `&.` one copy has and the other lacks → extract the common core, but
-  verify by hand (flagged lower-confidence).
+  method that takes what else differs; nothing but a `&.` one copy has and the
+  other lacks → extract a method and decide once whether the receiver can be nil;
+  the control flow itself → extract the common core, but verify by hand (flagged
+  lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
   Ruby idiom, not duplication, so the mass floor rises as a shape gets more
   common, and rare token types drive matching while common ones don't. The floor

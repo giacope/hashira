@@ -80,6 +80,12 @@ RSpec.describe(Hashira::Report::Phrases) do
     expect(message(clone(:renamed_literal, hot: false))).to(end_with("#{said} that takes the literals as arguments."))
   end
 
+  it "asks for one decision about nil when the copies differ only in a safe navigation" do
+    expect(%i[nil_guard renamed_nil_guard].map { message(clone(it, hot: false)) }).to(
+      all(end_with("whether the receiver can be nil."))
+    )
+  end
+
   it "warns when both sites of a clone churn" do
     expect(message(clone(:identical, hot: true))).to(
       end_with("call it from each site. Both sites change often — fix one, miss the other.")
