@@ -413,4 +413,52 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.weight("kids", "shop")).to(eq(4))
     end
   end
+
+  describe "association class names" do
+    def associated(body)
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/user.rb" => "class User\n  #{body}\nend\n",
+        "app/models/invoice.rb" => "class Invoice\n  def i = 1\nend\n",
+        "app/models/shop/invoice.rb" => "class Shop\n  class Invoice\n    def i = 1\n  end\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) { |_project, _census, graph| yield(graph) }
+    end
+
+    it "resolves a class_name string on every association macro as a reference" do
+      %w[has_many has_one belongs_to has_and_belongs_to_many].each do |macro|
+        associated("#{macro} :bills, class_name: \"Billing::Invoice\"") do |graph|
+          expect(graph.evidence("User", "Billing").to_a).to(eq(["models/user.rb:2: Billing::Invoice"]))
+        end
+      end
+    end
+
+    it "resolves a class_name through the nesting, unless it is ::-anchored" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/invoice.rb" => "class Invoice\n  def i = 1\nend\n",
+        "app/models/shop/invoice.rb" => "class Shop\n  class Invoice\n    def i = 1\n  end\nend\n",
+        "app/models/shop/cart.rb" => <<~RUBY
+          class Shop
+            class Cart
+              has_one :a, class_name: "Invoice"
+              has_one :b, class_name: "::Invoice"
+            end
+          end
+        RUBY
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+        expect(graph.evidence("Shop", "Invoice").to_a).to(eq(["models/shop/cart.rb:4: Invoice"]))
+      end
+    end
+
+    it "leaves other options, other calls, and strings that name no constant alone" do
+      [
+        "has_many :bills, foreign_key: \"Billing::Invoice\"", "has_many :bills, \"class_name\" => \"Billing::Invoice\"",
+        "has_many :bills, class_name: \"billing/invoice\"", "has_many :bills, class_name: :Invoice",
+        "validates :bills, class_name: \"Billing::Invoice\"", "self.class.has_many :bills, class_name: \"Billing::Invoice\"",
+        "has_many :bills, **options", "has_many"
+      ].each do |body|
+        associated(body) { |graph| expect(graph.outgoing("User")).to(be_empty) }
+      end
+    end
+  end
 end

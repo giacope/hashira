@@ -54,9 +54,7 @@ class Hashira::Coupling::Folding
 
   def badges = lone.group_by(&:name).select { |_name, ones| ones.all? { badge?(it) } }.transform_values(&:first)
 
-  def badge?(definition) = definition.module? && syntax.statements(definition.node).all? { mixin?(it) }
-
-  def mixin?(node) = node.is_a?(Prism::CallNode) && MIXINS.include?(node.name) && !node.receiver && node.arguments
+  def badge?(definition) = definition.module? && syntax.statements(definition.node).all? { syntax.macro?(it, MIXINS) }
 
   def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(syntax.segments(it)) }.first
 
