@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "course"
+require_relative "lookup"
+require_relative "refs"
 
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
-  MINTS = %i[new dup clone allocate rand srand].freeze
+  MINTS = %i[new dup clone allocate rand srand generate].freeze
 
   SOURCES = %w[SecureRandom Random].freeze
 
@@ -12,13 +15,31 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     Prism::IntegerNode, Prism::FloatNode, Prism::RegularExpressionNode
   ].freeze
 
+  FENCES = (Hashira::Smells::Scope::FENCES + [Prism::DefinedNode]).freeze
+
+  SCOPES = Hashira::Smells::Refs::SCOPES
+
+  MATCHES = [Prism::NumberedReferenceReadNode, Prism::BackReferenceReadNode].freeze
+
+  MATCHED = %i[$~ $LAST_MATCH_INFO].freeze
+
   private
 
   def smelly? = repeats.any?
 
-  def calls
-    @_calls ||= Hashira::Smells::Scope.inside(subject.node).grep(Prism::CallNode).reject { commanded?(it) || fresh?(it) }
-  end
+  def rating = repeats.each_value.all? { lesser?(it) } ? { confidence: :low } : {}
+
+  def lesser?(nodes) = Hashira::Smells::Lookup.cheap?(nodes.first) || !reachable?(nodes.reject { preset?(it) })
+
+  def preset?(node) = presets.include?(node)
+
+  def presets = @_presets ||= Set.new.compare_by_identity.merge(defaults)
+
+  def defaults = [subject.node.parameters].compact.flat_map { beneath(it) }
+
+  def every = @_every ||= Hashira::Smells::Scope.below(subject.node, FENCES).grep(Prism::CallNode)
+
+  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) }
 
   def commanded?(node) = discards.include?(node)
 
@@ -35,6 +56,16 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   def mints?(name) = MINTS.include?(name)
 
   def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
+
+  def volatile?(node) = beneath(node).any? { matched?(it) }
+
+  def matched?(node)
+    case node
+    when *MATCHES then true
+    when Prism::GlobalVariableReadNode then MATCHED.include?(node.name)
+    else node.is_a?(Prism::CallNode) && node.name == :last_match && node.receiver&.slice == "Regexp"
+    end
+  end
 
   def plain?(node)
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
@@ -56,11 +87,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
 
-  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !parting?(pair) }
+  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !course.parted?(pair) }
 
-  def parting?(pair) = pair.all? { exits.include?(it) }
-
-  def exits = @_exits ||= Hashira::Smells::Exits.new(subject.node)
+  def course = @_course ||= Hashira::Smells::Course.new(subject.node, every, discards, branches)
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 
@@ -72,9 +101,15 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def alike(groups) = groups.reject { |_text, nodes| nodes.one? }.flat_map { |text, nodes| split(text, nodes) }.to_h
 
-  def split(text, nodes) = nodes.group_by { bindings.free(it) }.map { |held, same| [[text, held], same] }
+  def split(text, nodes) = nodes.group_by { binding(it) }.map { |held, same| [[text, held], same] }
+
+  def binding(node) = [bindings.free(node), enclosure(node)]
 
   def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
+
+  def enclosure(node) = blocks.reverse.find { Hashira::Smells::Scope.covers?(it, node) }&.location&.start_offset
+
+  def blocks = @_blocks ||= Hashira::Smells::Scope.inside(subject.node).select { SCOPES.include?(it.class) }
 
   def handle(node) = "#{title(node)}#{signature(node)}"
 

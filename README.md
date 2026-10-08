@@ -491,14 +491,30 @@ What each one catches:
   inside one method; name the result once. Identical means the same call on the
   same values, not the same text: a literal block is part of the call, and a
   local counts by its binding, so `it` in two blocks is two variables, and
-  `parent` before and after `parent = parent.parent` is two values. Quiet wherever naming it would be
+  `parent` before and after `parent = parent.parent` is two values. Calls are
+  compared only within one block (or the method body outside any block), since
+  a block may run later or more than once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
-  `SecureRandom.hex`) are meant to differ, and so is a call fed one
-  (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
-  an `if`, two `when` branches, a body and its `rescue`, two `return`s — has
-  nothing to hoist; and a command, a call whose result the method throws away
-  (`@out << row`, `raise`, `log.info(...)` as a statement), is repeated on
-  purpose. A repeated chain is listed once, at its longest.
+  `SecureRandom.hex`, `Token.generate`) are meant to differ, and so is a call
+  fed one (`render(Row.new)`); so are reads of the last regexp match
+  (`Regexp.last_match`, `$~`, `$1`), which every match replaces. A repeat no
+  single run can reach twice has nothing to hoist: the two arms of an `if`, two
+  `when` branches, a body and its `rescue`, or a call inside a `return`'s value
+  and its twin after that `return` (`return format(user.name) unless ok` then
+  `user.name`) — unless a loop or an `ensure` brings the second round again.
+  Nor do two reads with a command between them, since the command may change
+  the answer: `before = job.status; job.finalize!; job.status == before` must
+  read twice, and so must a read after a statement handed the receiver
+  (`Finalizer.run(job)`, `result = Retry.call(auth)`). `defined?(Rails.error)`
+  never evaluates its operand, so it doesn't count. A command, a call whose
+  result the method throws away (`@out << row`, `raise`, `log.info(...)` as a
+  statement), is repeated on purpose. A repeated chain is listed once, at its
+  longest. Two findings come at low confidence: one where every repeat is a
+  cheap read — a reader with no arguments (`job.status`) or a lookup by literal
+  key (`params[:id]`, `fetch("host")`) — though a clock read (`Time.now`,
+  `Date.today`, `clock.now`) or a reach through a chain (`job.run.status`)
+  keeps full confidence; and one whose repeat runs twice only when a parameter
+  default runs (`def run(at: clock.now)` with `clock.now` in the body).
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue. A test on the object's own state
   counts across the whole class; a test on a local variable only within the
