@@ -327,7 +327,8 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     external = client.sub(/ def request.*\n/, "")
     renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")
     blocked = client.sub("headers:)\n", "headers:) { it.retry }\n").sub("headers:)\n", "headers:) { it.fail }\n")
-    expect([external, renamed, blocked].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2]))
+    longer = client.gsub(/= (request\(:\w+, path)(.*)\n/, "\n  \\1\\2\n  log(:sent, path)\n end\n")
+    expect([external, renamed, blocked, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2, 2]))
   end
 
   def toggles(one, two)
