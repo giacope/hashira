@@ -128,6 +128,15 @@ module Fixtures
     RUBY
   }.freeze
 
+  UNSTABLE_FILES = {
+    "lib/app/shop/x.rb" => "module App; module Shop; class X; def c = Stock::X; end; end; end\n",
+    "lib/app/cart/x.rb" => "module App; module Cart; class X; def c = Stock::X; end; end; end\n",
+    "lib/app/stock/x.rb" => "module App; module Stock; class X; def c = Pricing::X; end; end; end\n",
+    "lib/app/pricing/x.rb" => "module App; module Pricing; class X; def c = [Tax::X, Rates::X]; end; end; end\n",
+    "lib/app/tax/x.rb" => "module App; module Tax; class X; def c = 1; end; end; end\n",
+    "lib/app/rates/x.rb" => "module App; module Rates; class X; def c = 1; end; end; end\n"
+  }.freeze
+
   NESTED_FILES = {
     "lib/app/core/search/finder.rb" => <<~RUBY,
       module App

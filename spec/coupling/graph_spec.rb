@@ -247,9 +247,25 @@ RSpec.describe(Hashira::Coupling::Graph) do
       end
     end
 
-    it "reports the offending edges" do
+    it "does not flag an edge whose ends share a cycle" do
       analyze(Fixtures::CYCLIC_FILES) do |_project, _census, graph|
-        expect(graph.violations).to(eq([%w[beta alpha]]))
+        expect(graph.violations).to(be_empty)
+      end
+    end
+
+    it "flags an edge leaving a cycle" do
+      files = Fixtures::UNSTABLE_FILES.merge(
+        "lib/app/stock/x.rb" => "module App; module Stock; class X; def c = [Pricing::X, Depot::X]; end; end; end\n",
+        "lib/app/depot/x.rb" => "module App; module Depot; class X; def c = Stock::X; end; end; end\n"
+      )
+      analyze(files) do |_project, _census, graph|
+        expect(graph.violations).to(eq([%w[stock pricing]]))
+      end
+    end
+
+    it "reports the offending edges" do
+      analyze(Fixtures::UNSTABLE_FILES) do |_project, _census, graph|
+        expect(graph.violations).to(eq([%w[stock pricing]]))
       end
     end
   end

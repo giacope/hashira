@@ -83,14 +83,43 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "reports SDP violations with instabilities and evidence" do
-    verdicts(Fixtures::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::UNSTABLE_FILES) do |all|
       violations = all.select { it.kind == "sdp_violation" }
       expect(violations.size).to(eq(1))
       finding = violations.first
-      expect(finding.package).to(eq("beta"))
-      expect(message(finding)).to(include("beta (I=0.50) depends on the LESS stable alpha (I=0.67)"))
-      expect(finding.evidence).to(include("beta/two.rb:4: Alpha::One"))
+      expect(finding.package).to(eq("stock"))
+      expect(message(finding)).to(include("stock (I=0.33) depends on the LESS stable pricing (I=0.67)"))
+      expect(finding.evidence).to(eq(["stock/x.rb:1: Pricing::X"]))
     end
+  end
+
+  it "leaves an edge inside a cycle to the cycle finding, not to SDP" do
+    verdicts(Fixtures::CYCLIC_FILES) do |all|
+      expect(all.map(&:kind)).not_to(include("sdp_violation"))
+    end
+  end
+
+  it "needs at least three edges at each end before it trusts an instability" do
+    leaner = Fixtures::UNSTABLE_FILES.except("lib/app/cart/x.rb")
+    sparser = Fixtures::UNSTABLE_FILES.except("lib/app/rates/x.rb")
+    [leaner, sparser].each do |files|
+      verdicts(files) { |all| expect(all.map(&:kind)).not_to(include("sdp_violation")) }
+    end
+  end
+
+  it "needs the instabilities to differ by at least a tenth" do
+    source = ->(name, uses) { "module App; module #{name}; class X; def c = [#{uses}]; end; end; end\n" }
+    tenth = Fixtures::UNSTABLE_FILES.merge(
+      "lib/app/stock/x.rb" => source.call("Stock", "Pricing::X, Tax::X"),
+      "lib/app/pricing/x.rb" => source.call("Pricing", "Tax::X, Rates::X, Fees::X"),
+      "lib/app/fees/x.rb" => source.call("Fees", ""), "lib/app/fair/x.rb" => source.call("Fair", "Pricing::X")
+    )
+    even = tenth.merge("lib/app/mart/x.rb" => source.call("Mart", "Pricing::X"))
+    verdicts(tenth) do |all|
+      expect(all.select { it.kind == "sdp_violation" }.map { message(it)[/.*?\(.*?\(.*?\)/] })
+        .to(eq(["stock (I=0.50) depends on the LESS stable pricing (I=0.60)"]))
+    end
+    verdicts(even) { |all| expect(all.map(&:kind)).not_to(include("sdp_violation")) }
   end
 
   it "reports a package whose clients split into audiences, naming the seam" do
@@ -216,7 +245,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "lists findings in rule order" do
-    verdicts(Fixtures::CYCLIC_FILES) do |all|
+    verdicts(Fixtures::CYCLIC_FILES.merge(Fixtures::UNSTABLE_FILES)) do |all|
       expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation utility_function]))
     end
   end

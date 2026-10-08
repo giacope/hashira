@@ -55,7 +55,7 @@ class Hashira::Coupling::Graph
 
   def metrics = packages.to_h { [it, metric(it)] }
 
-  def violations = Hashira::Coupling::SdpCheck.new(links, metrics).violations
+  def violations = Hashira::Coupling::SdpCheck.new(links, metrics).violations.reject { cycles.tied?(*it) }
 
   def weight(from, to) = evidence(from, to).size
 
