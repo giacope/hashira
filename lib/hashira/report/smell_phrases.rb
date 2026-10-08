@@ -7,6 +7,8 @@ module Hashira::Report::Phrases
     both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
   }.freeze
 
+  ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
+
   UTILITY_ADVICE = { module: "make it a module function", class: "make it private" }.freeze
 
   DATA_CLUMP = "Introduce a parameter object."
@@ -76,8 +78,10 @@ module Hashira::Report::Phrases
 
   def on_nil_check(finding)
     detail = finding.detail
-    "#{finding.package} checks for nil (#{detail[:site]}). #{NIL_ADVICE.fetch(detail[:origin])}"
+    "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}"
   end
+
+  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE.fetch(origin)
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")

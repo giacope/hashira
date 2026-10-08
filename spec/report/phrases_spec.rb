@@ -50,6 +50,9 @@ RSpec.describe(Hashira::Report::Phrases) do
         "Cart#price defines initialize in a module (cart.rb:12). " \
         "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",
       smell("nil_check") => "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
+      smell("nil_check", origin: :absence) =>
+        "Cart#price checks for nil (cart.rb:12). " \
+        "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil.",
       smell("repeated_conditional", count: 3) =>
         "Cart#price branches on the same test 3 times (cart.rb:12). Replace the scattered checks with polymorphism.",
       smell("state_sprawl", count: 5) =>

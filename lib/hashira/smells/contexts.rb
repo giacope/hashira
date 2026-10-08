@@ -32,7 +32,7 @@ module Hashira
     end
 
     MethodContext =
-      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol, :neighbors) do
+      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol, :home) do
         def subject = "#{owner}#{singleton? ? "." : "#"}#{node.name}"
 
         def line = node.location.start_line
@@ -52,6 +52,8 @@ module Hashira
         def site = "#{file}:#{line}"
 
         def content = [node.parameters, node.body].compact
+
+        def neighbors = Visibility.new(home).entries.map { |definition, _| definition.name }
       end
 
     Sketch =
@@ -65,10 +67,8 @@ module Hashira
         end
 
         def defs(protocol, ownership)
-          entries = Visibility.new(node).entries
-          neighbors = entries.to_set { |definition, _| definition.name }
-          entries.map do |definition, section|
-            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, neighbors:)
+          Visibility.new(node).entries.map do |definition, section|
+            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, home: node)
           end
         end
       end

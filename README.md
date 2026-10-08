@@ -552,13 +552,27 @@ What each one catches:
 - **module_initialize** — `initialize` in a mixin. Even a cooperative one that
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.
-- **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is. When the method itself read the checked value from
-  outside the program — through a literal key (`params[:id]`, `data["name"]`,
-  `request.headers["X-Token"]`) or from a call on a constant the codebase
-  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
-  changes: translate the missing value where it enters, at the boundary,
-  rather than reach for a null object.
+- **nil_check** — `nil?`, `== nil`, `when nil`, `blank?` on a variable:
+  simulated polymorphism on the cheapest type there is. Safe navigation
+  (`@user&.name`), a literal fallback (`@limit || 10`) and `unless x` count too,
+  but only on a local, ivar or parameter the codebase itself leaves nil (it
+  assigns it `nil`, or defaults the parameter to `nil`) and never assigns
+  `true` or `false`: on anything else they are as likely a flag, a library's
+  nil contract, or the remedy. `@x ||=` is memoization, not a check. When
+  the method itself read the checked value from outside the program — through
+  a literal key (`params[:id]`, `data["name"]`, `request.headers["X-Token"]`)
+  or from a call on a constant the codebase doesn't define
+  (`JSON.parse(body)`) — the finding stays, but the advice changes: translate
+  the missing value where it enters, at the boundary, rather than reach for a
+  null object. A check that already is that translation, a parameter or
+  payload value replaced by a default (`return DEFAULT_TTL if
+  params[:ttl].nil?`), is quiet, and so is a validator's guard
+  (`return if starts_at.nil?` in a method registered with `validate`) on an
+  attribute a presence validation or a required `belongs_to` already
+  reports — unless the check adds the error itself. A check on a library's
+  object (a rescued library exception, a foreign call's result) is stated with
+  low confidence, and a predicate that fetches a record only to test it for
+  nil (`Record.find_by(id:).nil?`) is told to ask `exists?` instead.
 
 The class-level kinds (data_clump, repeated_conditional, state_sprawl,
 assumed_state, module_initialize) judge a class across every file that opens
