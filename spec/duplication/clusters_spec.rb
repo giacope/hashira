@@ -244,7 +244,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   end
 
   it "reads the same macros as code outside a class body, or once a block or lambda carries logic" do
-    outside = ->(name) { resource(name, "owner").sub(/\Aclass \w+/, "def #{name.downcase}") }
+    outside = ->(name) { resource(name, "owner").sub(/\Aclass \w+\n/, "").delete_suffix("end\n") }
     logic = ->(name) { resource(name, "owner").sub("contact.email", "email || r.no").sub("Current.tenant", "a if b") }
     sites = [outside, logic].map { clusters("a.rb" => it["Order"], "b.rb" => it["Invoice"]).first.size }
     expect(sites).to(eq([2, 2]))
