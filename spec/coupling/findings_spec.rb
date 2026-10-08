@@ -185,9 +185,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
   end
 
   it "leaves the presentation layer's edge into the domain it exposes out of wide edges" do
-    billing = %w[A B C D E].to_h do |name|
-      ["app/models/billing/#{name.downcase}.rb", "module Billing\n  class #{name}\n    def x = 1\n  end\nend\n"]
-    end
+    billing = %w[A B C D E].to_h { ["app/models/billing/#{it.downcase}.rb", "module Billing; class #{it}; end; end\n"] }
     reach = "[Billing::A, Billing::B, Billing::C, Billing::D, Billing::E]"
     files = billing.merge(
       "config/application.rb" => "module Shop; class Application; end; end\n",

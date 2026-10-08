@@ -54,7 +54,8 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
 
     it "charges what a constant write holds to that constant, even inside another namespace" do
-      payments("module Billing\n  Payments::Rate = Data.define(:amount) do\n    def run = Ci::Runner\n  end\nend\n") do |graph|
+      held = "module Billing\n  Payments::Rate = Data.define(:amount) do\n    def run = Ci::Runner\n  end\nend\n"
+      payments(held) do |graph|
         expect(graph.edges.map(&:to_s)).to(include("Payments -> Ci"))
         expect(graph.edges.map(&:to_s)).not_to(include("Billing -> Payments"))
       end
@@ -202,16 +203,15 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
 
     it "keeps a controller nested in a domain namespace out of that domain" do
       orders = {
-        "app/controllers/orders/refunds_controller.rb" =>
-          "module Orders\n  class RefundsController < ApplicationController\n    def create = RefundJob\n  end\nend\n",
-        "app/jobs/orders/refund_job.rb" =>
-          "module Orders\n  class RefundJob\n    def perform = Billing::Invoice\n  end\nend\n"
+        "app/controllers/shipping/labels_controller.rb" =>
+          "module Shipping\n  class LabelsController < ApplicationController\n    def create = LabelJob\n  end\nend\n",
+        "app/jobs/shipping/label_job.rb" =>
+          "module Shipping\n  class LabelJob\n    def perform = Billing::Invoice\n  end\nend\n"
       }
       shop(orders) do |_project, census, graph|
-        expect(census.types).to(include("Orders" => 1, "(web)" => 1))
-        expect(census.resolve(%w[Orders])).to(eq("Orders"))
-        expect(edges(graph)).to(include("(web) -> Orders", "Orders -> Billing"))
-        expect(edges(graph)).not_to(include("Orders -> Order"))
+        expect(census.types).to(include("Shipping" => 1, "(web)" => 1))
+        expect(census.resolve(%w[Shipping])).to(eq("Shipping"))
+        expect(edges(graph)).to(include("(web) -> Shipping", "Shipping -> Billing"))
       end
     end
 
@@ -371,6 +371,76 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
         expect(census.folds).to(be_empty)
         expect(census.packages).to(include("Sandbox"))
+      end
+    end
+
+    it "folds a plural namespace into its singular namesake, so one aggregate is one package" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/order.rb" => "class Order\n  def refund = Orders::RefundJob\nend\n",
+        "app/jobs/orders/refund_job.rb" => "module Orders\n  class RefundJob\n    def perform = Order\n  end\nend\n",
+        "app/models/shop.rb" => "class Shop\n  def run = Orders::RefundJob\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(census.folds).to(include({ from: "Orders", to: "Order", via: "plural" }))
+        expect(census.types["Order"]).to(eq(2))
+        expect(graph.edges.map(&:to_s)).to(include("Shop -> Order"))
+        expect(graph.cycles.knots).to(be_empty)
+      end
+    end
+
+    it "folds -es and -ies plurals too, and keeps a plural with no singular namesake" do
+      plural = ->(name) { "module #{name}\n  class Item\n    def i = 1\n  end\nend\n" }
+      single = ->(name) { "class #{name}\n  def s = 1\nend\n" }
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/box.rb" => single.call("Box"), "app/models/boxes/item.rb" => plural.call("Boxes"),
+        "app/models/category.rb" => single.call("Category"),
+        "app/models/categories/item.rb" => plural.call("Categories"),
+        "app/models/settings/item.rb" => plural.call("Settings")
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
+        expect(census.folds).to(
+          contain_exactly(
+            { from: "Boxes", to: "Box", via: "plural" }, { from: "Categories", to: "Category", via: "plural" }
+          )
+        )
+        expect(census.packages).to(include("Settings"))
+      end
+    end
+
+    it "folds a module that only extends or includes another into the module it adopts" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/notifier.rb" => "module Notifier\n  def notify = Billing::Invoice\nend\n",
+        "app/events/order_shipped.rb" => "module OrderShipped\n  extend ActiveSupport::Concern, Notifier\nend\n",
+        "app/events/order_paid.rb" => "module OrderPaid\n  include Notifier\nend\n",
+        "app/models/user.rb" => "class User\n  def ship = [OrderShipped, OrderPaid]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(census.folds).to(
+          contain_exactly(
+            { from: "OrderPaid", to: "Notifier", via: "mixin" }, { from: "OrderShipped", to: "Notifier", via: "mixin" }
+          )
+        )
+        expect(graph.edges.map(&:to_s)).to(include("User -> Notifier"))
+        expect(graph.metric("Notifier").to_h).to(include(ca: 1))
+      end
+    end
+
+    it "keeps a module that does more than adopt another, or adopts nothing the project defines" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/notifier.rb" => "module Notifier\n  def notify = 1\nend\n",
+        "app/events/order_shipped.rb" => "module OrderShipped\n  extend Notifier\n  def self.payload = 1\nend\n",
+        "app/events/order_paid.rb" => "module OrderPaid\n  User.extend Notifier\nend\n",
+        "app/events/order_held.rb" => "module OrderHeld\n  include\nend\n",
+        "app/events/order_kept.rb" => "module OrderKept\n  extend ActiveSupport::Concern\nend\n",
+        "app/events/order_lost.rb" => "module OrderLost\n  extend Notifier\nend\n",
+        "app/events/order_lost/reason.rb" => "module OrderLost\n  class Reason\n    def r = 1\n  end\nend\n",
+        "app/events/order_found.rb" => "module OrderFound\n  extend Notifier\nend\n",
+        "app/models/order_found.rb" => "module OrderFound\n  def found = 1\nend\n",
+        "app/events/order_sent.rb" => "class OrderSent\n  include Notifier\nend\n",
+        "app/events/order_gone.rb" => "module OrderGone\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
+        expect(census.folds).to(be_empty)
       end
     end
 
