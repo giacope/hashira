@@ -531,10 +531,24 @@ What each one catches:
   subclasses to install its state is a fragile base class, so pass the value in
   instead. An ivar that not even a subclass assigns is told apart from those:
   it always reads nil, so it is a typo or a dead extension hook.
-- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+- **manual_dispatch** — a `respond_to?` check, with or without a `send`
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
-  class that uses `method_missing`.
+  class that uses `method_missing`, and inside the `method_missing` it pairs
+  with. Quiet, too, for a probe of one of Ruby's own protocols (`:close`,
+  `:read`, `:rewind`, `:each`, `:call`, `:to_hash`, `:to_str`, `:to_unsafe_h`,
+  ...), for a probe of a method only Ruby's core values answer
+  (`v.respond_to?(:positive?)` asks whether `v` is a number, a nil check in
+  disguise), and for a probe of a library's object: a rescued library
+  exception (`rescue => e; e.respond_to?(:code)`), the result of a call on a
+  library constant, or a value type-guarded against one. A probe of `self`, an
+  ivar or a collaborator the method stores in one is stated with high
+  confidence; one of what the request carries (`params`, `request`), low. It
+  also catches the dispatch `respond_to?` stands in for: a `case` or `is_a?`
+  ladder over two or more of the codebase's own classes (over a library's,
+  `case node when Prism::CallNode`, it is boundary_sprawl's to judge), and a
+  `case` over a `status`, `state`, `type` or `kind` value with two or more
+  literal arms.
 - **module_initialize** — `initialize` in a mixin. Even a cooperative one that
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.

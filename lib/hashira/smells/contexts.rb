@@ -32,7 +32,7 @@ module Hashira
     end
 
     MethodContext =
-      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol) do
+      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol, :neighbors) do
         def subject = "#{owner}#{singleton? ? "." : "#"}#{node.name}"
 
         def line = node.location.start_line
@@ -65,8 +65,10 @@ module Hashira
         end
 
         def defs(protocol, ownership)
-          Visibility.new(node).entries.map do |definition, section|
-            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:)
+          entries = Visibility.new(node).entries
+          neighbors = entries.to_set { |definition, _| definition.name }
+          entries.map do |definition, section|
+            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, neighbors:)
           end
         end
       end

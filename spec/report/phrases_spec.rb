@@ -40,9 +40,12 @@ RSpec.describe(Hashira::Report::Phrases) do
         "Nothing ever assigns '@b', '@c', so they read nil: a typo or a dead hook. " \
         "Assign them where the object is built, or delete the read. " \
         "Its subclasses are expected to install '@a'; pass it in instead.",
-      smell("manual_dispatch") =>
+      smell("manual_dispatch", via: ["respond_to?"]) =>
         "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
         "Trust the duck type, or split the callers into two adapters.",
+      smell("manual_dispatch", via: ["a status switch"]) =>
+        "Cart#price dispatches manually via a status switch (cart.rb:12). " \
+        "Move each branch onto the type or state it tests, and let polymorphism pick.",
       smell("module_initialize") =>
         "Cart#price defines initialize in a module (cart.rb:12). " \
         "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",

@@ -15,6 +15,8 @@ module Hashira::Report::Phrases
 
   MANUAL_DISPATCH = "Trust the duck type, or split the callers into two adapters."
 
+  SWITCH = "Move each branch onto the type or state it tests, and let polymorphism pick."
+
   MODULE_INITIALIZE =
     "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
 
@@ -30,7 +32,10 @@ module Hashira::Report::Phrases
 
   def on_repeated_call(finding) = plain(finding, "repeats identical calls", REPEATED_CALL)
 
-  def on_manual_dispatch(finding) = plain(finding, "dispatches manually via respond_to?", MANUAL_DISPATCH)
+  def on_manual_dispatch(finding)
+    via = finding.detail[:via]
+    plain(finding, "dispatches manually via #{via.join(" and ")}", via == ["respond_to?"] ? MANUAL_DISPATCH : SWITCH)
+  end
 
   def on_module_initialize(finding) = plain(finding, "defines initialize in a module", MODULE_INITIALIZE)
 
