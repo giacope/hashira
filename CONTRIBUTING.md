@@ -23,7 +23,7 @@ That's exactly what CI runs: rubocop, rspec (with a coverage floor), and
 hashira's own gate and ratchet on itself. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
-Pull requests also get a mutation gate: [kimera](https://rubygems.org/gems/kimera)
+Pull requests also get a mutation gate: [kimera](https://github.com/giacope/kimera)
 mutates the lines you changed, and any mutant the specs don't run or don't kill
 fails the build. To run it before pushing:
 
