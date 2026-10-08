@@ -1006,4 +1006,35 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#record App::Zone::Thing#store App::Zone::Thing#keep]))
   end
+
+  it "stays quiet about a fake's method its real peer also defines, and still flags one it adds" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Launcher
+            def launch(job)
+              @queue.push(job)
+            end
+          end
+
+          class FakeLauncher
+            def launch(job)
+              @seen = true
+              job.load && job.store
+            end
+
+            def check(job)
+              @seen = true
+              job.load && job.store
+            end
+          end
+
+          class Boot
+            def start = @launcher = live? ? Launcher.new : FakeLauncher.new
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::FakeLauncher#check"]))
+  end
 end
