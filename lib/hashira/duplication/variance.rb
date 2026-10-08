@@ -26,6 +26,8 @@ class Hashira::Duplication::Variance
     differing.map { |left, right| category(left, right) }.uniq
   end
 
+  def drifts = differing.map(&:first)
+
   def structural?
     return false unless @canonical.types == @other.types
     named.any? && named.all? { |left, right| left.name != right.name }
@@ -35,7 +37,9 @@ class Hashira::Duplication::Variance
 
   def pairs = @canonical.nodes.zip(@other.nodes)
 
-  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) }
+  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) && !recurring?(left) }
+
+  def recurring?(node) = (@canonical.recurring | @other.recurring).include?(node.name)
 
   def inner?(node) = nested.any? { it.equal?(node) }
 
@@ -44,7 +48,7 @@ class Hashira::Duplication::Variance
   def differing = pairs.reject { |left, right| signature(left) == signature(right) }
 
   def category(left, right)
-    return :structure if guarded?(left) != guarded?(right)
+    return :nil_guard if guarded?(left) != guarded?(right)
     type = left.type
     return :mixed if type == :def_node && relayed?
     CATEGORIES.keys.find { CATEGORIES[it].include?(type) } || :message

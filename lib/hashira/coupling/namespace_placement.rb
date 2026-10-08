@@ -8,21 +8,40 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
       ApplicationHelper ApplicationCable ApplicationResource ApplicationSerializer
       ApplicationPolicy ApplicationDecorator].freeze
 
+  WEB = "(web)"
+
   def mode = :namespace
 
-  def placed = catalog.map { [it, it.name] }
+  def placed = catalog.map { [it, home(it)] }
 
   def baseline = []
 
-  def charge(_file, nesting)
-    nesting.reverse_each.filter_map { catalog.strip(it).first }.first || project.root
-  end
+  def charge(file, nesting) = served?(file) ? WEB : owner(nesting)
 
   def skip?(segments) = project.rails? && RAILS_BASES.include?(segments.first)
 
-  def folding(census) = Hashira::Coupling::Folding.new(catalog, census, suffixes: suffixes)
+  def web?(package) = package == WEB
+
+  def folding(census) = Hashira::Coupling::Folding.new(domain, census, suffixes: suffixes)
 
   private
+
+  def owner(nesting)
+    nesting.reverse_each.filter_map { catalog.strip(it).first }.find { names.include?(it) } || project.root
+  end
+
+  def home(definition)
+    return definition.name unless served?(definition.file)
+    WEB unless claimed.include?(definition.path)
+  end
+
+  def domain = @_domain ||= catalog.reject { served?(it.file) }
+
+  def names = @_names ||= domain.to_set(&:name)
+
+  def claimed = @_claimed ||= domain.to_set(&:path)
+
+  def served?(file) = project.rails? && Hashira::Coupling::Stratum.presentation?(file)
 
   def suffixes = project.rails? ? Hashira::Coupling::Folding::SUFFIXES : []
 end

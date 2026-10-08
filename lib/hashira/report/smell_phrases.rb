@@ -7,6 +7,8 @@ module Hashira::Report::Phrases
     both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
   }.freeze
 
+  ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
+
   UTILITY_ADVICE = { module: "make it a module function", class: "make it private" }.freeze
 
   DATA_CLUMP = "Introduce a parameter object."
@@ -14,6 +16,8 @@ module Hashira::Report::Phrases
   REPEATED_CALL = "Name the result in a local variable."
 
   MANUAL_DISPATCH = "Trust the duck type, or split the callers into two adapters."
+
+  SWITCH = "Move each branch onto the type or state it tests, and let polymorphism pick."
 
   MODULE_INITIALIZE =
     "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
@@ -30,7 +34,10 @@ module Hashira::Report::Phrases
 
   def on_repeated_call(finding) = plain(finding, "repeats identical calls", REPEATED_CALL)
 
-  def on_manual_dispatch(finding) = plain(finding, "dispatches manually via respond_to?", MANUAL_DISPATCH)
+  def on_manual_dispatch(finding)
+    via = finding.detail[:via]
+    plain(finding, "dispatches manually via #{via.join(" and ")}", via == ["respond_to?"] ? MANUAL_DISPATCH : SWITCH)
+  end
 
   def on_module_initialize(finding) = plain(finding, "defines initialize in a module", MODULE_INITIALIZE)
 
@@ -54,18 +61,27 @@ module Hashira::Report::Phrases
   def on_assumed_state(finding)
     detail = finding.detail
     "#{finding.package} reads instance variables nothing in the class assigns (#{detail[:site]}). " \
-      "#{installing(detail[:installed])}"
+      "#{[orphaned(detail[:unassigned]), installing(detail[:installed])].compact.join(" ")}"
+  end
+
+  def orphaned(names)
+    return if names.empty?
+    single = names.one?
+    "Nothing ever assigns #{quoted(names)}, so #{single ? "it reads" : "they read"} nil: a typo or a dead hook. " \
+      "Assign #{single ? "it" : "them"} where the object is built, or delete the read."
   end
 
   def installing(names)
-    return "Assign them where the object is built, or pass the data explicitly." if names.empty?
+    return if names.empty?
     "Its subclasses are expected to install #{quoted(names)}; pass #{names.one? ? "it" : "them"} in instead."
   end
 
   def on_nil_check(finding)
     detail = finding.detail
-    "#{finding.package} checks for nil (#{detail[:site]}). #{NIL_ADVICE.fetch(detail[:origin])}"
+    "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}"
   end
+
+  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE.fetch(origin)
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")

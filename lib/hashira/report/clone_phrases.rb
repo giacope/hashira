@@ -19,14 +19,26 @@ module Hashira::Report::Phrases
   ).merge(
     renamed_constant: "differs in its method names and in a constant — #{RETITLE} the constant.",
     renamed_mixed: "differs in its method names and in several other ways — #{RETITLE} what else differs as parameters."
+  ).merge(
+    nil_guard: "differs only in a `&.` one copy has and the other lacks — extract a method, and decide once " \
+      "whether the receiver can be nil.",
+    renamed_nil_guard: "differs in its method names and in a `&.` one copy has — keep each name, calling one " \
+      "shared method that decides once whether the receiver can be nil."
+  ).merge(
+    convention: "a convention the code repeats on purpose, not a copy to extract — if it should change in one " \
+      "place, give it a name (a macro, a concern, a base class); otherwise leave it."
   ).freeze
 
   module_function
 
   def on_duplication(finding)
     detail = finding.detail
-    "#{detail.size} similar fragments (mass #{detail.mass}) — " \
-      "#{DUPLICATION_ADVICE.fetch(detail.kind)}#{footnote(detail)}"
+    "#{opening(detail)} — #{DUPLICATION_ADVICE.fetch(detail.kind)}#{footnote(detail)}"
+  end
+
+  def opening(detail)
+    noun = detail.kind == :convention ? "sites follow one convention" : "similar fragments"
+    "#{detail.size} #{noun} (mass #{detail.mass})"
   end
 
   def footnote(detail)

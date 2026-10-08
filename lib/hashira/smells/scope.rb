@@ -13,6 +13,13 @@ module Hashira::Smells::Scope
 
   def sweep(node) = below(node, TYPES)
 
+  def covers?(outer, node) = stretch(outer).cover?(stretch(node))
+
+  def stretch(node)
+    spot = node.location
+    spot.start_offset..spot.end_offset
+  end
+
   def below(root, fences)
     found = []
     visit(root, fences) { found << it }

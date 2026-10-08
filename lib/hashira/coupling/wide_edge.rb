@@ -8,7 +8,7 @@ class Hashira::Coupling::WideEdge < Hashira::Coupling::Rule
   WIDTH = 5
 
   def list
-    graph.edges.select { wide?(it) }.map { entry(it) }
+    graph.domain.select { wide?(it) }.map { entry(it) }
   end
 
   private

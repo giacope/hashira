@@ -7,8 +7,8 @@ module Hashira
     TRACKS = [/ \(lines? [\d, ]+\)/, /:[\d, -]+\z/, /:\d+(?=:)/].freeze
 
     Finding =
-      Data.define(:kind, :package, :detail, :evidence, :cycle, :digest, :shape) do
-        def initialize(cycle: nil, digest: nil, detail: nil, shape: nil, **rest) = super
+      Data.define(:kind, :package, :detail, :evidence, :cycle, :digest, :shape, :confidence) do
+        def initialize(cycle: nil, digest: nil, detail: nil, shape: nil, confidence: nil, **rest) = super
 
         def signature = "#{kind}:#{identity}"
 
@@ -26,7 +26,9 @@ module Hashira
 
         def plain(text) = TRACKS.reduce(text) { |left, mark| left.gsub(mark, "") }
 
-        def to_h = super.except(:shape).merge(detail: detail&.to_h).compact
+        def doubted? = confidence == :low
+
+        def to_h = super.except(:shape, :confidence).merge(detail: detail&.to_h).compact
       end
   end
 end

@@ -31,8 +31,9 @@ RSpec.describe(Hashira::Duplication::Variance) do
     expect(variance("s.match?(/\\Aa+/)", "s.match?(/\\Ab+/)").kinds).to(eq([:literal]))
   end
 
-  it "sees safe navigation added to a call as a change in control flow" do
-    expect(variance("client.trace_id", "client&.trace_id").kinds).to(eq([:structure]))
+  it "sees safe navigation added to a call as a nil guard, not as a change in control flow" do
+    expect(variance("client.trace_id", "client&.trace_id").kinds).to(eq([:nil_guard]))
+    expect(variance("client&.trace_id", "client.trace_id").kinds).to(eq([:nil_guard]))
   end
 
   it "is not shape-only when the structure itself differs" do

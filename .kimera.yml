@@ -8,7 +8,7 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 4
+max_ignored: 5
 ignore:
 - file: lib/hashira/coupling/echo.rb
   line: 18
@@ -20,13 +20,19 @@ ignore:
   label: "<= => <"
   reason: A write and a later read of the same local are separate nodes with at least one token between them (an
     operator, a newline, a separator), so no write ever ends at the offset where a read begins and < agrees with <=
+- file: lib/hashira/smells/recheck.rb
+  line: 12
+  label: "<= => <"
+  reason: A discarded command and a later test of its receiver are separate expressions with at least one token
+    between them (a newline, a separator, an operator), so the command never ends at the offset where the test
+    begins and < agrees with <=
 - file: lib/hashira/smells/check.rb
-  line: 11
+  line: 32
   label: condition => true
   reason: Finding#trace reads the shape only when the evidence is empty and to_h drops it, so a shape computed for a
     finding with evidence is never observed; the guard only skips fingerprinting it (about 10% of smells time on rubocop)
 - file: lib/hashira/smells/repeated_call.rb
-  line: 73
+  line: 102
   label: delete `nodes.one?`
   reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
     groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)

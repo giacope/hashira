@@ -14,16 +14,19 @@ class Hashira::Coupling::Cut
 
   def rank(edge) = [edge.last, *edge.first(2)]
 
-  def depth = (0..ranked.size).bsearch { !strong?(ranked.drop(it)) }
+  def depth = (0..ranked.size).bsearch { split?(ranked.drop(it)) }
 
   def trim(cut) = cut.reverse.reduce(cut) { |left, edge| settle(left, left - [edge]) }
 
-  def settle(left, lighter) = strong?(@edges - lighter) ? left : lighter
+  def settle(left, lighter) = split?(@edges - lighter) ? lighter : left
 
-  def strong?(edges)
+  def split?(edges) = largest(edges) <= @members.size / 2
+
+  def largest(edges)
     links = edges.group_by(&:first).transform_values { |out| out.map { it[1] } }
-    [links, Hashira::Coupling::Reach.invert(links)].all? { Hashira::Coupling::Reach.from(@members.first, it) >= whole }
+    backward = Hashira::Coupling::Reach.invert(links)
+    @members.map { (reach(it, links) & reach(it, backward)).size }.max
   end
 
-  def whole = @_whole ||= @members.to_set
+  def reach(member, links) = Hashira::Coupling::Reach.from(member, links)
 end

@@ -162,4 +162,154 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "does not flag a handle whose fields the methods use together" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Stream
+            def initialize(socket, &on_event)
+              @socket = socket
+              @reader = Reader.new(socket)
+              @on_event = on_event
+              @closed = false
+              @exited = false
+            end
+
+            def each_event
+              until @closed || @exited
+                @on_event.call(@reader.next)
+              end
+            end
+
+            def close
+              @closed = true
+              @socket.close
+            end
+
+            def exit! = @exited = true
+
+            def self.open(path) = new(path)
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags constructor state that falls apart into separate groups across the methods" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Stream
+            def initialize(socket, log)
+              @socket = socket
+              @reader = Reader.new(socket)
+              @log = log
+              @level = 1
+              @closed = false
+            end
+
+            def each_event = @reader.each { @socket.ping unless @closed }
+
+            def note(text)
+              @log.write(text) if @level > 0
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(%w[@closed @level @log @reader @socket]))
+  end
+
+  it "weighs a field first assigned outside the constructor double: an intermediate result parked between methods" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Import
+            def initialize(path)
+              @path = path
+            end
+
+            def run
+              @rows = File.readlines(@path)
+              @valid = @rows.select(&:ok?)
+              summarize
+            end
+
+            def summarize = @summary = @valid.size
+
+            def self.cache = @cache = {}
+          end
+        end
+      end
+    RUBY
+    finding = findings.first
+    expect(findings.size).to(eq(1))
+    expect(message(finding)).to(include("holds 5 instance variables"))
+    expect(finding.evidence).to(eq(%w[@cache @path @rows @summary @valid]))
+  end
+
+  def assigns(base)
+    crowded(<<~RUBY)
+      class Orders < #{base}
+        def show
+          @order = Order.find(params[:id])
+          @items = @order.items
+        end
+
+        def edit = @form = OrderForm.new(@order)
+      end
+    RUBY
+  end
+
+  it "does not weigh a view's assigns double: a controller, mailer or component action hands them to a template" do
+    expect(%w[ApplicationController ApplicationMailer Admin::BaseComponent].flat_map { assigns(it) }).to(be_empty)
+  end
+
+  it "weighs the same actions double on a class that renders no view" do
+    expect(assigns("Pipeline::Step").map(&:package)).to(eq(["Orders"]))
+  end
+
+  it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Index
+            @registry = {}
+
+            def self.reset = @registry = {}
+
+            def initialize(rows)
+              @rows = rows
+              @size = rows.size
+              build
+            end
+
+            def find(key) = @by_key[key] || @rows.first
+
+            private
+
+            def build
+              @by_key = @rows.to_h { [it.key, it] }
+            end
+          end
+
+          class Parked
+            def initialize(rows)
+              @rows = rows
+            end
+
+            def find(key) = @by_key[key] || @other
+
+            def warm
+              @by_key = @rows.to_h { [it.key, it] }
+              @other = @rows.last
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Parked"]))
+  end
 end

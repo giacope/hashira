@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Duplication::Clusters) do
-  def clusters(sources) = described_class.new(fragments(sources)).sorted
+  def clusters(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted
 
   def exact
     {
@@ -233,6 +233,40 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters(bare)).to(be_empty)
   end
 
+  def resource(name, owner)
+    "class #{name}Resource\n attribute :id\n attribute :#{owner}_name do |r| r.#{owner}.name end\n " \
+      "attribute(:created, &:created_at)\n attribute :email do |r| r.#{owner}.contact.email end\n " \
+      "belongs_to :tenant, default: -> { Current.tenant }\n attribute :state do it.status end\nend\n"
+  end
+
+  it "leaves a class's macros alone when their blocks only read, or their lambdas make one call" do
+    expect(clusters("a.rb" => resource("Order", "buyer"), "b.rb" => resource("Invoice", "payer"))).to(be_empty)
+  end
+
+  it "reads the same macros as code outside a class body, or once a block or lambda carries logic" do
+    outside = ->(name) { resource(name, "owner").sub(/\Aclass \w+\n/, "").delete_suffix("end\n") }
+    logic = ->(name) { resource(name, "owner").sub("contact.email", "email || r.no").sub("Current.tenant", "a if b") }
+    sites = [outside, logic].map { clusters("a.rb" => it["Order"], "b.rb" => it["Invoice"]).first.size }
+    expect(sites).to(eq([2, 2]))
+  end
+
+  def attributes(name, param, methods)
+    one, two, three, four, five, six = methods.split
+    "class #{name}\n attribute :id\n attribute :a do |#{param}| #{param}.#{one}.#{two} || #{param}.#{three}(:a) " \
+      "end\n attribute :b do |#{param}| #{param}.#{four}.#{five} if #{param}.#{six} end\nend\n"
+  end
+
+  it "does not count a macro name the class repeats three times as a name two copies share" do
+    mine = "strip presence fallback to_s upcase visible?"
+    sources = {
+      "a.rb" => attributes("A", "r", mine),
+      "b.rb" => attributes("B", "x", "squish first default to_sym downcase shown?")
+    }
+    expect(clusters(sources)).to(be_empty)
+    expect(clusters(sources.transform_values { it.sub(" attribute :id\n", "") }).first.size).to(eq(2))
+    expect(clusters(sources.merge("b.rb" => attributes("B", "x", mine))).first.size).to(eq(2))
+  end
+
   it "leaves a macro alone whose block holds only more declarations" do
     settings =
       lambda do |group, host, port|
@@ -279,6 +313,85 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     end
   end
 
+  def client(patch = "def patch(path, body, headers: {}) = request(:patch, path, body: body.to_json, headers:)")
+    "class Client\n def post(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)\n " \
+      "#{patch}\n def request(verb, path, body:, headers:) = run(verb, path, body, headers)\nend\n"
+  end
+
+  it "leaves alone calls to the project's own method that differ only in what they pass it" do
+    renamed = "def patch(route, data, headers: {}) = request(:patch, route, body: data.to_json, headers:)"
+    expect([client, client(renamed)].map { clusters("c.rb" => it) }).to(all(be_empty))
+  end
+
+  it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
+    external = client.sub(/ def request.*\n/, "")
+    renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")
+    blocked = client.sub("headers:)\n", "headers:) { it.retry }\n").sub("headers:)\n", "headers:) { it.fail }\n")
+    longer = client.gsub(/= (request\(:\w+, path)(.*)\n/, "\n  \\1\\2\n  log(:sent, path)\n end\n")
+    expect([external, renamed, blocked, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2, 2]))
+  end
+
+  def toggles(one, two)
+    body = "(by) = update!(state: :on, changed_by: by, changed_at: Time.current, note: \"\")"
+    clusters("m.rb" => "class Member\n def #{one}#{body}\n def #{two}#{body.sub(":on", ":off")}\nend\n")
+  end
+
+  it "leaves alone a method and its inverse, which share their shape by design" do
+    inverses = [
+      %w[lock! unlock!], %w[activate deactivate], %w[enable_feature disable_feature],
+      %w[mark_as_read mark_as_unread]
+    ]
+    expect(inverses.map { toggles(*it) }).to(all(be_empty))
+    expect([%w[disconnect connect], %w[open close?]].map { toggles(*it) }).to(all(be_empty))
+  end
+
+  it "still reports two methods whose names are not each other's inverse" do
+    pairs = [%w[lock! freeze!], %w[lock_account unlock_user], %w[lock unlock_now], %w[relock unlock]]
+    expect(pairs.map { toggles(*it).size }).to(eq([1, 1, 1, 1]))
+  end
+
+  it "leaves alone a stretch two inverse methods share, and reports it outside them" do
+    body = ->(word) { " update!(at: now, why:)\n audit(:#{word}, why:, at: clock.now)\n notify(:#{word}, why)\n" }
+    inverse = "class A\n def lock!(why)\n#{body["lock"]} end\n def unlock!(why)\n#{body["unlock"]} end\nend\n"
+    expect(clusters("a.rb" => inverse)).to(be_empty)
+    expect(clusters("a.rb" => inverse.sub("def unlock!", "def freeze!")).first.size).to(eq(2))
+    expect(clusters("a.rb" => inverse, "b.rb" => "def c(why)\n#{body["lock"]}end\n").first.size).to(eq(3))
+  end
+
+  def guard = "before_action { authorize!(:read, model.constantize, scope: current_tenant.id, via: :role) }"
+
+  def authorized(count, line = guard)
+    shown = ->(n) { "class C#{n}\n #{line}\n def show#{n}\n  render_thing(:k#{n})\n end\nend\n" }
+    (1..count).to_h { ["c#{it}.rb", shown[it]] }
+      .merge("c1.rb" => "class C1\n #{line}\n before_action :a, if: -> { params[:x].present?(1) }\nend\n")
+      .merge("c2.rb" => "class C2\n #{line}\n before_action :b, if: -> { params[:y].present?(2) }\nend\n")
+  end
+
+  def twins
+    body = " def index\n  records = scope.where(owner: current_user).order(created_at: :desc)\n  " \
+      "render json: records.map { |r| serialize(r, detail: :full) }, status: :ok\n end\nend\n"
+    { "t1.rb" => "class T1\n#{body}", "t2.rb" => "class T2\n#{body}" }
+  end
+
+  def kinds(sources) = clusters(sources).map { [Hashira::Duplication::Delta.new(it).kind, it.size] }
+
+  it "reports a line ten files repeat as one convention listing every site, not as pairs that hold it" do
+    sources = authorized(8).merge(twins.transform_values { it.sub("\n", "\n #{guard}\n") })
+    expect(kinds(sources)).to(eq([[:identical, 2], [:convention, 10]]))
+  end
+
+  it "holds a repeated line under ten sites, or one whose sites share nothing but its shape, to the recurrence floor" do
+    expect(clusters(authorized(9)).map(&:size)).to(eq([2]))
+    unlike = ->(n) { "class U#{n}\n b#{n} { a#{n}!(:read, m#{n}.k#{n}, s: t#{n}.i#{n}, v: :r) }\nend\n" }
+    expect(clusters((1..12).to_h { ["u#{it}.rb", unlike[it]] })).to(be_empty)
+  end
+
+  it "keeps a bigger clone that holds the convention line, once it outweighs the line by the base floor" do
+    weighed = ->(args) { clusters(authorized(10).transform_values { it.sub(/render_thing\(:k\d+/, "\\0#{args}") }) }
+    expect(weighed[", d, a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[8, 32], [10, 16]]))
+    expect(weighed[", a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[10, 16]]))
+  end
+
   it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
     expect(nested(1).map { it.sites.map(&:file) }).to(eq([%w[a.rb b.rb]]))
   end
@@ -311,11 +424,109 @@ RSpec.describe(Hashira::Duplication::Clusters) do
 
   def head = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
 
+  describe(Hashira::Duplication::Grouping) do
+    it "breaks a tie between overlapping fragments in favour of the one another site shares names with" do
+      body = ->(first, last) { "def m\n #{first}.go(1)\n mid.run\n #{last}.go(2)\nend\n" }
+      all = fragments("a.rb" => body["alpha", "beta"], "b.rb" => body["gamma", "beta"])
+      group = %w[a.rb:2-3 a.rb:3-4 b.rb:3-4].map { |range| all.find { it.range == range } }
+      sites = [group, group.reverse].map { described_class.new(it).cluster.sites.map(&:range).sort }
+      expect(sites).to(eq([%w[a.rb:3-4 b.rb:3-4]] * 2))
+    end
+  end
+
   describe(Hashira::Duplication::Index) do
     it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
       buckets = described_class.new(fragments(sources)).buckets.map { it.map(&:file) }
       expect(buckets).to(include(%w[a.rb b.rb], %w[c.rb d.rb]))
+    end
+  end
+
+  describe(Hashira::Duplication::Macro) do
+    def pardons?(source) = described_class.new(Prism.parse(source).value.statements.body.first).pardoned.any?
+
+    it "pardons a block that passes a symbol, or reads a chain of up to three plain calls off its parameter" do
+      readers = ["a(&:id)", "a { |r| r.b.c.d }", "a { it.b }", "a { _1.b }", "a { b.c }", "a { |r| r&.b }"]
+      expect(readers.map { pardons?(it) }.uniq).to(eq([true]))
+    end
+
+    it "keeps a block that computes: a longer chain, an argument, a block, a constant, a branch, a second statement" do
+      computed = [
+        "a(&b)", "a { |r| r.b.c.d.e }", "a { |r| r.b(1) }", "a { |r| r.b { 1 } }", "a { B.c }",
+        "a { |r| r.b ? 1 : 2 }", "a { |r| r.b\n r.c }", "a { }", "a"
+      ]
+      expect(computed.map { pardons?(it) }.uniq).to(eq([false]))
+    end
+
+    it "pardons a keyword lambda whose body is one call or an ||, and nothing else" do
+      pardoned = ["a :b, c: -> { D.e }", "a :b, c: -> { d || e }", "a(c: ->(x) { x.y(1) })"]
+      kept = [
+        "a :b, -> { d }", "a :b, c: -> { d if e }", "a :b, c: -> { d\n e }", "a :b, c: -> {}", "a :b, c: d",
+        "a :b, **c"
+      ]
+      expect([pardoned, kept].map { |group| group.map { pardons?(it) }.uniq }).to(eq([[true], [false]]))
+    end
+  end
+
+  describe(Hashira::Duplication::Sink) do
+    def call(source) = Prism.parse(source).value.statements.body.first
+
+    def pair(source)
+      { "a.rb" => public_send(source, "charge", "Charge"), "b.rb" => public_send(source, "refund", "Refund") }
+    end
+
+    def logged(name, what)
+      "class Checkout\n def #{name}_failed(error)\n  logger.error(\"#{what} failed for order \#{order.id} " \
+        "(\#{order.customer.email}): \#{error.message} at \#{error.backtrace.first}\")\n end\nend\n"
+    end
+
+    def reported(name, _)
+      "class Sync\n def #{name}(e)\n  error_reporter.report(e, context: { order_id: order.id, " \
+        "customer_id: order.customer_id, amount: order.total, at: Time.current })\n end\nend\n"
+    end
+
+    def rescued(name, what)
+      "def #{name}\n run\nrescue Timeout::Error => e\n Rails.logger.warn(\"#{what} timed out after " \
+        "\#{e.elapsed.round(2)} seconds on \#{host.name}:\#{host.port}\")\nend\n"
+    end
+
+    def alerted(_, what)
+      "if order.failed?(attempts: config.fetch(:attempts), since: Time.current - config.fetch(:window))\n " \
+        "logger.error(\"#{what} failed for order \#{order.id}\")\nend\n"
+    end
+
+    def retried(name, _)
+      "class Sync\n def #{name}(order)\n  logger.warn(\"retrying \#{order.id}\")\n  " \
+        "order.retry_payment(attempts: fetch(:attempts), backoff: :exponential)\n  " \
+        "notify(order.customer, :failed)\n end\nend\n"
+    end
+
+    it "skips a method or rescue clause whose one statement is a log line or an error report" do
+      expect(%i[logged reported rescued].map { clusters(pair(it)) }).to(all(be_empty))
+    end
+
+    it "still reports a log line among other statements, counting its interpolated message as one string" do
+      cluster = clusters(pair(:retried)).first
+      expect(cluster.sites.map(&:range)).to(eq(%w[a.rb:2-6 b.rb:2-6]))
+      expect(cluster.mass).to(eq(25))
+    end
+
+    it "still reports a lone call that is not a sink, or a sink under a condition of its own" do
+      plain = pair(:logged).transform_values { it.sub("logger.error", "ledger.record") }
+      guarded = pair(:alerted)
+      expect([plain, guarded].map { clusters(it).size }).to(eq([1, 1]))
+    end
+
+    it "knows a log or error-report call by its message and its receiver" do
+      sinks = %w[logger.error(x) Rails.logger.info(x) Sentry.capture_exception(e) Rails.error.report(e) @log.debug(x)]
+      others = %w[logger.flush(x) order.error(x) error(x) x]
+      judged = [sinks, others].map { |group| group.map { described_class.new(call(it)).sink? }.uniq }
+      expect(judged).to(eq([[true], [false]]))
+    end
+
+    it "discounts every node a sink's interpolated messages hold, nested ones counted once" do
+      fragment = fragments("a.rb" => "logger.info(\"a \#{\"b \#{c.d}\"}\", e)\nf\n").find { it.range == "a.rb:1-2" }
+      expect([fragment.types.size, fragment.mass]).to(eq([15, 6]))
     end
   end
 end

@@ -8,8 +8,8 @@ RSpec.describe(Hashira::Report::Text) do
   it "caps the findings list at --top and counts what it withheld" do
     with_pipeline do |project, graph, findings|
       output = capture { described_class.new(view(project, graph, findings, top: 2)).print }
-      expect(output).to(include("Findings (6):"))
-      expect(output).to(include("… and 4 more — raise the cap with --top, or read them all with --json"))
+      expect(output).to(include("Findings (5):"))
+      expect(output).to(include("… and 3 more — raise the cap with --top, or read them all with --json"))
     end
   end
 
@@ -34,12 +34,9 @@ RSpec.describe(Hashira::Report::Text) do
           beta         -> alpha(2)                         <- alpha
           core         -> (none)                           <- alpha
 
-        Findings (6):
+        Findings (5):
           cycle: alpha and beta depend on each other in a cycle — any change may ripple back around. The cheapest cut is alpha -> beta (1 ref).
               · alpha/one.rb:4: Beta::Two
-          sdp_violation: beta (I=0.50) depends on the LESS stable alpha (I=0.67) — churn in alpha will force churn in beta. Invert the edge or extract the stable part of alpha that beta needs.
-              · beta/two.rb:4: Alpha::One
-              · beta/two.rb:5: App::Alpha::One
           utility_function: App::Alpha::One#call touches no instance state (alpha/one.rb:4). Move it onto the object it serves, or make it private.
           utility_function: App::Alpha::One#support touches no instance state (alpha/one.rb:5). Move it onto the object it serves, or make it private.
           utility_function: App::Beta::Two#call touches no instance state (beta/two.rb:4). Move it onto the object it serves, or make it private.
@@ -166,6 +163,12 @@ RSpec.describe(Hashira::Report::Text) do
       expect(packages(Hashira::Report::Spread.new(findings).to_a)).to(
         eq(%w[A#worst A#n1 A#u1 A#bad A#n2 A#mild A#n3])
       )
+    end
+
+    it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do
+      doubted = complex("doubted", 50).with(confidence: :low)
+      dealt = Hashira::Report::Spread.new([doubted, complex("plain", 12), smell("nil_check", "n1")]).to_a
+      expect(packages(dealt)).to(eq(%w[A#plain A#n1 A#doubted]))
     end
 
     it "deals nothing from nothing" do

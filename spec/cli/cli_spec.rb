@@ -159,7 +159,7 @@ RSpec.describe(Hashira::CLI::Session) do
       expect(text).not_to(include("utility_function"))
       json = capture { expect(described_class.new(["lib/app", "--json", "--kind", "smells"]).status).to(eq(0)) }
       expect(JSON.parse(json)["findings"].map { it["kind"] }.uniq).to(eq(%w[utility_function]))
-      gate = ["lib/app", "--kind", "cycles,sdp", "--fail-on", "sdp"]
+      gate = ["lib/app", "--kind", "cycles,smells", "--fail-on", "smells"]
       expect(capture { expect(described_class.new(gate).status).to(eq(1)) }).not_to(include("cycle:"))
     end
   end

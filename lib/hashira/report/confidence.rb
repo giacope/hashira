@@ -9,18 +9,23 @@ module Hashira::Report::Confidence
 
   NARROW = %i[identical literal message constant].freeze
 
-  HEDGED = :structure
+  HEDGED = %i[structure convention].freeze
 
   module_function
 
   def of(finding)
+    stated = finding.confidence
+    stated ? stated.to_s : inferred(finding)
+  end
+
+  def inferred(finding)
     kind = finding.kind
     return copied(finding.detail.kind) if kind == "duplication"
     MEASURED.include?(kind) ? HIGH : MEDIUM
   end
 
   def copied(variance)
-    return LOW if variance == HEDGED
+    return LOW if HEDGED.include?(variance)
     NARROW.include?(variance) ? HIGH : MEDIUM
   end
 end

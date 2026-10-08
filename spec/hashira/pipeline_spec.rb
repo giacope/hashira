@@ -19,7 +19,7 @@ RSpec.describe(Hashira::Pipeline) do
   end
 
   it "reports structural findings only when coupling runs" do
-    expect([kinds(%i[coupling]), kinds(%i[complexity])]).to(eq([%w[cycle sdp_violation], []]))
+    expect([kinds(%i[coupling]), kinds(%i[complexity])]).to(eq([%w[cycle], []]))
   end
 
   it "rolls up hotspots when either cost analyzer runs, and not when neither does" do

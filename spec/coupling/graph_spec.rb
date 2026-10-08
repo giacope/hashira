@@ -210,7 +210,17 @@ RSpec.describe(Hashira::Coupling::Graph) do
     end
 
     it "gives back an edge the cut turned out not to need" do
+      uses = { "a" => %w[b c c c], "b" => %w[c c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["c", "a", 2]])) }
+    end
+
+    it "breaks a small knot outright, leaving no loop behind" do
       uses = { "a" => %w[b b c], "b" => %w[c c], "c" => %w[a a] }
+      cut(uses) { expect(it).to(eq([["a", "c", 1], ["a", "b", 2]])) }
+    end
+
+    it "does not count detaching one leaf as a cut" do
+      uses = { "a" => %w[b b], "b" => %w[a a c c], "c" => %w[b b d], "d" => %w[a] }
       cut(uses) { expect(it).to(eq([["a", "b", 2]])) }
     end
   end
@@ -247,9 +257,26 @@ RSpec.describe(Hashira::Coupling::Graph) do
       end
     end
 
+    it "does not flag an edge whose ends share a cycle" do
+      uses = { "a" => %w[b], "b" => %w[a p q], "c1" => %w[a], "c2" => %w[a], "p" => [], "q" => [] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect([graph.metric("a").level, graph.metric("b").level, graph.violations]).to(eq([0.25, 0.75, []]))
+      end
+    end
+
+    it "flags an edge leaving a cycle" do
+      files = Fixtures::UNSTABLE_FILES.merge(
+        "lib/app/stock/x.rb" => "module App; module Stock; class X; def c = [Pricing::X, Depot::X]; end; end; end\n",
+        "lib/app/depot/x.rb" => "module App; module Depot; class X; def c = Stock::X; end; end; end\n"
+      )
+      analyze(files) do |_project, _census, graph|
+        expect(graph.violations).to(eq([%w[stock pricing]]))
+      end
+    end
+
     it "reports the offending edges" do
-      analyze(Fixtures::CYCLIC_FILES) do |_project, _census, graph|
-        expect(graph.violations).to(eq([%w[beta alpha]]))
+      analyze(Fixtures::UNSTABLE_FILES) do |_project, _census, graph|
+        expect(graph.violations).to(eq([%w[stock pricing]]))
       end
     end
   end

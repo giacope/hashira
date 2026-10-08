@@ -780,4 +780,261 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ranks App::Zone::Thing#grouped]))
   end
+
+  it "stays quiet about locals holding core values: literals, constants, permitted params, or a .to_h or .map" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def count
+              size = 0
+              @seen = true
+              size.size && size.kind
+            end
+
+            def label
+              tag = :draft
+              title = "\#{tag}-1"
+              @seen = true
+              tag.size && tag.name && title.size && title.strip
+            end
+
+            def steps(extra)
+              plan = STEPS
+              rules = Zone::RULES
+              @seen = true
+              plan.merge(extra) && plan.size && rules.merge(extra) && rules.size
+            end
+
+            def ids
+              permitted = params.require(:order).permit(:ids)
+              @seen = true
+              permitted.size && permitted.merge(extra) && permitted.delete(:ids)
+            end
+
+            def shapes(rows)
+              table = rows.to_h
+              list = rows.to_a
+              names = rows.map(&:name)
+              flat = rows.flat_map(&:name)
+              kept = rows.filter_map(&:name)
+              @seen = true
+              table.size && table.merge(rows) && list.size && list.push(1) && names.size && names.sort
+              flat.size && flat.sort && kept.size && kept.sort
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a local assigned from a call that is not a core conversion" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def ship(rows)
+              order = rows.fetch_order
+              @seen = true
+              order.net && order.tax && order.fee
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#ship"]))
+  end
+
+  it "reads fetch with a literal key and a default as a keyed read" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def picks(permitted)
+              @seen = true
+              permitted.fetch(:ids, []) && permitted.fetch("name", nil) && permitted.fetch(:kind, 0)
+            end
+
+            def pick(row, keys)
+              @seen = true
+              row.fetch(keys.first, []) && row.fetch(keys.last, nil)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick"]))
+  end
+
+  it "stays quiet about a mapper whose reads all feed a hash literal or a constructor, render, or update" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def error_body(error)
+              @seen = true
+              { code: error.id, message: error.message.to_s, retry_after: error.cause&.size }
+            end
+
+            def wrap(error)
+              @last = Result.new(code: error.id, message: error.message, at: error.cause)
+            end
+
+            def parse(row)
+              @last = Result.from(id: row.id, name: row.name, size: row.size)
+            end
+
+            def show(error)
+              @seen = true
+              render json: { code: error.id }, status: error.kind, layout: error.name
+            end
+
+            def respond(error)
+              @seen = true
+              render_error(code: error.id, status: error.kind, layout: error.name)
+            end
+
+            def assign(form)
+              @record.assign_attributes(name: form.name, size: form.size, kind: form.kind)
+            end
+
+            def save(form)
+              @record.update!(name: form.name, size: form.size, kind: form.kind)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still flags a mapper once a read computes, escapes the mapping, or feeds another call's keywords" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def total(order)
+              @seen = true
+              { total: order.net + order.tax, fee: order.fee }
+            end
+
+            def notify(error)
+              @seen = true
+              deliver(code: error.id, message: error.message, at: error.cause)
+            end
+
+            def wrap(error)
+              @last = error.id
+              Result.new(message: error.message, at: error.cause)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#total App::Zone::Thing#notify App::Zone::Thing#wrap]))
+  end
+
+  it "stays quiet about a sum type normalised with a type test and a keyed read" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Order
+          end
+
+          class Thing
+            def ident(arg)
+              @seen = true
+              arg.is_a?(Order) ? arg.id && arg.name : arg[:id]
+            end
+
+            def ident_with_default(arg)
+              @seen = true
+              arg.is_a?(Order) ? arg.id && arg.name : arg.fetch(:id, nil)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "does not blame a local whose fields go to the same call as the local itself" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def record(entry, log)
+              @seen = true
+              log.record!(entry: entry, size: entry.size, kind: entry.kind)
+            end
+
+            def store(entry, log)
+              @seen = true
+              log.store(entry, entry.size, entry.kind.to_s)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still blames a local whose fields travel without it, or apart from it" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def record(entry, log)
+              @seen = true
+              log.record!(size: entry.size, kind: entry.kind)
+            end
+
+            def store(entry, log)
+              @seen = true
+              log.store(entry)
+              log.note(entry.size, entry.kind)
+            end
+
+            def keep(entry)
+              @seen = true
+              entry.store(entry, entry.size)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#record App::Zone::Thing#store App::Zone::Thing#keep]))
+  end
+
+  it "stays quiet about a fake's method its real peer also defines, and still flags one it adds" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Launcher
+            def launch(job)
+              @queue.push(job)
+            end
+          end
+
+          class FakeLauncher
+            def launch(job)
+              @seen = true
+              job.load && job.store
+            end
+
+            def check(job)
+              @seen = true
+              job.load && job.store
+            end
+          end
+
+          class Boot
+            def start = @launcher = live? ? Launcher.new : FakeLauncher.new
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::FakeLauncher#check"]))
+  end
 end

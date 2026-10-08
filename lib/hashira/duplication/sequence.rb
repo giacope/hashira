@@ -8,10 +8,11 @@ class Hashira::Duplication::Sequence
   LIST_RUN = 3
   SCOPES = [Prism::ClassNode, Prism::ModuleNode, Prism::SingletonClassNode].freeze
 
-  def initialize(file, statements, walks)
+  def initialize(file, statements, walks, setting)
     @file = file
     @statements = statements
     @walks = walks
+    @setting = setting
   end
 
   def fragments = segments.flat_map { windows(it) }
@@ -36,5 +37,5 @@ class Hashira::Duplication::Sequence
 
   def spans(segment, length) = 0..(segment.size - length)
 
-  def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots, @walks)
+  def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots, @walks, @setting)
 end

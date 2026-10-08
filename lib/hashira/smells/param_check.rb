@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "mapping"
 
 class Hashira::Smells::ParamCheck
   COMPARISONS = %i[== != =~].freeze
+
+  FIXED = Hashira::Smells::Mapping::FIXED
 
   def initialize(node, name)
     @node = node
@@ -16,7 +19,7 @@ class Hashira::Smells::ParamCheck
   end
 
   def legitimate?
-    absolved? || working? || nested.any?(&:legitimate?)
+    absolved? || working? || mapped? || nested.any?(&:legitimate?)
   end
 
   private
@@ -44,8 +47,19 @@ class Hashira::Smells::ParamCheck
   end
 
   def absolves?(call)
-    !COMPARISONS.include?(call.name) && reads(Hashira::Analysis::NodeWalk.collect(call)).any?
+    return measured?(call) if COMPARISONS.include?(call.name)
+    reads(Hashira::Analysis::NodeWalk.collect(call)).any?
   end
+
+  def measured?(call)
+    sides = [call.receiver, *call.arguments&.arguments]
+    others = sides - reads(sides)
+    others.size < sides.size && others.any? { !FIXED.include?(it.class) }
+  end
+
+  def mapped? = tested.any? && !Hashira::Smells::Conditions.couple?(@node) && branches.compact.all? { literal?(it) }
+
+  def literal?(branch) = Hashira::Smells::Mapping.literal?(branch)
 
   def reads(nodes) = nodes.grep(Prism::LocalVariableReadNode).select { it.name == @name }
 end

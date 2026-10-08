@@ -67,7 +67,7 @@ RSpec.describe(Hashira::Report::Json) do
           "from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]
         )
       )
-      kinds = %w[cycle sdp_violation] + (["utility_function"] * 4)
+      kinds = %w[cycle] + (["utility_function"] * 4)
       expect(report["findings"].map { it["kind"] }).to(eq(kinds))
     end
   end
@@ -80,7 +80,7 @@ RSpec.describe(Hashira::Report::Json) do
     within(files) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
-      expect(report["folds"]).to(include("from" => "SandboxResource", "to" => "Sandbox", "via" => "suffix"))
+      expect(report["folds"]).to(include("from" => "SandboxPolicy", "to" => "Sandbox", "via" => "suffix"))
     end
   end
 
@@ -138,7 +138,7 @@ RSpec.describe(Hashira::Report::Json) do
       expect(emit(view(project, graph, findings, top: 1))["kinds"]).to(
         eq(
           "utility_function" => { "count" => 4, "files" => 2 },
-          "cycle" => { "count" => 1, "files" => 1 }, "sdp_violation" => { "count" => 1, "files" => 1 }
+          "cycle" => { "count" => 1, "files" => 1 }
         )
       )
     end
@@ -154,7 +154,7 @@ RSpec.describe(Hashira::Report::Json) do
   it "rates each finding's confidence by how directly it follows from the code" do
     with_pipeline do |project, graph, findings|
       rated = emit(view(project, graph, findings))["findings"].to_h { [it["kind"], it["confidence"]] }
-      expect(rated).to(eq("cycle" => "high", "sdp_violation" => "high", "utility_function" => "medium"))
+      expect(rated).to(eq("cycle" => "high", "utility_function" => "medium"))
     end
   end
 
@@ -165,9 +165,15 @@ RSpec.describe(Hashira::Report::Json) do
     end
 
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
-      kinds = %i[identical literal message constant mixed renamed renamed_literal structure]
+      kinds = %i[identical literal message constant mixed renamed renamed_literal nil_guard renamed_nil_guard structure
+        convention]
       rated = kinds.map { described_class.of(clone(it)) }
-      expect(rated).to(eq(%w[high high high high medium medium medium low]))
+      expect(rated).to(eq(%w[high high high high medium medium medium medium medium low low]))
+    end
+
+    it "takes the confidence a finding states over the one its kind implies" do
+      stated = %i[low high].map { Hashira::Analysis::Finding.new(kind: "nil_check", package: "p", evidence: [], confidence: it) }
+      expect(stated.map { described_class.of(it) }).to(eq(%w[low high]))
     end
 
     it "treats every structural kind and complexity as measured, and every smell as a pattern" do

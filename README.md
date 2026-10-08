@@ -244,17 +244,26 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   Stable Dependencies Principle ("depend in the direction of stability"), one of
   Robert C. Martin's [package principles](https://en.wikipedia.org/wiki/Package_principles).
   Instabilities are compared as the table shows them, to two decimals: two
-  packages that both read 0.33 are equally stable.
+  packages that both read 0.33 are equally stable. A violation needs a gap of
+  at least 0.10 and at least three edges (Ca + Ce) at each end, since one edge
+  in and one out already reads 0.50. An edge between two packages in the same
+  cycle is never an SDP violation: inside a knot, stability points both ways,
+  and the cycle finding covers it.
 - **Cycle** — packages depending on each other in a loop.
 - **Mixed audience** — the constants of one package split into parts with
   separate client bases: one set of packages leans on one slice, another set on
   a disjoint slice. Each part is a separate package in disguise; the finding
   names the seam, and — when most clients also share a few constants — the
   shared base layer to extract. Composition roots blur the picture only if they
-  touch a constant some other client also touches, which facades avoid.
+  touch a constant some other client also touches, which facades avoid. The
+  `(root)` package, the usual composition root, is never an audience, and a part
+  counts only when its clients together define at least three types, so a
+  two-class satellite does not split a package on its own.
 - **Wide edge** — one package reaches into another through five or more
   distinct constants. Every constant on the edge is a reason for the client to
-  change; a facade narrows the interface to one.
+  change; a facade narrows the interface to one. A constant nested in a class
+  the edge also reaches counts as that class: `Gate`, `Gate::Policy` and
+  `Gate::Exceeded` are one interface.
 - **Roll call** — the same list of three or more words (symbols, string keys)
   is maintained by hand in three or more files across packages. The list wants
   to be data with a single owner — a registry the other sites derive from.
@@ -262,10 +271,13 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
 Each finding comes with file-level evidence. A cycle is reported once per knot
 of packages that can all reach one another (a strongly connected component),
 keyed by its alphabetically first member, with the cheapest cut: the lightest
-set of edges whose removal splits the knot, found by dropping the lightest
-edges until it splits and then giving back any it did not need. The evidence
-is the references on those edges — the lines to change. What a finding means
-for your design is your call.
+set of edges whose removal leaves no knot bigger than half the members (a knot
+of two or three is broken outright, and detaching one leaf never counts), found
+by dropping the lightest edges until that holds and then giving back any it did
+not need. The evidence is the references on those edges — the lines to change.
+A member that is in the knot only because of types folded into it (see
+[Rails apps](#rails-apps)) is named as such in the message and listed under
+`folded`. What a finding means for your design is your call.
 
 ## Rails apps
 
@@ -310,7 +322,39 @@ neither does a library namespace the project only patches: one opened in files
 not named for it, with no class derived inside it (`class Rufus::Scheduler` in
 `huginn_scheduler.rb`, `module Rack` in `action_dispatch.rb`). Only what the
 project provably creates there — a class with a superclass, a constant
-assignment — stays its own.
+assignment — stays its own. An association's `class_name: "A::B"` string
+(`has_many`, `has_one`, `belongs_to`, `has_and_belongs_to_many`) is a reference
+to `A::B`, and a top-level `Payments::Rate = …` or
+`Payments::Ledger.private_constant :Row` is charged to `Payments`, not to
+`(root)`.
+
+**Presentation stays out of the domain.** Controllers (with their concerns),
+serializers and resources — the files under `app/controllers`,
+`app/serializers` and `app/resources` — are charged to one `(web)` package,
+whatever namespace they are written in: `Admin::OrdersController` does not make
+`Admin` a package, `Orders::RefundsController` does not land in `Orders`, and
+`OrderResource` does not fold into `Order`. The findings are worked out on the
+domain graph, with `(web)` counted once as a client of each package it uses:
+its edges into the domain point the right way, so they are never SDP
+violations, cycle members or wide edges, and all of a package's controllers
+and serializers are one audience. A domain edge into `(web)` stays in the
+dependency map but out of instability and the findings; `--package-by folder`
+shows the layers whole.
+
+**Folding.** A package that is part of another is folded into it, and every
+fold is listed under the tables (and as `folds` in JSON) with how it was found:
+
+- `base` — a lone class joins its superclass's package
+  (`GraceNotification < AccountNotification < Notification`);
+- `suffix` — `OrderPolicy`, `OrderDecorator` (and a `…Serializer` or
+  `…Resource` outside the presentation folders) join `Order`;
+- `plural` — `Orders`, the model's jobs and services, joins `Order` when both
+  exist (`-s`, `-es`, `-ies`);
+- `mixin` — a module whose body only extends or includes others
+  (`module OrderShipped; extend Notifier; end`) joins the first of them the
+  project defines, so a family of one-liners is not a family of packages.
+
+Controllers never fold, by suffix or by base class.
 
 Either grouping can be forced anywhere:
 
@@ -394,30 +438,62 @@ it does inside Ruby:
   spine of a model or a serializer, constants assigned a literal (`.freeze`
   included) — is a schema, not copied logic; extracting it only hides what the
   class declares. A macro whose block holds only more declarations
-  (`string :host do default "localhost" end`) is one too. Two models that open
-  the same way are two models. As soon as a fragment carries logic — a block
-  parameter, a method, a variable, a receiver, a branch, an interpolation — it
-  counts again.
+  (`string :host do default "localhost" end`) is one too. So, in a class body,
+  is a macro whose block only names a reader — `attribute(:id, &:id)`, or a
+  chain of up to three plain calls off its parameter
+  (`attribute :owner_name do |r| r.owner.name end`) — or whose keyword lambda
+  makes one call (`belongs_to :tenant, default: -> { Current.tenant }`, an `||`
+  included). Two models that open the same way are two models. As soon as a
+  fragment carries logic — a method, a variable, a receiver, a branch, an
+  interpolation, a block or lambda that computes — it counts again.
+- **A lone log line isn't a clone.** A method, `rescue` or statement whose only
+  statement is a log call (`logger.error`, `Rails.logger.warn`) or an error
+  report (`Rails.error.report`, `Sentry.capture_exception`, `Honeybadger.notify`)
+  is skipped: its message is its whole meaning. Next to other statements it
+  counts, but whatever its interpolated messages hold weighs nothing — the string
+  counts once.
+- **Calls into an abstraction you already have aren't clones.** `def post(path,
+  body) = request(:post, path, body)` next to `def patch` is already factored:
+  when a fragment is one call to a method defined in the analyzed code and the
+  copies differ only in what they pass it (and in their own names and
+  parameters), it is skipped. A call to a library's method, or copies that
+  differ in the receiver, the block or nothing but their names, still count.
+- **Inverse pairs aren't clones.** `lock!`/`unlock!`, `enable_feature`/
+  `disable_feature`, `mark_as_read`/`mark_as_unread` share their shape by design.
+  A two-site clone whose sites sit in methods whose names differ in one word, and
+  that word is a known antonym or the other with `un`, `de` or `dis` in front, is
+  skipped — the whole methods and any stretch they share.
 - **Clusters, not pairs.** All copies of one thing collapse into a single
   finding with N sites, so the report reads as "fix this once," not a wall of
   pairwise matches. A smaller clone whose copies sit inside a bigger one's is
   reported only when at least two of its copies lie outside it: one more site is
   not a new finding.
+- **Conventions, once.** A fragment ten or more files repeat, sharing its names
+  rather than only its shape, is a convention — usually on purpose. It pays no
+  recurrence penalty and is reported as one lower-confidence finding listing every
+  site (`14 sites follow one convention (mass 17)`), and a clone that is little
+  more than that line (less than the base floor heavier) folds into it rather
+  than surfacing as an arbitrary pair of files that hold it. When copies tie on
+  size, the ones whose names another copy shares are taken first, so a real twin
+  pair is not crowded out by look-alikes of the same shape.
 - **It tells you how to fix it.** hashira diffs the copies and classifies what
   varies: only literals (strings, numbers, symbols, patterns) → extract a method
   and pass them as arguments; only the receiver or a name → extract a method
   taking it, or use polymorphism; a constant → parameterize it; nothing but the
   method's own name → keep one, and alias or call it; the name and something
   inside → keep every name (a callback's is fixed), each calling one shared
-  method that takes what else differs; the control flow itself,
-  down to a `&.` one copy has and the other lacks → extract the common core, but
-  verify by hand (flagged lower-confidence).
+  method that takes what else differs; nothing but a `&.` one copy has and the
+  other lacks → extract a method and decide once whether the receiver can be nil;
+  the control flow itself → extract the common core, but verify by hand (flagged
+  lower-confidence).
 - **Noise control, from the repo itself.** A shape that recurs everywhere is a
   Ruby idiom, not duplication, so the mass floor rises as a shape gets more
   common, and rare token types drive matching while common ones don't. The floor
   rises again when two sites share nothing but their shape: `each_cons(2).min_by
   { }` and `combination(2).select { }` are the same tree by coincidence, and a
-  match with no name in common has to be much bigger to mean anything.
+  match with no name in common has to be much bigger to mean anything. A macro a
+  class body calls three or more times (`attribute`, `belongs_to`, `scope`) is
+  not a name in common: every line of that class shares it.
 - **Churn overlay.** When git is available, clones spanning two files that both
   change more often than the typical file here (above the median commit count)
   are called out — that's where one copy gets fixed and the other silently
@@ -452,14 +528,26 @@ What each one catches:
   their parameter `r` are three variables, not one — and the evidence lists
   self's references too, so "more than" can be checked. Stays quiet when the
   method's own body proves the envied thing is foreign — type-guarded (or
-  table-dispatched) only against constants the codebase never defines, read
-  purely through literal keys (`msg["id"]`), built from a literal, derived
-  from a foreign call (or a call chain rooted in one) in the method itself,
-  handed to a block by one (`Faraday.new do |f|`), rescued from a foreign
-  error class, or consumed by a stateless converter that ends by building a
-  typed object — because "move the method" needs a destination you own. Block
-  parameters referenced together, as in a comparator (`sort { |a, b| ... }`),
-  are peers, not a destination.
+  table-dispatched) only against constants the codebase never defines, or
+  type-tested and read by key, as a sum type is (`arg.is_a?(Order) ? arg.id :
+  arg[:id]`), read purely through keyed reads whose key is a literal
+  (`msg["id"]`, `fetch(:ids, [])`), a core value assigned from a literal, a
+  constant, `params.permit(...)`, `.to_h`, `.to_a` or a `.map` (so `names.size`
+  is not envy of `names`), derived from a foreign call (or a call chain rooted
+  in one) in the method itself, handed to a block by one (`Faraday.new do
+  |f|`), rescued from a foreign error class, or consumed by a stateless
+  converter that ends by building a typed object — because "move the method"
+  needs a destination you own. A mapper is quiet too: when every envied read
+  of a name feeds a value in a hash literal, or a keyword passed to `.new`,
+  `.from`, `render*`, `assign_attributes` or `update!`
+  (`{ code: error.code, message: error.message }`), translating one shape into
+  another is the method's job. So is a call that takes a name along with its
+  own fields (`log.record!(entry: entry, size: entry.size)`): the redundancy
+  lives in that callee's signature, which hashira can't name from the call
+  site, not in an envy of `entry`. Block parameters referenced together, as in
+  a comparator (`sort { |a, b| ... }`), are peers, not a destination, and a
+  method that fills a role its peers share (see utility_function) is never
+  envious, since moving it would break the protocol.
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
@@ -472,7 +560,14 @@ What each one catches:
   `module_function` and `extend self` modules are exempt — that's what they're
   for. So is polymorphism: a method an owned ancestor or descendant also
   defines, or one a sibling class under the same superclass defines too (every
-  job's `perform`), fills a role rather than hiding a function. So is a hook: on
+  job's `perform`), fills a role rather than hiding a function. Duck-typed
+  peers count as kin too: classes offered as alternatives at one site
+  (`launcher = live? ? Launcher.new : FakeLauncher.new`, or an `if`/`unless`
+  or `||` choosing between constructors), a class under a stand-in namespace
+  and the one it imitates (`Fakes::Mailer` and `Mailer`), and a `Fake*`,
+  `Null*`, `Dummy*`, `*Stub` or `*Double` class whose public methods another
+  class in the codebase also offers. What they share is protocol, so neither
+  this nor feature_envy fires on a stub's side of it. So is a hook: on
   a class built on a superclass or mixin from outside the codebase
   (`class Plugin < LintRoller::Plugin`), a method nothing in the codebase calls
   is one the library calls, and can be neither made private nor moved. What a concern
@@ -483,31 +578,76 @@ What each one catches:
   caller already knew which branch it wanted. An argument that `||` or `&&`
   hands on as a value (`name || "anonymous"`, `@options = options || {}`,
   `puts(padded && "wide")`) is data, not a switch; `flag && run` standing
-  alone as a statement, or in a loop's condition, still steers.
+  alone as a statement, or in a loop's condition, still steers. A comparison
+  steers only against a literal or a constant (`mode == :fast`); compared with
+  another value (`current_epoch == expected_epoch`, or `a != b` behind the nil
+  guards `a && b`) the argument is data. So is one a conditional only maps to
+  a value, every branch a literal, a constant or a translation key
+  (`status = dry_run ? "dry_run" : "applied"`, `when :a then t(".alpha")`).
 - **data_clump** — the same two-plus parameters travel through three or more
   methods; a value object is missing. Each clump is listed at its widest: a
-  pair that only ever travels inside a larger set isn't listed again.
+  pair that only ever travels inside a larger set isn't listed again. It needs
+  the group to actually travel: one of those methods must hand all of it on to
+  another (`def patch(path, body) = post(path, body)`), so a shared signature
+  convention alone (`(path, body)` on every HTTP verb) isn't a clump.
+  `_`-prefixed and defaulted parameters don't count (`as_of = @as_of` is
+  already receiver state), and neither do methods that fill a role a related
+  class defines too, as every driver behind one port does.
 - **repeated_call** — the identical receiver-and-arguments call repeated
   inside one method; name the result once. Identical means the same call on the
   same values, not the same text: a literal block is part of the call, and a
   local counts by its binding, so `it` in two blocks is two variables, and
-  `parent` before and after `parent = parent.parent` is two values. Quiet wherever naming it would be
+  `parent` before and after `parent = parent.parent` is two values. Calls are
+  compared only within one block (or the method body outside any block), since
+  a block may run later or more than once. Quiet wherever naming it would be
   wrong: calls that mint a fresh value every time (`"".b`, `rand`, `dup`,
-  `SecureRandom.hex`) are meant to differ, and so is a call fed one
-  (`render(Row.new)`); a repeat no single run can reach twice — the two arms of
-  an `if`, two `when` branches, a body and its `rescue`, two `return`s — has
-  nothing to hoist; and a command, a call whose result the method throws away
-  (`@out << row`, `raise`, `log.info(...)` as a statement), is repeated on
-  purpose. A repeated chain is listed once, at its longest.
+  `SecureRandom.hex`, `Token.generate`) are meant to differ, and so is a call
+  fed one (`render(Row.new)`); so are reads of the last regexp match
+  (`Regexp.last_match`, `$~`, `$1`), which every match replaces. A repeat no
+  single run can reach twice has nothing to hoist: the two arms of an `if`, two
+  `when` branches, a body and its `rescue`, or a call inside a `return`'s value
+  and its twin after that `return` (`return format(user.name) unless ok` then
+  `user.name`) — unless a loop or an `ensure` brings the second round again.
+  Nor do two reads with a command between them, since the command may change
+  the answer: `before = job.status; job.finalize!; job.status == before` must
+  read twice, and so must a read after a statement handed the receiver
+  (`Finalizer.run(job)`, `result = Retry.call(auth)`). `defined?(Rails.error)`
+  never evaluates its operand, so it doesn't count. A command, a call whose
+  result the method throws away (`@out << row`, `raise`, `log.info(...)` as a
+  statement), is repeated on purpose. A repeated chain is listed once, at its
+  longest. Two findings come at low confidence: one where every repeat is a
+  cheap read — a reader with no arguments (`job.status`) or a lookup by literal
+  key (`params[:id]`, `fetch("host")`) — though a clock read (`Time.now`,
+  `Date.today`, `clock.now`) or a reach through a chain (`job.run.status`)
+  keeps full confidence; and one whose repeat runs twice only when a parameter
+  default runs (`def run(at: clock.now)` with `clock.now` in the body).
 - **repeated_conditional** — one class testing the same condition in three or
   more places; polymorphism is overdue. A test on the object's own state
   counts across the whole class; a test on a local variable only within the
   method or block that binds it, since `all` in one method isn't `all` in the
-  next.
-- **state_sprawl** — more than four instance variables per class. Memoization
-  doesn't count as state: not `@x ||=`, not a memo predeclared as `@x = nil`
-  (and only ever filled lazily), not one each method fills only behind its own
-  `defined?(@x)` guard.
+  next. A compound test counts as its parts: `@closed`, `!@closed` and
+  `@closed || @exited` are three tests of `@closed` (a compound repeated whole
+  is listed once, by its first part). Some tests ask the world, not the object,
+  and are meant to be asked again: a database or file-system query
+  (`exists?`, `exist?`, a `where` or `find_by` chain), and a recheck after
+  something changed the receiver in the same method, such as a command on it
+  (`record.lock!`) or a block it runs (`record.with_lock do ... end`), as in
+  double-checked locking.
+- **state_sprawl** — a class whose instance state weighs more than four. Each
+  instance variable weighs one, and one first assigned in an ordinary instance
+  method rather than the constructor weighs two: it parks an intermediate result
+  between method calls, which is the real sprawl — except in a class built on a
+  `*Controller`, `*Mailer` or `*Component`, whose actions set variables to hand
+  them to a template. The constructor includes the
+  methods `initialize` calls on itself, and class-level state (assigned in the
+  class body or in `def self.x`) weighs one. A class whose variables are all set
+  at construction is quiet when its methods use them together: link two
+  variables whenever one method (other than `initialize`) touches both, and if
+  that joins them all into one group, the class is one cohesive handle (an IO
+  stream holding `@socket`, `@reader`, `@on_event`, `@closed`, `@exited`), not
+  sprawl. Memoization doesn't count as state: not `@x ||=`, not a memo
+  predeclared as `@x = nil` (and only ever filled lazily), not one each method
+  fills only behind its own `defined?(@x)` guard.
 - **assumed_state** — an ivar read that nothing the class can
   reach ever assigns: not `initialize`, not another of its own methods, not an
   `attr_writer`, not a reopening of the class, not a module it mixes in or a
@@ -518,21 +658,52 @@ What each one catches:
   assignment may live in there. When the ivar is one the class's own
   subclasses assign, the finding says so: a base class that waits for its
   subclasses to install its state is a fragile base class, so pass the value in
-  instead.
-- **manual_dispatch** — any `respond_to?` check, with or without a `send`
+  instead. An ivar that not even a subclass assigns is told apart from those:
+  it always reads nil, so it is a typo or a dead extension hook.
+- **manual_dispatch** — a `respond_to?` check, with or without a `send`
   after it: asking an object what it can do is a type check wearing a duck
   costume. Quiet inside `respond_to_missing?`, the answer Ruby requires of a
-  class that uses `method_missing`.
+  class that uses `method_missing`, and inside the `method_missing` it pairs
+  with. Quiet, too, for a probe of one of Ruby's own protocols (`:close`,
+  `:read`, `:rewind`, `:each`, `:call`, `:to_hash`, `:to_str`, `:to_unsafe_h`,
+  ...), for a probe of a method only Ruby's core values answer
+  (`v.respond_to?(:positive?)` asks whether `v` is a number, a nil check in
+  disguise), and for a probe of a library's object: a rescued library
+  exception (`rescue => e; e.respond_to?(:code)`), the result of a call on a
+  library constant, or a value type-guarded against one. A probe of `self`, an
+  ivar or a collaborator the method stores in one is stated with high
+  confidence; one of what the request carries (`params`, `request`), low. It
+  also catches the dispatch `respond_to?` stands in for: a `case` or `is_a?`
+  ladder over two or more of the codebase's own classes (over a library's,
+  `case node when Prism::CallNode`, it is boundary_sprawl's to judge), and a
+  `case` over the object's own `status`, `state`, `type` or `kind` (`@state`,
+  `self.status`) with two or more literal arms. A `case` whose every arm only
+  names a value (`when :draft then "Draft"`) is a lookup, and one over another
+  object's tag (`node.type`) is a question for that object's own type.
 - **module_initialize** — `initialize` in a mixin. Even a cooperative one that
   calls `super` makes the module carry constructor state into every class that
   includes it: implementation inheritance. Compose a collaborator instead.
-- **nil_check** — `nil?`, `== nil`, `when nil`: simulated polymorphism on the
-  cheapest type there is. When the method itself read the checked value from
-  outside the program — through a literal key (`params[:id]`, `data["name"]`,
-  `request.headers["X-Token"]`) or from a call on a constant the codebase
-  doesn't define (`JSON.parse(body)`) — the finding stays, but the advice
-  changes: translate the missing value where it enters, at the boundary,
-  rather than reach for a null object.
+- **nil_check** — `nil?`, `== nil`, `when nil`, `blank?` on a variable:
+  simulated polymorphism on the cheapest type there is. Safe navigation
+  (`@user&.name`), a literal fallback (`@limit || 10`) and `unless x` count too,
+  but only on a local, ivar or parameter the codebase itself leaves nil (it
+  assigns it `nil`, or defaults the parameter to `nil`) and never assigns
+  `true` or `false`: on anything else they are as likely a flag, a library's
+  nil contract, or the remedy. `@x ||=` is memoization, not a check. When
+  the method itself read the checked value from outside the program — through
+  a literal key (`params[:id]`, `data["name"]`, `request.headers["X-Token"]`)
+  or from a call on a constant the codebase doesn't define
+  (`JSON.parse(body)`) — the finding stays, but the advice changes: translate
+  the missing value where it enters, at the boundary, rather than reach for a
+  null object. A check that already is that translation, a parameter or
+  payload value replaced by a default (`return DEFAULT_TTL if
+  params[:ttl].nil?`), is quiet, and so is a validator's guard
+  (`return if starts_at.nil?` in a method registered with `validate`) on an
+  attribute a presence validation or a required `belongs_to` already
+  reports — unless the check adds the error itself. A check on a library's
+  object (a rescued library exception, a foreign call's result) is stated with
+  low confidence, and a predicate that fetches a record only to test it for
+  nil (`Record.find_by(id:).nil?`) is told to ask `exists?` instead.
 
 The class-level kinds (data_clump, repeated_conditional, state_sprawl,
 assumed_state, module_initialize) judge a class across every file that opens
@@ -792,8 +963,9 @@ hashira --format mermaid  # Mermaid diagram
 `--json` opens with what produced it — `version` (the schema, bumped when the
 shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
 `digest`), `kinds` (each kind's `count` and the number of `files` it touches),
-`accepted`, `packages`, `edges`, `folds` (single-type classes joined to a base
-or domain, `{from, to, via}`), `complexity`, `duplication`, and `hotspots`. A
+`accepted`, `packages`, `edges`, `folds` (packages joined to the one they belong
+to, `{from, to, via}`, `via` one of `base`, `suffix`, `plural`, `mixin`),
+`complexity`, `duplication`, and `hotspots`. A
 package with no edges at all reports `"i": null` rather than pretending 0/0 is
 maximally stable. The findings come in the same order as the text report, dealt
 across kinds.

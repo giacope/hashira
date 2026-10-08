@@ -155,4 +155,141 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
     expect(findings.first.detail[:site]).to(eq("thing.rb:1"))
     expect(findings.first.evidence).to(eq(["@m × 3 (lines 2, 4)"]))
   end
+
+  it "splits compound tests into their parts, so a flag tested alone and inside an || counts each time" do
+    findings = branching(<<~RUBY)
+      module App
+        module Zone
+          class Stream
+            def read = @closed ? nil : @io.read
+
+            def write(text)
+              @io.write(text) unless !@closed
+            end
+
+            def pump
+              return if @closed || @exited
+              @io.pump
+            end
+          end
+
+          class Gate
+            def a = (@open && @ready) ? 1 : 2
+
+            def b = (@open && @ready) ? 3 : 4
+
+            def c = (@open && @ready) ? 5 : 6
+
+            def d = (not @shut) ? 7 : 8
+
+            def e = () ? 9 : 10
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@closed × 3 (lines 4, 7, 11)", "@open × 3 (lines 17, 19, 21)"]))
+  end
+
+  it "ignores tests that query the database or the file system, whose answer can change between checks" do
+    findings = branching(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def a = Lock.exists?(@key) ? 1 : 2
+
+            def b = Lock.exists?(@key) ? 3 : 4
+
+            def c = Lock.exists?(@key) ? 5 : 6
+
+            def d = Order.where(id: @id).any? ? 1 : 2
+
+            def e = Order.where(id: @id).any? ? 3 : 4
+
+            def f = Order.where(id: @id).any? ? 5 : 6
+
+            def g = File.exist?(@path) ? 1 : 2
+
+            def h = File.exist?(@path) ? 3 : 4
+
+            def i = File.exist?(@path) ? 5 : 6
+
+            def j = User.find_by(id: @id) ? 1 : 2
+
+            def k = User.find_by(id: @id) ? 3 : 4
+
+            def l = User.find_by(id: @id) ? 5 : 6
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "ignores a recheck after a command on its receiver, or inside a block it runs (double-checked locking)" do
+    findings = branching(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def claim
+              return false if @job.claimed?
+              @job.lock!
+              return false if @job.claimed?
+              @job.claim!
+            end
+
+            def run
+              return if @job.claimed?
+              @job.with_lock do
+                return if @job.claimed?
+                work
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a recheck when nothing on the receiver changed before it in that method" do
+    findings = branching(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def claim
+              @job.lock!
+            end
+
+            def run
+              return if @job.claimed?
+              @log.write(1)
+              kept = @job.reload
+              touched = @job.each(&:touch)
+              return if @job.claimed?
+              done = @job.with_lock { work }
+              @job.claimed? ? [kept, touched, done] : nil
+            end
+
+            def again
+              @job.claim!
+              claimed? ? 1 : 2
+            end
+
+            def other = claimed? ? 1 : 2
+
+            def more = claimed? ? 1 : 2
+
+            def release
+              return if @job.claimed?
+              @job.unlock!
+              true
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@job.claimed? × 4 (lines 9, 13, 15, 28)", "claimed? × 3 (lines 20, 23, 25)"])
+    )
+  end
 end

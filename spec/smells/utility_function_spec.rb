@@ -230,4 +230,156 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Greets#greet"]))
   end
+
+  it "reads classes offered as alternatives at one site as peers, so a fake's shared methods are protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        module Zone
+          class Launcher
+            def launch(job) = job.to_s
+
+            def warm(job) = job.to_s
+
+            def stop(job) = job.to_s
+
+            def drain(job) = job.to_s
+
+            def pause(job) = job.to_s
+
+            def halt(job) = job.to_s
+          end
+
+          class FakeLauncher
+            def launch(job) = job.inspect
+
+            def note(job) = job.inspect
+          end
+
+          class Idle
+            def warm(job) = job.inspect
+          end
+
+          class Spare
+            def stop(job) = job.inspect
+          end
+
+          class Mute
+            def drain(job) = job.inspect
+          end
+
+          class Calm
+            def pause(job) = job.inspect
+          end
+
+          class Loose
+            def launch(job) = job.inspect
+          end
+
+          class Boot
+            def start
+              @launcher = live? ? Launcher.new : FakeLauncher.new
+              @idle = if live? then Launcher.new(1) else Idle.new end
+              @spare = (Spare.new unless live?) || Launcher.new
+              @mute = unless live? then Mute.new else (Launcher.new) end
+              @calm = if live? then Calm.new elsif warm? then Launcher.new end
+              @loose = live? ? Loose.build : Launcher.new
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(%w[App::Zone::Launcher#halt App::Zone::FakeLauncher#note App::Zone::Loose#launch])
+    )
+  end
+
+  it "reads a same-named class under a stand-in namespace as a peer of the real one" do
+    findings = utility(<<~RUBY)
+      class Courier
+        def hand(mail) = mail.to_s
+      end
+
+      module App
+        module Zone
+          class Mailer
+            def deliver(mail) = mail.to_s
+          end
+
+          class Courier
+            def hand(mail) = mail.inspect
+          end
+
+          module Fakes
+            class Mailer
+              def deliver(mail) = mail.inspect
+
+              def peek(mail) = mail.inspect
+            end
+          end
+
+          module Admin
+            class Mailer
+              def deliver(mail) = mail.inspect
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(%w[Courier#hand App::Zone::Courier#hand App::Zone::Fakes::Mailer#peek App::Zone::Admin::Mailer#deliver])
+    )
+  end
+
+  it "reads a Fake, Null, or Stub class whose public methods a project class also offers as that class's peer" do
+    findings = utility(<<~RUBY)
+      module App
+        module Zone
+          class Logger
+            def info(line) = line.to_s
+
+            def warn(line) = line.to_s
+
+            def error(line) = line.to_s
+
+            def tidy(line) = line.to_s
+          end
+
+          class NullLogger
+            def initialize(sink) = @sink = sink
+
+            def info(line) = line.inspect
+
+            def warn(line) = line.inspect
+
+            private
+
+            def flush(line) = line.inspect
+          end
+
+          class LoggerStub
+            def error(line) = line.inspect
+          end
+
+          class FakeClock
+            def info(line) = line.inspect
+
+            def travel(line) = line.inspect
+          end
+
+          class Quiet
+            def warn(line) = line.inspect
+          end
+
+          class StubCache
+            private
+
+            def tidy(line) = line.inspect
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(%w[App::Zone::Logger#tidy App::Zone::FakeClock#info App::Zone::FakeClock#travel App::Zone::Quiet#warn])
+    )
+  end
 end

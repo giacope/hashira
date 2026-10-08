@@ -21,11 +21,37 @@ once after upgrading, after reading what the ratchet reports:
 - Complexity scores methods it could not see before (`private def`,
   `class << self`, `class_methods do`) and charges nesting for ternaries and
   rescue modifiers, so more methods cross the threshold.
+- In a Rails app, controllers, controller concerns and serializers now report
+  as one `(web)` package instead of joining domain packages, folds gain the
+  `plural` and `mixin` kinds, and SDP needs a measurable gap, so namespace
+  baselines see edges and findings move. Smell and clone fixes from the
+  precision audit (below) retire findings; a few kinds also see new ones.
 
 Across the fifteen field repos, findings fell from 15,557 to 12,711. Every
 true positive the earlier triage confirmed still fires.
 
 ### Added
+
+- A precision audit of 643 findings on a production Rails app judged 57%
+  of them sound. The fixes below target the causes of the false positives
+  (detectors matching names instead of types, ignoring reachability, and
+  missing framework or protocol contracts). Each one is pinned by the
+  audit's own false positive and a true positive that must still fire.
+- A finding can state its own `confidence`, overriding its kind's: repeated
+  cheap reads, parameter defaults, request-derived `respond_to?` probes, nil
+  checks on library objects and clone conventions are `low`, and a low
+  finding is listed after the confident ones of its kind.
+- `manual_dispatch` also catches `case`/`is_a?` dispatch over two or more of
+  the project's own types, and a `case` that does more than map the object's
+  own status, state, type or kind to a value; dispatch over a library's types
+  stays boundary_sprawl's.
+- `nil_check` also sees `blank?`, and `&.`, `x || default` and `unless x` on
+  a local, ivar or parameter the code itself leaves nil.
+- Duplication names two new variances: `nil_guard`, twins that differ only by
+  `&.`, and `convention`, one finding for a declaration repeated at ten or
+  more sites, instead of arbitrary pairs of them.
+- Cycle findings list in `detail.folded` the members that are in the knot
+  only through folded types.
 
 - A `.hashira.yml` where hashira runs holds the options you would otherwise
   type every time: `directories`, `fail-on`, `skip`, `kind`, `top`,
@@ -51,6 +77,33 @@ true positive the earlier triage confirmed still fires.
   kind once — `nil_check  113 in 92 files` — withheld findings included.
 
 ### Changed
+
+- Namespace packaging knows Rails layers. Everything under `app/controllers`
+  (concerns included), `app/serializers` and `app/resources` is the `(web)`
+  package: never suffix- or base-folded into a domain (`OrderResource` stays
+  out of `Order`, `CurrentResource` out of `Current`), never a package of its
+  own namespace (`Admin::OrdersController`), and counted only as a client.
+  SDP, cycles, wide edges and audiences are judged on the domain graph. In
+  the audited app 36 of the cycle's 53 members entered only through folds.
+- `Foos` folds into `Foo` when both exist, and a module that only extends or
+  includes another (`module OrderShipped; extend Notifier; end`) folds into it.
+- A top-level `Payments::Rate = …` or `Payments::Ledger.private_constant` is
+  charged to `Payments`, not `(root)`, and a constant's own definition is no
+  longer an edge into itself. `class_name: "A::B"` association strings count
+  as references.
+- An SDP violation needs at least three edges at each end and a gap of 0.10,
+  and an edge inside a cycle is cycle evidence, not an SDP violation.
+- A cycle's cut must leave no strongly connected part larger than half the
+  knot; detaching one leaf no longer passes.
+- A wide edge counts a nested class with the class that holds it
+  (`Gate`, `Gate::Policy`, `Gate::Exceeded` are one API). Mixed audience
+  ignores `(root)` as a client and parts whose clients define fewer than
+  three types.
+- `state_sprawl` weighs state, not a count: a variable first set outside the
+  constructor weighs two (an intermediate result parked between calls), and
+  a class whose methods use all its constructor state together is one
+  cohesive handle. A controller's, mailer's or component's actions hand
+  variables to a template, so they weigh one.
 
 - With several directories, every file is named as you would open it from
   where hashira runs: `app/models/user.rb`, `activerecord/lib/active_record/base.rb`.
@@ -140,6 +193,45 @@ true positive the earlier triage confirmed still fires.
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+- `feature_envy` no longer envies core values (locals built from literals,
+  constants, `params.permit`, `.to_h` or `.map`), `fetch(:k, default)`, a
+  mapper whose reads all feed a hash, keyword or `new`/`render`/`update!`
+  argument, a sum type normalised with `is_a?`, fields passed alongside their
+  whole, or a method that fills a polymorphic role.
+- `utility_function` and `feature_envy` treat fakes and duck-typed
+  strategies as peers: classes chosen between at one site
+  (`live? ? Launcher.new : FakeLauncher.new`), `Fake::X` and `X`, and
+  `Fake*`/`*Stub`/`Null*` classes whose public methods another class has.
+- `repeated_call` no longer pairs calls that never both run (one in a
+  `return`'s value and one after it), the operand of `defined?`, reads a
+  command or hand-off between them must change (`job.finalize!`), match
+  globals, or calls in different blocks; `generate` mints. Repeated cheap
+  readers and literal-key reads, and a parameter default repeated in the
+  body, are rated low; clock reads and reach-through chains are not.
+- Duplication reads a class body's reader-block and lambda macros
+  (`attribute(:id, &:id)`, `belongs_to :tenant, default: -> { Current.tenant }`)
+  as declarations, ignores macro names a class body repeats when judging
+  structure, skips a lone log line or error report, and drops call sites of a
+  method the project already defines and inverse pairs (`lock`/`unlock`).
+- `manual_dispatch` passes over protocol probes (`close`, `read`, `to_hash`,
+  `call`, …), the `method_missing`/`respond_to_missing?` pair, probes on a
+  library's objects (a rescued exception) and nil checks in disguise
+  (`respond_to?(:positive?)`).
+- `control_parameter` treats a comparison with anything but a literal or
+  constant as data (`current_epoch == expected_epoch`), and a conditional
+  that only maps a flag to literals or translation keys as a lookup.
+- `nil_check` skips a validator's guard on an attribute a presence validation
+  or required `belongs_to` already covers, and a default supplied where a
+  parameter or payload value enters; a `find_by(...).nil?` predicate is told
+  to use `exists?`.
+- `data_clump` needs the group to travel (one holder passes it to another),
+  and ignores polymorphic methods, `_`-prefixed and defaulted parameters.
+- `assumed_state` tells an ivar nothing ever assigns (a typo or dead hook)
+  apart from one subclasses install.
+- `repeated_conditional` splits compound tests into their parts
+  (`@closed` and `@closed || @exited`), and ignores database queries and a
+  recheck after a command on the same receiver (double-checked locking).
 
 - Complexity scores every method a class body declares, not only its
   top-level `def`s: `private def` / `protected def`, methods inside
