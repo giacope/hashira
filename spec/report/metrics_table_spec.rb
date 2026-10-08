@@ -83,7 +83,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
         hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings)
       )
       output = capture { Hashira::Report::Text.new(view).print }
-      expect(output).to(include("Folded (single-type classes joined to their base or domain):"))
+      expect(output).to(include("Folded (packages joined to the one they belong to):"))
       expect(output).to(include("  SandboxPolicy -> Sandbox (suffix)\n\nFindings ("))
     end
   end

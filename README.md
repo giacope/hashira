@@ -244,17 +244,26 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
   Stable Dependencies Principle ("depend in the direction of stability"), one of
   Robert C. Martin's [package principles](https://en.wikipedia.org/wiki/Package_principles).
   Instabilities are compared as the table shows them, to two decimals: two
-  packages that both read 0.33 are equally stable.
+  packages that both read 0.33 are equally stable. A violation needs a gap of
+  at least 0.10 and at least three edges (Ca + Ce) at each end, since one edge
+  in and one out already reads 0.50. An edge between two packages in the same
+  cycle is never an SDP violation: inside a knot, stability points both ways,
+  and the cycle finding covers it.
 - **Cycle** — packages depending on each other in a loop.
 - **Mixed audience** — the constants of one package split into parts with
   separate client bases: one set of packages leans on one slice, another set on
   a disjoint slice. Each part is a separate package in disguise; the finding
   names the seam, and — when most clients also share a few constants — the
   shared base layer to extract. Composition roots blur the picture only if they
-  touch a constant some other client also touches, which facades avoid.
+  touch a constant some other client also touches, which facades avoid. The
+  `(root)` package, the usual composition root, is never an audience, and a part
+  counts only when its clients together define at least three types, so a
+  two-class satellite does not split a package on its own.
 - **Wide edge** — one package reaches into another through five or more
   distinct constants. Every constant on the edge is a reason for the client to
-  change; a facade narrows the interface to one.
+  change; a facade narrows the interface to one. A constant nested in a class
+  the edge also reaches counts as that class: `Gate`, `Gate::Policy` and
+  `Gate::Exceeded` are one interface.
 - **Roll call** — the same list of three or more words (symbols, string keys)
   is maintained by hand in three or more files across packages. The list wants
   to be data with a single owner — a registry the other sites derive from.
@@ -262,10 +271,13 @@ domain layer near 0.00. The findings are about arrows pointing the wrong way:
 Each finding comes with file-level evidence. A cycle is reported once per knot
 of packages that can all reach one another (a strongly connected component),
 keyed by its alphabetically first member, with the cheapest cut: the lightest
-set of edges whose removal splits the knot, found by dropping the lightest
-edges until it splits and then giving back any it did not need. The evidence
-is the references on those edges — the lines to change. What a finding means
-for your design is your call.
+set of edges whose removal leaves no knot bigger than half the members (a knot
+of two or three is broken outright, and detaching one leaf never counts), found
+by dropping the lightest edges until that holds and then giving back any it did
+not need. The evidence is the references on those edges — the lines to change.
+A member that is in the knot only because of types folded into it (see
+[Rails apps](#rails-apps)) is named as such in the message and listed under
+`folded`. What a finding means for your design is your call.
 
 ## Rails apps
 
@@ -310,7 +322,39 @@ neither does a library namespace the project only patches: one opened in files
 not named for it, with no class derived inside it (`class Rufus::Scheduler` in
 `huginn_scheduler.rb`, `module Rack` in `action_dispatch.rb`). Only what the
 project provably creates there — a class with a superclass, a constant
-assignment — stays its own.
+assignment — stays its own. An association's `class_name: "A::B"` string
+(`has_many`, `has_one`, `belongs_to`, `has_and_belongs_to_many`) is a reference
+to `A::B`, and a top-level `Payments::Rate = …` or
+`Payments::Ledger.private_constant :Row` is charged to `Payments`, not to
+`(root)`.
+
+**Presentation stays out of the domain.** Controllers (with their concerns),
+serializers and resources — the files under `app/controllers`,
+`app/serializers` and `app/resources` — are charged to one `(web)` package,
+whatever namespace they are written in: `Admin::OrdersController` does not make
+`Admin` a package, `Orders::RefundsController` does not land in `Orders`, and
+`OrderResource` does not fold into `Order`. The findings are worked out on the
+domain graph, with `(web)` counted once as a client of each package it uses:
+its edges into the domain point the right way, so they are never SDP
+violations, cycle members or wide edges, and all of a package's controllers
+and serializers are one audience. A domain edge into `(web)` stays in the
+dependency map but out of instability and the findings; `--package-by folder`
+shows the layers whole.
+
+**Folding.** A package that is part of another is folded into it, and every
+fold is listed under the tables (and as `folds` in JSON) with how it was found:
+
+- `base` — a lone class joins its superclass's package
+  (`GraceNotification < AccountNotification < Notification`);
+- `suffix` — `OrderPolicy`, `OrderDecorator` (and a `…Serializer` or
+  `…Resource` outside the presentation folders) join `Order`;
+- `plural` — `Orders`, the model's jobs and services, joins `Order` when both
+  exist (`-s`, `-es`, `-ies`);
+- `mixin` — a module whose body only extends or includes others
+  (`module OrderShipped; extend Notifier; end`) joins the first of them the
+  project defines, so a family of one-liners is not a family of packages.
+
+Controllers never fold, by suffix or by base class.
 
 Either grouping can be forced anywhere:
 
@@ -792,8 +836,9 @@ hashira --format mermaid  # Mermaid diagram
 `--json` opens with what produced it — `version` (the schema, bumped when the
 shape changes), `packaging`, `targets`, `files` — then `findings` (each with its
 `digest`), `kinds` (each kind's `count` and the number of `files` it touches),
-`accepted`, `packages`, `edges`, `folds` (single-type classes joined to a base
-or domain, `{from, to, via}`), `complexity`, `duplication`, and `hotspots`. A
+`accepted`, `packages`, `edges`, `folds` (packages joined to the one they belong
+to, `{from, to, via}`, `via` one of `base`, `suffix`, `plural`, `mixin`),
+`complexity`, `duplication`, and `hotspots`. A
 package with no edges at all reports `"i": null` rather than pretending 0/0 is
 maximally stable. The findings come in the same order as the text report, dealt
 across kinds.
