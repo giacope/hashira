@@ -21,7 +21,7 @@ ignore:
   reason: A write and a later read of the same local are separate nodes with at least one token between them (an
     operator, a newline, a separator), so no write ever ends at the offset where a read begins and < agrees with <=
 - file: lib/hashira/smells/check.rb
-  line: 11
+  line: 32
   label: condition => true
   reason: Finding#trace reads the shape only when the evidence is empty and to_h drops it, so a shape computed for a
     finding with evidence is never observed; the guard only skips fingerprinting it (about 10% of smells time on rubocop)
