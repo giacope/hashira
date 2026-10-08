@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "reads"
+require_relative "type_tests"
 
 class Hashira::Smells::Foreign
-  TYPE_TESTS = %i[is_a? kind_of? instance_of?].freeze
-  LOOKUPS = %i[[] fetch].freeze
+  include Hashira::Smells::Reads
+
+  TYPE_TESTS = Hashira::Smells::TypeTests::CHECKS
 
   KEYED_READS = %i[[] fetch values_at dig key?].freeze
 
@@ -124,28 +127,7 @@ class Hashira::Smells::Foreign
 
   def unowned?(node) = !@ownership.owned?(Hashira::Analysis::Syntax.segments(node))
 
-  def tests(&)
-    (probes(&) + arms(&)).map { Hashira::Analysis::Syntax.segments(it) }.reject(&:empty?) + lookups(&)
-  end
+  def tests(&) = checks.of(&)
 
-  def probes(&)
-    body.grep(Prism::CallNode).select { TYPE_TESTS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
-  end
-
-  def arms(&)
-    body.grep(Prism::CaseNode).select { local?(it.predicate, &) }.flat_map(&:conditions).flat_map(&:conditions)
-  end
-
-  def lookups(&)
-    body.grep(Prism::CallNode).select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }.flat_map { @ownership.keys(Hashira::Analysis::Syntax.segments(it.receiver)) }
-  end
-
-  def sorts?(argument, &)
-    argument.is_a?(Prism::CallNode) && argument.name == :class &&
-      local?(argument.receiver, &)
-  end
-
-  def local?(node, &) = node.is_a?(Prism::LocalVariableReadNode) && yield(node.name)
-
-  def key(call) = call.arguments&.arguments&.first
+  def checks = @_checks ||= Hashira::Smells::TypeTests.new(body, @ownership)
 end
