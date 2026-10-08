@@ -62,6 +62,8 @@ class Hashira::Duplication::Fragment
 
   def recurring = @setting.recurring
 
+  def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
+
   private
 
   def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)

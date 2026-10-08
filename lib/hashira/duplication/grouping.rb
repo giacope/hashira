@@ -13,8 +13,10 @@ class Hashira::Duplication::Grouping
   private
 
   def distinct
-    @group.sort_by { -it.mass }.each_with_object([]) do |fragment, kept|
+    @group.sort_by { [-it.mass, -kin[it.identifiers]] }.each_with_object([]) do |fragment, kept|
       kept << fragment unless fragment.touches?(kept)
     end
   end
+
+  def kin = @_kin ||= @group.map(&:identifiers).tally
 end

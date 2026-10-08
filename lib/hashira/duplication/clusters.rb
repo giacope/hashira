@@ -54,5 +54,5 @@ class Hashira::Duplication::Clusters
 
   def penalty(cluster) = recurrences(cluster) * PENALTY_PER_RECURRENCE
 
-  def recurrences(cluster) = [cluster.size - PAIR, 0].max
+  def recurrences(cluster) = cluster.convention? ? 0 : [cluster.size - PAIR, 0].max
 end

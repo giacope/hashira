@@ -424,6 +424,14 @@ it does inside Ruby:
   pairwise matches. A smaller clone whose copies sit inside a bigger one's is
   reported only when at least two of its copies lie outside it: one more site is
   not a new finding.
+- **Conventions, once.** A fragment ten or more files repeat, sharing its names
+  rather than only its shape, is a convention — usually on purpose. It pays no
+  recurrence penalty and is reported as one lower-confidence finding listing every
+  site (`14 sites follow one convention (mass 17)`), and a clone that is little
+  more than that line (less than the base floor heavier) folds into it rather
+  than surfacing as an arbitrary pair of files that hold it. When copies tie on
+  size, the ones whose names another copy shares are taken first, so a real twin
+  pair is not crowded out by look-alikes of the same shape.
 - **It tells you how to fix it.** hashira diffs the copies and classifies what
   varies: only literals (strings, numbers, symbols, patterns) → extract a method
   and pass them as arguments; only the receiver or a name → extract a method

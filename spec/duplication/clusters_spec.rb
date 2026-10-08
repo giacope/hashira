@@ -358,6 +358,40 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters("a.rb" => inverse, "b.rb" => "def c(why)\n#{body["lock"]}end\n").first.size).to(eq(3))
   end
 
+  def guard = "before_action { authorize!(:read, model.constantize, scope: current_tenant.id, via: :role) }"
+
+  def authorized(count, line = guard)
+    shown = ->(n) { "class C#{n}\n #{line}\n def show#{n}\n  render_thing(:k#{n})\n end\nend\n" }
+    (1..count).to_h { ["c#{it}.rb", shown[it]] }
+      .merge("c1.rb" => "class C1\n #{line}\n before_action :a, if: -> { params[:x].present?(1) }\nend\n")
+      .merge("c2.rb" => "class C2\n #{line}\n before_action :b, if: -> { params[:y].present?(2) }\nend\n")
+  end
+
+  def twins
+    body = " def index\n  records = scope.where(owner: current_user).order(created_at: :desc)\n  " \
+      "render json: records.map { |r| serialize(r, detail: :full) }, status: :ok\n end\nend\n"
+    { "t1.rb" => "class T1\n#{body}", "t2.rb" => "class T2\n#{body}" }
+  end
+
+  def kinds(sources) = clusters(sources).map { [Hashira::Duplication::Delta.new(it).kind, it.size] }
+
+  it "reports a line ten files repeat as one convention listing every site, not as pairs that hold it" do
+    sources = authorized(8).merge(twins.transform_values { it.sub("\n", "\n #{guard}\n") })
+    expect(kinds(sources)).to(eq([[:identical, 2], [:convention, 10]]))
+  end
+
+  it "holds a repeated line under ten sites, or one whose sites share nothing but its shape, to the recurrence floor" do
+    expect(clusters(authorized(9)).map(&:size)).to(eq([2]))
+    unlike = ->(n) { "class U#{n}\n b#{n} { a#{n}!(:read, m#{n}.k#{n}, s: t#{n}.i#{n}, v: :r) }\nend\n" }
+    expect(clusters((1..12).to_h { ["u#{it}.rb", unlike[it]] })).to(be_empty)
+  end
+
+  it "keeps a bigger clone that holds the convention line, once it outweighs the line by the base floor" do
+    heavier = "render_thing(seed: fetch(:a), kind: fetch(:b), key: :k"
+    longer = authorized(10).transform_values { it.sub("render_thing(:k", heavier) }
+    expect(clusters(longer).map(&:size)).to(eq([8, 10]))
+  end
+
   it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
     expect(nested(1).map { it.sites.map(&:file) }).to(eq([%w[a.rb b.rb]]))
   end
@@ -389,6 +423,16 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   end
 
   def head = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
+
+  describe(Hashira::Duplication::Grouping) do
+    it "breaks a tie between overlapping fragments in favour of the one another site shares names with" do
+      body = ->(first, last) { "def m\n #{first}.go(1)\n mid.run\n #{last}.go(2)\nend\n" }
+      all = fragments("a.rb" => body["alpha", "beta"], "b.rb" => body["gamma", "beta"])
+      group = %w[a.rb:2-3 a.rb:3-4 b.rb:3-4].map { |range| all.find { it.range == range } }
+      sites = [group, group.reverse].map { described_class.new(it).cluster.sites.map(&:range).sort }
+      expect(sites).to(eq([%w[a.rb:3-4 b.rb:3-4]] * 2))
+    end
+  end
 
   describe(Hashira::Duplication::Index) do
     it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do

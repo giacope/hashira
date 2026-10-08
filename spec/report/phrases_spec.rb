@@ -86,6 +86,12 @@ RSpec.describe(Hashira::Report::Phrases) do
     )
   end
 
+  it "names a convention as one, by the sites that follow it" do
+    expect(message(clone(:convention, hot: false))).to(
+      start_with("3 sites follow one convention (mass 45) — a convention the code repeats on purpose")
+    )
+  end
+
   it "warns when both sites of a clone churn" do
     expect(message(clone(:identical, hot: true))).to(
       end_with("call it from each site. Both sites change often — fix one, miss the other.")
