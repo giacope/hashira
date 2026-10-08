@@ -12,6 +12,13 @@ class Hashira::Smells::Foreign
 
   LITERALS = [Prism::HashNode, Prism::KeywordHashNode, Prism::ArrayNode, Prism::StringNode].freeze
 
+  STOCK = [
+    *LITERALS, Prism::InterpolatedStringNode, Prism::SymbolNode, Prism::IntegerNode, Prism::FloatNode,
+    Prism::ConstantReadNode, Prism::ConstantPathNode
+  ].freeze
+
+  SHAPES = %i[permit to_h to_a map flat_map filter_map].freeze
+
   STATE = [
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode,
     Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode,
@@ -25,7 +32,7 @@ class Hashira::Smells::Foreign
 
   def dismiss?(local)
     name = local.name
-    convert? || fenced?(name) || wire?(name) || built?(name) || derived?(local) || rescued?(name)
+    convert? || fenced?(name) || wire?(name) || stock?(name) || derived?(local) || rescued?(name)
   end
 
   def reaches
@@ -53,8 +60,10 @@ class Hashira::Smells::Foreign
 
   def fenced?(name)
     tested = tests { it == name }
-    tested.any? && tested.none? { @ownership.owned?(it) }
+    tested.any? && (tested.none? { @ownership.owned?(it) } || indexed?(name))
   end
+
+  def indexed?(name) = body.grep(Prism::CallNode).any? { local?(it.receiver) { it == name } && keyed?(it) }
 
   def wire?(name)
     calls = body.grep(Prism::CallNode).select { |call| local?(call.receiver) { it == name } }
@@ -62,6 +71,10 @@ class Hashira::Smells::Foreign
   end
 
   def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
+
+  def stock?(name) = writes(name).any? { staple?(it.value) }
+
+  def staple?(value) = STOCK.include?(value.class) || (value.is_a?(Prism::CallNode) && SHAPES.include?(value.name))
 
   def derived?(local)
     (writes(local.name).map(&:value) + yielders(local)).any? { spawned?(it) }
@@ -83,11 +96,7 @@ class Hashira::Smells::Foreign
 
   def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
-  def keyed?(call)
-    names = call.arguments&.arguments
-    KEYED_READS.include?(call.name) && names&.any? &&
-      names.all? { KEYS.include?(it.class) }
-  end
+  def keyed?(call) = KEYED_READS.include?(call.name) && KEYS.include?(key(call).class)
 
   def writes(name) = among(Prism::LocalVariableWriteNode, name)
 

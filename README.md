@@ -452,14 +452,26 @@ What each one catches:
   their parameter `r` are three variables, not one — and the evidence lists
   self's references too, so "more than" can be checked. Stays quiet when the
   method's own body proves the envied thing is foreign — type-guarded (or
-  table-dispatched) only against constants the codebase never defines, read
-  purely through literal keys (`msg["id"]`), built from a literal, derived
-  from a foreign call (or a call chain rooted in one) in the method itself,
-  handed to a block by one (`Faraday.new do |f|`), rescued from a foreign
-  error class, or consumed by a stateless converter that ends by building a
-  typed object — because "move the method" needs a destination you own. Block
-  parameters referenced together, as in a comparator (`sort { |a, b| ... }`),
-  are peers, not a destination.
+  table-dispatched) only against constants the codebase never defines, or
+  type-tested and read by key, as a sum type is (`arg.is_a?(Order) ? arg.id :
+  arg[:id]`), read purely through keyed reads whose key is a literal
+  (`msg["id"]`, `fetch(:ids, [])`), a core value assigned from a literal, a
+  constant, `params.permit(...)`, `.to_h`, `.to_a` or a `.map` (so `names.size`
+  is not envy of `names`), derived from a foreign call (or a call chain rooted
+  in one) in the method itself, handed to a block by one (`Faraday.new do
+  |f|`), rescued from a foreign error class, or consumed by a stateless
+  converter that ends by building a typed object — because "move the method"
+  needs a destination you own. A mapper is quiet too: when every envied read
+  of a name feeds a value in a hash literal, or a keyword passed to `.new`,
+  `.from`, `render*`, `assign_attributes` or `update!`
+  (`{ code: error.code, message: error.message }`), translating one shape into
+  another is the method's job. So is a call that takes a name along with its
+  own fields (`log.record!(entry: entry, size: entry.size)`): the redundancy
+  lives in that callee's signature, which hashira can't name from the call
+  site, not in an envy of `entry`. Block parameters referenced together, as in
+  a comparator (`sort { |a, b| ... }`), are peers, not a destination, and a
+  method that fills a role its peers share (see utility_function) is never
+  envious, since moving it would break the protocol.
 - **boundary_sprawl** — 12+ methods across 3+ files each type-guard against the
   same foreign root (`Prism`, `ActiveRecord`, ...). One method inspecting a
   foreign type is a fact of life; a sprawl of them usually means a missing
@@ -472,7 +484,14 @@ What each one catches:
   `module_function` and `extend self` modules are exempt — that's what they're
   for. So is polymorphism: a method an owned ancestor or descendant also
   defines, or one a sibling class under the same superclass defines too (every
-  job's `perform`), fills a role rather than hiding a function. So is a hook: on
+  job's `perform`), fills a role rather than hiding a function. Duck-typed
+  peers count as kin too: classes offered as alternatives at one site
+  (`launcher = live? ? Launcher.new : FakeLauncher.new`, or an `if`/`unless`
+  or `||` choosing between constructors), a class under a stand-in namespace
+  and the one it imitates (`Fakes::Mailer` and `Mailer`), and a `Fake*`,
+  `Null*`, `Dummy*`, `*Stub` or `*Double` class whose public methods another
+  class in the codebase also offers. What they share is protocol, so neither
+  this nor feature_envy fires on a stub's side of it. So is a hook: on
   a class built on a superclass or mixin from outside the codebase
   (`class Plugin < LintRoller::Plugin`), a method nothing in the codebase calls
   is one the library calls, and can be neither made private nor moved. What a concern
