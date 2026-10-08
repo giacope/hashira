@@ -519,7 +519,14 @@ What each one catches:
   more places; polymorphism is overdue. A test on the object's own state
   counts across the whole class; a test on a local variable only within the
   method or block that binds it, since `all` in one method isn't `all` in the
-  next.
+  next. A compound test counts as its parts: `@closed`, `!@closed` and
+  `@closed || @exited` are three tests of `@closed` (a compound repeated whole
+  is listed once, by its first part). Some tests ask the world, not the object,
+  and are meant to be asked again: a database or file-system query
+  (`exists?`, `exist?`, a `where` or `find_by` chain), and a recheck after
+  something changed the receiver in the same method, such as a command on it
+  (`record.lock!`) or a block it runs (`record.with_lock do ... end`), as in
+  double-checked locking.
 - **state_sprawl** — a class whose instance state weighs more than four. Each
   instance variable weighs one, and one first assigned in an ordinary instance
   method rather than the constructor weighs two: it parks an intermediate result
