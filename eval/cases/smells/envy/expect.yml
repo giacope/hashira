@@ -1,0 +1,7 @@
+# feature_envy is advice to move code onto the envied object's class. Toward
+# a parameter of a type the codebase does not own (a parser node from a
+# library) there is nowhere to move it. Toward an owned type there is.
+absent:
+  - {kind: feature_envy, package: "Lint::Puts#on_send"}
+present:
+  - {kind: feature_envy, package: "Shop::Checkout#total"}

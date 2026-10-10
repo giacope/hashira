@@ -1,0 +1,9 @@
+# Ledger#balances and Stock#levels are one method under two names. Roster#active
+# has the same node-type skeleton but sends other messages (select, reject,
+# unless, a logger): a different method, not a near-miss copy.
+args: [lib/app]
+clusters:
+  - ["ledger.rb:3", "stock.rb:3"]
+apart:
+  - ["roster.rb:3", "ledger.rb:3"]
+  - ["roster.rb:3", "stock.rb:3"]

@@ -1,0 +1,4 @@
+# A rescue whose only statement reports the error is its message: copies of
+# it are not a clone to extract.
+args: [lib/app]
+count: 0

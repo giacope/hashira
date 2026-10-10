@@ -1,0 +1,178 @@
+---
+- key: rubocop|state_sprawl|RuboCop::Config
+  evidence:
+  - "@badge_config_cache"
+  - "@clusivity_config_exists_cache"
+  - "@for_cop"
+  - "@hash"
+  - "@loaded_path"
+  - "@validator"
+  label: fp
+  why: 'two of the six are memo caches (and for_cop a lazily filled hash): caching,
+    not state'
+- key: rubocop|state_sprawl|RuboCop::Cop::AnnotationComment
+  evidence:
+  - "@colon"
+  - "@comment"
+  - "@keyword"
+  - "@keywords"
+  - "@margin"
+  - "@note"
+  - "@space"
+  label: tp
+  why: 'seven variables, five of them the parsed parts of one annotation (margin,
+    keyword, colon, space, note): a parsed-parts value object'
+- key: rubocop|state_sprawl|RuboCop::Cop::Metrics::Utils::CodeLengthCalculator
+  evidence:
+  - "@count_comments"
+  - "@foldable_checks"
+  - "@foldable_types"
+  - "@node"
+  - "@processed_source"
+  label: tp
+  why: foldable_types and foldable_checks are one folding policy held as two, beside
+    the subject and options
+- key: rubocop|state_sprawl|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector
+  evidence:
+  - "@config"
+  - "@new_elements"
+  - "@node"
+  - "@rescue_result"
+  - "@rhs"
+  label: tp
+  why: 'node plus four values derived from it (rhs, new_elements, rescue_result, config):
+    compute the derivations instead of holding them'
+- key: rubocop|state_sprawl|RuboCop::Cop::VariableForce::Variable
+  evidence:
+  - "@assignments"
+  - "@captured_by_block"
+  - "@declaration_node"
+  - "@name"
+  - "@references"
+  - "@scope"
+  label: fp
+  why: 'the six fields are one entity''s identity and usage lists (name, node, scope,
+    assignments, references, capture): a cohesive record'
+- key: rubocop|state_sprawl|RuboCop::Formatter::DisabledConfigFormatter
+  evidence:
+  - "@config_for_pwd"
+  - "@config_to_allow_offenses"
+  - "@detected_styles"
+  - "@exclude_limit"
+  - "@exclude_limit_option"
+  label: tp
+  why: 'exclude_limit and exclude_limit_option are one setting held twice, alongside
+    three more: real sprawl'
+- key: rubocop|state_sprawl|RuboCop::Formatter::SimpleTextFormatter
+  evidence:
+  - "@total_correctable_count"
+  - "@total_correction_count"
+  - "@total_offense_count"
+  label: fp
+  why: 'three running totals of a streaming formatter, and the message says 3 while
+    the rule needs more than 4: the doubled weight is invisible to the reader'
+- key: rubocop|state_sprawl|RuboCop::Runner
+  evidence:
+  - "@aborting"
+  - "@config_store"
+  - "@errors"
+  - "@options"
+  - "@processed_sources"
+  - "@warnings"
+  label: tp
+  why: 'errors and warnings accumulate beside options, store, abort flag and sources:
+    the accumulators are one report'
+- key: rubygems.org|state_sprawl|Avo::Actions::DeleteUser::ActionHandler
+  evidence:
+  - "@blocked_user_count"
+  - "@failed_user_count"
+  - "@keep_gems_published"
+  - "@last_audit"
+  - "@scheduled_user_count"
+  label: tp
+  why: 'three running counters plus options and an audit: the tallies belong in one
+    result object'
+- key: rubygems.org|state_sprawl|Avo::AuditedChangesRecordDiff::ShowComponent
+  evidence:
+  - "@changes"
+  - "@gid"
+  - "@new_resource"
+  - "@old_resource"
+  - "@resource"
+  - "@unchanged"
+  - "@user"
+  - "@view"
+  label: tp
+  why: 'eight inputs and derivations held by one component: the old/new/changes trio
+    is one diff object'
+- key: rubygems.org|state_sprawl|Mailer
+  evidence:
+  - "@api_key"
+  - "@api_key_name"
+  - "@body"
+  - "@commit_url"
+  - "@created_by_user"
+  - "@deleted_at"
+  - "@disabled_at"
+  - "@enabled_at"
+  - "@enabled_scopes"
+  - "@memberships"
+  - "@nickname"
+  - "@notified_user"
+  - "@ownerships"
+  - "@pushed_by_user"
+  - "@rubygem_trusted_publisher"
+  - "@sub_title"
+  - "@token"
+  - "@user"
+  - "@version"
+  - "@webauthn_credential"
+  - "@yanked_by_user"
+  label: fp
+  why: 'each mailer action assigns its own template variables, read only by the views:
+    per-action handoff, not state the object holds'
+- key: rubygems.org|state_sprawl|NotifyWebHookJob
+  evidence:
+  - "@host_with_port"
+  - "@http"
+  - "@kwargs"
+  - "@poll_delivery"
+  - "@protocol"
+  - "@rubygem"
+  - "@version"
+  - "@webhook"
+  label: tp
+  why: 'a job that parks eight values between perform''s helpers: a delivery object
+    would hold them'
+- key: rubygems.org|state_sprawl|OrganizationsController
+  evidence:
+  - "@gems"
+  - "@gems_count"
+  - "@latest_events"
+  - "@memberships"
+  - "@memberships_count"
+  - "@organization"
+  label: fp
+  why: 'actions assign template variables read only by views: handoff'
+- key: rubygems.org|state_sprawl|ProfilesController
+  evidence:
+  - "@multi_owner_gems"
+  - "@only_owner_gems"
+  - "@rubygems"
+  - "@security_events"
+  - "@user"
+  label: fp
+  why: 'each action assigns template variables read only by its view: handoff, not
+    held state'
+- key: rubygems.org|state_sprawl|RubygemsController
+  evidence:
+  - "@advisories"
+  - "@gems"
+  - "@letter"
+  - "@next_version"
+  - "@previous_version"
+  - "@reserved_gem"
+  - "@security_events"
+  - "@versions"
+  label: fp
+  why: 'actions assign template variables read only by views: handoff'

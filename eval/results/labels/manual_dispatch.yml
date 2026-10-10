@@ -1,0 +1,113 @@
+---
+- key: faraday|manual_dispatch|Faraday::Connection#in_parallel
+  evidence: []
+  label: fp
+  why: 'compatibility with third-party parallel managers that predate execute: a plugin
+    boundary'
+- key: faraday|manual_dispatch|Faraday::Utils#URI
+  evidence: []
+  label: fp
+  why: 'the conversion protocol of a public API argument (URI or string): Ruby''s
+    own coercion idiom'
+- key: rubocop|manual_dispatch|RuboCop::Cop::CheckLineBreakable#first_argument_is_heredoc?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_investigation_end
+  evidence: []
+  label: tp
+  why: 'rubocop''s own legacy Cop base asks itself whether a subclass defined a hook:
+    a no-op default method is the polymorphic fix'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_new_investigation
+  evidence: []
+  label: tp
+  why: same hook probe as on_investigation_end, on investigate
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#find_most_bottom_of_heredoc_end
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineContinuationSpacing#ignored_literal_ranges
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineLength#string_delimiter
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node
+  evidence: []
+  label: fp
+  why: 'probes a rubocop-ast node (library type): no owned polymorphism to use'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::ClassLength#on_casgn
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#assignment?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::MapIntoArray#return_value_used?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#find_offense_message
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#variable?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelf#on_argument
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::SwapValues#simple_assignment?
+  evidence: []
+  label: fp
+  why: 'children of a rubocop-ast node may be non-nodes (symbols, nil): the library''s
+    data model'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#process_errors
+  evidence:
+  - 'cause: Warning, Force::HookError (lines 259, 261)'
+  label: fp
+  why: 'dispatches on exception classes inside an error reporter: Ruby''s rescue model
+    dispatches the same way, and moving reporting onto the errors would couple them
+    to the team'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#validate_config
+  evidence: []
+  label: tp
+  why: 'asks each of rubocop''s own cops whether it defines validate_config: a no-op
+    default on the cop base class would let polymorphism decide'
+- key: rubocop|manual_dispatch|RuboCop::Cop::TrailingComma#heredoc?
+  evidence: []
+  label: fp
+  why: 'probes a Parser source map (library type) for an optional field: no owned
+    polymorphism to use'
+- key: rubocop|manual_dispatch|RuboCop::LSP::Routes#for
+  evidence: []
+  label: fp
+  why: 'a router asking whether a handler exists for a request name: the check is
+    the routing, not a type test'
+- key: rubygems.org|manual_dispatch|ApplicationHelper#gem_info
+  evidence: []
+  label: tp
+  why: 'same helper pattern as latest_version_number: the app''s own gem objects of
+    two kinds, told apart by probing'
+- key: rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number
+  evidence: []
+  label: tp
+  why: 'the helper is handed two kinds of the app''s own gem objects and asks which
+    one it got: two adapters (or one interface) would remove the probe'

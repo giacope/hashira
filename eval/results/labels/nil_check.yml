@@ -1,0 +1,119 @@
+---
+- key: faraday|nil_check|Faraday::FlatParamsEncoder.encode
+  evidence: []
+  label: fp
+  why: 'params is the public API''s input, and nil is an accepted value it maps to
+    nil: boundary handling'
+- key: faraday|nil_check|Faraday::Utils::Headers#initialize
+  evidence: []
+  label: fp
+  why: 'hash || {} defaults an optional constructor argument: the boundary translation
+    the advice asks for'
+- key: rubocop|nil_check|RuboCop::ConfigLoaderResolver#merge
+  evidence: []
+  label: fp
+  why: 'derived_hash[key] is user YAML config: external data'
+- key: rubocop|nil_check|RuboCop::Cop::Badge#qualified?
+  evidence: []
+  label: fp
+  why: 'department is the badge''s own optional part and qualified? is the predicate
+    that encapsulates it: nothing to replace'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?
+  evidence: []
+  label: fp
+  why: 'processed_source[line] is nil past the last line (Array#[] semantics): not
+    a nil the code produces'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::NumberConversion#handle_conversion_method
+  evidence: []
+  label: fp
+  why: 'receiver is nil for a receiverless send in rubocop-ast: the library''s contract'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::RaiseException#check
+  evidence: []
+  label: fp
+  why: 'cbase is a pattern capture that is nil when absent (rubocop-ast): the library''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::UselessRescue#only_reraising?
+  evidence: []
+  label: fp
+  why: 'body is a rubocop-ast child that is nil when a rescue is empty: the library''s
+    contract, nothing to design away'
+- key: rubocop|nil_check|RuboCop::Cop::Metrics::PerceivedComplexity#complexity_score_for
+  evidence: []
+  label: fp
+  why: 'node.condition is nil for a subjectless case in rubocop-ast: the library''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::Naming::ConstantName#allowed_method_call_on_rhs?
+  evidence: []
+  label: fp
+  why: 'node.receiver is nil for a receiverless send in rubocop-ast: the library''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::OrderedGemNode#get_source_range
+  evidence: []
+  label: fp
+  why: 'first_comment is Array#first of the comments list: nil means none, the collection''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#on_casgn
+  evidence: []
+  label: fp
+  why: 'node.expression is nil for an op-assign casgn in rubocop-ast: the library''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#requires_parentheses?
+  evidence: []
+  label: fp
+  why: 'node.loc.dot is nil for a send without a dot in rubocop-ast: the library''s
+    contract'
+- key: rubocop|nil_check|RuboCop::Cop::Style::NegatedIfElseCondition#corrected_ancestor?
+  evidence: []
+  label: tp
+  why: "@corrected_nodes is the cop's own ivar, nil until the first correction: initializing
+    it to an empty set removes the check"
+- key: rubocop|nil_check|RuboCop::LSP::Diagnostic#ensure_uri_scheme
+  evidence: []
+  label: fp
+  why: 'uri.scheme is nil on a URI without one (stdlib URI): the library''s contract'
+- key: rubocop|nil_check|RuboCop::Runner#mark_as_safe_by_config?
+  evidence: []
+  label: tp
+  why: 'default_cfg is nil only because default_config returns a raw hash lookup:
+    that lookup could default to {} once, at its source'
+- key: rubygems.org|nil_check|Api::V1::RubygemsController#create
+  evidence: []
+  label: fp
+  why: 'attestations comes from the request params: the boundary itself'
+- key: rubygems.org|nil_check|Avo::Resources::User::ApiKeyNameFilter#apply
+  evidence: []
+  label: fp
+  why: 'value is the filter value Avo hands the callback: the boundary itself'
+- key: rubygems.org|nil_check|BlockedEmailDomain.blocks?
+  evidence: []
+  label: tp
+  why: 'match is the model''s own lookup and !match(...).nil? asks only whether one
+    exists: exists? is the direct question'
+- key: rubygems.org|nil_check|ClearanceBackdoor#sign_in_through_the_back_door
+  evidence: []
+  label: fp
+  why: 'user_id is read from the query string right here: this is the boundary, and
+    the check is the translation'
+- key: rubygems.org|nil_check|DependenciesController#show
+  evidence: []
+  label: tp
+  why: 'dependency is the app''s own model and unresolved_name.nil? encodes resolved-vs-unresolved:
+    the model can answer resolved? itself'
+- key: rubygems.org|nil_check|OIDC::Providers::ShowView#view_template
+  evidence: []
+  label: fp
+  why: 'val.blank? skips empty configuration values in a view: presentation of optional
+    data'
+- key: rubygems.org|nil_check|ShasumFormat.generate
+  evidence: []
+  label: fp
+  why: 'path/checksum blank? skips empty entries of the parsed input: input filtering'
+- key: rubygems.org|nil_check|UsersHelper#obfuscate_email
+  evidence: []
+  label: fp
+  why: 'email is an argument tested for blank before parsing: input validation at
+    the edge, not nil-as-type'
+- key: rubygems.org|nil_check|VersionManifest#unique_checksums
+  evidence: []
+  label: fp
+  why: candidates is Hash#values, never nil; blank? tests emptiness here, not nil

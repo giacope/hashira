@@ -1,0 +1,6 @@
+# Two cycles share orders -> pricing (3 refs). Dropping it alone breaks both
+# (weight 3); breaking each cycle on its lightest edges costs 2 + 2 = 4.
+args: [lib/app]
+cycles: [[orders, pricing, promo, tax]]
+cut:
+  orders: 3

@@ -1,0 +1,4 @@
+# Two models that declare the same associations and validations are two
+# models, not a copy: declarations are a schema.
+args: [app]
+count: 0

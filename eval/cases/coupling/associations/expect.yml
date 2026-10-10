@@ -1,0 +1,19 @@
+# A Rails app: an association names its class by convention, so has_many
+# :posts reaches Post as surely as class_name: "Post" would. Singularized
+# with ActiveSupport's rules (people -> Person, categories -> Category,
+# statuses -> Status, analyses -> Analysis) plus the app's own irregular
+# inflection; a polymorphic belongs_to names no class.
+args: [app]
+edges:
+  - "Author -> Post"
+  - "Author -> Profile"
+  - "Category -> Post"
+  - "Lab -> Analysis"
+  - "Lab -> Cactus"
+  - "Post -> Author"
+  - "Post -> Category"
+  - "Post -> Remark"
+  - "Post -> Status"
+  - "Team -> Person"
+absent: ["Remark -> Commentable"]
+cycles: [[Author, Post], [Category, Post]]

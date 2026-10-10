@@ -1,0 +1,7 @@
+# A five-package knot with chords; the brute-force optimum is checked against
+# the hand count: dropping epsilon -> alpha (1) and beta -> alpha (1) and
+# gamma -> beta (1) leaves alpha -> beta -> gamma -> delta -> epsilon acyclic.
+args: [lib/app]
+cycles: [[alpha, beta, delta, epsilon, gamma]]
+cut:
+  alpha: 3

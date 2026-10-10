@@ -1,0 +1,6 @@
+# Two packages referencing each other: one knot, cut on its lighter edge.
+args: [lib/app]
+edges: ["billing -> shipping", "shipping -> billing"]
+cycles: [[billing, shipping]]
+cut:
+  billing: 1

@@ -1,0 +1,31 @@
+# Pinned external code the corpus suite measures. `args` are passed to
+# hashira as given, run from the project's root.
+projects:
+  - name: rubocop
+    url: https://github.com/rubocop/rubocop.git
+    tag: v1.75.8
+    sha: 38333dcec9987d31e4f0d18a1938237cc8aa8c4a
+    args: [lib]
+  - name: faraday
+    url: https://github.com/lostisland/faraday.git
+    sha: deeb6ef8e47b366581585ec40c30104bf500826f
+    args: []
+  - name: rubygems.org
+    url: https://github.com/rubygems/rubygems.org.git
+    sha: be8fc6b7d005c30830d0efa5014091d3f1b2f479
+    args: []
+# Findings sampled per kind for precision labeling: the N findings whose
+# SHA-256(key) sorts first, so a finding is in or out of the sample whatever
+# version of hashira reported it. Labels live in results/labels/<kind>.yml.
+samples:
+  repeated_call: 25
+  feature_envy: 25
+  nil_check: 25
+  manual_dispatch: 25
+  duplication: 25
+  control_parameter: 15
+  utility_function: 15
+  data_clump: 15
+  state_sprawl: 15
+  repeated_conditional: 15
+  indirection: 20

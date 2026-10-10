@@ -1,0 +1,10 @@
+# Importer#run scores 0 by itself, and each helper stays under the
+# complexity threshold, but the helpers are private and called once each:
+# read in place, the method is one trace. Pricing's helpers are shared by
+# two callers, so they are abstractions, not fragments of one method.
+present:
+  - {kind: indirection, package: "App::Importer#run"}
+absent:
+  - {kind: indirection, package: "App::Pricing#quote"}
+  - {kind: indirection, package: "App::Pricing#invoice"}
+  - {kind: complexity}

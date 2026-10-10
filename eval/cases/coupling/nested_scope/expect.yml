@@ -1,0 +1,5 @@
+# The same reference written inside nested `module Shop` / `module Shipping`
+# blocks does resolve to Shop::Billing::Invoice: a real edge, a real cycle.
+args: [lib/shop]
+edges: ["billing -> shipping", "shipping -> billing"]
+cycles: [[billing, shipping]]

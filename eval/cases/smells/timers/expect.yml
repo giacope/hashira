@@ -1,0 +1,9 @@
+# A start/stop timer reads the clock twice on purpose: the second read is
+# measured against the first. A repeated lookup with nothing between is a
+# real repeat.
+absent:
+  - {kind: repeated_call, package: "App::Stopwatch#measure"}
+  - {kind: repeated_call, package: "App::Stopwatch#lap"}
+  - {kind: repeated_call, package: "App::Stopwatch#wait"}
+present:
+  - {kind: repeated_call, package: "App::Stopwatch#label"}

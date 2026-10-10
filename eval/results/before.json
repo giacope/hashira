@@ -1,0 +1,1361 @@
+{
+  "label": "before",
+  "commit": "32e7969",
+  "ruby": "3.4.7",
+  "suites": {
+    "complexity": {
+      "passed": 55,
+      "total": 66,
+      "checks": [
+        {
+          "name": "whitepaper getWords (switch) (Conformance::Case0#get_words)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "whitepaper overriddenSymbolFrom (Conformance::Case1#overridden_symbol_from)",
+          "passed": true,
+          "expected": 19,
+          "actual": 19
+        },
+        {
+          "name": "whitepaper try/catch nesting (Conformance::Case2#my_method)",
+          "passed": true,
+          "expected": 9,
+          "actual": 9
+        },
+        {
+          "name": "whitepaper lambda nesting (Conformance::Case3#my_method2)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "sumOfPrimes translated (Conformance::Case4#sum_of_primes)",
+          "passed": true,
+          "expected": 8,
+          "actual": 8
+        },
+        {
+          "name": "if (Conformance::Case5#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "if else (Conformance::Case6#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "if elsif else (Conformance::Case7#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "nested if (Conformance::Case8#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "if nested in elsif (Conformance::Case9#run)",
+          "passed": true,
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "if nested in else (Conformance::Case10#run)",
+          "passed": true,
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "unless (Conformance::Case11#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "unless else (Conformance::Case12#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "modifier if under modifier unless (Conformance::Case13#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "guard clause (Conformance::Case14#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "ternary (Conformance::Case15#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "nested ternary (Conformance::Case16#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "ternary in an if (Conformance::Case17#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "ternary in interpolation (Conformance::Case18#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "case with subject (Conformance::Case19#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "case without subject (Conformance::Case20#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "pattern match (Conformance::Case21#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "case in a loop (Conformance::Case22#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "while (Conformance::Case23#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "until (Conformance::Case24#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "for (Conformance::Case25#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "modifier while (Conformance::Case26#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "do while (Conformance::Case27#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "nested loops (Conformance::Case28#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "while in an if (Conformance::Case29#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "plain break and next (Conformance::Case30#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "rescue (Conformance::Case31#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "two rescue clauses (Conformance::Case32#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "if in rescue (Conformance::Case33#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "if in begin (Conformance::Case34#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "if in ensure (Conformance::Case35#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "rescue in a block (Conformance::Case36#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "rescue modifier (Conformance::Case37#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "and sequence (Conformance::Case38#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "or sequence (Conformance::Case39#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "mixed and/or (Conformance::Case40#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "or then and (Conformance::Case41#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "and or and (Conformance::Case42#run)",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "whitepaper boolean example (Conformance::Case43#run)",
+          "passed": true,
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "keyword operators (Conformance::Case44#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "parenthesized like operators (Conformance::Case45#run)",
+          "passed": false,
+          "expected": 1,
+          "actual": 2
+        },
+        {
+          "name": "parenthesized or (Conformance::Case46#run)",
+          "passed": false,
+          "expected": 1,
+          "actual": 2
+        },
+        {
+          "name": "negation inside a sequence (Conformance::Case47#run)",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "condition of an if (Conformance::Case48#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "condition of a loop (Conformance::Case49#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "safe navigation (Conformance::Case50#run)",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "or-assign (Conformance::Case51#run)",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "flat sequence of calls (Conformance::Case52#run)",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "lambda literal (Conformance::Case53#run)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "lambda keyword (Conformance::Case54#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "proc (Conformance::Case55#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "block (Conformance::Case56#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "lambda in an if (Conformance::Case57#run)",
+          "passed": false,
+          "expected": 4,
+          "actual": 3
+        },
+        {
+          "name": "loop block (Conformance::Case58#run)",
+          "passed": true,
+          "expected": 2,
+          "actual": 2
+        },
+        {
+          "name": "direct recursion (Conformance::Case59#fact)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "recursion through self (Conformance::Case60#walk)",
+          "passed": false,
+          "expected": 1,
+          "actual": 0
+        },
+        {
+          "name": "singleton recursion (Conformance::Case61.count)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "indirect recursion (Conformance::Case62#even?)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "indirect recursion (Conformance::Case62#odd?)",
+          "passed": false,
+          "expected": 2,
+          "actual": 1
+        },
+        {
+          "name": "same name on another receiver (Conformance::Case63#name)",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "define_method (Conformance::Case64#run)",
+          "passed": false,
+          "expected": 1,
+          "actual": null
+        }
+      ]
+    },
+    "coupling": {
+      "passed": 17,
+      "total": 25,
+      "checks": [
+        {
+          "name": "associations: edges",
+          "passed": false,
+          "expected": [
+            "Author -> Post",
+            "Author -> Profile",
+            "Category -> Post",
+            "Lab -> Analysis",
+            "Lab -> Cactus",
+            "Post -> Author",
+            "Post -> Category",
+            "Post -> Remark",
+            "Post -> Status",
+            "Team -> Person"
+          ],
+          "actual": [
+            "Post -> Remark"
+          ]
+        },
+        {
+          "name": "associations: edge Remark -> Commentable",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "associations: cycles",
+          "passed": false,
+          "expected": [
+            [
+              "Author",
+              "Post"
+            ],
+            [
+              "Category",
+              "Post"
+            ]
+          ],
+          "actual": []
+        },
+        {
+          "name": "compact_scope: edges",
+          "passed": false,
+          "expected": [
+            "billing -> shipping"
+          ],
+          "actual": [
+            "billing -> shipping",
+            "shipping -> billing"
+          ]
+        },
+        {
+          "name": "compact_scope: edge shipping -> billing",
+          "passed": false,
+          "expected": "absent",
+          "actual": "present"
+        },
+        {
+          "name": "compact_scope: cycles",
+          "passed": false,
+          "expected": [],
+          "actual": [
+            [
+              "billing",
+              "shipping"
+            ]
+          ]
+        },
+        {
+          "name": "compact_scope: cut of billing,shipping leaves the knot",
+          "passed": true,
+          "expected": "acyclic",
+          "actual": "acyclic"
+        },
+        {
+          "name": "compact_scope: cut of billing,shipping is a minimum feedback arc set",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "nested_scope: edges",
+          "passed": true,
+          "expected": [
+            "billing -> shipping",
+            "shipping -> billing"
+          ],
+          "actual": [
+            "billing -> shipping",
+            "shipping -> billing"
+          ]
+        },
+        {
+          "name": "nested_scope: cycles",
+          "passed": true,
+          "expected": [
+            [
+              "billing",
+              "shipping"
+            ]
+          ],
+          "actual": [
+            [
+              "billing",
+              "shipping"
+            ]
+          ]
+        },
+        {
+          "name": "nested_scope: cut of billing,shipping leaves the knot",
+          "passed": true,
+          "expected": "acyclic",
+          "actual": "acyclic"
+        },
+        {
+          "name": "nested_scope: cut of billing,shipping is a minimum feedback arc set",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "ring: cycles",
+          "passed": true,
+          "expected": [
+            [
+              "alpha",
+              "beta",
+              "delta",
+              "epsilon",
+              "gamma"
+            ]
+          ],
+          "actual": [
+            [
+              "alpha",
+              "beta",
+              "delta",
+              "epsilon",
+              "gamma"
+            ]
+          ]
+        },
+        {
+          "name": "ring: cut of alpha,beta,delta,epsilon,gamma leaves the knot",
+          "passed": false,
+          "expected": "acyclic",
+          "actual": "cyclic"
+        },
+        {
+          "name": "ring: cut of alpha,beta,delta,epsilon,gamma is a minimum feedback arc set",
+          "passed": false,
+          "expected": 3,
+          "actual": 2
+        },
+        {
+          "name": "ring: brute force agrees with the fixture's hand count",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "shared_edge: cycles",
+          "passed": true,
+          "expected": [
+            [
+              "orders",
+              "pricing",
+              "promo",
+              "tax"
+            ]
+          ],
+          "actual": [
+            [
+              "orders",
+              "pricing",
+              "promo",
+              "tax"
+            ]
+          ]
+        },
+        {
+          "name": "shared_edge: cut of orders,pricing,promo,tax leaves the knot",
+          "passed": true,
+          "expected": "acyclic",
+          "actual": "acyclic"
+        },
+        {
+          "name": "shared_edge: cut of orders,pricing,promo,tax is a minimum feedback arc set",
+          "passed": false,
+          "expected": 3,
+          "actual": 4
+        },
+        {
+          "name": "shared_edge: brute force agrees with the fixture's hand count",
+          "passed": true,
+          "expected": 3,
+          "actual": 3
+        },
+        {
+          "name": "two_way: edges",
+          "passed": true,
+          "expected": [
+            "billing -> shipping",
+            "shipping -> billing"
+          ],
+          "actual": [
+            "billing -> shipping",
+            "shipping -> billing"
+          ]
+        },
+        {
+          "name": "two_way: cycles",
+          "passed": true,
+          "expected": [
+            [
+              "billing",
+              "shipping"
+            ]
+          ],
+          "actual": [
+            [
+              "billing",
+              "shipping"
+            ]
+          ]
+        },
+        {
+          "name": "two_way: cut of billing,shipping leaves the knot",
+          "passed": true,
+          "expected": "acyclic",
+          "actual": "acyclic"
+        },
+        {
+          "name": "two_way: cut of billing,shipping is a minimum feedback arc set",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "two_way: brute force agrees with the fixture's hand count",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        }
+      ]
+    },
+    "duplication": {
+      "passed": 5,
+      "total": 10,
+      "checks": [
+        {
+          "name": "crowded_bucket: report.rb:3 + payout.rb:3",
+          "passed": false,
+          "expected": "together",
+          "actual": "apart"
+        },
+        {
+          "name": "identical: orders/checkout.rb:4 + billing/refund.rb:4",
+          "passed": true,
+          "expected": "together",
+          "actual": "together"
+        },
+        {
+          "name": "inverse: findings",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "log_lines: findings",
+          "passed": false,
+          "expected": 0,
+          "actual": 1
+        },
+        {
+          "name": "near_miss_messages: ledger.rb:3 + stock.rb:3",
+          "passed": true,
+          "expected": "together",
+          "actual": "together"
+        },
+        {
+          "name": "near_miss_messages: roster.rb:3 + ledger.rb:3",
+          "passed": false,
+          "expected": "apart",
+          "actual": "together"
+        },
+        {
+          "name": "near_miss_messages: roster.rb:3 + stock.rb:3",
+          "passed": false,
+          "expected": "apart",
+          "actual": "together"
+        },
+        {
+          "name": "relay: findings",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "renamed: import.rb:3 + export.rb:3",
+          "passed": true,
+          "expected": "together",
+          "actual": "together"
+        },
+        {
+          "name": "schema: findings",
+          "passed": false,
+          "expected": 0,
+          "actual": 1
+        }
+      ]
+    },
+    "smells": {
+      "passed": 10,
+      "total": 18,
+      "checks": [
+        {
+          "name": "envy: feature_envy Shop::Checkout#total",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "envy: feature_envy Lint::Puts#on_send",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "evidence: nil_check App::Renderer#render",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "evidence: manual_dispatch App::Renderer#render",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "evidence: every nil_check finding names its evidence",
+          "passed": false,
+          "expected": [],
+          "actual": [
+            "App::Renderer#render"
+          ]
+        },
+        {
+          "name": "evidence: every manual_dispatch finding names its evidence",
+          "passed": false,
+          "expected": [],
+          "actual": [
+            "App::Renderer#render"
+          ]
+        },
+        {
+          "name": "indirection: indirection App::Importer#run",
+          "passed": false,
+          "expected": "present",
+          "actual": "absent"
+        },
+        {
+          "name": "indirection: indirection App::Pricing#quote",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "indirection: indirection App::Pricing#invoice",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "indirection: complexity",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "sprawl: state_sprawl App::Session",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "sprawl: state_sprawl App::Point",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "sprawl: state_sprawl App::Session says \"weighing 6\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
+        },
+        {
+          "name": "sprawl: state_sprawl App::Session says \"more than 4\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
+        },
+        {
+          "name": "timers: repeated_call App::Stopwatch#label",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "timers: repeated_call App::Stopwatch#measure",
+          "passed": false,
+          "expected": "absent",
+          "actual": "present"
+        },
+        {
+          "name": "timers: repeated_call App::Stopwatch#lap",
+          "passed": false,
+          "expected": "absent",
+          "actual": "present"
+        },
+        {
+          "name": "timers: repeated_call App::Stopwatch#wait",
+          "passed": false,
+          "expected": "absent",
+          "actual": "present"
+        }
+      ]
+    },
+    "cli": {
+      "passed": 6,
+      "total": 28,
+      "checks": [
+        {
+          "name": "another project's baseline is not applied: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 2
+        },
+        {
+          "name": "another project's baseline is not applied: \"boundary Prism\"",
+          "passed": false,
+          "expected": "unsaid",
+          "actual": "said"
+        },
+        {
+          "name": "the analyzed project's own baseline is applied from elsewhere: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "the analyzed project's own baseline is applied from elsewhere: json accepted.size",
+          "passed": false,
+          "expected": 1,
+          "actual": 0
+        },
+        {
+          "name": "the analyzed project's config is read from elsewhere: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "the analyzed project's config is read from elsewhere: json kinds.utility_function",
+          "passed": false,
+          "expected": null,
+          "actual": {
+            "count": 1,
+            "files": 1
+          }
+        },
+        {
+          "name": "a suppression with a reason silences the finding on the next line: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 1
+        },
+        {
+          "name": "a suppression with a reason silences the finding on the next line: \"Suppressed (1)\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "unsaid"
+        },
+        {
+          "name": "a suppression with a reason silences the finding on the next line: \"a generated state table\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "unsaid"
+        },
+        {
+          "name": "suppressions are listed in --json: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "suppressions are listed in --json: json suppressed.size",
+          "passed": false,
+          "expected": 1,
+          "actual": null
+        },
+        {
+          "name": "suppressions are listed in --json: json suppressed.0.kind",
+          "passed": false,
+          "expected": "complexity",
+          "actual": null
+        },
+        {
+          "name": "suppressions are listed in --json: json suppressed.0.reason",
+          "passed": false,
+          "expected": "a generated state table",
+          "actual": null
+        },
+        {
+          "name": "suppressions are listed in --json: json kinds.complexity",
+          "passed": false,
+          "expected": null,
+          "actual": {
+            "count": 1,
+            "files": 1
+          }
+        },
+        {
+          "name": "a suppression without a reason is refused: exit status",
+          "passed": false,
+          "expected": 2,
+          "actual": 0
+        },
+        {
+          "name": "a suppression without a reason is refused: \"reason\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "unsaid"
+        },
+        {
+          "name": "a suppression of an unknown kind is refused: exit status",
+          "passed": false,
+          "expected": 2,
+          "actual": 0
+        },
+        {
+          "name": "a suppression of an unknown kind is refused: \"envy\"",
+          "passed": false,
+          "expected": "said",
+          "actual": "unsaid"
+        },
+        {
+          "name": "a config threshold moves the complexity bar: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 2
+        },
+        {
+          "name": "a config threshold moves the complexity bar: json kinds.complexity.count",
+          "passed": false,
+          "expected": 1,
+          "actual": "unparsed"
+        },
+        {
+          "name": "a config switch turns a kind off: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 2
+        },
+        {
+          "name": "a config switch turns a kind off: json kinds.utility_function",
+          "passed": false,
+          "expected": null,
+          "actual": "unparsed"
+        },
+        {
+          "name": "a baseline from before a kind was renamed still ratchets clean: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 1
+        },
+        {
+          "name": "a kind the baseline predates does not fail the ratchet: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "--update-baseline from elsewhere writes the project's baseline: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "--update-baseline from elsewhere writes the project's baseline: \"Baseline updated\"",
+          "passed": true,
+          "expected": "said",
+          "actual": "said"
+        },
+        {
+          "name": "--update-baseline from elsewhere writes the project's baseline: writes project/hashira_baseline.json",
+          "passed": false,
+          "expected": true,
+          "actual": false
+        },
+        {
+          "name": "--update-baseline from elsewhere writes the project's baseline: writes elsewhere/hashira_baseline.json",
+          "passed": false,
+          "expected": false,
+          "actual": true
+        }
+      ]
+    },
+    "corpus": {
+      "passed": 5,
+      "total": 6,
+      "checks": [
+        {
+          "name": "rubocop: hashira exits 0",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "rubocop: cut of 2-package knot is minimum",
+          "passed": true,
+          "expected": 5,
+          "actual": 5
+        },
+        {
+          "name": "faraday: hashira exits 0",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "faraday: cut of 7-package knot is minimum",
+          "passed": false,
+          "expected": 13,
+          "actual": 5
+        },
+        {
+          "name": "rubygems.org: hashira exits 0",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "rubygems.org: cut of 2-package knot is minimum",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        }
+      ]
+    }
+  },
+  "corpus": {
+    "rubocop": {
+      "status": 0,
+      "files": 880,
+      "seconds": 28.22,
+      "megabytes": 470.3,
+      "kinds": {
+        "assumed_state": {
+          "count": 1,
+          "per_kloc": 0.01
+        },
+        "complexity": {
+          "count": 38,
+          "per_kloc": 0.46
+        },
+        "control_parameter": {
+          "count": 88,
+          "per_kloc": 1.06
+        },
+        "cycle": {
+          "count": 1,
+          "per_kloc": 0.01
+        },
+        "data_clump": {
+          "count": 52,
+          "per_kloc": 0.63
+        },
+        "duplication": {
+          "count": 251,
+          "per_kloc": 3.03
+        },
+        "feature_envy": {
+          "count": 202,
+          "per_kloc": 2.44
+        },
+        "manual_dispatch": {
+          "count": 123,
+          "per_kloc": 1.48
+        },
+        "module_initialize": {
+          "count": 1,
+          "per_kloc": 0.01
+        },
+        "nil_check": {
+          "count": 156,
+          "per_kloc": 1.88
+        },
+        "repeated_call": {
+          "count": 791,
+          "per_kloc": 9.54
+        },
+        "repeated_conditional": {
+          "count": 21,
+          "per_kloc": 0.25
+        },
+        "state_sprawl": {
+          "count": 25,
+          "per_kloc": 0.3
+        },
+        "utility_function": {
+          "count": 41,
+          "per_kloc": 0.49
+        }
+      },
+      "kloc": 82.9
+    },
+    "faraday": {
+      "status": 0,
+      "files": 32,
+      "seconds": 1.13,
+      "megabytes": 51.2,
+      "kinds": {
+        "complexity": {
+          "count": 4,
+          "per_kloc": 1.26
+        },
+        "control_parameter": {
+          "count": 1,
+          "per_kloc": 0.32
+        },
+        "cycle": {
+          "count": 1,
+          "per_kloc": 0.32
+        },
+        "data_clump": {
+          "count": 2,
+          "per_kloc": 0.63
+        },
+        "duplication": {
+          "count": 14,
+          "per_kloc": 4.42
+        },
+        "feature_envy": {
+          "count": 4,
+          "per_kloc": 1.26
+        },
+        "manual_dispatch": {
+          "count": 11,
+          "per_kloc": 3.47
+        },
+        "mixed_audience": {
+          "count": 1,
+          "per_kloc": 0.32
+        },
+        "nil_check": {
+          "count": 29,
+          "per_kloc": 9.15
+        },
+        "repeated_call": {
+          "count": 25,
+          "per_kloc": 7.89
+        },
+        "repeated_conditional": {
+          "count": 3,
+          "per_kloc": 0.95
+        },
+        "state_sprawl": {
+          "count": 1,
+          "per_kloc": 0.32
+        },
+        "utility_function": {
+          "count": 5,
+          "per_kloc": 1.58
+        },
+        "wide_edge": {
+          "count": 1,
+          "per_kloc": 0.32
+        }
+      },
+      "kloc": 3.17
+    },
+    "rubygems.org": {
+      "status": 0,
+      "files": 558,
+      "seconds": 9.57,
+      "megabytes": 199.7,
+      "kinds": {
+        "complexity": {
+          "count": 18,
+          "per_kloc": 0.87
+        },
+        "control_parameter": {
+          "count": 16,
+          "per_kloc": 0.77
+        },
+        "cycle": {
+          "count": 2,
+          "per_kloc": 0.1
+        },
+        "duplication": {
+          "count": 136,
+          "per_kloc": 6.56
+        },
+        "feature_envy": {
+          "count": 20,
+          "per_kloc": 0.96
+        },
+        "manual_dispatch": {
+          "count": 13,
+          "per_kloc": 0.63
+        },
+        "nil_check": {
+          "count": 90,
+          "per_kloc": 4.34
+        },
+        "repeated_call": {
+          "count": 165,
+          "per_kloc": 7.96
+        },
+        "repeated_conditional": {
+          "count": 9,
+          "per_kloc": 0.43
+        },
+        "roll_call": {
+          "count": 3,
+          "per_kloc": 0.14
+        },
+        "sdp_violation": {
+          "count": 1,
+          "per_kloc": 0.05
+        },
+        "state_sprawl": {
+          "count": 20,
+          "per_kloc": 0.96
+        },
+        "utility_function": {
+          "count": 24,
+          "per_kloc": 1.16
+        },
+        "wide_edge": {
+          "count": 2,
+          "per_kloc": 0.1
+        }
+      },
+      "kloc": 20.73
+    }
+  },
+  "precision": {
+    "repeated_call": {
+      "population": 981,
+      "sampled": 25,
+      "labeled": 25,
+      "tp": 9,
+      "precision": 0.36,
+      "low": 0.202,
+      "high": 0.555
+    },
+    "feature_envy": {
+      "population": 226,
+      "sampled": 25,
+      "labeled": 25,
+      "tp": 3,
+      "precision": 0.12,
+      "low": 0.042,
+      "high": 0.3
+    },
+    "nil_check": {
+      "population": 275,
+      "sampled": 25,
+      "labeled": 25,
+      "tp": 4,
+      "precision": 0.16,
+      "low": 0.064,
+      "high": 0.347
+    },
+    "manual_dispatch": {
+      "population": 147,
+      "sampled": 25,
+      "labeled": 25,
+      "tp": 5,
+      "precision": 0.2,
+      "low": 0.089,
+      "high": 0.391
+    },
+    "duplication": {
+      "population": 401,
+      "sampled": 25,
+      "labeled": 25,
+      "tp": 16,
+      "precision": 0.64,
+      "low": 0.445,
+      "high": 0.798
+    },
+    "control_parameter": {
+      "population": 105,
+      "sampled": 15,
+      "labeled": 15,
+      "tp": 5,
+      "precision": 0.333,
+      "low": 0.152,
+      "high": 0.583
+    },
+    "utility_function": {
+      "population": 70,
+      "sampled": 15,
+      "labeled": 15,
+      "tp": 15,
+      "precision": 1.0,
+      "low": 0.796,
+      "high": 1.0
+    },
+    "data_clump": {
+      "population": 54,
+      "sampled": 15,
+      "labeled": 15,
+      "tp": 12,
+      "precision": 0.8,
+      "low": 0.548,
+      "high": 0.93
+    },
+    "state_sprawl": {
+      "population": 46,
+      "sampled": 15,
+      "labeled": 15,
+      "tp": 8,
+      "precision": 0.533,
+      "low": 0.301,
+      "high": 0.752
+    },
+    "repeated_conditional": {
+      "population": 33,
+      "sampled": 15,
+      "labeled": 15,
+      "tp": 12,
+      "precision": 0.8,
+      "low": 0.548,
+      "high": 0.93
+    },
+    "indirection": {
+      "population": 0,
+      "sampled": 0,
+      "labeled": 0,
+      "tp": 0,
+      "precision": null
+    }
+  }
+}

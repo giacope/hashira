@@ -1,0 +1,87 @@
+---
+- key: faraday|repeated_conditional|Faraday::Response
+  evidence:
+  - finished? × 9 (lines 19, 23, 27, 33, 37, 45, 54, 75, 85)
+  label: tp
+  why: 'finished? gates nine methods: a pending/finished state object'
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier
+  evidence:
+  - style × 3 (lines 106, 128, 188)
+  label: tp
+  why: branches on the configured style in three places
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  evidence:
+  - style == :space × 3 (lines 50, 70, 84)
+  label: tp
+  why: branches on the configured style in three places
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessModifierDeclarations
+  evidence:
+  - group_style? × 3 (lines 239, 249, 284)
+  label: tp
+  why: branches on the configured group style in three places
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessorGrouping
+  evidence:
+  - grouped_style? × 3 (lines 76, 156, 161)
+  label: tp
+  why: branches on the configured grouped style in three places
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::ConditionalAssignment
+  evidence:
+  - style == :assign_to_condition × 3 (lines 247, 261, 271)
+  label: tp
+  why: branches on the configured style in three places
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::SignalException
+  evidence:
+  - style × 3 (lines 134, 156, 189)
+  label: tp
+  why: 'branches on the configured style in three places: a style strategy object
+    is the textbook remedy'
+- key: rubocop|repeated_conditional|RuboCop::LSP::Runtime
+  evidence:
+  - "@lint_mode × 3 (lines 41, 49, 63)"
+  - "@layout_mode × 3 (lines 41, 49, 64)"
+  label: tp
+  why: 'lint/layout modes tested in three places: a mode object'
+- key: rubocop|repeated_conditional|RuboCop::Runner
+  evidence:
+  - "@options[:debug] × 3 (lines 94, 97, 244)"
+  label: tp
+  why: 'three @options[:debug] tests for diagnostics: a debug logger (or null logger)
+    replaces them'
+- key: rubygems.org|repeated_conditional|Avo::Actions::DeleteUser
+  evidence:
+  - record × 3 (lines 16, 23, 29)
+  label: fp
+  why: 'three wording choices for single vs bulk selection in one action''s copy:
+    polymorphism would outweigh the copy'
+- key: rubygems.org|repeated_conditional|EmailConfirmationsController
+  evidence:
+  - signed_in? × 3 (lines 103, 121, 123)
+  label: fp
+  why: 'checks authentication in three actions: how a controller guards, not a type
+    switch'
+- key: rubygems.org|repeated_conditional|Pusher
+  evidence:
+  - api_key.user? × 3 (lines 39, 246, 313)
+  - api_key.trusted_publisher? × 3 (lines 177, 248, 443)
+  label: tp
+  why: 'tests which kind of key pushed in six places: polymorphism on the key''s owner'
+- key: rubygems.org|repeated_conditional|Rubygem::TabNavComponent
+  evidence:
+  - is_current × 3 (lines 31, 32, 33)
+  label: fp
+  why: three adjacent uses of one local in one method; the fix is one branch building
+    the attributes, not polymorphism
+- key: rubygems.org|repeated_conditional|RubygemTransfer
+  evidence:
+  - created_by.blank? × 3 (lines 57, 95, 115)
+  label: tp
+  why: 'tests the creator''s presence in three places: guarantee it (or a null creator)
+    once'
+- key: rubygems.org|repeated_conditional|Version
+  evidence:
+  - platformed? × 3 (lines 360, 427, 496)
+  - content_addressable? × 4 (lines 383, 425, 614, 638)
+  - rubygem.nil? × 3 (lines 601, 607, 613)
+  label: tp
+  why: the model tests its own platformed?/content_addressable? state and rubygem
+    presence in many places

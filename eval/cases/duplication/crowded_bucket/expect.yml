@@ -1,0 +1,6 @@
+# Seventy look-alike helpers crowd every bucket the two summary methods are
+# indexed under. The two methods are a near-miss clone (one extra statement);
+# a crowded bucket must not hide them.
+args: [lib/app]
+clusters:
+  - ["report.rb:3", "payout.rb:3"]

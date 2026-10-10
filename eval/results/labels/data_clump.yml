@@ -1,0 +1,105 @@
+---
+- key: rubocop|data_clump|RuboCop::ConfigLoaderResolver
+  evidence:
+  - "(hash, path) → 3 methods: resolve_requires, resolve_inheritance, fix_include_paths"
+  - "(file, path) → 3 methods: resolve_inheritance, base_configs, inherited_file"
+  - "(base_hash, derived_hash, key) → 4 methods: duplicate_setting?, warn_on_duplicate_setting,
+    should_union?, merge_hashes?"
+  label: tp
+  why: 'base_hash/derived_hash/key travel through four merge predicates: a merge-step
+    object'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLineBetweenDefs
+  evidence:
+  - "(first_def_node, second_def_node) → 3 methods: multiple_blank_lines_groups?,
+    blank_lines_count_between, lines_between_defs"
+  label: tp
+  why: 'two adjacent defs travel together through three measures: the gap between
+    them is an object'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLinesAroundBody
+  evidence:
+  - "(first_line, last_line) → 3 methods: check_empty_lines_except_namespace, check_empty_lines_special,
+    check_both"
+  label: tp
+  why: 'first_line/last_line are a line range passed through three checks: a range
+    object'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  evidence:
+  - "(arg, equals) → 3 methods: check_optarg, space_on_both_sides?, no_surrounding_space?"
+  label: tp
+  why: 'an optional argument and its equals token travel together: the default''s
+    parts as one object'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceBeforeBlockBraces
+  evidence:
+  - "(left_brace, space_plus_brace) → 3 methods: check_empty, check_non_empty, space_detected"
+  label: fp
+  why: 'space_plus_brace is a range derived from left_brace: a derived argument, not
+    a clump'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceInsideBlockBraces
+  evidence:
+  - "(left_brace, right_brace) → 3 methods: check_inside, adjacent_braces, multiline_block?"
+  - "(args_delimiter, left_brace) → 3 methods: check_left_brace, no_space_inside_left_brace,
+    space_inside_left_brace"
+  label: tp
+  why: 'left/right brace travel as a pair through three methods: a braces value object'
+- key: rubocop|data_clump|RuboCop::Cop::Lint::UnmodifiedReduceAccumulator
+  evidence:
+  - "(accumulator_name, return_values) → 3 methods: returned_accumulator_index, potential_offense?,
+    returns_accumulator_anywhere?"
+  label: tp
+  why: 'accumulator name and return values travel together through three predicates:
+    a reduce-block object'
+- key: rubocop|data_clump|RuboCop::Cop::MultilineElementIndentation
+  evidence:
+  - "(first, left_brace) → 3 methods: check_first, indent_base, hash_pair_where_value_beginning_with"
+  - "(left_brace, left_parenthesis) → 4 methods: check_first, indent_base, detected_styles,
+    detected_styles_for_column"
+  label: tp
+  why: 'brace and parenthesis tokens travel together through the indentation checks:
+    one bracket-context object'
+- key: rubocop|data_clump|RuboCop::Cop::Style::CaseLikeIf
+  evidence:
+  - "(node, target) → 5 methods: collect_conditions, condition_from_send_node, condition_from_equality_node,
+    condition_from_match_node, condition_from_include_or_cover_node"
+  label: tp
+  why: 'node and the case target travel through five condition builders: target belongs
+    in an object they share'
+- key: rubocop|data_clump|RuboCop::Cop::Style::InverseMethods
+  evidence:
+  - "(corrector, node) → 3 methods: correct_inverse_method, correct_inverse_block,
+    remove_end_parenthesis"
+  - "(method_call, node) → 3 methods: not_to_receiver, end_parentheses, remove_end_parenthesis"
+  label: fp
+  why: "(corrector, node) is rubocop's universal correction signature, and method_call
+    is node's own call: no missing object"
+- key: rubocop|data_clump|RuboCop::Cop::Style::SelfAssignment
+  evidence:
+  - "(node, rhs) → 3 methods: check_boolean_node, autocorrect_boolean_node, apply_autocorrect"
+  label: fp
+  why: 'rhs is a child of node, derivable from it: drop the redundant argument rather
+    than wrap the pair'
+- key: rubocop|data_clump|RuboCop::Cop::Style::SoleNestedConditional
+  evidence:
+  - "(corrector, if_branch, node) → 5 methods: autocorrect_outer_condition_basic,
+    correct_for_guard_condition_style, correct_for_basic_condition_style, autocorrect_outer_condition_modify_form,
+    correct_for_comment"
+  label: tp
+  why: 'five correction steps share (corrector, if_branch, node): one correction object
+    holding them would own all five methods'
+- key: rubocop|data_clump|RuboCop::FileFinder
+  evidence:
+  - "(filename, start_dir) → 3 methods: find_file_upwards, find_last_file_upwards,
+    traverse_files_upwards"
+  label: tp
+  why: filename and start_dir are one upward-search query passed through three methods
+- key: rubocop|data_clump|RuboCop::RSpec::ExpectOffense
+  evidence:
+  - "(replacements, source) → 3 methods: format_offense, expect_offense, parse_annotations"
+  label: tp
+  why: 'replacements and source travel together through the annotation helpers: one
+    annotated-source object'
+- key: rubocop|data_clump|RuboCop::TargetFinder
+  evidence:
+  - "(base_dir, flags) → 3 methods: find_files, wanted_dir_patterns, symlink_excluded_or_infinite_loop?"
+  label: tp
+  why: 'base_dir and glob flags travel together through three finders: one search
+    object'

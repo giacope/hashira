@@ -1,0 +1,212 @@
+# Command-line behaviour. Each case writes `files` into a fresh directory,
+# runs hashira from `cwd` with `args`, and checks the exit status, the text
+# printed (stdout and stderr together), and values read out of --json.
+
+- name: another project's baseline is not applied
+  files:
+    tool/hashira_baseline.json: |
+      {"version": 6, "boundaries": [{"root": "Prism", "role": "interpreted_model",
+        "entrypoint": "lib/tool/trees.rb", "reason": "the AST is the input"}]}
+    project/lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+      end
+  cwd: tool
+  args: [../project/lib/app]
+  status: 0
+  excludes: ["boundary Prism"]
+
+- name: the analyzed project's own baseline is applied from elsewhere
+  files:
+    project/hashira_baseline.json: |
+      {"version": 6, "accepted": [{"kind": "utility_function", "package": "Cart#price",
+        "reason": "kept public for the CLI"}]}
+    project/lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+    elsewhere/README: "elsewhere\n"
+  cwd: elsewhere
+  args: [../project/lib/app, --json]
+  status: 0
+  json:
+    accepted.size: 1
+
+- name: the analyzed project's config is read from elsewhere
+  files:
+    project/.hashira.yml: |
+      checks:
+        utility_function: false
+    project/lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+    elsewhere/README: "elsewhere\n"
+  cwd: elsewhere
+  args: [../project/lib/app, --json]
+  status: 0
+  json:
+    kinds.utility_function: null
+
+- name: a suppression with a reason silences the finding on the next line
+  files:
+    lib/app/table.rb: |
+      class Table
+        # hashira:disable-next-line complexity -- a generated state table, regenerated from grammar.y
+        def step(state, token)
+          if state == 1
+            if token == :a then 2 elsif token == :b then 3 else 4 end
+          elsif state == 2
+            if token == :a then 1 elsif token == :b then 3 else 4 end
+          elsif state == 3
+            token == :a ? 1 : (token == :b ? 2 : 4)
+          else
+            4
+          end
+        end
+      end
+  args: [lib/app, --fail-on, complexity]
+  status: 0
+  includes: ["Suppressed (1)", "a generated state table"]
+
+- name: suppressions are listed in --json
+  files:
+    lib/app/table.rb: |
+      class Table
+        def step(state, token) # hashira:disable complexity -- a generated state table
+          if state == 1
+            if token == :a then 2 elsif token == :b then 3 else 4 end
+          elsif state == 2
+            if token == :a then 1 elsif token == :b then 3 else 4 end
+          elsif state == 3
+            token == :a ? 1 : (token == :b ? 2 : 4)
+          else
+            4
+          end
+        end
+      end
+  args: [lib/app, --json]
+  status: 0
+  json:
+    suppressed.size: 1
+    suppressed.0.kind: complexity
+    suppressed.0.reason: a generated state table
+    kinds.complexity: null
+
+- name: a suppression without a reason is refused
+  files:
+    lib/app/cart.rb: |
+      class Cart
+        # hashira:disable-next-line utility_function
+        def price(item) = item.amount.round
+      end
+  args: [lib/app]
+  status: 2
+  includes: ["reason"]
+
+- name: a suppression of an unknown kind is refused
+  files:
+    lib/app/cart.rb: |
+      class Cart
+        # hashira:disable-next-line envy -- typo
+        def price(item) = item.amount.round
+      end
+  args: [lib/app]
+  status: 2
+  includes: ["envy"]
+
+- name: a config threshold moves the complexity bar
+  files:
+    .hashira.yml: |
+      checks:
+        complexity:
+          threshold: 3
+    lib/app/gate.rb: |
+      class Gate
+        def open?(a, b)
+          if a
+            b ? 1 : 2
+          end
+        end
+      end
+  args: [lib/app, --json]
+  status: 0
+  json:
+    kinds.complexity.count: 1
+
+- name: a config switch turns a kind off
+  files:
+    .hashira.yml: |
+      checks:
+        utility_function: false
+    lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+  args: [lib/app, --json]
+  status: 0
+  json:
+    kinds.utility_function: null
+
+- name: a baseline from before a kind was renamed still ratchets clean
+  files:
+    hashira_baseline.json: |
+      {"version": 4, "packaging": "folder", "analyzers": ["smells"], "targets": ["lib/app"],
+       "edges": [], "findings": {"duplicate_method_call:Cart#label": null}}
+    lib/app/cart.rb: |
+      class Cart
+        def initialize(owner) = @owner = owner
+        def label(order) = "#{order.customer.address.city}, #{order.customer.address.zip} #{@owner}"
+      end
+  args: [lib/app, --skip, "coupling,complexity,duplication", --ratchet]
+  status: 0
+
+- name: a kind the baseline predates does not fail the ratchet
+  files:
+    hashira_baseline.json: |
+      {"version": 6, "packaging": "folder", "analyzers": ["complexity"], "targets": ["lib/app"],
+       "edges": [], "findings": {}}
+    lib/app/importer.rb: |
+      class Importer
+        def initialize(store) = @store = store
+        def run(rows) = save(parse(rows))
+        private
+        def parse(rows) = rows.filter_map { |row| clean(row) if row && !row.empty? }
+        def clean(row)
+          if row.key?(:id)
+            row.transform_values { |value| value.is_a?(String) ? value.strip : value }
+          elsif row.key?(:ref)
+            { id: row[:ref] }
+          end
+        end
+        def save(rows)
+          rows.each { |row| row[:id] ? @store.put(row) : @store.skip(row) }
+        rescue IOError
+          @store.rollback
+        end
+      end
+  args: [lib/app, --skip, "coupling,duplication,smells", --ratchet]
+  status: 0
+
+- name: --update-baseline from elsewhere writes the project's baseline
+  files:
+    project/lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+      end
+    elsewhere/README: "elsewhere\n"
+  cwd: elsewhere
+  args: [../project/lib/app, --update-baseline]
+  status: 0
+  includes: ["Baseline updated"]
+  writes:
+    project/hashira_baseline.json: true
+    elsewhere/hashira_baseline.json: false
