@@ -53,7 +53,7 @@ module Hashira::Report::Phrases
     detail = finding.detail.to_h
     names = detail[:names]
     "#{finding.package} refers to #{quoted(names)} more than to self, #{balance(names, detail)} " \
-      "(#{detail[:site]}). The behavior may belong on #{names.one? ? names.first : "whichever of them it serves"}."
+      "(#{detail[:site]}). The behavior may belong on #{alternatives(detail.fetch(:types, names))}."
   end
 
   def balance(names, detail) = "#{detail[:count]}#{" each" unless names.one?} to #{detail[:ego]}"
@@ -103,4 +103,6 @@ module Hashira::Report::Phrases
   end
 
   def quoted(names) = names.map { "'#{it}'" }.join(", ")
+
+  def alternatives(names) = [names[0..-2].join(", "), names.last].reject(&:empty?).join(" or ")
 end

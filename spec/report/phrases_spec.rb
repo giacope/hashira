@@ -20,9 +20,9 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
       smell("feature_envy", names: %w[item], count: 3, ego: 1) =>
         "Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.",
-      smell("feature_envy", names: %w[item order], count: 2, ego: 1) =>
-        "Cart#price refers to 'item', 'order' more than to self, 2 each to 1 (cart.rb:12). " \
-        "The behavior may belong on whichever of them it serves.",
+      smell("feature_envy", names: %w[item order line], types: %w[Item Order Line], count: 2, ego: 1) =>
+        "Cart#price refers to 'item', 'order', 'line' more than to self, 2 each to 1 (cart.rb:12). " \
+        "The behavior may belong on Item, Order or Line.",
       smell("utility_function", owner: :class) =>
         "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
       smell("utility_function", owner: :module) =>

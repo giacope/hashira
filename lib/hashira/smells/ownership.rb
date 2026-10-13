@@ -12,6 +12,8 @@ class Hashira::Smells::Ownership
 
   def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
 
+  def repertoire = @_repertoire ||= Hashira::Smells::Repertoire.new(@trees)
+
   def keys(segments)
     surveyed
     @_tables.fetch(segments.join("::"), [])

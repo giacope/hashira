@@ -50,6 +50,8 @@ class Hashira::Smells::Foreign
 
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
 
+  def kinds(local) = known(local).reject { it.last == own }
+
   private
 
   def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
@@ -81,9 +83,24 @@ class Hashira::Smells::Foreign
 
   def staple?(value) = STOCK.include?(value.class) || (value.is_a?(Prism::CallNode) && SHAPES.include?(value.name))
 
-  def derived?(local)
-    (writes(local.name).map(&:value) + yielders(local)).any? { spawned?(it) }
+  def derived?(local) = sources(local).any? { spawned?(it) }
+
+  def sources(local) = writes(local.name).map(&:value) + yielders(local)
+
+  def known(local) = sources(local).map { made(it) } + declared(local.name)
+
+  def declared(name) = caught(name) + tests { it == name } + named(name)
+
+  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.segments(value.receiver) : []
+
+  def caught(name) = snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.segments(it) } }
+
+  def named(name)
+    words = name.to_s.split("_").reject(&:empty?)
+    words.each_index.map { [words.drop(it).map(&:capitalize).join] }.reject { Hashira::Analysis::CORE.include?(it.first) }
   end
+
+  def own = @subject.owner.split("::").last
 
   def yielders(local)
     scope = local.scope

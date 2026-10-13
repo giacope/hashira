@@ -14,6 +14,8 @@ module Hashira
 
         def signature = "#{kind}:#{identity}"
 
+        def heading = "#{kind}/#{package}"
+
         def magnitude = detail.to_h[MAGNITUDES[kind]]
 
         def identity = digest || package
