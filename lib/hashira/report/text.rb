@@ -77,10 +77,5 @@ class Hashira::Report::Text
     Hashira::Report::Silenced.new(@view.screened, io: @io).print
   end
 
-  def accepted
-    accepted = @view.findings.accepted
-    return if accepted.empty?
-    @io.puts("\nAccepted (#{accepted.size}):")
-    accepted.each { |finding, reason| @io.puts("  ~ #{finding.kind}/#{finding.package} — #{reason}") }
-  end
+  def accepted = Hashira::Report::Listing.new(@io).waived("Accepted", @view.findings.accepted)
 end

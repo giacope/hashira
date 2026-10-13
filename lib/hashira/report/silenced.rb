@@ -1,30 +1,21 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Silenced
+  STALE = "nothing it names fires there any more"
+
   def initialize(screened, io: $stdout)
     @screened = screened
     @io = io
   end
 
   def print
-    suppressed
-    unused
+    listing.waived("Suppressed", @screened.suppressed.map { |finding, directive| [finding, said(directive)] })
+    listing.print("Unused suppressions", @screened.unused) { "? #{it.kinds.join(",")} at #{it.site} — #{STALE}" }
   end
 
   private
 
-  def suppressed
-    silenced = @screened.suppressed
-    @io.puts("\nSuppressed (#{silenced.size}):") unless silenced.empty?
-    silenced.each { |finding, directive| @io.puts("  ~ #{finding.kind}/#{finding.package} — #{said(directive)}") }
-  end
+  def listing = Hashira::Report::Listing.new(@io)
 
   def said(directive) = "#{directive.reason} (#{directive.site})"
-
-  def unused
-    stale = @screened.unused
-    return if stale.empty?
-    @io.puts("\nUnused suppressions (#{stale.size}) — nothing they name fires there any more:")
-    stale.each { @io.puts("  ? #{it.kinds.join(",")} at #{it.site}") }
-  end
 end
