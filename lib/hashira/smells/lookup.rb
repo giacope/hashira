@@ -8,24 +8,13 @@ module Hashira::Smells::Lookup
 
   KEYS = Hashira::Smells::Foreign::KEYS
 
-  CLOCKS = %i[now today clock_gettime].freeze
-
-  CALENDARS = %w[Time Date DateTime].freeze
+  NEAR = [NilClass, Prism::SelfNode, Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 
   module_function
 
-  def cheap?(call) = !call.block && (reader?(call) || keyed?(call)) && !reaching?(call) && !clock?(call)
+  def cheap?(call) = !call.block && (reader?(call) || keyed?(call)) && NEAR.include?(call.receiver.class)
 
   def reader?(call) = !call.arguments
 
   def keyed?(call) = KEYED.include?(call.name) && call.arguments.arguments.all? { KEYS.include?(it.class) }
-
-  def reaching?(call)
-    held = call.receiver
-    held.is_a?(Prism::CallNode) && held.receiver.is_a?(Prism::Node)
-  end
-
-  def clock?(call) = ticks?(call.name, call.receiver&.slice)
-
-  def ticks?(name, receiver) = CLOCKS.include?(name) || (name == :current && CALENDARS.include?(receiver))
 end

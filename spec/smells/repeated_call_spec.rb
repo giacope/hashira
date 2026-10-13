@@ -21,17 +21,85 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(finding.evidence).to(eq(["@other.thing(1) × 2 (line 5)"]))
   end
 
+  it "leaves a plain read of a near object made twice alone, and reports it read three times or relayed both times" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def guard(node) = node.parent && use(node.parent)
+
+            def keyed = [@params[:id], @params[:id]]
+
+            def thrice(node) = [node.parent, node.parent, node.parent]
+
+            def relayed(record) = [record["s3"]["bucket"], record["s3"]["key"]]
+
+            def queried = [Time.now, Time.now]
+
+            def helper = [current_user.errors, current_user.errors]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(%w[App::Zone::Thing#thrice App::Zone::Thing#relayed App::Zone::Thing#queried App::Zone::Thing#helper])
+    )
+  end
+
+  it "takes a reading measured against a stored earlier reading for a deliberate second sample, not a repeat" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def measure(clock)
+              started = clock.now(:ms)
+              @runner.call
+              clock.now(:ms) - started
+            end
+
+            def wait(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              @runner.call until clock.now(:ms) > deadline
+            end
+
+            def same(clock)
+              started = clock.now(:ms)
+              @runner.call
+              clock.now(:ms) == started
+            end
+
+            def passed(clock)
+              started = clock.now(:ms)
+              @log.write(started, clock.now(:ms))
+            end
+
+            def apart(clock)
+              started = clock.now(:ms)
+              [clock.now(:ms), started - 1]
+            end
+
+            def skewed(clock, offset)
+              started = clock.now(:ms)
+              [started, clock.now(:ms) - offset]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
+  end
+
   it "tracks safe navigation, receiverless argument calls, and block passes" do
     findings = repeated(<<~RUBY)
       module App
         module Zone
           class Thing
             def wobble
-              @maybe&.load + @maybe&.load
+              @maybe&.load(1) + @maybe&.load(1)
             end
 
             def fetchy
-              fetch(:host) + fetch(:host)
+              fetch(:host, 1) + fetch(:host, 1)
             end
 
             def mappy(rows)
@@ -49,7 +117,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(
       eq(
         [
-          "@maybe&.load × 2 (line 5)", "fetch(:host) × 2 (line 9)",
+          "@maybe&.load(1) × 2 (line 5)", "fetch(:host, 1) × 2 (line 9)",
           "rows.map(&:name) × 2 (line 13)", "@io.tick(1) × 2 (lines 17, 18)"
         ]
       )
@@ -106,7 +174,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def sliced(rows)
-              [rows.map { |list| list.size }, rows.select { |list| list.size }]
+              [rows.map { |list| list.size(1) }, rows.select { |list| list.size(1) }]
             end
 
             def numbered(left, right)
@@ -123,7 +191,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def captured(node, rows)
-              rows.map { node.name } + rows.select { node.name }
+              rows.map { node.name(1) } + rows.select { node.name(1) }
             end
           end
         end
@@ -138,9 +206,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         module Zone
           class Thing
             def climb(parent)
-              seen = parent.type
-              parent = parent.parent while parent.type == :begin
-              [seen, parent.type]
+              seen = parent.type(1)
+              parent = parent.parent while parent.type(1) == :begin
+              [seen, parent.type(1)]
             end
 
             def bumped(count)
@@ -152,36 +220,38 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def swapped(node, rows)
-              first = node.name
+              first = node.name(1)
               rows.each { node = it }
-              [first, node.name]
+              [first, node.name(1)]
             end
 
             def walked(parent)
-              until parent.type == :def
+              until parent.type(1) == :def
                 parent = parent.parent
-                @out.puts(parent.type)
+                @out.puts(parent.type(1))
               end
             end
 
             def steady(parent)
               while parent
-                seen = parent.type
-                @out.puts(seen, parent.type)
+                seen = parent.type(1)
+                @out.puts(seen, parent.type(1))
                 parent = parent.parent
               end
             end
 
             def fenced(node)
-              first = node.name
+              first = node.name(1)
               def reset(node) = (node = nil)
-              [first, node.name]
+              [first, node.name(1)]
             end
           end
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["parent.type × 2 (lines 33, 34)", "node.name × 2 (lines 40, 42)"]))
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["parent.type(1) × 2 (lines 33, 34)", "node.name(1) × 2 (lines 40, 42)"])
+    )
   end
 
   it "excuses constructors, bare calls, and calls that differ in arguments" do
@@ -737,9 +807,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def guarded(job, flag)
-              before = job.status
+              before = job.status(:now)
               return if flag
-              [before, job.status]
+              [before, job.status(:now)]
             end
 
             def paired(one)
@@ -759,7 +829,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       eq(
         [
           "user.account.name × 2 (lines 5, 6)", "@io.tick(1) × 2 (lines 12, 13)", "@io.tick(2) × 2 (lines 19, 20)",
-          "@io.tick(3) × 2 (lines 25, 28)", "job.status × 2 (lines 32, 34)", "@io.tick(4) × 2 (line 38)",
+          "@io.tick(3) × 2 (lines 25, 28)", "job.status(:now) × 2 (lines 32, 34)", "@io.tick(4) × 2 (line 38)",
           "@io.tick(5) × 2 (line 43)"
         ]
       )
@@ -859,76 +929,76 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         module Zone
           class Thing
             def logged(job)
-              before = job.status
+              before = job.status(:now)
               @log.write(before)
-              job.status == before
+              job.status(:now) == before
             end
 
             def sized(job)
-              before = job.status
+              before = job.status(:now)
               Finalizer.run(job.id)
-              job.status == before
+              job.status(:now) == before
             end
 
             def spread(job, **)
-              before = job.status
+              before = job.status(:now)
               Finalizer.run(**)
-              job.status == before
+              job.status(:now) == before
             end
 
             def apart(job, flag)
               if flag
-                before = job.status
+                before = job.status(:now)
               else
                 job.finalize!
               end
-              job.status == before
+              job.status(:now) == before
             end
 
             def later(job, flag)
-              before = job.status
-              job.status == before
+              before = job.status(:now)
+              job.status(:now) == before
             ensure
               job.finalize!
             end
 
             def kept(job)
-              before = job.status
+              before = job.status(:now)
               done = job.finalize!
-              job.status == done
+              job.status(:now) == done
             end
 
             def told(job)
-              before = job.status
+              before = job.status(:now)
               log(job.id)
-              job.status == before
+              job.status(:now) == before
             end
 
             def wrapped(job)
-              before = job.status
-              job.log(job.status == before)
+              before = job.status(:now)
+              job.log(job.status(:now) == before)
               nil
             end
 
             def itself(job) = [job.with(job).status, job.with(job).status]
 
-            def shown(job) = { before: job.status, text: format(job), after: job.status }
+            def shown(job) = { before: job.status(:now), text: format(job), after: job.status(:now) }
 
             def settled(job, flag)
-              before = job.status
+              before = job.status(:now)
               label = flag ? job : before
-              [label, job.status]
+              [label, job.status(:now)]
             end
 
             def updated(job)
-              before = job.status
-              job.update job.status
+              before = job.status(:now)
+              job.update job.status(:now)
               before
             end
 
             def blocked(job)
-              before = job.status { job.reset!; 1 }
-              [before, job.status { job.reset!; 1 }]
+              before = job.status(:now) { job.reset!; 1 }
+              [before, job.status(:now) { job.reset!; 1 }]
             end
           end
         end
@@ -937,12 +1007,13 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(
       eq(
         [
-          "job.status × 2 (lines 5, 7)", "job.status × 2 (lines 11, 13)", "job.status × 2 (lines 17, 19)",
-          "job.status × 2 (lines 24, 28)", "job.status × 2 (lines 32, 33)", "job.status × 2 (lines 39, 41)",
-          "job.status × 2 (lines 45, 47)", "job.status × 2 (lines 51, 52)",
-          "job.with(job).status × 2 (line 56)", "job.status × 2 (line 58)", "job.status × 2 (lines 61, 63)",
-          "job.status × 2 (lines 67, 68)",
-          "job.status { job.reset!; 1 } × 2 (lines 73, 74)"
+          "job.status(:now) × 2 (lines 5, 7)", "job.status(:now) × 2 (lines 11, 13)",
+          "job.status(:now) × 2 (lines 17, 19)", "job.status(:now) × 2 (lines 24, 28)",
+          "job.status(:now) × 2 (lines 32, 33)", "job.status(:now) × 2 (lines 39, 41)",
+          "job.status(:now) × 2 (lines 45, 47)", "job.status(:now) × 2 (lines 51, 52)",
+          "job.with(job).status × 2 (line 56)", "job.status(:now) × 2 (line 58)", "job.status(:now) × 2 (lines 61, 63)",
+          "job.status(:now) × 2 (lines 67, 68)",
+          "job.status(:now) { job.reset!; 1 } × 2 (lines 73, 74)"
         ]
       )
     )
@@ -1024,11 +1095,11 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       module App
         module Zone
           class Thing
-            def reader(job) = [job.status, job.status]
+            def reader(job) = [job.status, job.status, job.status]
 
-            def keyed = [@params[:id], @params[:id], fetch("host"), fetch("host")]
+            def keyed = [@params[:id], @params[:id], @params[:id]]
 
-            def both(job) = [job&.status, job&.status, params.dig(:a, :b), params.dig(:a, :b)]
+            def both(job) = [job&.status, job&.status, @params.dig(:a, :b), @params.dig(:a, :b), job&.status]
           end
         end
       end
@@ -1063,7 +1134,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
 
             def called = [compute(1), compute(1)]
 
-            def cursor(page) = [page.current, page.current]
+            def cursor(page) = [page.current, page.current, page.current]
           end
         end
       end
