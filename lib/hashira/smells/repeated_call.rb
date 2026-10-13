@@ -77,11 +77,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
 
-  def glance?(nodes) = nodes.size == 2 && Hashira::Smells::Lookup.cheap?(nodes.first) && !nodes.all? { relayed?(it) }
-
-  def relayed?(node) = receivers.include?(node)
-
-  def receivers = @_receivers ||= Set.new.compare_by_identity.merge(every.map(&:receiver))
+  def glance?(nodes) = nodes.size == 2 && Hashira::Smells::Lookup.cheap?(nodes.first)
 
   def sampling = @_sampling ||= Hashira::Smells::Sampling.new(subject.node, every)
 

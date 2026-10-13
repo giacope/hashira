@@ -21,7 +21,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(finding.evidence).to(eq(["@other.thing(1) × 2 (line 5)"]))
   end
 
-  it "leaves a plain read of a near object made twice alone, and reports it read three times or relayed both times" do
+  it "leaves a plain read of a near object made twice alone, even fed on, and reports it read three times" do
     findings = repeated(<<~RUBY)
       module App
         module Zone
@@ -42,7 +42,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
       end
     RUBY
     expect(findings.map(&:package)).to(
-      eq(%w[App::Zone::Thing#thrice App::Zone::Thing#relayed App::Zone::Thing#queried App::Zone::Thing#helper])
+      eq(%w[App::Zone::Thing#thrice App::Zone::Thing#queried App::Zone::Thing#helper])
     )
   end
 
