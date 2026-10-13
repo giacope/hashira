@@ -16,4 +16,4 @@ edges:
   - "Post -> Status"
   - "Team -> Person"
 absent: ["Remark -> Commentable"]
-cycles: [[Author, Post], [Category, Post]]
+cycles: [[Author, Category, Post]]

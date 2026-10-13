@@ -2,24 +2,46 @@
 
 require "prism"
 
-module Hashira::Coupling::Associations
+class Hashira::Coupling::Associations
   MACROS = %i[has_many has_one belongs_to has_and_belongs_to_many].freeze
 
-  OPTION = "class_name"
+  COLLECTIONS = %i[has_many has_and_belongs_to_many].freeze
 
   CONSTANT = /\A(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*\z/
 
-  module_function
+  Target = Data.define(:name, :line)
 
-  def names(node) = macro?(node) ? options(node).select { named?(it) }.map(&:value) : []
+  def initialize(inflection)
+    @inflection = inflection
+  end
 
-  def macro?(node) = Hashira::Analysis::Syntax.macro?(node, MACROS)
+  def targets(node)
+    return [] unless Hashira::Analysis::Syntax.macro?(node, MACROS) && !option(node, "polymorphic").is_a?(Prism::TrueNode)
+    name = given(node) || inferred(node)
+    name&.match?(CONSTANT) ? [Target.new(name:, line: node.location.start_line)] : []
+  end
+
+  private
 
   def options(call) = call.arguments.arguments.grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
 
-  def named?(option) = keyed?(option.key) && constant?(option.value)
+  def option(call, key) = options(call).find { keyed?(it.key, key) }&.value
 
-  def keyed?(key) = key.is_a?(Prism::SymbolNode) && key.unescaped == OPTION
+  def keyed?(node, key) = node.is_a?(Prism::SymbolNode) && node.unescaped == key
 
-  def constant?(value) = value.is_a?(Prism::StringNode) && value.unescaped.match?(CONSTANT)
+  def given(call)
+    named = option(call, "class_name")
+    named.unescaped if named.is_a?(Prism::StringNode)
+  end
+
+  def inferred(call)
+    source = literal(option(call, "source"))
+    base = source || literal(call.arguments.arguments.first)
+    return unless base
+    COLLECTIONS.include?(call.name) || source ? @inflection.classify(base) : @inflection.camelize(base)
+  end
+
+  def literal(node) = (node.unescaped if node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode))
 end
+
+Hashira::Coupling::Associations::NONE = Hashira::Coupling::Associations.new(nil)

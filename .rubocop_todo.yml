@@ -11,7 +11,6 @@
 # CountAsOne: heredoc
 RSpec/ExampleLength:
   Exclude:
-    - 'spec/config/rules_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'
     - 'spec/ci/gate_spec.rb'
@@ -21,10 +20,12 @@ RSpec/ExampleLength:
     - 'spec/cli/options_spec.rb'
     - 'spec/complexity/cognitive_score_spec.rb'
     - 'spec/complexity/scores_spec.rb'
+    - 'spec/config/rules_spec.rb'
     - 'spec/coupling/audiences_spec.rb'
     - 'spec/coupling/census_spec.rb'
     - 'spec/coupling/findings_spec.rb'
     - 'spec/coupling/graph_spec.rb'
+    - 'spec/coupling/inflection_spec.rb'
     - 'spec/coupling/packaging_spec.rb'
     - 'spec/coupling/resolution_spec.rb'
     - 'spec/diagram/source_spec.rb'
@@ -59,7 +60,6 @@ RSpec/ExampleLength:
 RSpec/MultipleExpectations:
   Exclude:
     - 'spec/analysis/finding_spec.rb'
-    - 'spec/config/rules_spec.rb'
     - 'spec/analysis/syntax_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'
@@ -71,10 +71,12 @@ RSpec/MultipleExpectations:
     - 'spec/cli/options_spec.rb'
     - 'spec/complexity/cognitive_score_spec.rb'
     - 'spec/complexity/scores_spec.rb'
+    - 'spec/config/rules_spec.rb'
     - 'spec/coupling/audiences_spec.rb'
     - 'spec/coupling/census_spec.rb'
     - 'spec/coupling/findings_spec.rb'
     - 'spec/coupling/graph_spec.rb'
+    - 'spec/coupling/inflection_spec.rb'
     - 'spec/coupling/packaging_spec.rb'
     - 'spec/coupling/resolution_spec.rb'
     - 'spec/diagram/source_spec.rb'
@@ -117,7 +119,6 @@ RSpec/SpecFilePathFormat:
   Exclude:
     - '**/spec/routing/**/*'
     - 'spec/analysis/finding_spec.rb'
-    - 'spec/config/rules_spec.rb'
     - 'spec/analysis/syntax_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'
@@ -129,10 +130,12 @@ RSpec/SpecFilePathFormat:
     - 'spec/cli/options_spec.rb'
     - 'spec/complexity/cognitive_score_spec.rb'
     - 'spec/complexity/scores_spec.rb'
+    - 'spec/config/rules_spec.rb'
     - 'spec/coupling/audiences_spec.rb'
     - 'spec/coupling/census_spec.rb'
     - 'spec/coupling/findings_spec.rb'
     - 'spec/coupling/graph_spec.rb'
+    - 'spec/coupling/inflection_spec.rb'
     - 'spec/coupling/packaging_spec.rb'
     - 'spec/coupling/resolution_spec.rb'
     - 'spec/coupling/roll_call_spec.rb'

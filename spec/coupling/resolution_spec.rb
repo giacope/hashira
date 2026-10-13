@@ -472,4 +472,27 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       expect(graph.edges.map(&:to_s)).to(eq(["billing -> shipping"]))
     end
   end
+
+  it "infers an association's class from its name, as Active Record does" do
+    model = ->(name, *body) { "class #{name} < ApplicationRecord\n#{body.join("\n")}\nend\n" }
+    many = "has_many"
+    author = model.call("Author", "#{many} :posts", "has_one :profile", "#{many} :tags, through: :y")
+    names = %w[Profile Category Tag Commentable Label Cactus Owner]
+    plain = names.to_h { ["app/models/#{it.downcase}.rb", "class #{it}\nend"] }
+    files = Fixtures::RAILS_FILES.merge(
+      "app/models/author.rb" => author,
+      "app/models/post.rb" => model.call("Post", "belongs_to :author", "has_and_belongs_to_many :categories"),
+      "app/models/remark.rb" => model.call("Remark", "belongs_to :commentable, polymorphic: true", "#{many} 'labels'"),
+      "app/models/feed.rb" => model.call("Feed", "#{many} :entries, through: :p, source: :remark", "#{many} name"),
+      "app/models/lab.rb" => model.call("Lab", "#{many} :cacti", "belongs_to :owner, polymorphic: false"),
+      "config/initializers/inflections.rb" => "Inflector.inflections { |i| i.irregular 'cactus', 'cacti' }\n"
+    ).merge(plain)
+    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(
+        include("Author -> Post", "Author -> Profile", "Author -> Tag", "Post -> Author", "Post -> Category")
+          .and(include("Remark -> Label", "Feed -> Remark", "Lab -> Cactus", "Lab -> Owner"))
+      )
+      expect(graph.edges.map(&:to_s)).not_to(include("Remark -> Commentable"))
+    end
+  end
 end

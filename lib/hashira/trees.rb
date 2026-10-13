@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Trees
+  def self.parse(path) = Prism.parse_file(path).value
+
   def initialize(project)
     @project = project
   end

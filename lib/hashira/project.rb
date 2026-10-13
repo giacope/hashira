@@ -3,6 +3,8 @@
 class Hashira::Project
   ROOT_PACKAGE = "(root)"
 
+  INFLECTIONS = %w[config/initializers/inflections.rb ../config/initializers/inflections.rb].freeze
+
   def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
     @boundaries = boundaries
@@ -33,6 +35,11 @@ class Hashira::Project
   def shown(directory) = directories.one? ? "" : "#{directory}/"
 
   def label = directories.join(", ")
+
+  def inflections
+    found = directories.flat_map { |directory| INFLECTIONS.map { File.expand_path(it, directory) } }
+    Hashira::Trees.parse(found.find { File.file?(it) } || return)
+  end
 
   def root = ROOT_PACKAGE
 

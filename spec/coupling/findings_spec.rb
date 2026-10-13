@@ -76,7 +76,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
-  it "pluralizes a multi-ref weakest edge" do
+  it "plurals a multi-ref weakest edge" do
     files = {
       "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
       "lib/app/b/x.rb" => "module App; module B; class X; def c = [A::X, A::Y]; end; end; end\n"
