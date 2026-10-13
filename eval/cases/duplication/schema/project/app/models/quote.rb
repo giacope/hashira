@@ -5,5 +5,4 @@ class Quote < ApplicationRecord
   has_many :adjustments, dependent: :destroy
   validates :number, presence: true, uniqueness: true
   validates :currency, presence: true
-  scope :recent, -> { order(created_at: :desc) }
 end

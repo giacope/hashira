@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "digest"
+require "zlib"
 require "prism"
 
 class Hashira::Duplication::Fragment
@@ -14,6 +15,12 @@ class Hashira::Duplication::Fragment
   ].freeze
 
   OPENED = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze
+
+  SPOKEN = [Prism::CallNode, Prism::ConstantReadNode, Prism::ConstantPathNode].freeze
+
+  ROWS = 2
+
+  SEEDS = (1..20).to_a.freeze
 
   HEREDOCS = [Prism::StringNode, Prism::InterpolatedStringNode, Prism::XStringNode, Prism::InterpolatedXStringNode].freeze
 
@@ -60,21 +67,36 @@ class Hashira::Duplication::Fragment
 
   def nodes = @_nodes ||= @walks.nodes(@roots)
 
+  def opened? = @roots.one? && OPENED.include?(@roots.first.class)
+
   def recurring = @setting.recurring
 
   def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
+
+  def vocabulary = @_vocabulary ||= nodes.filter_map { it.name if SPOKEN.include?(it.class) }
+
+  def counts = @_counts ||= types.tally
+
+  def spoken = @_spoken ||= vocabulary.tally
+
+  def bands
+    words = vocabulary.uniq.map(&:to_s)
+    return [] if words.empty?
+    signature = SEEDS.map { |seed| words.min_by { Zlib.crc32(it, seed) } }
+    signature.each_slice(ROWS).with_index.map { |rows, band| [band, *rows] }
+  end
 
   private
 
   def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
 
-  def opened? = @roots.one? && OPENED.include?(@roots.first.class)
-
   def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
 
   def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
 
-  def muted = sinks.flat_map(&:message).uniq
+  def muted = (sinks.flat_map(&:message) + recoveries).uniq
+
+  def recoveries = Hashira::Duplication::Recovery.of(nodes).flat_map { @walks.nodes([it.clause]) }
 
   def sinks = nodes.grep(Prism::CallNode).map { Hashira::Duplication::Sink.new(it) }.select(&:sink?)
 

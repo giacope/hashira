@@ -21,11 +21,14 @@ RSpec.describe(Hashira::Duplication::Clones) do
     tail = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n " \
       "r.notify(users.map(&:email), subject: :done)\n"
     whole = %w[a b].to_h { ["lib/app/#{it}.rb", "def #{it}(r)\n#{shared}#{tail}end\n"] }
-    files = whole.merge(%w[c d].to_h { ["lib/app/#{it}.rb", "def #{it}(r)\n#{shared} r.close(:#{it})\nend\n"] })
+    archived = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n"
+    endings = { "c" => " q = other.thing(:z)\n w.call(q) if q.ready?\n", "d" => " x.each { it.flush(now: true) }\n" }
+    partial = endings.to_h { |name, tail| ["lib/app/#{name}.rb", "def #{name}(r)\n#{shared}#{archived}#{tail}end\n"] }
+    files = whole.merge(partial)
     duplication(files) do |clones|
       masses = clones.clusters.flat_map(&:sites).select { it.file.end_with?("a.rb") }.map(&:mass)
-      expect(masses).to(eq([56, 52]))
-      expect(clones.coverage.transform_keys { File.basename(it) }).to(include("a.rb" => 56, "c.rb" => 28))
+      expect(masses).to(eq([56, 41]))
+      expect(clones.coverage.transform_keys { File.basename(it) }).to(include("a.rb" => 56, "c.rb" => 41))
     end
   end
 

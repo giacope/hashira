@@ -3,18 +3,26 @@
 require "prism"
 
 class Hashira::Duplication::Sink
-  CALLS = %i[debug info warn error fatal report notify capture_exception capture_message notice_error].freeze
-  OUTLETS = /log|error|exception|report|sentry|honeybadger|bugsnag|rollbar|airbrake|appsignal/i
+  LEVELS = %i[debug info warn error fatal unknown].freeze
 
-  def initialize(node)
+  LOGGER = /(?:\A|[_.@])log(?:ger)?\z/
+
+  def initialize(node, rescued = nil)
     @node = node
+    @rescued = rescued
   end
 
-  def sink? = @node.is_a?(Prism::CallNode) && CALLS.include?(@node.name) && OUTLETS.match?(@node.receiver&.slice)
+  def sink? = @node.is_a?(Prism::CallNode) && (logged? || reported?)
 
   def message = strings.flat_map { walk(it).drop(1) }
 
   private
+
+  def logged? = LEVELS.include?(@node.name) && LOGGER.match?(@node.receiver&.slice.to_s)
+
+  def reported? = Array(@node.arguments&.arguments).any? { handed?(it) }
+
+  def handed?(node) = node.is_a?(Prism::LocalVariableReadNode) && node.name == @rescued
 
   def strings = walk(@node).grep(Prism::InterpolatedStringNode)
 

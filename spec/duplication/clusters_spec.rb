@@ -397,7 +397,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   end
 
   it "keeps a smaller clone that two sites outside the bigger clone share" do
-    expect(nested(2).map { it.sites.map(&:file).sort }).to(eq([%w[a.rb b.rb], %w[a.rb b.rb c0.rb c1.rb]]))
+    expect(nested(2).map { it.sites.map(&:file).sort }).to(eq([%w[a.rb b.rb], %w[c0.rb c1.rb]]))
   end
 
   it "keeps a clone whose site only shares a line with a bigger clone, rather than sitting inside it" do
@@ -411,7 +411,7 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       "b.rb" => "def b(r)\n#{one}#{two}#{three} r.x\nend\n",
       "c.rb" => "def c(r)\n#{three}#{four}#{five} r.y\nend\n"
     }
-    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([%w[a.rb:2-5 b.rb:2-5], %w[a.rb:3-6 c.rb:2-5]]))
+    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([%w[a.rb:2-4 b.rb:2-4], %w[a.rb:4-6 c.rb:2-4]]))
   end
 
   def nested(extra) = clusters(wholes.merge((0...extra).to_h { ["c#{it}.rb", "def c(r)\n#{head} r.x(#{it})\nend\n"] }))
@@ -439,6 +439,22 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
       buckets = described_class.new(fragments(sources)).buckets.map { it.map(&:file) }
       expect(buckets).to(include(%w[a.rb b.rb], %w[c.rb d.rb]))
+    end
+
+    def disjoint(count) = (1..count).to_h { ["m#{it}.rb", "def m#{it}(x)\n#{calls(it, 1..9)}end\n"] }
+
+    def calls(owner, numbers) = numbers.map { " x.c#{owner}_#{it}(1)\n" }.join
+
+    def indexed(sources) = described_class.new(fragments(sources).select(&:opened?).uniq(&:range)).buckets
+
+    it "keeps a bucket of sixty whole, and pairs crowded fragments that share most of their names, never none" do
+      alike = "def m2(x)\n x.c2_0(1)\n#{calls(1, 2..9)}end\n"
+      expect(indexed(disjoint(60)).map(&:size)).to(include(60))
+      expect(indexed(disjoint(61).merge("m2.rb" => alike)).map { it.map(&:file) }.uniq).to(eq([%w[m1.rb m2.rb]]))
+    end
+
+    it "gives a fragment that names nothing no bands" do
+      expect(fragments("a.rb" => "def a(x) = [x]\n").first.bands).to(eq([]))
     end
   end
 
@@ -471,6 +487,10 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   describe(Hashira::Duplication::Sink) do
     def call(source) = Prism.parse(source).value.statements.body.first
 
+    def sink?(source, rescued = nil) = described_class.new(parsed(source).statements.body.first, rescued).sink?
+
+    def parsed(source) = Prism.parse(source, scopes: [[:e]]).value
+
     def pair(source)
       { "a.rb" => public_send(source, "charge", "Charge"), "b.rb" => public_send(source, "refund", "Refund") }
     end
@@ -501,8 +521,17 @@ RSpec.describe(Hashira::Duplication::Clusters) do
         "notify(order.customer, :failed)\n end\nend\n"
     end
 
-    it "skips a method or rescue clause whose one statement is a log line or an error report" do
-      expect(%i[logged reported rescued].map { clusters(pair(it)) }).to(all(be_empty))
+    def handed(name, what)
+      "def #{name}\n run(:#{what})\nrescue Timeout::Error => e\n tracker.track(e, context: { order_id: order.id, " \
+        "customer_id: order.customer_id, amount: order.total, at: Time.current })\nend\n"
+    end
+
+    it "skips a method or rescue clause whose one statement is a log line or hands on the rescued error" do
+      expect(%i[logged rescued handed].map { clusters(pair(it)) }).to(all(be_empty))
+    end
+
+    it "counts a lone report that builds its own context outside a rescue: that context is the copy" do
+      expect(clusters(pair(:reported)).size).to(eq(1))
     end
 
     it "still reports a log line among other statements, counting its interpolated message as one string" do
@@ -517,16 +546,51 @@ RSpec.describe(Hashira::Duplication::Clusters) do
       expect([plain, guarded].map { clusters(it).size }).to(eq([1, 1]))
     end
 
-    it "knows a log or error-report call by its message and its receiver" do
-      sinks = %w[logger.error(x) Rails.logger.info(x) Sentry.capture_exception(e) Rails.error.report(e) @log.debug(x)]
-      others = %w[logger.flush(x) order.error(x) error(x) x]
-      judged = [sinks, others].map { |group| group.map { described_class.new(call(it)).sink? }.uniq }
-      expect(judged).to(eq([[true], [false]]))
+    it "knows a log line by Logger's severities on a logger, and a report by the rescued error it hands on" do
+      logs = %w[logger.error(x) Rails.logger.info(x) @log.debug(x) app_logger.warn(x) self.logger.fatal(x) log.unknown]
+      others = %w[logger.flush(x) order.error(x) error(x) ledger.info(x) x Sentry.capture_exception(e)]
+      reports = %w[Sentry.capture_exception(e) Rails.error.report(e) notify(1,e)]
+      unreported = %w[report(@e) report]
+      plain = [logs, others].map { |group| group.map { sink?(it) } }
+      judged = plain + [reports, unreported].map { |group| group.map { sink?(it, :e) } }
+      expect(judged.map(&:uniq)).to(eq([[true], [false], [true], [false]]))
     end
 
     it "discounts every node a sink's interpolated messages hold, nested ones counted once" do
       fragment = fragments("a.rb" => "logger.info(\"a \#{\"b \#{c.d}\"}\", e)\nf\n").find { it.range == "a.rb:1-2" }
       expect([fragment.types.size, fragment.mass]).to(eq([15, 6]))
+    end
+
+    it "takes a rescue clause with no statements, or more than a report, for no report" do
+      clauses = ["", " tracker.track(e)\n retry\n"].map { parsed("begin\n run\nrescue => e\n#{it}end\n").statements }
+      recoveries = clauses.map { Hashira::Duplication::Recovery.new(it.body.first.rescue_clause) }
+      expect(recoveries.map(&:reporting?)).to(all(be(false)))
+    end
+  end
+
+  describe(Hashira::Duplication::NearMiss) do
+    def listed(count) = Array.new(count) { " [x, [x, x], { k: x, j: [x, x] }, x, x]\n" }.join
+
+    it "pairs two methods that call nothing on their shape, but never one that names nothing with one that does" do
+      silent = { "a.rb" => "def a(x)\n#{listed(3)}end\n", "b.rb" => "def b(x)\n#{listed(3)} [x, x]\nend\n" }
+      spoken = silent.merge("b.rb" => "def b(x)\n#{listed(3)} [x, y]\nend\n")
+      expect([silent, spoken].map { clusters(it).size }).to(eq([1, 0]))
+    end
+
+    def pair(*sources) = Hashira::Duplication::Pair.new(*sources.map { fragments("a.rb" => it).find(&:opened?) })
+
+    def calls(names, argument = "1") = names.map { " x.#{it}(#{argument})\n" }.join
+
+    it "takes the same calls in another order for other names, however alike their tallies" do
+      names = %w[a b c d e f g h]
+      shuffled = pair("def m(x)\n#{calls(names)}end\n", "def n(x)\n#{calls(names.reverse)} x.z\nend\n")
+      expect([shuffled.named?, shuffled.drifted?]).to(eq([false, true]))
+    end
+
+    it "takes the same calls with different arguments for a different shape" do
+      nested = calls(%w[a b c], "[[1, 2], { k: [3, 4] }]")
+      reshaped = pair("def m(x)\n#{calls(%w[a b c])}end\n", "def n(x)\n#{nested}end\n")
+      expect([reshaped.named?, reshaped.drifted?]).to(eq([true, false]))
     end
   end
 end

@@ -2,31 +2,23 @@
 
 class Hashira::Duplication::Index
   RARE = 2
-  MAX_BUCKET = 60
+  CROWD = 60
 
   def initialize(fragments)
     @fragments = fragments
   end
 
-  def buckets = grouped.values.select { |bucket| bucket.size.between?(2, MAX_BUCKET) }
+  def buckets = filed(@fragments) { rarest(it.types) }.flat_map { settled(it) }.reject(&:one?)
 
   private
 
-  def frequency = @_frequency ||= frequencies(@fragments)
+  def settled(bucket) = bucket.size > CROWD ? filed(bucket, &:bands) : [bucket]
 
-  def frequencies(fragments)
-    fragments.each_with_object(Hash.new(0)) { |fragment, counts| tally(counts, fragment) }
-  end
+  def filed(fragments, &) = keyed(fragments, &).group_by(&:first).values.map { it.map(&:last) }
 
-  def tally(counts, fragment) = fragment.types.uniq.each { |type| counts[type] += 1 }
+  def keyed(fragments) = fragments.flat_map { |fragment| yield(fragment).map { [it, fragment] } }
 
-  def grouped
-    index = Hash.new { |hash, type| hash[type] = [] }
-    @fragments.each { |fragment| file(index, fragment) }
-    index
-  end
+  def counts = @_counts ||= @fragments.flat_map { it.types.uniq }.tally
 
-  def file(index, fragment) = rarest(fragment).each { |type| index[type] << fragment }
-
-  def rarest(fragment) = fragment.types.uniq.min_by(RARE) { frequency[it] }
+  def rarest(tokens) = tokens.uniq.min_by(RARE) { counts[it] }
 end

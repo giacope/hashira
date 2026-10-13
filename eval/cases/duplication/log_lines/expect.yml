@@ -1,4 +1,5 @@
-# A rescue whose only statement reports the error is its message: copies of
-# it are not a clone to extract.
+# Two jobs that do different work but recover the same way: the rescue
+# clause only hands the rescued error to a reporter, and a statement that
+# only reports is its message, not a copy to extract.
 args: [lib/app]
 count: 0
