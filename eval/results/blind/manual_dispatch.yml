@@ -1,0 +1,177 @@
+---
+- key: faraday|manual_dispatch|Faraday::Connection#in_parallel
+  versions:
+  - main
+  label: fp
+  why: intentional backward-compat shim with a deprecation TODO
+- key: faraday|manual_dispatch|Faraday::Connection#support_parallel?
+  versions:
+  - branch
+  label: fp
+  why: defensive check for third-party adapters
+- key: faraday|manual_dispatch|Faraday::Middleware#call
+  versions:
+  - branch
+  label: tp
+  why: no-op default hooks in base class would replace respond_to? checks
+- key: faraday|manual_dispatch|Faraday::Response::Logger#on_error
+  versions:
+  - branch
+  label: fp
+  why: compat guard for custom formatters that do not inherit the base
+- key: faraday|manual_dispatch|Faraday::Response::RaiseError#on_complete
+  versions:
+  - branch
+  label: fp
+  why: case on status ranges is clear
+- key: faraday|manual_dispatch|Faraday::Utils#URI
+  versions:
+  - main
+  label: fp
+  why: boundary coercion of URI-or-string
+- key: rubocop|manual_dispatch|RuboCop::Cop::CheckLineBreakable#first_argument_is_heredoc?
+  versions:
+  - main
+  label: fp
+  why: elements may not be heredoc-capable nodes; needed
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_investigation_end
+  versions:
+  - main
+  label: fp
+  why: deliberate legacy-API compatibility hook
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_new_investigation
+  versions:
+  - main
+  label: fp
+  why: deliberate legacy-API compatibility hook
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument
+  versions:
+  - main
+  label: fp
+  why: AST traversal over different node kinds; the respond_to? is needed
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#find_most_bottom_of_heredoc_end
+  versions:
+  - main
+  label: fp
+  why: respond_to?(:heredoc_end) on loc is the standard parser API idiom
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineContinuationSpacing#ignored_literal_ranges
+  versions:
+  - main
+  label: fp
+  why: rubocop-ast location idiom
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineLength#string_delimiter
+  versions:
+  - main
+  label: fp
+  why: rubocop-ast location respond_to? idiom
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node
+  versions:
+  - main
+  label: fp
+  why: respond_to? on AST node is pragmatic here
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::ClassLength#on_casgn
+  versions:
+  - main
+  label: fp
+  why: node may be of another type; acceptable guard
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#assignment?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?
+  versions:
+  - main
+  label: fp
+  why: AST node capability guard; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes
+  versions:
+  - main
+  label: fp
+  why: respond_to? on AST arguments; pragmatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::MapIntoArray#return_value_used?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#find_offense_message
+  versions:
+  - main
+  label: fp
+  why: respond_to? on heterogeneous AST nodes; pragmatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#variable?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check; rubocop idiom
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelf#on_argument
+  versions:
+  - main
+  label: fp
+  why: AST node shape check; rubocop idiom
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::SwapValues#simple_assignment?
+  versions:
+  - main
+  label: fp
+  why: guards against non-node values in AST traversal
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#process_errors
+  versions:
+  - main
+  label: fp
+  why: exception-type handling; standard
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#validate_config
+  versions:
+  - main
+  label: tp
+  why: respond_to?(:validate_config) hook check; a no-op default on Cop::Base would
+    remove the sniffing
+- key: rubocop|manual_dispatch|RuboCop::Cop::TrailingComma#heredoc?
+  versions:
+  - main
+  label: fp
+  why: respond_to? on location maps is the standard rubocop-ast idiom
+- key: rubocop|manual_dispatch|RuboCop::LSP::Routes#for
+  versions:
+  - main
+  label: fp
+  why: dynamic route lookup; fine
+- key: rubygems.org|manual_dispatch|Advisory#to_gem_version
+  versions:
+  - branch
+  label: fp
+  why: small coercion accepting Version or string; acceptable
+- key: rubygems.org|manual_dispatch|Api::BaseController#render_forbidden
+  versions:
+  - branch
+  label: fp
+  why: accepts a string or an exception for convenience; fine as is
+- key: rubygems.org|manual_dispatch|ApplicationHelper#gem_info
+  versions:
+  - main
+  - branch
+  label: tp
+  why: respond_to?(:description) branches between two object kinds; a common interface
+    or presenter would remove it
+- key: rubygems.org|manual_dispatch|ApplicationPolicy#organization_member_with_role?
+  versions:
+  - branch
+  label: tp
+  why: base policy sniffs subclasses with respond_to?(:organization); a default organization
+    returning nil removes the check
+- key: rubygems.org|manual_dispatch|GemPackageEnumerator#initialize
+  versions:
+  - branch
+  label: fp
+  why: argument validation guard in constructor
+- key: rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number
+  versions:
+  - main
+  - branch
+  label: tp
+  why: respond_to?(:version) tells search-hit objects apart from models; a uniform
+    presenter interface would be better
+- key: rubygems.org|manual_dispatch|SyncDisposableEmailDomainsJob#last_attempt?
+  versions:
+  - branch
+  label: fp
+  why: retry policy by exception class; standard

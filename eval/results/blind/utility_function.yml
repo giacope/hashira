@@ -1,0 +1,138 @@
+---
+- key: faraday|utility_function|Faraday::Connection#find_default_proxy
+  versions:
+  - main
+  - branch
+  label: fp
+  why: small private ENV lookup; fine
+- key: faraday|utility_function|Faraday::Connection#support_parallel?
+  versions:
+  - main
+  - branch
+  label: fp
+  why: small private predicate; fine
+- key: faraday|utility_function|Faraday::RackBuilder#build_env
+  versions:
+  - branch
+  label: fp
+  why: builder building env is cohesive public API
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_local_variable_assignment_part
+  versions:
+  - main
+  label: fp
+  why: corrector helper in cop; fine
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_trailing_character_from_operator
+  versions:
+  - main
+  label: tp
+  why: cop's helper methods are all public (no private section); making them private
+    is the right, easy fix
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#rename_variable_with_underscore
+  versions:
+  - main
+  label: fp
+  why: small private corrector helper in cop; idiomatic
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#variable_like_method_invocation?
+  versions:
+  - main
+  label: tp
+  why: stateless node predicate exposed publicly in the cop; should be private (or
+    a node helper)
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#constructor?
+  versions:
+  - main
+  label: fp
+  why: small node predicate; fine
+- key: rubocop|utility_function|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#else_branch?
+  versions:
+  - main
+  label: fp
+  why: node predicate in calculator; fine
+- key: rubocop|utility_function|RuboCop::Cop::Metrics::Utils::IteratingBlock#iterating_method?
+  versions:
+  - main
+  label: fp
+  why: tiny predicate in a module mixin using a constant
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#correct_branches
+  versions:
+  - main
+  label: fp
+  why: helper module function; fine
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#same_line?
+  versions:
+  - main
+  label: fp
+  why: intentional thin delegator in mixin
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#white_space_range
+  versions:
+  - main
+  label: fp
+  why: range computation helper; fine
+- key: rubocop|utility_function|RuboCop::Cop::SymbolHelp#hash_key?
+  versions:
+  - main
+  label: fp
+  why: tiny AST helper in a cop mixin; normal
+- key: rubygems.org|utility_function|Auditable#merge_changes!
+  versions:
+  - branch
+  label: fp
+  why: small private helper in concern; fine
+- key: rubygems.org|utility_function|AvoAuditable#unscope_users
+  versions:
+  - branch
+  label: fp
+  why: trivial wrapper; fine
+- key: rubygems.org|utility_function|EmailResettable#email_reset
+  versions:
+  - branch
+  label: fp
+  why: Controller concern dispatching mailers is normal Rails placement
+- key: rubygems.org|utility_function|OIDC::TrustedPublisher::GitHubAction#audience_condition
+  versions:
+  - branch
+  label: fp
+  why: part of cohesive condition builder set
+- key: rubygems.org|utility_function|PasswordResettable#valid_compromised_password_reset_reason?
+  versions:
+  - main
+  - branch
+  label: fp
+  why: tiny verifier method on the model, called through a user instance; acceptable
+- key: rubygems.org|utility_function|RubygemContents#fs
+  versions:
+  - branch
+  label: fp
+  why: accessor to storage backend; fine
+- key: rubygems.org|utility_function|RubygemsHelper#latest_version_number
+  versions:
+  - branch
+  label: fp
+  why: view helper; any problem is the respond_to? sniffing, not missing state
+- key: rubygems.org|utility_function|RubygemsHelper#nice_date_for
+  versions:
+  - branch
+  label: fp
+  why: formatting helper belongs in helpers
+- key: rubygems.org|utility_function|SearchesHelper#es_suggestions
+  versions:
+  - branch
+  label: tp
+  why: helper digs into the Elasticsearch response structure (respond_to?(:response));
+    extracting suggestions belongs on the search result
+- key: rubygems.org|utility_function|TraceTagger#trace
+  versions:
+  - main
+  - branch
+  label: fp
+  why: module helper wrapping tracer; fine as is
+- key: rubygems.org|utility_function|UsersHelper#show_policies_acknowledge_banner?
+  versions:
+  - branch
+  label: fp
+  why: view helper taking a nullable user; fine
+- key: rubygems.org|utility_function|UsersHelper#twitter_url
+  versions:
+  - branch
+  label: fp
+  why: view helper building URL is fine in helper

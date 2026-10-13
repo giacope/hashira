@@ -13,8 +13,6 @@ module Evaluation
 
       def starts = finding["evidence"].map { it.sub(/-\d+\z/, "") }.sort
 
-      def rank = Digest::SHA256.hexdigest(key)
-
       def sites = kind == "duplication" ? finding["evidence"] : [finding.dig("detail", "site") || finding["package"]]
 
       def entry

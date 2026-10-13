@@ -5,12 +5,13 @@ class Evaluation::Corpus
 
   LIST = File.join(Evaluation::ROOT, "corpus.yml")
 
-  def self.build(tool, root) = new(tool, root, YAML.safe_load_file(LIST))
+  def self.build(tool, root, draw) = new(tool, root, YAML.safe_load_file(LIST), draw)
 
-  def initialize(tool, root, settings)
+  def initialize(tool, root, settings, draw)
     @tool = tool
     @root = root
     @settings = settings
+    @draw = draw
   end
 
   def metrics = runs.to_h { |name, run| [name, run.metrics] }
@@ -18,7 +19,7 @@ class Evaluation::Corpus
   def checks = runs.flat_map { |name, run| run.checks(name) }
 
   def precision
-    Evaluation::Precision.new(sightings, @settings.fetch("samples"), Evaluation::Labels.new(Evaluation::Labels::ROOT))
+    Evaluation::Precision.new(sightings, @settings.fetch("samples"), @draw)
   end
 
   def sightings = runs.flat_map { |name, run| run.sightings(name) }

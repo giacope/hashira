@@ -1,0 +1,86 @@
+---
+- key: faraday|data_clump|Faraday::DecodeMethods
+  versions:
+  - branch
+  label: fp
+  why: hot parsing code; param object not worthwhile
+- key: faraday|data_clump|Faraday::EncodeMethods
+  versions:
+  - branch
+  label: fp
+  why: recursive encoder args, not a clump
+- key: rubocop|data_clump|RuboCop::ConfigLoaderResolver
+  versions:
+  - main
+  label: fp
+  why: parameters are naturally passed in config resolution helpers
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLineBetweenDefs
+  versions:
+  - main
+  label: fp
+  why: pair of nodes passed naturally; object adds nothing
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLinesAroundBody
+  versions:
+  - main
+  label: fp
+  why: line pair param object marginal
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  versions:
+  - main
+  label: fp
+  why: token pair param object adds nothing
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceBeforeBlockBraces
+  versions:
+  - main
+  label: fp
+  why: brace ranges passed between small helpers; fine
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceInsideBlockBraces
+  versions:
+  - main
+  label: fp
+  why: brace tokens passed between small helpers; a parameter object is overkill
+- key: rubocop|data_clump|RuboCop::Cop::Lint::UnmodifiedReduceAccumulator
+  versions:
+  - main
+  label: fp
+  why: matcher arguments passed to small helpers; fine
+- key: rubocop|data_clump|RuboCop::Cop::MultilineElementIndentation
+  versions:
+  - main
+  label: fp
+  why: tokens passed between private helpers; object adds little
+- key: rubocop|data_clump|RuboCop::Cop::Style::CaseLikeIf
+  versions:
+  - main
+  label: fp
+  why: target is a context value passed to matchers; fine
+- key: rubocop|data_clump|RuboCop::Cop::Style::InverseMethods
+  versions:
+  - main
+  label: fp
+  why: corrector/node passing is cop convention
+- key: rubocop|data_clump|RuboCop::Cop::Style::SelfAssignment
+  versions:
+  - main
+  label: fp
+  why: node+rhs passed naturally
+- key: rubocop|data_clump|RuboCop::Cop::Style::SoleNestedConditional
+  versions:
+  - main
+  label: fp
+  why: corrector/node passing is cop convention
+- key: rubocop|data_clump|RuboCop::FileFinder
+  versions:
+  - main
+  label: fp
+  why: FileFinder API params; a parameter object is overkill
+- key: rubocop|data_clump|RuboCop::RSpec::ExpectOffense
+  versions:
+  - main
+  label: fp
+  why: test helper keyword args; fine
+- key: rubocop|data_clump|RuboCop::TargetFinder
+  versions:
+  - main
+  label: fp
+  why: recursive directory traversal params; a parameter object adds little

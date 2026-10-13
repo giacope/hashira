@@ -1,0 +1,173 @@
+---
+- key: rubocop|feature_envy|RuboCop::Cop::HashAlignmentStyles::TableAlignment#hash_rocket_delta
+  versions:
+  - main
+  label: fp
+  why: alignment math in style class; fine
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::HashAlignment#adjust
+  versions:
+  - main
+  label: fp
+  why: range is a parameter; nothing to move
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#subsequent_closing_parentheses_in_same_line?
+  versions:
+  - main
+  label: fp
+  why: AST location comparison; normal
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::RescueEnsureAlignment#aligned_with_line_break_method?
+  versions:
+  - main
+  label: fp
+  why: AST location handling; normal
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::SafeNavigationConsistency#receiver_name_as_key
+  versions:
+  - main
+  label: fp
+  why: cop helper on node
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::Syntax#add_offense_from_diagnostic
+  versions:
+  - main
+  label: fp
+  why: just formats an offense from the diagnostic; fine
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#remove_exception_assignment_part
+  versions:
+  - main
+  label: fp
+  why: corrector helper on node is cop convention
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#sequential_assignment?
+  versions:
+  - main
+  label: fp
+  why: cop helper over AST nodes; normal RuboCop style
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::Void#autocorrect_void_op
+  versions:
+  - main
+  label: fp
+  why: autocorrect helper working on AST nodes; normal
+- key: rubocop|feature_envy|RuboCop::Cop::Style::ConditionalAssignment#move_assignment_inside_condition
+  versions:
+  - main
+  label: fp
+  why: dispatching to correctors; fine
+- key: rubocop|feature_envy|RuboCop::Cop::Style::ConditionalCorrectorHelper#remove_whitespace_in_branches
+  versions:
+  - main
+  label: fp
+  why: corrector helper operating on AST nodes; no better home
+- key: rubocop|feature_envy|RuboCop::Cop::Style::EmptyCaseCondition#keep_first_when_comment
+  versions:
+  - main
+  label: fp
+  why: range manipulation in cop; idiomatic
+- key: rubocop|feature_envy|RuboCop::Cop::Style::IfInsideElse#find_end_range
+  versions:
+  - main
+  label: fp
+  why: recursive node helper; fine
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RaiseArgs#correction_compact_to_exploded
+  versions:
+  - main
+  label: fp
+  why: cop helper on node
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantFormat#all_fields_literal?
+  versions:
+  - main
+  label: fp
+  why: sequences is a local variable; no owning object to move to
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantHeredocDelimiterQuotes#need_heredoc_delimiter_quotes?
+  versions:
+  - main
+  label: fp
+  why: cop helper on node; idiomatic
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantInterpolation#embedded_in_percent_array?
+  versions:
+  - main
+  label: fp
+  why: one-line node predicate in a cop; normal
+- key: rubocop|feature_envy|RuboCop::Cop::Style::SoleNestedConditional#correct_for_comment
+  versions:
+  - main
+  label: fp
+  why: local variable; nothing to move
+- key: rubocop|feature_envy|RuboCop::Cop::Style::UnlessElse#range_between_else_and_end
+  versions:
+  - main
+  label: fp
+  why: range helper in cop; idiomatic
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce#process_zero_arity_super
+  versions:
+  - main
+  label: fp
+  why: simple iteration; nothing to move
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce::Variable#reference!
+  versions:
+  - main
+  label: fp
+  why: variable reference logic over its assignments; cohesive
+- key: rubocop|feature_envy|RuboCop::TargetFinder#to_inspect?
+  versions:
+  - main
+  label: fp
+  why: weak envy; finder logic
+- key: rubygems.org|feature_envy|Api::V1::OwnersController#owners_payload
+  versions:
+  - branch
+  label: fp
+  why: one-line API serialization in the controller; fine
+- key: rubygems.org|feature_envy|Api::V1::WebauthnVerificationsController#authenticated_user
+  versions:
+  - branch
+  label: fp
+  why: auth flow branching on an optional key; fine
+- key: rubygems.org|feature_envy|ApiKeysHelper#gem_scope
+  versions:
+  - main
+  - branch
+  label: fp
+  why: presentational helper using i18n/tooltip; belongs in view layer
+- key: rubygems.org|feature_envy|Avo::Actions::ValidateAttestation::ActionHandler#validate_attestation
+  versions:
+  - branch
+  label: fp
+  why: verification orchestration, not Attestation behavior per se
+- key: rubygems.org|feature_envy|DependenciesController#dep_resolver
+  versions:
+  - branch
+  label: tp
+  why: version-resolution logic works entirely on the dependency and its rubygem;
+    belongs on Dependency
+- key: rubygems.org|feature_envy|OIDC::ApiKeyRolesController#add_default_params
+  versions:
+  - branch
+  label: tp
+  why: default aud condition setup belongs on Condition (also duplicated in GitHubAction)
+- key: rubygems.org|feature_envy|Rubygem#bulk_reorder_versions
+  versions:
+  - main
+  label: fp
+  why: local variable; nowhere to move
+- key: rubygems.org|feature_envy|RubygemContents#store
+  versions:
+  - branch
+  label: fp
+  why: storage layer mapping entry fields is its job
+- key: rubygems.org|feature_envy|RubygemsHelper#link_to_github
+  versions:
+  - branch
+  label: tp
+  why: GitHub-link detection over links is domain logic that fits Links/Rubygem
+- key: rubygems.org|feature_envy|SyncDisposableEmailDomainsJob#fetch_lines
+  versions:
+  - main
+  label: fp
+  why: cannot move to Faraday response
+- key: rubygems.org|feature_envy|VersionManifest#store_entries
+  versions:
+  - branch
+  label: fp
+  why: weak envy; orchestration belongs in manifest
+- key: rubygems.org|feature_envy|VersionManifest#store_path
+  versions:
+  - branch
+  label: fp
+  why: storage mapping belongs in manifest

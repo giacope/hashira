@@ -1,0 +1,240 @@
+---
+- key: faraday|repeated_call|Faraday::Request::Authorization#header_from
+  versions:
+  - branch
+  label: fp
+  why: params.size trivial
+- key: faraday|repeated_call|Faraday::Request::Authorization#on_request
+  versions:
+  - main
+  label: fp
+  why: cheap accessor read twice
+- key: faraday|repeated_call|Faraday::Request::UrlEncoded#match_content_type
+  versions:
+  - main
+  - branch
+  label: fp
+  why: cheap accessor
+- key: faraday|repeated_call|Faraday::Utils#deep_merge!
+  versions:
+  - branch
+  label: tp
+  why: target[key] read 3x in condition; local clarifies
+- key: rubocop|repeated_call|RuboCop::ConfigObsoletion#load_rules
+  versions:
+  - main
+  label: fp
+  why: self.class is trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::ArgumentAlignment#target_method_lineno
+  versions:
+  - main
+  label: fp
+  why: cheap AST accessor; caching it in a local adds nothing
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#on_class
+  versions:
+  - main
+  label: fp
+  why: trivial accessor repeats
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::IndentationWidth#leftmost_modifier_of
+  versions:
+  - main
+  label: fp
+  why: cheap accessor in recursion
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::MultilineMethodCallIndentation#semantic_alignment_base
+  versions:
+  - main
+  label: fp
+  why: node.loc chain cheap; trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SingleLineBlockChain#selector_range
+  versions:
+  - main
+  label: fp
+  why: cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInLambdaLiteral#range_of_offense
+  versions:
+  - main
+  label: fp
+  why: node.parent cheap; trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInsideReferenceBrackets#previous_token
+  versions:
+  - main
+  label: fp
+  why: two reads of memoized accessor; trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::BigDecimalNew#on_send
+  versions:
+  - main
+  label: fp
+  why: node.loc is a cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::FloatComparison#check_numeric_returning_method
+  versions:
+  - main
+  label: fp
+  why: cheap accessor; trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#process_assignment_node
+  versions:
+  - main
+  label: fp
+  why: cheap accessor; trivial
+- key: rubocop|repeated_call|RuboCop::Cop::Naming::AsciiIdentifiers#first_offense_range
+  versions:
+  - main
+  label: fp
+  why: cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Style::AccessModifierDeclarations#autocorrect_inline_style
+  versions:
+  - main
+  label: fp
+  why: trivial accessor repeat
+- key: rubocop|repeated_call|RuboCop::Cop::Style::EndlessMethod#arguments
+  versions:
+  - main
+  label: fp
+  why: cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Style::IdenticalConditionalBranches#on_case
+  versions:
+  - main
+  label: fp
+  why: trivial accessor repeat
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MutableConstant#on_casgn
+  versions:
+  - main
+  label: fp
+  why: cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Style::Next#cond_range
+  versions:
+  - main
+  label: fp
+  why: cheap accessor
+- key: rubocop|repeated_call|RuboCop::Cop::Style::RequireOrder#on_send
+  versions:
+  - main
+  label: fp
+  why: cheap accessor repeated twice; no gain
+- key: rubocop|repeated_call|RuboCop::Cop::VariableForce::Scope#belong_to_inner_scope?
+  versions:
+  - main
+  label: tp
+  why: target_node.parent repeated 4x; a local clarifies
+- key: rubygems.org|repeated_call|Advisory::OSV::Mapper#packages
+  versions:
+  - branch
+  label: fp
+  why: hash lookup repeated; idiomatic and cheap
+- key: rubygems.org|repeated_call|Api::CompactIndexController#info
+  versions:
+  - branch
+  label: fp
+  why: cheap accessor
+- key: rubygems.org|repeated_call|ApplicationController#disable_cache
+  versions:
+  - branch
+  label: fp
+  why: header assignments idiomatic
+- key: rubygems.org|repeated_call|Attestation#display_data
+  versions:
+  - main
+  label: fp
+  why: trivial
+- key: rubygems.org|repeated_call|Auditable#in_audited_transaction
+  versions:
+  - branch
+  label: tp
+  why: record.attributes builds a new hash each call; name it once per record
+- key: rubygems.org|repeated_call|Avo::Resources::User::CreatedAtFilter#apply
+  versions:
+  - branch
+  label: fp
+  why: Time.zone is a cheap accessor; no gain
+- key: rubygems.org|repeated_call|ButtonComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: trivial
+- key: rubygems.org|repeated_call|Fastly.purge
+  versions:
+  - branch
+  label: fp
+  why: ENV read twice; trivial
+- key: rubygems.org|repeated_call|GemDownload.bulk_update
+  versions:
+  - branch
+  label: fp
+  why: cheap attribute reader
+- key: rubygems.org|repeated_call|Maintenance::BackfillSpecSha256Task#process
+  versions:
+  - branch
+  label: fp
+  why: cheap string method used in logs
+- key: rubygems.org|repeated_call|MfaExpiryMethods#mfa_session_active?
+  versions:
+  - branch
+  label: fp
+  why: session value changes between calls; caching would be wrong
+- key: rubygems.org|repeated_call|OrganizationOnboarding#created_by_gem_ownerships
+  versions:
+  - branch
+  label: tp
+  why: ownerships[it.id]&.owner? avoids duplicate lookup
+- key: rubygems.org|repeated_call|Organizations::MembersController#create
+  versions:
+  - branch
+  label: tp
+  why: membership_params[:membership] (a permit call plus index) is repeated; naming
+    it in a local is clearer
+- key: rubygems.org|repeated_call|Pusher#find
+  versions:
+  - branch
+  label: fp
+  why: cheap attribute reads; negligible gain
+- key: rubygems.org|repeated_call|ReverseDependenciesController#index
+  versions:
+  - branch
+  label: fp
+  why: params read twice; trivial
+- key: rubygems.org|repeated_call|Rubygem#public_versions_with_extra_version
+  versions:
+  - main
+  - branch
+  label: fp
+  why: scope chain repeated; trivial
+- key: rubygems.org|repeated_call|RubygemTransfer#rubygems_owned_by_transferrer
+  versions:
+  - branch
+  label: tp
+  why: ownerships[it.id]&.owner? simplifies
+- key: rubygems.org|repeated_call|RubygemsController#show
+  versions:
+  - branch
+  label: fp
+  why: cheap accessor
+- key: rubygems.org|repeated_call|RubygemsHelper#github_params
+  versions:
+  - branch
+  label: tp
+  why: split path once and destructure user/repo
+- key: rubygems.org|repeated_call|SessionVerifiable#verified_session_active?
+  versions:
+  - branch
+  label: fp
+  why: trivial repeated hash read
+- key: rubygems.org|repeated_call|SessionVerifiable#verify_session_redirect_path
+  versions:
+  - branch
+  label: fp
+  why: cheap accessor
+- key: rubygems.org|repeated_call|SqsWorker#perform
+  versions:
+  - main
+  label: fp
+  why: trivial hash read
+- key: rubygems.org|repeated_call|SyncDisposableEmailDomainsJob#fetch_lines
+  versions:
+  - branch
+  label: fp
+  why: cheap accessor read in an error path
+- key: rubygems.org|repeated_call|TotpsController#create
+  versions:
+  - main
+  - branch
+  label: fp
+  why: cheap accessor repeated twice

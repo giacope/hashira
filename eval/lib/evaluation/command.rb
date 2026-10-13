@@ -7,8 +7,6 @@ class Evaluation::Command
 
   RESULTS = File.join(Evaluation::ROOT, "results")
 
-  PENDING = File.join(Evaluation::ROOT, "tmp", "pending")
-
   CORPUS = File.join(Evaluation::ROOT, "tmp", "corpus")
 
   def initialize(argv)
@@ -43,14 +41,16 @@ class Evaluation::Command
 
   def corpus
     return unless chosen.include?(Evaluation::Corpus::SUITE)
-    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS)
+    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw)
   end
 
   def queue
     return unless corpus
-    FileUtils.mkdir_p(PENDING)
+    FileUtils.mkdir_p(draw.pending)
     corpus.precision.pending.group_by(&:kind).each { |kind, list| park(kind, list) }
   end
 
-  def park(kind, list) = File.write(File.join(PENDING, "#{kind}.yml"), YAML.dump(list.map(&:entry)))
+  def park(kind, list) = File.write(File.join(draw.pending, "#{kind}.yml"), YAML.dump(list.map(&:entry)))
+
+  def draw = @_draw ||= Evaluation::Draw.build(option("--seed"))
 end

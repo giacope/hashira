@@ -3,6 +3,10 @@
 class Evaluation::Labels
   ROOT = File.join(Evaluation::ROOT, "results", "labels")
 
+  BLIND = File.join(Evaluation::ROOT, "results", "blind")
+
+  DEV = [ROOT, BLIND].freeze
+
   VERDICTS = %w[tp fp].freeze
 
   def initialize(root)
