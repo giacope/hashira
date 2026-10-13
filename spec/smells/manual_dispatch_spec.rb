@@ -6,7 +6,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
           module Zone
-            class Duck; end
+            class Duck; def honk = 1; def moo = 1; end
 
             class Thing
               def poke(duck)
@@ -40,7 +40,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
               def probe(duck) = duck.respond_to?(:honk)
             end
 
-            class Duck; end
+            class Duck; def honk = 1; def moo = 1; end
 
             class Target; end
 
@@ -66,7 +66,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
 
           class Value; end
 
-          class Duck; end
+          class Duck; def honk = 1; def moo = 1; end
 
           class Thing
             def release(body)
@@ -97,7 +97,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Failure < StandardError; end
+          class Failure < StandardError; def response = 1; end
 
           class Thing
             def fetch
@@ -134,7 +134,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ours]))
   end
 
-  it "takes a probe for a core value's method as a nil or type check in disguise, unless the codebase defines it" do
+  it "leaves a probe for a message the codebase never defines, a core value's or a library's, to its owner" do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
@@ -159,7 +159,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Duck; end
+          class Duck; def honk = 1; def moo = 1; end
 
           class Thing
             def initialize(duck)
@@ -349,7 +349,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Circle; end
+          class Circle; def paint = 1; end
           class Square; end
 
           class Thing

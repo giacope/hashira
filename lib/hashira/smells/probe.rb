@@ -20,7 +20,7 @@ class Hashira::Smells::Probe
 
   def line = @call.location.start_line
 
-  def excused? = asked?(PROTOCOLS) || disguised? || foreign? || unknown?
+  def excused? = asked?(PROTOCOLS) || unspoken? || foreign? || unknown?
 
   def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
 
@@ -34,7 +34,7 @@ class Hashira::Smells::Probe
 
   def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(message.unescaped.to_sym)
 
-  def disguised? = asked?(Hashira::Analysis::VALUES) && !spoken?
+  def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
 
   def spoken? = @subject.ownership.vocabulary.speaks?(message.unescaped.to_sym)
 

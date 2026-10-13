@@ -54,7 +54,7 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
           module Zone
-            class Duck; end
+            class Duck; def honk = 1; def moo = 1; end
 
             class Thing
               def self.probe(duck)
@@ -124,7 +124,7 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/greets.rb" => <<~RUBY
         module App
           module Zone
-            class Duck; end
+            class Duck; def honk = 1; def moo = 1; end
 
             module Greets
               class_methods do

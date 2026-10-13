@@ -1,9 +1,34 @@
 ---
+- key: faraday|nil_check|Faraday::Adapter#save_response
+  evidence:
+  - reason_phrase (line 72)
+  - headers (line 74)
+  label: tp
+  why: headers and reason_phrase default to nil in the method's own signature; defaulting
+    headers to {} (and the phrase to "") removes both checks
 - key: faraday|nil_check|Faraday::FlatParamsEncoder.encode
   evidence: []
   label: fp
   why: 'params is the public API''s input, and nil is an accepted value it maps to
     nil: boundary handling'
+- key: faraday|nil_check|Faraday::Logging::Formatter#dump_headers
+  evidence:
+  - headers (line 59)
+  label: fp
+  why: 'a formatter that logs nothing when there are no headers: the check is the
+    behavior'
+- key: faraday|nil_check|Faraday::RackBuilder#ensure_adapter!
+  evidence:
+  - "@adapter (line 231)"
+  label: fp
+  why: 'raising when no adapter was configured is a validation of user setup: the
+    nil is the error'
+- key: faraday|nil_check|Faraday::Response::Json#initialize
+  evidence:
+  - parser_options (line 11)
+  label: tp
+  why: parser_options defaults to nil in the constructor's own signature; a {} default
+    removes the safe navigation
 - key: faraday|nil_check|Faraday::Utils::Headers#initialize
   evidence: []
   label: fp
@@ -13,16 +38,52 @@
   evidence: []
   label: fp
   why: 'derived_hash[key] is user YAML config: external data'
+- key: rubocop|nil_check|RuboCop::Cop::AnnotationComment#correct?
+  evidence:
+  - self.colon (line 25)
+  label: fp
+  why: 'colon is an optional regex capture: the comparison is about whether it was
+    present'
 - key: rubocop|nil_check|RuboCop::Cop::Badge#qualified?
   evidence: []
   label: fp
   why: 'department is the badge''s own optional part and qualified? is the predicate
     that encapsulates it: nothing to replace'
+- key: rubocop|nil_check|RuboCop::Cop::HashSubset#extract_offense
+  evidence:
+  - except_key (line 64)
+  label: fp
+  why: 'except_key is a node-pattern helper''s result, nil when the pattern does not
+    match: matching is the point'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::ArgumentAlignment#base_column
+  evidence:
+  - first_argument (line 124)
+  label: fp
+  why: first_argument is node.first_argument handed down, nil for a call without arguments
+    (rubocop-ast's contract)
 - key: rubocop|nil_check|RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?
   evidence: []
   label: fp
   why: 'processed_source[line] is nil past the last line (Array#[] semantics): not
     a nil the code produces'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::LineLength#check_for_breakable_node
+  evidence:
+  - breakable_node (line 116)
+  label: fp
+  why: 'extract_breakable_node answers nil when there is nothing to break: the absence
+    is the answer'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::LineLength#register_offense
+  evidence:
+  - breakable_range (line 290)
+  label: fp
+  why: 'breakable_range is the cop''s own attribute, nil when a line has no breakable
+    point: the absence is the answer the branch acts on, nothing to default'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::DisjunctiveAssignmentInConstructor#check_body
+  evidence:
+  - body (line 67)
+  label: fp
+  why: body is a rubocop-ast child handed down, nil for an empty constructor (the
+    library's contract)
 - key: rubocop|nil_check|RuboCop::Cop::Lint::NumberConversion#handle_conversion_method
   evidence: []
   label: fp
@@ -37,6 +98,12 @@
   label: fp
   why: 'body is a rubocop-ast child that is nil when a rescue is empty: the library''s
     contract, nothing to design away'
+- key: rubocop|nil_check|RuboCop::Cop::MessageAnnotator#style_guide_url
+  evidence:
+  - base_url (line 80)
+  label: fp
+  why: 'base_url is an optional configuration value: absent or empty means no style-guide
+    link'
 - key: rubocop|nil_check|RuboCop::Cop::Metrics::PerceivedComplexity#complexity_score_for
   evidence: []
   label: fp
@@ -52,6 +119,18 @@
   label: fp
   why: 'first_comment is Array#first of the comments list: nil means none, the collection''s
     contract'
+- key: rubocop|nil_check|RuboCop::Cop::RequireLibrary#on_send
+  evidence:
+  - name (line 37)
+  label: fp
+  why: 'name is a node-pattern capture, nil when the send is not a require: matching
+    is the point'
+- key: rubocop|nil_check|RuboCop::Cop::Style::EmptyLiteral#frozen_strings?
+  evidence:
+  - string_literals_frozen_by_default? (line 146)
+  label: fp
+  why: 'string_literals_frozen_by_default? is a three-valued config answer (true,
+    false, unknown): the nil test reads the unknown state'
 - key: rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#on_casgn
   evidence: []
   label: fp
@@ -67,6 +146,12 @@
   label: tp
   why: "@corrected_nodes is the cop's own ivar, nil until the first correction: initializing
     it to an empty set removes the check"
+- key: rubocop|nil_check|RuboCop::Formatter::DisabledConfigFormatter#supports_safe_autocorrect?
+  evidence:
+  - default_cfg (line 158)
+  label: tp
+  why: 'default_cfg is nil only because default_config returns a raw hash lookup:
+    that lookup could default to {} once, at its source'
 - key: rubocop|nil_check|RuboCop::LSP::Diagnostic#ensure_uri_scheme
   evidence: []
   label: fp
@@ -76,6 +161,12 @@
   label: tp
   why: 'default_cfg is nil only because default_config returns a raw hash lookup:
     that lookup could default to {} once, at its source'
+- key: rubygems.org|nil_check|Advisory#affects?
+  evidence:
+  - gem_version (line 35)
+  label: fp
+  why: 'a version that does not parse yields nil and the predicate answers false:
+    translating bad input, not a designable nil'
 - key: rubygems.org|nil_check|Api::V1::RubygemsController#create
   evidence: []
   label: fp
@@ -99,6 +190,22 @@
   label: tp
   why: 'dependency is the app''s own model and unresolved_name.nil? encodes resolved-vs-unresolved:
     the model can answer resolved? itself'
+- key: rubygems.org|nil_check|GemValidator::Package#validate_required_files!
+  evidence:
+  - "@gemspec_ast (line 217)"
+  label: fp
+  why: 'validating an uploaded package: a missing metadata file is an error to raise'
+- key: rubygems.org|nil_check|Gemcutter::UserAgentParser.rubygems_user_agent
+  evidence:
+  - ruby_engine (line 146)
+  label: fp
+  why: 'parsing a user agent and defaulting a missing engine to Ruby: translating
+    outside input at the boundary'
+- key: rubygems.org|nil_check|GitHubSecretScanning#valid_github_signature?
+  evidence:
+  - "@public_key (line 13)"
+  label: fp
+  why: 'the key comes from GitHub''s API and may be missing: guarding external data'
 - key: rubygems.org|nil_check|OIDC::Providers::ShowView#view_template
   evidence: []
   label: fp
