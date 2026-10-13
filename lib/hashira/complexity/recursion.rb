@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "tsort"
-
 class Hashira::Complexity::Recursion
   def initialize(sites)
     @sites = sites
@@ -13,9 +11,7 @@ class Hashira::Complexity::Recursion
 
   def cyclic = @_cyclic ||= components.select { looped?(it) }.flatten.to_set
 
-  def components = TSort.strongly_connected_components(graph.method(:each_key), method(:children))
-
-  def children(name, &) = graph.fetch(name).each(&)
+  def components = Hashira::Complexity::Components.new(graph).to_a
 
   def looped?((first, *rest)) = rest.any? || graph.fetch(first).include?(first)
 
