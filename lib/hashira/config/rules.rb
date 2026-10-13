@@ -4,8 +4,8 @@ class Hashira::Config::Rules
   THRESHOLDS = %w[boundary_sprawl complexity indirection repeated_conditional state_sprawl wide_edge].freeze
 
   OPT_IN = %w[
-    assumed_state boundary_sprawl control_parameter data_clump indirection module_initialize nil_check
-    repeated_call repeated_conditional state_sprawl utility_function
+    assumed_state boundary_sprawl control_parameter data_clump feature_envy indirection manual_dispatch
+    module_initialize nil_check repeated_call repeated_conditional state_sprawl utility_function
   ].freeze
 
   EVERY = "all"
@@ -24,6 +24,8 @@ class Hashira::Config::Rules
   def enabled?(kind) = rule(kind).enabled
 
   def threshold(kind, default) = rule(kind).threshold || default
+
+  def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
 
   def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds)
 
