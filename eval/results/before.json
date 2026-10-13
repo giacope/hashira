@@ -440,9 +440,6 @@
           "expected": [
             [
               "Author",
-              "Post"
-            ],
-            [
               "Category",
               "Post"
             ]
@@ -656,7 +653,7 @@
       ]
     },
     "duplication": {
-      "passed": 5,
+      "passed": 6,
       "total": 10,
       "checks": [
         {
@@ -715,9 +712,9 @@
         },
         {
           "name": "schema: findings",
-          "passed": false,
+          "passed": true,
           "expected": 0,
-          "actual": 1
+          "actual": 0
         }
       ]
     },
@@ -840,8 +837,8 @@
       ]
     },
     "cli": {
-      "passed": 6,
-      "total": 28,
+      "passed": 7,
+      "total": 29,
       "checks": [
         {
           "name": "another project's baseline is not applied: exit status",
@@ -889,13 +886,19 @@
           "actual": 1
         },
         {
-          "name": "a suppression with a reason silences the finding on the next line: \"Suppressed (1)\"",
+          "name": "suppressions are listed in the report: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "suppressions are listed in the report: \"Suppressed (1)\"",
           "passed": false,
           "expected": "said",
           "actual": "unsaid"
         },
         {
-          "name": "a suppression with a reason silences the finding on the next line: \"a generated state table\"",
+          "name": "suppressions are listed in the report: \"a generated state table\"",
           "passed": false,
           "expected": "said",
           "actual": "unsaid"
@@ -1066,8 +1069,8 @@
     "rubocop": {
       "status": 0,
       "files": 880,
-      "seconds": 28.22,
-      "megabytes": 470.3,
+      "seconds": 39.93,
+      "megabytes": 461.4,
       "kinds": {
         "assumed_state": {
           "count": 1,
@@ -1131,8 +1134,8 @@
     "faraday": {
       "status": 0,
       "files": 32,
-      "seconds": 1.13,
-      "megabytes": 51.2,
+      "seconds": 1.98,
+      "megabytes": 51.7,
       "kinds": {
         "complexity": {
           "count": 4,
@@ -1196,8 +1199,8 @@
     "rubygems.org": {
       "status": 0,
       "files": 558,
-      "seconds": 9.57,
-      "megabytes": 199.7,
+      "seconds": 14.81,
+      "megabytes": 202.4,
       "kinds": {
         "complexity": {
           "count": 18,

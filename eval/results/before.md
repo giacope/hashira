@@ -4,9 +4,9 @@
 | --- | --- |
 | complexity | 55/66 (83.3%) |
 | coupling | 17/25 (68.0%) |
-| duplication | 5/10 (50.0%) |
+| duplication | 6/10 (60.0%) |
 | smells | 10/18 (55.6%) |
-| cli | 6/28 (21.4%) |
+| cli | 7/29 (24.1%) |
 | corpus | 5/6 (83.3%) |
 
 ## Failing checks (before)
@@ -25,7 +25,7 @@
 | complexity | indirect recursion (Conformance::Case62#odd?) | `2` | `1` |
 | complexity | define_method (Conformance::Case64#run) | `1` | `nil` |
 | coupling | associations: edges | `["Author -> Post", "Author -> Profile", "Category -> Post", "Lab -> Analysis", "Lab -> Cactus", "Post -> Author", "Post -> Category", "Post -> Remark", "Post -> Status", "Team -> Person"]` | `["Post -> Remark"]` |
-| coupling | associations: cycles | `[["Author", "Post"], ["Category", "Post"]]` | `[]` |
+| coupling | associations: cycles | `[["Author", "Category", "Post"]]` | `[]` |
 | coupling | compact_scope: edges | `["billing -> shipping"]` | `["billing -> shipping", "shipping -> billing"]` |
 | coupling | compact_scope: edge shipping -> billing | `:absent` | `:present` |
 | coupling | compact_scope: cycles | `[]` | `[["billing", "shipping"]]` |
@@ -36,7 +36,6 @@
 | duplication | log_lines: findings | `0` | `1` |
 | duplication | near_miss_messages: roster.rb:3 + ledger.rb:3 | `:apart` | `:together` |
 | duplication | near_miss_messages: roster.rb:3 + stock.rb:3 | `:apart` | `:together` |
-| duplication | schema: findings | `0` | `1` |
 | smells | evidence: every nil_check finding names its evidence | `[]` | `["App::Renderer#render"]` |
 | smells | evidence: every manual_dispatch finding names its evidence | `[]` | `["App::Renderer#render"]` |
 | smells | indirection: indirection App::Importer#run | `:present` | `:absent` |
@@ -50,8 +49,8 @@
 | cli | the analyzed project's own baseline is applied from elsewhere: json accepted.size | `1` | `0` |
 | cli | the analyzed project's config is read from elsewhere: json kinds.utility_function | `nil` | `{"count" => 1, "files" => 1}` |
 | cli | a suppression with a reason silences the finding on the next line: exit status | `0` | `1` |
-| cli | a suppression with a reason silences the finding on the next line: "Suppressed (1)" | `:said` | `:unsaid` |
-| cli | a suppression with a reason silences the finding on the next line: "a generated state table" | `:said` | `:unsaid` |
+| cli | suppressions are listed in the report: "Suppressed (1)" | `:said` | `:unsaid` |
+| cli | suppressions are listed in the report: "a generated state table" | `:said` | `:unsaid` |
 | cli | suppressions are listed in --json: json suppressed.size | `1` | `nil` |
 | cli | suppressions are listed in --json: json suppressed.0.kind | `"complexity"` | `nil` |
 | cli | suppressions are listed in --json: json suppressed.0.reason | `"a generated state table"` | `nil` |
@@ -77,8 +76,8 @@
 | --- | --- |
 | files | 880 |
 | kloc | 82.9 |
-| seconds | 28.22 |
-| megabytes | 470.3 |
+| seconds | 39.93 |
+| megabytes | 461.4 |
 | assumed_state | 1 (0.01/kLOC) |
 | complexity | 38 (0.46/kLOC) |
 | control_parameter | 88 (1.06/kLOC) |
@@ -100,8 +99,8 @@
 | --- | --- |
 | files | 32 |
 | kloc | 3.17 |
-| seconds | 1.13 |
-| megabytes | 51.2 |
+| seconds | 1.98 |
+| megabytes | 51.7 |
 | complexity | 4 (1.26/kLOC) |
 | control_parameter | 1 (0.32/kLOC) |
 | cycle | 1 (0.32/kLOC) |
@@ -123,8 +122,8 @@
 | --- | --- |
 | files | 558 |
 | kloc | 20.73 |
-| seconds | 9.57 |
-| megabytes | 199.7 |
+| seconds | 14.81 |
+| megabytes | 202.4 |
 | complexity | 18 (0.87/kLOC) |
 | control_parameter | 16 (0.77/kLOC) |
 | cycle | 2 (0.1/kLOC) |
