@@ -39,9 +39,15 @@ class Hashira::Complexity::Indirection
 
   def borrowed = @_borrowed ||= families.keys.flat_map { |family| calls(family).keys - defined(family).keys }.to_set
 
-  def named = @_named ||= nodes.grep(Prism::SymbolNode).to_set { it.unescaped.to_sym }
+  def named = surveyed.first
 
-  def received = @_received ||= nodes.grep(Prism::CallNode).reject { SELVES.include?(it.receiver.class) }.to_set(&:name)
+  def received = surveyed.last
 
-  def nodes = @_nodes ||= @trees.flat_map { Hashira::Analysis::NodeWalk.collect(it) }
+  def surveyed = @_surveyed ||= @trees.each_with_object([Set.new, Set.new]) { |tree, sets| survey(tree, *sets) }
+
+  def survey(tree, symbols, receivers)
+    nodes = Hashira::Analysis::NodeWalk.collect(tree)
+    symbols.merge(nodes.grep(Prism::SymbolNode).map { it.unescaped.to_sym })
+    receivers.merge(nodes.grep(Prism::CallNode).reject { SELVES.include?(it.receiver.class) }.map(&:name))
+  end
 end
