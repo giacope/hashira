@@ -544,8 +544,10 @@ RSpec.describe(Hashira::Smells::NilCheck) do
           log
           @x.nil?
         end
+
+        def sized? = @x.nil? ? false : @x.any?
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready?]))
+    expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready? Box#sized?]))
   end
 end

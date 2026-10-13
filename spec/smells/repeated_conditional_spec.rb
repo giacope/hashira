@@ -54,6 +54,10 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
             end
 
             def epsilon = @ready ? (@ready ? 1 : 2) : (@ready ? 3 : 4)
+
+            def zeta = @mode == @last ? (@mode == @last ? 1 : 2) : (@mode == @last ? 3 : 4)
+
+            def eta = @modes.include?(:x) ? (@modes.include?(:x) ? 1 : 2) : (@modes.include?(:x) ? 3 : 4)
           end
         end
       end
