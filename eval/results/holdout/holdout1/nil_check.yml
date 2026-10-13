@@ -1,0 +1,790 @@
+---
+- key: rubocop|nil_check|RuboCop::Cop::Style::ArgumentsForwarding#register_forward_block_arg_offense
+  message: RuboCop::Cop::Style::ArgumentsForwarding#register_forward_block_arg_offense
+    checks for nil (rubocop/cop/style/arguments_forwarding.rb:345). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - block_arg (line 345)
+  code:
+  - "# rubocop/cop/style/arguments_forwarding.rb:345"
+  - '345:                     block_arg.nil? || block_arg.source == ''&'' || explicit_block_name?'
+  - '346: '
+  - '347:           add_offense(block_arg, message: BLOCK_MSG) do |corrector|'
+  - '348:             add_parens_if_missing(def_arguments_or_send, corrector) if add_parens'
+  - '349: '
+  - '350:             corrector.replace(block_arg, ''&'')'
+  - '351:           end'
+  - '352:         end'
+  - '353: '
+  - '354:         def register_forward_all_offense(def_or_send, send_or_arguments,
+    rest_or_splat)'
+  - '355:           arg_range = arguments_range(def_or_send, rest_or_splat)'
+  - '356: '
+  - '357:           add_offense(arg_range, message: FORWARDING_MSG) do |corrector|'
+  - '358:             add_parens_if_missing(send_or_arguments, corrector)'
+  - '359: '
+  - '360:             corrector.replace(arg_range, ''...'')'
+  - '361:           end'
+  - '362:         end'
+  - '363: '
+  - '364:         # rubocop:disable Metrics/AbcSize'
+  - '365:         def arguments_range(node, first_node)'
+  - '366:           arguments = node.arguments.reject do |arg|'
+  - '367:             next true if ADDITIONAL_ARG_TYPES.include?(arg.type) || arg.variable?
+    || arg.call_type?'
+  - '368: '
+  - '369:             arg.literal? && arg.each_descendant(:kwsplat).none?'
+- key: rubocop|nil_check|RuboCop::Cop::Naming::FileName#to_namespace
+  message: RuboCop::Cop::Naming::FileName#to_namespace checks for nil (rubocop/cop/naming/file_name.rb:231).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - start_index (line 231)
+  code:
+  - "# rubocop/cop/naming/file_name.rb:231"
+  - '231:           if start_index.nil?'
+  - '232:             [to_module_name(components.last)]'
+  - '233:           else'
+  - '234:             components[start_index..].map { |c| to_module_name(c) }'
+  - '235:           end'
+  - '236:         end'
+  - '237: '
+  - '238:         def to_module_name(basename)'
+  - '239:           words = basename.sub(/\..*/, '''').split(''_'')'
+  - '240:           words.map(&:capitalize).join.to_sym'
+  - '241:         end'
+  - '242:       end'
+  - '243:     end'
+  - '244:   end'
+  - '245: end'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#block_start?
+  message: RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#block_start? checks
+    for nil (rubocop/cop/layout/empty_lines_around_access_modifier.rb:172). Prefer
+    a default, a null object, or polymorphism.
+  evidence:
+  - "@block_line (line 172)"
+  code:
+  - "# rubocop/cop/layout/empty_lines_around_access_modifier.rb:172"
+  - '172:           return false unless @block_line'
+  - '173: '
+  - '174:           line == @block_line + 1'
+  - '175:         end'
+  - '176: '
+  - '177:         def body_end?(line)'
+  - '178:           return false unless @class_or_module_def_last_line'
+  - '179: '
+  - '180:           line == @class_or_module_def_last_line - 1'
+  - '181:         end'
+  - '182: '
+  - '183:         def next_empty_line_range(node)'
+  - '184:           source_range(processed_source.buffer, node.last_line + 1, 0)'
+  - '185:         end'
+  - '186: '
+  - '187:         def message(node)'
+  - '188:           case style'
+  - '189:           when :around'
+  - '190:             message_for_around_style(node)'
+  - '191:           when :only_before'
+  - '192:             message_for_only_before_style(node)'
+  - '193:           end'
+  - '194:         end'
+  - '195: '
+  - '196:         def message_for_around_style(node)'
+- key: faraday|nil_check|Faraday::EncodeMethods#encode_pair
+  message: Faraday::EncodeMethods#encode_pair checks for nil (encoders/nested_params_encoder.rb:45).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - value (line 45)
+  code:
+  - "# encoders/nested_params_encoder.rb:45"
+  - '45:       elsif value.nil?'
+  - '46:         parent'
+  - '47:       else'
+  - '48:         encoded_value = escape(value)'
+  - '49:         "#{parent}=#{encoded_value}"'
+  - '50:       end'
+  - '51:     end'
+  - '52: '
+  - '53:     def encode_hash(parent, value)'
+  - '54:       value = value.map { |key, val| [escape(key), val] }.sort'
+  - '55: '
+  - '56:       buffer = +'''''
+  - '57:       value.each do |key, val|'
+  - '58:         new_parent = "#{parent}%5B#{key}%5D"'
+  - '59:         buffer << "#{encode_pair(new_parent, val)}&"'
+  - '60:       end'
+  - '61:       buffer.chop'
+  - '62:     end'
+  - '63: '
+  - '64:     def encode_array(parent, value)'
+  - '65:       return "#{parent}%5B%5D" if value.empty?'
+  - '66: '
+  - '67:       buffer = +'''''
+  - '68:       value.each_with_index do |val, index|'
+  - '69:         new_parent = if @array_indices'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::HeredocMethodCallPosition#autocorrect
+  message: RuboCop::Cop::Lint::HeredocMethodCallPosition#autocorrect checks for nil
+    (rubocop/cop/lint/heredoc_method_call_position.rb:52). Prefer a default, a null
+    object, or polymorphism.
+  evidence:
+  - call_range (line 52)
+  code:
+  - "# rubocop/cop/lint/heredoc_method_call_position.rb:52"
+  - '52:           return if call_range.nil?'
+  - '53: '
+  - '54:           call_source = call_range.source.strip'
+  - '55:           corrector.remove(call_range)'
+  - '56:           corrector.insert_after(heredoc_begin_line_range(node), call_source)'
+  - '57:         end'
+  - '58: '
+  - '59:         def heredoc_node_descendent_receiver(node)'
+  - '60:           while send_node?(node)'
+  - '61:             return node.receiver if heredoc_node?(node.receiver)'
+  - '62: '
+  - '63:             node = node.receiver'
+  - '64:           end'
+  - '65:         end'
+  - '66: '
+  - '67:         def send_node?(node)'
+  - '68:           return false unless node'
+  - '69: '
+  - '70:           node.call_type?'
+  - '71:         end'
+  - '72: '
+  - '73:         def heredoc_node?(node)'
+  - '74:           node.respond_to?(:heredoc?) && node.heredoc?'
+  - '75:         end'
+  - '76: '
+- key: rubocop|nil_check|RuboCop::Cop::Lint::IncompatibleIoSelectWithFiberScheduler#scheduler_compatible?
+  message: RuboCop::Cop::Lint::IncompatibleIoSelectWithFiberScheduler#scheduler_compatible?
+    checks for nil (rubocop/cop/lint/incompatible_io_select_with_fiber_scheduler.rb:66).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - io2 (line 66)
+  code:
+  - "# rubocop/cop/lint/incompatible_io_select_with_fiber_scheduler.rb:66"
+  - '66:           io2&.array_type? ? io2.values.empty? : (io2.nil? || io2.nil_type?)'
+  - '67:         end'
+  - '68: '
+  - '69:         def preferred_method(read, write, timeout)'
+  - '70:           timeout_argument = timeout.nil? ? '''' : "(#{timeout.source})"'
+  - '71: '
+  - '72:           if read.array_type? && read.values[0]'
+  - '73:             "#{read.values[0].source}.wait_readable#{timeout_argument}"'
+  - '74:           else'
+  - '75:             "#{write.values[0].source}.wait_writable#{timeout_argument}"'
+  - '76:           end'
+  - '77:         end'
+  - '78:       end'
+  - '79:     end'
+  - '80:   end'
+  - '81: end'
+- key: rubygems.org|nil_check|Events::TableDetailsComponent#link_to_version_from_gid
+  message: Events::TableDetailsComponent#link_to_version_from_gid checks for nil (app/views/components/events/table_details_component.rb:35).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - platform (line 35)
+  code:
+  - "# app/views/components/events/table_details_component.rb:35"
+  - '35:       title = "#{rubygem.name} (#{number}#{"-#{platform}" unless platform.blank?
+    || platform == ''ruby''}"'
+  - '36:       title << ", Ruby ABI #{ruby_abi}" if ruby_abi.present?'
+  - '37:       title << ")"'
+  - '38:       title'
+  - '39:     end'
+  - '40:   end'
+  - '41: '
+  - '42:   def load_gid(gid, only: [])'
+  - '43:     gid&.find(only:)'
+  - '44:   rescue ActiveRecord::RecordNotFound'
+  - '45:     nil'
+  - '46:   end'
+  - '47: end'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node
+  message: RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node checks for nil
+    (rubocop/cop/layout/rescue_ensure_alignment.rb:119, 127). Prefer a default, a
+    null object, or polymorphism.
+  evidence:
+  - ancestor_node (line 119)
+  - access_modifier_node (line 127)
+  code:
+  - "# rubocop/cop/layout/rescue_ensure_alignment.rb:119, 127"
+  - '119:           return ancestor_node if ancestor_node.nil? || ancestor_node.kwbegin_type?'
+  - '120:           return if ancestor_node.respond_to?(:send_node) &&'
+  - '121:                     aligned_with_line_break_method?(ancestor_node, node)'
+  - '122: '
+  - '123:           assignment_node = assignment_node(ancestor_node)'
+  - '124:           return assignment_node if same_line?(ancestor_node, assignment_node)'
+  - '125: '
+  - '126:           access_modifier_node = access_modifier_node(ancestor_node)'
+  - '127:           return access_modifier_node unless access_modifier_node.nil?'
+- key: faraday|nil_check|Faraday::Error#response_status
+  message: Faraday::Error#response_status checks for nil (error.rb:32). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - "@response (line 32)"
+  code:
+  - "# error.rb:32"
+  - '32:       return unless @response'
+  - '33: '
+  - '34:       @response.is_a?(Faraday::Response) ? @response.status : @response[:status]'
+  - '35:     end'
+  - '36: '
+  - '37:     def response_headers'
+  - '38:       return unless @response'
+  - '39: '
+  - '40:       @response.is_a?(Faraday::Response) ? @response.headers : @response[:headers]'
+  - '41:     end'
+  - '42: '
+  - '43:     def response_body'
+  - '44:       return unless @response'
+  - '45: '
+  - '46:       @response.is_a?(Faraday::Response) ? @response.body : @response[:body]'
+  - '47:     end'
+  - '48: '
+  - '49:     protected'
+  - '50: '
+  - '51:     # Pulls out potential parent exception and response hash, storing them
+    in'
+  - '52:     # instance variables.'
+  - '53:     # exc      - Either an Exception, a string message, or a response hash.'
+  - '54:     # response - Hash'
+  - '55:     #              :status  - Optional integer HTTP response status'
+  - '56:     #              :headers - String key/value hash of HTTP response header'
+- key: rubocop|nil_check|RuboCop::Cop::IfThenCorrector#replacement
+  message: RuboCop::Cop::IfThenCorrector#replacement checks for nil (rubocop/cop/correctors/if_then_corrector.rb:23).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - indentation (line 23)
+  code:
+  - "# rubocop/cop/correctors/if_then_corrector.rb:23"
+  - '23:         indentation = '' '' * node.source_range.column if indentation.nil?'
+  - '24:         if_branch_source = node.if_branch&.source || ''nil'''
+  - '25:         elsif_indentation = indentation if node.respond_to?(:elsif?) && node.elsif?'
+  - '26: '
+  - '27:         if_branch = <<~RUBY'
+  - '28:           #{elsif_indentation}#{node.keyword} #{node.condition.source}'
+  - '29:           #{indentation}#{branch_body_indentation}#{if_branch_source}'
+  - '30:         RUBY'
+  - '31: '
+  - '32:         else_branch = rewrite_else_branch(node.else_branch, indentation)'
+  - '33:         if_branch + else_branch'
+  - '34:       end'
+  - '35: '
+  - '36:       def rewrite_else_branch(else_branch, indentation)'
+  - '37:         if else_branch.nil?'
+  - '38:           ''end'''
+  - '39:         elsif else_branch.if_type? && else_branch.elsif?'
+  - '40:           replacement(else_branch, indentation)'
+  - '41:         else'
+  - '42:           <<~RUBY.chomp'
+  - '43:             #{indentation}else'
+  - '44:             #{indentation}#{branch_body_indentation}#{else_branch.source}'
+  - '45:             #{indentation}end'
+  - '46:           RUBY'
+  - '47:         end'
+- key: rubocop|nil_check|RuboCop::Cop::CheckLineBreakable#extract_first_element_over_column_limit
+  message: RuboCop::Cop::CheckLineBreakable#extract_first_element_over_column_limit
+    checks for nil (rubocop/cop/mixin/check_line_breakable.rb:87). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - i (line 87)
+  code:
+  - "# rubocop/cop/mixin/check_line_breakable.rb:87"
+  - '87:         return if i.nil?'
+  - '88:         return elements.first if i.zero?'
+  - '89: '
+  - '90:         elements[i - 1]'
+  - '91:       end'
+  - '92: '
+  - '93:       # @api private'
+  - '94:       def first_argument_is_heredoc?(node)'
+  - '95:         first_argument = node.first_argument'
+  - '96: '
+  - '97:         first_argument.respond_to?(:heredoc?) && first_argument.heredoc?'
+  - '98:       end'
+  - '99: '
+  - '100:       # @api private'
+  - '101:       # If a `send` or `csend` node contains a heredoc argument, splitting
+    cannot happen'
+  - '102:       # after the heredoc or else it will cause a syntax error.'
+  - '103:       def shift_elements_for_heredoc_arg(node, elements, index)'
+  - '104:         return index unless node.type?(:call, :array)'
+  - '105: '
+  - '106:         heredoc_index = elements.index { |arg| arg.respond_to?(:heredoc?)
+    && arg.heredoc? }'
+  - '107:         return index unless heredoc_index'
+  - '108:         return nil if heredoc_index.zero?'
+  - '109: '
+  - '110:         heredoc_index >= index ? index : heredoc_index + 1'
+  - '111:       end'
+- key: rubocop|nil_check|RuboCop::Cop::InternalAffairs::NodePatternGroups#on_send
+  message: RuboCop::Cop::InternalAffairs::NodePatternGroups#on_send checks for nil
+    (rubocop/cop/internal_affairs/node_pattern_groups.rb:70). Prefer a default, a
+    null object, or polymorphism.
+  evidence:
+  - node_groups (line 70)
+  code:
+  - "# rubocop/cop/internal_affairs/node_pattern_groups.rb:70"
+  - '70:           return if node_groups.nil?'
+  - '71: '
+  - '72:           apply_range_offsets(pattern_node)'
+  - '73: '
+  - '74:           node_groups.each_with_index do |group, index|'
+  - '75:             register_offense(group, index)'
+  - '76:           end'
+  - '77:         end'
+  - '78: '
+  - '79:         def after_send(_)'
+  - '80:           @walker.reset!'
+  - '81:         end'
+  - '82: '
+  - '83:         private'
+  - '84: '
+  - '85:         def node_groups'
+  - '86:           @walker.node_groups'
+  - '87:         end'
+  - '88: '
+  - '89:         # rubocop:disable InternalAffairs/RedundantSourceRange -- `node`
+    here is a NodePatternNode'
+  - '90:         def register_offense(group, index)'
+  - '91:           replacement = replacement(group)'
+  - '92:           message = format('
+  - '93:             MSG,'
+  - '94:             names: group.node_types.map { |node| node.source_range.source
+    }.join(''`, `''),'
+- key: faraday|nil_check|Faraday::Error#exc_msg_and_response!
+  message: Faraday::Error#exc_msg_and_response! checks for nil (error.rb:72). Prefer
+    a default, a null object, or polymorphism.
+  evidence:
+  - "@response (line 72)"
+  - "@wrapped_exception (line 72)"
+  code:
+  - "# error.rb:72"
+  - '72:       if @response.nil? && @wrapped_exception.nil?'
+  - '73:         @wrapped_exception, msg, @response = exc_msg_and_response(exc, response)'
+  - '74:         return msg'
+  - '75:       end'
+  - '76: '
+  - '77:       exc.to_s'
+  - '78:     end'
+  - '79: '
+  - '80:     # Pulls out potential parent exception and response hash.'
+  - '81:     def exc_msg_and_response(exc, response = nil)'
+  - '82:       case exc'
+  - '83:       when Exception'
+  - '84:         [exc, exc.message, response]'
+  - '85:       when Hash'
+  - '86:         [nil, build_error_message_from_hash(exc), exc]'
+  - '87:       when Faraday::Env'
+  - '88:         [nil, build_error_message_from_env(exc), exc]'
+  - '89:       else'
+  - '90:         [nil, exc.to_s, response]'
+  - '91:       end'
+  - '92:     end'
+  - '93: '
+  - '94:     private'
+  - '95: '
+  - '96:     def build_error_message_from_hash(hash)'
+- key: faraday|nil_check|Faraday::Error#response_body
+  message: Faraday::Error#response_body checks for nil (error.rb:44). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - "@response (line 44)"
+  code:
+  - "# error.rb:44"
+  - '44:       return unless @response'
+  - '45: '
+  - '46:       @response.is_a?(Faraday::Response) ? @response.body : @response[:body]'
+  - '47:     end'
+  - '48: '
+  - '49:     protected'
+  - '50: '
+  - '51:     # Pulls out potential parent exception and response hash, storing them
+    in'
+  - '52:     # instance variables.'
+  - '53:     # exc      - Either an Exception, a string message, or a response hash.'
+  - '54:     # response - Hash'
+  - '55:     #              :status  - Optional integer HTTP response status'
+  - '56:     #              :headers - String key/value hash of HTTP response header'
+  - '57:     #                         values.'
+  - '58:     #              :body    - Optional string HTTP response body.'
+  - '59:     #              :request - Hash'
+  - '60:     #                           :method   - Symbol with the request HTTP
+    method.'
+  - '61:     #                           :url      - URI object with the url requested.'
+  - '62:     #                           :url_path - String with the url path requested.'
+  - '63:     #                           :params   - String key/value hash of query
+    params'
+  - '64:     #                                     present in the request.'
+  - '65:     #                           :headers  - String key/value hash of HTTP
+    request'
+  - '66:     #                                     header values.'
+  - '67:     #                           :body     - String HTTP request body.'
+  - '68:     #'
+- key: rubocop|nil_check|RuboCop::Cop::Layout::RescueEnsureAlignment#check
+  message: RuboCop::Cop::Layout::RescueEnsureAlignment#check checks for nil (rubocop/cop/layout/rescue_ensure_alignment.rb:58).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - alignment_node (line 58)
+  code:
+  - "# rubocop/cop/layout/rescue_ensure_alignment.rb:58"
+  - '58:           return if alignment_node.nil?'
+  - '59: '
+  - '60:           alignment_loc = alignment_location(alignment_node)'
+  - '61:           kw_loc        = node.loc.keyword'
+  - '62: '
+  - '63:           return if alignment_loc.column == kw_loc.column || same_line?(alignment_loc,
+    kw_loc)'
+  - '64: '
+  - '65:           add_offense('
+  - '66:             kw_loc, message: format_message(alignment_node, alignment_loc,
+    kw_loc)'
+  - '67:           ) do |corrector|'
+  - '68:             autocorrect(corrector, node, alignment_loc)'
+  - '69:           end'
+  - '70:         end'
+  - '71: '
+  - '72:         def autocorrect(corrector, node, alignment_location)'
+  - '73:           whitespace = whitespace_range(node)'
+  - '74:           # Some inline node is sitting before current node.'
+  - '75:           return nil unless whitespace.source.strip.empty?'
+  - '76: '
+  - '77:           new_column = alignment_location.column'
+  - '78: '
+  - '79:           corrector.replace(whitespace, '' '' * new_column)'
+  - '80:         end'
+  - '81: '
+  - '82:         def format_message(alignment_node, alignment_loc, kw_loc)'
+- key: rubocop|nil_check|RuboCop::Cop::Style::RedundantParentheses#method_chain_begins_with_hash_literal
+  message: RuboCop::Cop::Style::RedundantParentheses#method_chain_begins_with_hash_literal
+    checks for nil (rubocop/cop/style/redundant_parentheses.rb:126). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - node (line 126)
+  code:
+  - "# rubocop/cop/style/redundant_parentheses.rb:126"
+  - '126:           return if node.nil?'
+  - '127:           return node if node.hash_type?'
+  - '128:           return unless node.send_type?'
+  - '129: '
+  - '130:           method_chain_begins_with_hash_literal(node.children.first)'
+  - '131:         end'
+  - '132: '
+  - '133:         def check(begin_node)'
+  - '134:           node = begin_node.children.first'
+  - '135: '
+  - '136:           if (message = find_offense_message(begin_node, node))'
+  - '137:             if node.range_type? && !argument_of_parenthesized_method_call?(begin_node)'
+  - '138:               begin_node = begin_node.parent'
+  - '139:             end'
+  - '140: '
+  - '141:             return offense(begin_node, message)'
+  - '142:           end'
+  - '143: '
+  - '144:           check_send(begin_node, node) if node.call_type?'
+  - '145:         end'
+  - '146: '
+  - '147:         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity,
+    Metrics/MethodLength, Metrics/PerceivedComplexity'
+  - '148:         def find_offense_message(begin_node, node)'
+  - '149:           return ''a keyword'' if keyword_with_redundant_parentheses?(node)'
+  - '150:           return ''a literal'' if node.literal? && disallowed_literal?(begin_node,
+    node)'
+- key: rubocop|nil_check|RuboCop::Cop::Lint::UselessAccessModifier#check_node
+  message: RuboCop::Cop::Lint::UselessAccessModifier#check_node checks for nil (rubocop/cop/lint/useless_access_modifier.rb:172).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - node (line 172)
+  code:
+  - "# rubocop/cop/lint/useless_access_modifier.rb:172"
+  - '172:           return if node.nil?'
+  - '173: '
+  - '174:           if node.begin_type?'
+  - '175:             check_scope(node)'
+  - '176:           elsif node.send_type? && node.bare_access_modifier?'
+  - '177:             add_offense(node, message: format(MSG, current: node.method_name))
+    do |corrector|'
+  - '178:               autocorrect(corrector, node)'
+  - '179:             end'
+  - '180:           end'
+  - '181:         end'
+  - '182: '
+  - '183:         def access_modifier?(node)'
+  - '184:           node.bare_access_modifier? || node.method?(:private_class_method)'
+  - '185:         end'
+  - '186: '
+  - '187:         def check_scope(node)'
+  - '188:           cur_vis, unused = check_child_nodes(node, nil, :public)'
+  - '189:           return unless unused'
+  - '190: '
+  - '191:           add_offense(unused, message: format(MSG, current: cur_vis)) do
+    |corrector|'
+  - '192:             autocorrect(corrector, unused)'
+  - '193:           end'
+  - '194:         end'
+  - '195: '
+  - '196:         # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity'
+- key: rubocop|nil_check|RuboCop::Cop::Style::GuardClause#register_offense
+  message: RuboCop::Cop::Style::GuardClause#register_offense checks for nil (rubocop/cop/style/guard_clause.rb:204).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - guard (line 204)
+  code:
+  - "# rubocop/cop/style/guard_clause.rb:204"
+  - '204:             next if node.else? && guard.nil?'
+  - '205: '
+  - '206:             autocorrect(corrector, node, condition, replacement || example,
+    guard)'
+  - '207:           end'
+  - '208:         end'
+  - '209: '
+  - '210:         # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity,
+    Metrics/PerceivedComplexity'
+  - '211:         def autocorrect(corrector, node, condition, replacement, guard)'
+  - '212:           corrector.replace(node.loc.keyword.join(condition.source_range),
+    replacement)'
+  - '213: '
+  - '214:           if_branch = node.if_branch'
+  - '215:           else_branch = node.else_branch'
+  - '216: '
+  - '217:           corrector.replace(node.loc.begin, "\n") if node.then?'
+  - '218: '
+  - '219:           if if_branch&.send_type? && heredoc?(if_branch.last_argument)'
+  - '220:             autocorrect_heredoc_argument(corrector, node, if_branch, else_branch,
+    guard)'
+  - '221:           elsif else_branch&.send_type? && heredoc?(else_branch.last_argument)'
+  - '222:             autocorrect_heredoc_argument(corrector, node, else_branch, if_branch,
+    guard)'
+  - '223:           else'
+  - '224:             corrector.remove(node.loc.end)'
+  - '225:             return unless node.else?'
+  - '226: '
+  - '227:             corrector.remove(node.loc.else)'
+  - '228:             corrector.remove(range_of_branch_to_remove(node, guard))'
+- key: rubygems.org|nil_check|Pusher#republish_notification
+  message: Pusher#republish_notification checks for nil (app/models/pusher.rb:298).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - version.deletion (line 298)
+  code:
+  - "# app/models/pusher.rb:298"
+  - '298:     elsif version.deletion.nil?'
+  - '299:       notify("It appears that #{version.full_name} did not finish pushing.\n"
+    \'
+  - '300:              "Please contact support@rubygems.org for assistance if you
+    pushed this gem more than a minute ago.", 409)'
+  - '301:     else'
+  - '302:       different_owner = "pushed by a previous owner of this gem " unless
+    owner.owns_gem?(version.rubygem)'
+  - '303:       notify("A yanked version #{different_owner}already exists (#{version.full_name}).\n"
+    \'
+  - '304:              "Repushing of gem versions is not allowed. Please use a new
+    version and retry", 409)'
+  - '305:     end'
+  - '306:   end'
+  - '307: '
+  - '308:   def notify_reserved'
+  - '309:     notify("This gem name is reserved. You are not allowed to push this
+    gem.", 403)'
+  - '310:   end'
+  - '311: '
+  - '312:   def notify_unauthorized'
+  - '313:     if !api_key.user?'
+  - '314:       notify("You are not allowed to push this gem.", 403)'
+  - '315:     elsif rubygem.unconfirmed_ownership?(owner)'
+  - '316:       notify("You do not have permission to push to this gem. " \'
+  - '317:              "Please click the confirmation link we emailed you at #{owner.email}
+    to verify ownership before pushing.", 403)'
+  - '318:     else'
+  - '319:       notify("You do not have permission to push to this gem. Ask an owner
+    to add you with: gem owner #{rubygem.name} --add #{owner.email}", 403)'
+  - '320:     end'
+  - '321:   end'
+  - '322: '
+- key: rubocop|nil_check|RuboCop::Cop::Naming::InclusiveLanguage#mask_input
+  message: RuboCop::Cop::Naming::InclusiveLanguage#mask_input checks for nil (rubocop/cop/naming/inclusive_language.rb:247).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - "@allowed_regex (line 247)"
+  code:
+  - "# rubocop/cop/naming/inclusive_language.rb:247"
+  - '247:           return safe_str if @allowed_regex.nil?'
+  - '248: '
+  - '249:           safe_str.gsub(@allowed_regex) { |match| ''*'' * match.size }'
+  - '250:         end'
+  - '251: '
+  - '252:         def create_message(word, message = MSG)'
+  - '253:           flagged_term = find_flagged_term(word)'
+  - '254:           suggestions = flagged_term[''SuggestionString'']'
+  - '255:           suggestions = '' with another term'' if suggestions.blank?'
+  - '256: '
+  - '257:           format(message, term: word, suffix: suggestions)'
+  - '258:         end'
+  - '259: '
+  - '260:         def find_flagged_term(word)'
+  - '261:           _regexp, flagged_term = @flagged_term_hash.find do |key, _term|'
+  - '262:             key.match?(word)'
+  - '263:           end'
+  - '264:           flagged_term'
+  - '265:         end'
+  - '266: '
+  - '267:         def preprocess_suggestions(suggestions)'
+  - '268:           return '''' if suggestions.nil? ||'
+  - '269:                        (suggestions.is_a?(String) && suggestions.strip.empty?)
+    || suggestions.empty?'
+  - '270: '
+  - '271:           format_suggestions(suggestions)'
+- key: rubocop|nil_check|RuboCop::Cop::HashShorthandSyntax#register_offense
+  message: RuboCop::Cop::HashShorthandSyntax#register_offense checks for nil (rubocop/cop/mixin/hash_shorthand_syntax.rb:74).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - last_argument (line 74)
+  code:
+  - "# rubocop/cop/mixin/hash_shorthand_syntax.rb:74"
+  - '74:           if last_argument.nil? || !last_argument.hash_type?'
+  - '75:             next corrector.replace(node, replacement)'
+  - '76:           end'
+  - '77: '
+  - '78:           white_spaces = range_between(def_node.selector.end_pos,'
+  - '79:                                        def_node.first_argument.source_range.begin_pos)'
+  - '80:           next if node.parent.braces?'
+  - '81: '
+  - '82:           corrector.replace(white_spaces, ''('')'
+  - '83:           corrector.insert_after(last_argument, '')'') if node == last_argument.pairs.last'
+  - '84:         end'
+  - '85:       end'
+  - '86: '
+  - '87:       def ignore_mixed_hash_shorthand_syntax?(hash_node)'
+  - '88:         target_ruby_version <= 3.0 ||'
+  - '89:           !%w[consistent either_consistent].include?(enforced_shorthand_syntax)
+    ||'
+  - '90:           !hash_node.hash_type?'
+  - '91:       end'
+  - '92: '
+  - '93:       def ignore_hash_shorthand_syntax?(pair_node)'
+  - '94:         target_ruby_version <= 3.0 || enforced_shorthand_syntax == ''either''
+    ||'
+  - '95:           %w[consistent either_consistent].include?(enforced_shorthand_syntax)
+    ||'
+  - '96:           !pair_node.parent.hash_type?'
+  - '97:       end'
+  - '98: '
+- key: rubocop|nil_check|RuboCop::Cop::Style::Copyright#autocorrect
+  message: RuboCop::Cop::Style::Copyright#autocorrect checks for nil (rubocop/cop/style/copyright.rb:47).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - token (line 47)
+  code:
+  - "# rubocop/cop/style/copyright.rb:47"
+  - '47:           range = token.nil? ? range_between(0, 0) : token.pos'
+  - '48: '
+  - '49:           corrector.insert_before(range, "#{autocorrect_notice}\n")'
+  - '50:         end'
+  - '51: '
+  - '52:         def notice'
+  - '53:           cop_config[''Notice'']'
+  - '54:         end'
+  - '55: '
+  - '56:         def autocorrect_notice'
+  - '57:           cop_config[''AutocorrectNotice'']'
+  - '58:         end'
+  - '59: '
+  - '60:         def verify_autocorrect_notice!'
+  - '61:           if autocorrect_notice.nil? || autocorrect_notice.empty?'
+  - '62:             raise Warning, "#{cop_name}: #{AUTOCORRECT_EMPTY_WARNING}"'
+  - '63:           end'
+  - '64: '
+  - '65:           regex = Regexp.new(notice)'
+  - '66:           return if autocorrect_notice.gsub(/^# */, '''').match?(regex)'
+  - '67: '
+  - '68:           message = "AutocorrectNotice ''#{autocorrect_notice}'' must match
+    Notice /#{notice}/"'
+  - '69:           raise Warning, "#{cop_name}: #{message}"'
+  - '70:         end'
+  - '71: '
+- key: rubygems.org|nil_check|Maintenance::VerifyGemContentsInFsTask#validate_checksum
+  message: Maintenance::VerifyGemContentsInFsTask#validate_checksum checks for nil
+    (app/tasks/maintenance/verify_gem_contents_in_fs_task.rb:52). Prefer a default,
+    a null object, or polymorphism.
+  evidence:
+  - expected_checksum (line 52)
+  code:
+  - "# app/tasks/maintenance/verify_gem_contents_in_fs_task.rb:52"
+  - '52:     logger.warn "Version #{version.fullname} has no #{name} checksum" if
+    expected_checksum.blank?'
+  - '53:     contents = RubygemFs.instance.get(path)'
+  - '54:     logger.warn "Version #{version.full_name} is missing #{name} contents
+    (#{path})" if contents.blank?'
+  - '55: '
+  - '56:     return unless contents.present? && expected_checksum.present?'
+  - '57:     sha256 = Digest::SHA256.base64digest(contents)'
+  - '58:     logger.error "#{path} has incorrect checksum (expected #{expected_checksum},
+    got #{sha256})" if sha256 != expected_checksum'
+  - '59:   end'
+  - '60: end'
+- key: rubocop|nil_check|RuboCop::Cop::Style::GuardClause#check_ending_body
+  message: RuboCop::Cop::Style::GuardClause#check_ending_body checks for nil (rubocop/cop/style/guard_clause.rb:161).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - body (line 161)
+  code:
+  - "# rubocop/cop/style/guard_clause.rb:161"
+  - '161:           return if body.nil?'
+  - '162: '
+  - '163:           if body.if_type?'
+  - '164:             check_ending_if(body)'
+  - '165:           elsif body.begin_type?'
+  - '166:             final_expression = body.children.last'
+  - '167:             check_ending_if(final_expression) if final_expression&.if_type?'
+  - '168:           end'
+  - '169:         end'
+  - '170: '
+  - '171:         def check_ending_if(node)'
+  - '172:           return if accepted_form?(node, ending: true) || !min_body_length?(node)'
+  - '173:           return if allowed_consecutive_conditionals? &&'
+  - '174:                     consecutive_conditionals?(node.parent, node)'
+  - '175: '
+  - '176:           register_offense(node, ''return'', node.inverse_keyword)'
+  - '177: '
+  - '178:           check_ending_body(node.if_branch)'
+  - '179:         end'
+  - '180: '
+  - '181:         def consecutive_conditionals?(parent, node)'
+  - '182:           parent.each_child_node.inject(false) do |if_type, child|'
+  - '183:             break if_type if node == child'
+  - '184: '
+  - '185:             child.if_type?'
+- key: rubygems.org|nil_check|CompactIndex::GemVersionMethods#version_token
+  message: CompactIndex::GemVersionMethods#version_token checks for nil (lib/compact_index/gem_version.rb:8).
+    Prefer a default, a null object, or polymorphism.
+  evidence:
+  - platform (line 8)
+  code:
+  - "# lib/compact_index/gem_version.rb:8"
+  - '8:       if platform.nil? || platform == "ruby"'
+  - '9:         number'
+  - '10:       else'
+  - '11:         "#{number}-#{platform}"'
+  - '12:       end'
+  - '13:     end'
+  - '14: '
+  - '15:     def <=>(other)'
+  - '16:       number_comp = number <=> other.number'
+  - '17: '
+  - '18:       if number_comp.zero?'
+  - '19:         [platform, ruby_abi, content_address].compact <=>'
+  - '20:           [other.platform, other.ruby_abi, other.content_address].compact'
+  - '21:       else'
+  - '22:         number_comp'
+  - '23:       end'
+  - '24:     end'
+  - '25: '
+  - '26:     def to_line'
+  - '27:       line = "#{version_token} #{deps_line}|checksum:#{checksum}"'
+  - '28:       line << ",ruby:#{ruby_version_line}" if ruby_version && ruby_version
+    != ">= 0"'
+  - '29:       line << ",rubygems:#{rubygems_version_line}" if rubygems_version &&
+    rubygems_version != ">= 0"'
+  - '30:       line << ",platform:#{platform}" if content_address?'
+  - '31:       line'
+  - '32:     end'

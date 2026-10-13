@@ -5,8 +5,8 @@
 | complexity | 55/66 (83.3%) |
 | coupling | 17/25 (68.0%) |
 | duplication | 6/10 (60.0%) |
-| smells | 10/18 (55.6%) |
-| cli | 7/29 (24.1%) |
+| smells | 11/19 (57.9%) |
+| cli | 11/35 (31.4%) |
 | corpus | 5/6 (83.3%) |
 
 ## Failing checks (before)
@@ -38,16 +38,17 @@
 | duplication | near_miss_messages: roster.rb:3 + stock.rb:3 | `:apart` | `:together` |
 | smells | evidence: every nil_check finding names its evidence | `[]` | `["App::Renderer#render"]` |
 | smells | evidence: every manual_dispatch finding names its evidence | `[]` | `["App::Renderer#render"]` |
-| smells | indirection: indirection App::Importer#run | `:present` | `:absent` |
-| smells | sprawl: state_sprawl App::Session says "weighing 6" | `:said` | `"App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."` |
-| smells | sprawl: state_sprawl App::Session says "more than 4" | `:said` | `"App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."` |
+| smells | indirection: indirection App::Exporter#run | `:present` | `:absent` |
+| smells | sprawl: state_sprawl App::Session says "weighing 6" | `:said` | `"App::Session holds 6 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."` |
+| smells | sprawl: state_sprawl App::Session says "more than 4" | `:said` | `"App::Session holds 6 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."` |
 | smells | timers: repeated_call App::Stopwatch#measure | `:absent` | `:present` |
 | smells | timers: repeated_call App::Stopwatch#lap | `:absent` | `:present` |
 | smells | timers: repeated_call App::Stopwatch#wait | `:absent` | `:present` |
 | cli | another project's baseline is not applied: exit status | `0` | `2` |
 | cli | another project's baseline is not applied: "boundary Prism" | `:unsaid` | `:said` |
+| cli | a project checked out inside another is read as itself from the enclosing root: exit status | `0` | `2` |
+| cli | a project checked out inside another is read as itself from the enclosing root: "boundary Prism" | `:unsaid` | `:said` |
 | cli | the analyzed project's own baseline is applied from elsewhere: json accepted.size | `1` | `0` |
-| cli | the analyzed project's config is read from elsewhere: json kinds.utility_function | `nil` | `{"count" => 1, "files" => 1}` |
 | cli | a suppression with a reason silences the finding on the next line: exit status | `0` | `1` |
 | cli | suppressions are listed in the report: "Suppressed (1)" | `:said` | `:unsaid` |
 | cli | suppressions are listed in the report: "a generated state table" | `:said` | `:unsaid` |
@@ -61,9 +62,10 @@
 | cli | a suppression of an unknown kind is refused: "envy" | `:said` | `:unsaid` |
 | cli | a config threshold moves the complexity bar: exit status | `0` | `2` |
 | cli | a config threshold moves the complexity bar: json kinds.complexity.count | `1` | `:unparsed` |
-| cli | a config switch turns a kind off: exit status | `0` | `2` |
-| cli | a config switch turns a kind off: json kinds.utility_function | `nil` | `:unparsed` |
-| cli | a baseline from before a kind was renamed still ratchets clean: exit status | `0` | `1` |
+| cli | a config switch turns an opt-in kind on: exit status | `0` | `2` |
+| cli | a config switch turns an opt-in kind on: json kinds.utility_function.count | `1` | `:unparsed` |
+| cli | an opt-in kind stays out of the report unless asked for: json kinds.utility_function | `nil` | `{"count" => 1, "files" => 1}` |
+| cli | a baseline from before a kind was renamed still ratchets clean: exit status | `0` | `2` |
 | cli | --update-baseline from elsewhere writes the project's baseline: writes project/hashira_baseline.json | `true` | `false` |
 | cli | --update-baseline from elsewhere writes the project's baseline: writes elsewhere/hashira_baseline.json | `false` | `true` |
 | corpus | faraday: cut of 7-package knot is minimum | `13` | `5` |
@@ -76,8 +78,8 @@
 | --- | --- |
 | files | 880 |
 | kloc | 82.9 |
-| seconds | 39.93 |
-| megabytes | 461.4 |
+| seconds | 34.36 |
+| megabytes | 463.2 |
 | assumed_state | 1 (0.01/kLOC) |
 | complexity | 38 (0.46/kLOC) |
 | control_parameter | 88 (1.06/kLOC) |
@@ -99,8 +101,8 @@
 | --- | --- |
 | files | 32 |
 | kloc | 3.17 |
-| seconds | 1.98 |
-| megabytes | 51.7 |
+| seconds | 1.35 |
+| megabytes | 50.5 |
 | complexity | 4 (1.26/kLOC) |
 | control_parameter | 1 (0.32/kLOC) |
 | cycle | 1 (0.32/kLOC) |
@@ -122,8 +124,8 @@
 | --- | --- |
 | files | 558 |
 | kloc | 20.73 |
-| seconds | 14.81 |
-| megabytes | 202.4 |
+| seconds | 12.25 |
+| megabytes | 200.0 |
 | complexity | 18 (0.87/kLOC) |
 | control_parameter | 16 (0.77/kLOC) |
 | cycle | 2 (0.1/kLOC) |

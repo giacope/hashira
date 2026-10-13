@@ -1,0 +1,67 @@
+---
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::BlockAlignment
+  message: RuboCop::Cop::Layout::BlockAlignment branches on the same test 4 times
+    (rubocop/cop/layout/block_alignment.rb:66). Replace the scattered checks with
+    polymorphism.
+  evidence:
+  - style == :start_of_block × 4 (lines 120, 132, 147, 240)
+  code:
+  - "# rubocop/cop/layout/block_alignment.rb:66"
+  - '66:       class BlockAlignment < Base'
+  - '67:         include ConfigurableEnforcedStyle'
+  - '68:         include RangeHelp'
+  - '69:         extend AutoCorrector'
+  - '70: '
+  - '71:         MSG = ''%<current>s is not aligned with %<prefer>s%<alt_prefer>s.'''
+  - '72: '
+  - '73:         # @!method block_end_align_target?(node, child)'
+  - '74:         def_node_matcher :block_end_align_target?, <<~PATTERN'
+  - '75:           {assignment?'
+  - '76:            any_def'
+  - '77:            splat'
+  - '78:            and'
+  - '79:            or'
+  - '80:            (send _ :<<  ...)'
+  - '81:            (send equal?(%1) !:[] ...)}'
+  - '82:         PATTERN'
+  - '83: '
+  - '84:         def on_block(node)'
+  - '85:           check_block_alignment(start_for_block_node(node), node)'
+  - '86:         end'
+  - '87: '
+  - '88:         alias on_numblock on_block'
+  - '89:         alias on_itblock on_block'
+  - '90: '
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::DotPosition
+  message: RuboCop::Cop::Layout::DotPosition branches on the same test 3 times (rubocop/cop/layout/dot_position.rb:25).
+    Replace the scattered checks with polymorphism.
+  evidence:
+  - style × 3 (lines 56, 66, 100)
+  code:
+  - "# rubocop/cop/layout/dot_position.rb:25"
+  - '25:       class DotPosition < Base'
+  - '26:         include ConfigurableEnforcedStyle'
+  - '27:         include RangeHelp'
+  - '28:         extend AutoCorrector'
+  - '29: '
+  - '30:         def self.autocorrect_incompatible_with'
+  - '31:           [Style::RedundantSelf]'
+  - '32:         end'
+  - '33: '
+  - '34:         def on_send(node)'
+  - '35:           return unless node.dot? || node.safe_navigation?'
+  - '36: '
+  - '37:           return correct_style_detected if proper_dot_position?(node)'
+  - '38: '
+  - '39:           opposite_style_detected'
+  - '40:           dot = node.loc.dot'
+  - '41:           message = message(dot)'
+  - '42: '
+  - '43:           add_offense(dot, message: message) { |corrector| autocorrect(corrector,
+    dot, node) }'
+  - '44:         end'
+  - '45:         alias on_csend on_send'
+  - '46: '
+  - '47:         private'
+  - '48: '
+  - '49:         def autocorrect(corrector, dot, node)'

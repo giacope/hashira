@@ -1,0 +1,355 @@
+---
+- key: rubocop|state_sprawl|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier
+  message: RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier holds 3 instance variables,
+    weighing 5, more than 4 (rubocop/cop/layout/empty_lines_around_access_modifier.rb:43).
+    Split the class, or gather related fields into value objects.
+  evidence:
+  - "@block_line"
+  - "@class_or_module_def_first_line (parked between calls)"
+  - "@class_or_module_def_last_line (parked between calls)"
+  code:
+  - "# rubocop/cop/layout/empty_lines_around_access_modifier.rb:43"
+  - '43:       class EmptyLinesAroundAccessModifier < Base'
+  - '44:         include ConfigurableEnforcedStyle'
+  - '45:         include RangeHelp'
+  - '46:         extend AutoCorrector'
+  - '47: '
+  - '48:         MSG_AFTER = ''Keep a blank line after `%<modifier>s`.'''
+  - '49:         MSG_BEFORE_AND_AFTER = ''Keep a blank line before and after `%<modifier>s`.'''
+  - '50: '
+  - '51:         MSG_BEFORE_FOR_ONLY_BEFORE = ''Keep a blank line before `%<modifier>s`.'''
+  - '52:         MSG_AFTER_FOR_ONLY_BEFORE = ''Remove a blank line after `%<modifier>s`.'''
+  - '53: '
+  - '54:         RESTRICT_ON_SEND = %i[public protected private module_function].freeze'
+  - '55: '
+  - '56:         def initialize(config = nil, options = nil)'
+  - '57:           super'
+  - '58: '
+  - '59:           @block_line = nil'
+  - '60:         end'
+  - '61: '
+  - '62:         def on_class(node)'
+  - '63:           @class_or_module_def_first_line = if node.parent_class'
+  - '64:                                               node.parent_class.first_line'
+  - '65:                                             else'
+  - '66:                                               node.source_range.first_line'
+  - '67:                                             end'
+- key: rubocop|state_sprawl|RuboCop::Cop::Base
+  message: RuboCop::Cop::Base holds 8 instance variables, weighing 10, more than 4
+    (rubocop/cop/base.rb:34). Split the class, or gather related fields into value
+    objects.
+  evidence:
+  - "@config"
+  - "@current_offenses"
+  - "@current_offset (parked between calls)"
+  - "@current_original (parked between calls)"
+  - "@currently_disabled_lines"
+  - "@gem_requirements"
+  - "@options"
+  - "@processed_source"
+  code:
+  - "# rubocop/cop/base.rb:34"
+  - '34:     class Base # rubocop:disable Metrics/ClassLength'
+  - '35:       extend RuboCop::AST::Sexp'
+  - '36:       extend NodePattern::Macros'
+  - '37:       extend ExcludeLimit'
+  - '38:       include RuboCop::AST::Sexp'
+  - '39:       include Util'
+  - '40:       include IgnoredNode'
+  - '41:       include AutocorrectLogic'
+  - '42: '
+  - '43:       attr_reader :config, :processed_source'
+  - '44: '
+  - '45:       # Reports of an investigation.'
+  - '46:       # Immutable'
+  - '47:       # Consider creation API private'
+  - '48:       InvestigationReport = Struct.new(:cop, :processed_source, :offenses,
+    :corrector)'
+  - '49: '
+  - '50:       # List of methods names to restrict calls for `on_send` / `on_csend`'
+  - '51:       RESTRICT_ON_SEND = Set[].freeze # rubocop:disable InternalAffairs/UselessRestrictOnSend'
+  - '52: '
+  - '53:       # List of cops that should not try to autocorrect at the same'
+  - '54:       # time as this cop'
+  - '55:       #'
+  - '56:       # @return [Array<RuboCop::Cop::Base>]'
+  - '57:       #'
+  - '58:       # @api public'
+- key: rubocop|state_sprawl|RuboCop::Cop::Cop
+  message: RuboCop::Cop::Cop holds 5 instance variables, weighing 10, more than 4
+    (rubocop/cop/cop.rb:11). Split the class, or gather related fields into value
+    objects.
+  evidence:
+  - "@current_offset (parked between calls)"
+  - "@current_original (parked between calls)"
+  - "@last_corrector (parked between calls)"
+  - "@offenses (parked between calls)"
+  - "@v0_argument (parked between calls)"
+  code:
+  - "# rubocop/cop/cop.rb:11"
+  - '11:     class Cop < Base'
+  - '12:       attr_reader :offenses'
+  - '13: '
+  - '14:       exclude_from_registry'
+  - '15: '
+  - '16:       # @deprecated'
+  - '17:       Correction = Struct.new(:lambda, :node, :cop) do'
+  - '18:         def call(corrector)'
+  - '19:           lambda.call(corrector)'
+  - '20:         rescue StandardError => e'
+  - '21:           raise ErrorWithAnalyzedFileLocation.new(cause: e, node: node, cop:
+    cop)'
+  - '22:         end'
+  - '23:       end'
+  - '24: '
+  - '25:       def self.inherited(_subclass)'
+  - '26:         super'
+  - '27:         warn Rainbow(<<~WARNING).yellow, uplevel: 1'
+  - '28:           Inheriting from `RuboCop::Cop::Cop` is deprecated. Use `RuboCop::Cop::Base`
+    instead.'
+  - '29:           For more information, see https://docs.rubocop.org/rubocop/v1_upgrade_notes.html.'
+  - '30:         WARNING'
+  - '31:       end'
+  - '32: '
+  - '33:       def self.support_autocorrect?'
+  - '34:         method_defined?(:autocorrect)'
+  - '35:       end'
+- key: rubocop|state_sprawl|RuboCop::Cop::InternalAffairs::StyleDetectedApiUse
+  message: RuboCop::Cop::InternalAffairs::StyleDetectedApiUse holds 3 instance variables,
+    weighing 6, more than 4 (rubocop/cop/internal_affairs/style_detected_api_use.rb:52).
+    Split the class, or gather related fields into value objects.
+  evidence:
+  - "@correct_style_detected_called (parked between calls)"
+  - "@negative_style_detected_methods_called (parked between calls)"
+  - "@style_detected_called (parked between calls)"
+  code:
+  - "# rubocop/cop/internal_affairs/style_detected_api_use.rb:52"
+  - '52:       class StyleDetectedApiUse < Base'
+  - '53:         MSG_FOR_POSITIVE_WITHOUT_NEGATIVE ='
+  - '54:           ''`correct_style_detected` method called without '' \'
+  - '55:           ''calling a negative `*_style_detected` method.'''
+  - '56:         MSG_FOR_NEGATIVE_WITHOUT_POSITIVE ='
+  - '57:           ''negative `*_style_detected` methods called without '' \'
+  - '58:           ''calling `correct_style_detected` method.'''
+  - '59:         MSG_FOR_CONDITIONAL_USE = ''`*_style_detected` method called in conditional.'''
+  - '60:         RESTRICT_ON_SEND = %i['
+  - '61:           correct_style_detected opposite_style_detected'
+  - '62:           unexpected_style_detected ambiguous_style_detected'
+  - '63:           conflicting_styles_detected unrecognized_style_detected'
+  - '64:           no_acceptable_style! style_detected'
+  - '65:         ].freeze'
+  - '66: '
+  - '67:         # @!method correct_style_detected_check(node)'
+  - '68:         def_node_matcher :correct_style_detected_check, <<~PATTERN'
+  - '69:           (send nil? :correct_style_detected)'
+  - '70:         PATTERN'
+  - '71: '
+  - '72:         # @!method negative_style_detected_method_check(node)'
+  - '73:         def_node_matcher :negative_style_detected_method_check, <<~PATTERN'
+  - '74:           (send nil? /(?:opposite|unexpected|ambiguous|unrecognized)_style_detected|conflicting_styles_detected/
+    ...)'
+  - '75:         PATTERN'
+  - '76: '
+- key: rubocop|state_sprawl|RuboCop::Cop::Registry
+  message: RuboCop::Cop::Registry holds 8 instance variables, weighing 7, more than
+    4 (rubocop/cop/registry.rb:19). Split the class, or gather related fields into
+    value objects.
+  evidence:
+  - "@cops_by_cop_name"
+  - "@departments"
+  - "@disabled_cache"
+  - "@enabled_cache"
+  - "@enrollment_queue"
+  - "@global"
+  - "@options (given to the constructor)"
+  - "@registry"
+  code:
+  - "# rubocop/cop/registry.rb:19"
+  - '19:     class Registry'
+  - '20:       include Enumerable'
+  - '21: '
+  - '22:       def self.all'
+  - '23:         global.without_department(:Test).cops'
+  - '24:       end'
+  - '25: '
+  - '26:       def self.qualified_cop_name(name, origin, warn: true)'
+  - '27:         global.qualified_cop_name(name, origin, warn: warn)'
+  - '28:       end'
+  - '29: '
+  - '30:       # Changes momentarily the global registry'
+  - '31:       # Intended for testing purposes'
+  - '32:       def self.with_temporary_global(temp_global = global.dup)'
+  - '33:         previous = @global'
+  - '34:         @global = temp_global'
+  - '35:         yield'
+  - '36:       ensure'
+  - '37:         @global = previous'
+  - '38:       end'
+  - '39: '
+  - '40:       def self.reset!'
+  - '41:         @global = new'
+  - '42:       end'
+  - '43: '
+- key: rubocop|state_sprawl|RuboCop::Cop::Utils::FormatString::FormatSequence
+  message: RuboCop::Cop::Utils::FormatString::FormatSequence holds 9 instance variables,
+    weighing 9, more than 4 (rubocop/cop/utils/format_string.rb:47). Split the class,
+    or gather related fields into value objects.
+  evidence:
+  - "@arg_number"
+  - "@begin_pos"
+  - "@end_pos"
+  - "@flags"
+  - "@name"
+  - "@precision"
+  - "@source"
+  - "@type"
+  - "@width"
+  code:
+  - "# rubocop/cop/utils/format_string.rb:47"
+  - '47:         class FormatSequence'
+  - '48:           attr_reader :begin_pos, :end_pos, :flags, :width, :precision, :name,
+    :type, :arg_number'
+  - '49: '
+  - '50:           def initialize(match)'
+  - '51:             @source = match[0]'
+  - '52:             @begin_pos = match.begin(0)'
+  - '53:             @end_pos = match.end(0)'
+  - '54:             @flags = match[:flags].to_s + match[:more_flags].to_s'
+  - '55:             @width = match[:width]'
+  - '56:             @precision = match[:precision]'
+  - '57:             @name = match[:name]'
+  - '58:             @type = match[:type]'
+  - '59:             @arg_number = match[:arg_number]'
+  - '60:           end'
+  - '61: '
+  - '62:           def percent?'
+  - '63:             type == ''%'''
+  - '64:           end'
+  - '65: '
+  - '66:           def annotated?'
+  - '67:             name && @source.include?(''<'')'
+  - '68:           end'
+  - '69: '
+  - '70:           def template?'
+  - '71:             name && @source.include?(''{'')'
+- key: rubocop|state_sprawl|RuboCop::Cop::Team
+  message: RuboCop::Cop::Team holds 8 instance variables, weighing 6, more than 4
+    (rubocop/cop/team.rb:13). Split the class, or gather related fields into value
+    objects.
+  evidence:
+  - "@config (given to the constructor)"
+  - "@cops (given to the constructor)"
+  - "@errors"
+  - "@options (given to the constructor)"
+  - "@ready"
+  - "@registry"
+  - "@updated_source_file (parked between calls)"
+  - "@warnings"
+  code:
+  - "# rubocop/cop/team.rb:13"
+  - '13:     class Team'
+  - '14:       # @return [Team]'
+  - '15:       def self.new(cop_or_classes, config, options = {})'
+  - '16:         # Support v0 api:'
+  - '17:         if cop_or_classes.first.is_a?(Class)'
+  - '18:           warn Rainbow(<<~WARNING).yellow, uplevel: 1'
+  - '19:             `Team.new` with cop classes is deprecated. Use `Team.mobilize`
+    instead.'
+  - '20:           WARNING'
+  - '21:           return mobilize(cop_or_classes, config, options)'
+  - '22:         end'
+  - '23: '
+  - '24:         super'
+  - '25:       end'
+  - '26: '
+  - '27:       # @return [Team] with cops assembled from the given `cop_classes`'
+  - '28:       def self.mobilize(cop_classes, config, options = {})'
+  - '29:         cops = mobilize_cops(cop_classes, config, options)'
+  - '30:         new(cops, config, options)'
+  - '31:       end'
+  - '32: '
+  - '33:       # @return [Array<Cop::Base>]'
+  - '34:       def self.mobilize_cops(cop_classes, config, options = {})'
+  - '35:         cop_classes = Registry.new(cop_classes.to_a, options) unless cop_classes.is_a?(Registry)'
+  - '36: '
+  - '37:         cop_classes.map do |cop_class|'
+- key: rubocop|state_sprawl|RuboCop::Cop::Style::ArgumentsForwarding::SendNodeClassifier
+  message: RuboCop::Cop::Style::ArgumentsForwarding::SendNodeClassifier holds 10 instance
+    variables, weighing 6, more than 4 (rubocop/cop/style/arguments_forwarding.rb:393).
+    Split the class, or gather related fields into value objects.
+  evidence:
+  - "@block_arg"
+  - "@block_arg_name"
+  - "@config (given to the constructor)"
+  - "@def_node (given to the constructor)"
+  - "@kwrest_arg"
+  - "@kwrest_arg_name"
+  - "@referenced_lvars (given to the constructor)"
+  - "@rest_arg"
+  - "@rest_arg_name"
+  - "@send_node (given to the constructor)"
+  code:
+  - "# rubocop/cop/style/arguments_forwarding.rb:393"
+  - '393:         class SendNodeClassifier'
+  - '394:           extend NodePattern::Macros'
+  - '395: '
+  - '396:           # @!method forwarded_rest_arg?(node, rest_name)'
+  - '397:           def_node_matcher :forwarded_rest_arg?, ''(splat (lvar %1))'''
+  - '398: '
+  - '399:           # @!method extract_forwarded_kwrest_arg(node, kwrest_name)'
+  - '400:           def_node_matcher :extract_forwarded_kwrest_arg, ''(hash <$(kwsplat
+    (lvar %1)) ...>)'''
+  - '401: '
+  - '402:           # @!method forwarded_block_arg?(node, block_name)'
+  - '403:           def_node_matcher :forwarded_block_arg?, ''(block_pass {(lvar %1)
+    nil?})'''
+  - '404: '
+  - '405:           # @!method def_all_anonymous_args?(node)'
+  - '406:           def_node_matcher :def_all_anonymous_args?, <<~PATTERN'
+  - '407:             ('
+  - '408:               def _'
+  - '409:               (args ... (restarg) (kwrestarg) (blockarg nil?))'
+  - '410:               _'
+  - '411:             )'
+  - '412:           PATTERN'
+  - '413: '
+  - '414:           # @!method send_all_anonymous_args?(node)'
+  - '415:           def_node_matcher :send_all_anonymous_args?, <<~PATTERN'
+  - '416:             ('
+  - '417:               send _ _'
+- key: rubocop|state_sprawl|RuboCop::Formatter::OffenseCountFormatter
+  message: RuboCop::Formatter::OffenseCountFormatter holds 4 instance variables, weighing
+    8, more than 4 (rubocop/formatter/offense_count_formatter.rb:16). Split the class,
+    or gather related fields into value objects.
+  evidence:
+  - "@offending_files_count (parked between calls)"
+  - "@offense_counts (parked between calls)"
+  - "@progressbar (parked between calls)"
+  - "@style_guide_links (parked between calls)"
+  code:
+  - "# rubocop/formatter/offense_count_formatter.rb:16"
+  - '16:     class OffenseCountFormatter < BaseFormatter'
+  - '17:       attr_reader :offense_counts'
+  - '18: '
+  - '19:       def started(target_files)'
+  - '20:         super'
+  - '21:         @offense_counts = Hash.new(0)'
+  - '22:         @offending_files_count = 0'
+  - '23:         @style_guide_links = {}'
+  - '24: '
+  - '25:         return unless output.tty?'
+  - '26: '
+  - '27:         file_phrase = target_files.count == 1 ? ''file'' : ''files'''
+  - '28: '
+  - '29:         # 185/407 files |====== 45 ======>                    |  ETA: 00:00:04'
+  - '30:         # %c / %C       |       %w       >         %i         |       %e'
+  - '31:         bar_format = " %c/%C #{file_phrase} |%w>%i| %e "'
+  - '32: '
+  - '33:         @progressbar = ProgressBar.create('
+  - '34:           output: output,'
+  - '35:           total: target_files.count,'
+  - '36:           format: bar_format,'
+  - '37:           autostart: false'
+  - '38:         )'
+  - '39:         @progressbar.start'
+  - '40:       end'

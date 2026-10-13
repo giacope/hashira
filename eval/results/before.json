@@ -719,8 +719,8 @@
       ]
     },
     "smells": {
-      "passed": 10,
-      "total": 18,
+      "passed": 11,
+      "total": 19,
       "checks": [
         {
           "name": "envy: feature_envy Shop::Checkout#total",
@@ -763,9 +763,15 @@
           ]
         },
         {
-          "name": "indirection: indirection App::Importer#run",
+          "name": "indirection: indirection App::Exporter#run",
           "passed": false,
           "expected": "present",
+          "actual": "absent"
+        },
+        {
+          "name": "indirection: indirection App::Importer#run",
+          "passed": true,
+          "expected": "absent",
           "actual": "absent"
         },
         {
@@ -802,13 +808,13 @@
           "name": "sprawl: state_sprawl App::Session says \"weighing 6\"",
           "passed": false,
           "expected": "said",
-          "actual": "App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
+          "actual": "App::Session holds 6 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
         },
         {
           "name": "sprawl: state_sprawl App::Session says \"more than 4\"",
           "passed": false,
           "expected": "said",
-          "actual": "App::Session holds 5 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
+          "actual": "App::Session holds 6 instance variables (app/session.rb:2). Split the class, or gather related fields into value objects."
         },
         {
           "name": "timers: repeated_call App::Stopwatch#label",
@@ -837,8 +843,8 @@
       ]
     },
     "cli": {
-      "passed": 7,
-      "total": 29,
+      "passed": 11,
+      "total": 35,
       "checks": [
         {
           "name": "another project's baseline is not applied: exit status",
@@ -848,6 +854,30 @@
         },
         {
           "name": "another project's baseline is not applied: \"boundary Prism\"",
+          "passed": false,
+          "expected": "unsaid",
+          "actual": "said"
+        },
+        {
+          "name": "a project checked out inside another stops at its own root: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "a project checked out inside another stops at its own root: json kinds.utility_function.count",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "a project checked out inside another is read as itself from the enclosing root: exit status",
+          "passed": false,
+          "expected": 0,
+          "actual": 2
+        },
+        {
+          "name": "a project checked out inside another is read as itself from the enclosing root: \"boundary Prism\"",
           "passed": false,
           "expected": "unsaid",
           "actual": "said"
@@ -871,13 +901,10 @@
           "actual": 0
         },
         {
-          "name": "the analyzed project's config is read from elsewhere: json kinds.utility_function",
-          "passed": false,
-          "expected": null,
-          "actual": {
-            "count": 1,
-            "files": 1
-          }
+          "name": "the analyzed project's config is read from elsewhere: json kinds.utility_function.count",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
         },
         {
           "name": "a suppression with a reason silences the finding on the next line: exit status",
@@ -973,22 +1000,37 @@
           "actual": "unparsed"
         },
         {
-          "name": "a config switch turns a kind off: exit status",
+          "name": "a config switch turns an opt-in kind on: exit status",
           "passed": false,
           "expected": 0,
           "actual": 2
         },
         {
-          "name": "a config switch turns a kind off: json kinds.utility_function",
+          "name": "a config switch turns an opt-in kind on: json kinds.utility_function.count",
+          "passed": false,
+          "expected": 1,
+          "actual": "unparsed"
+        },
+        {
+          "name": "an opt-in kind stays out of the report unless asked for: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "an opt-in kind stays out of the report unless asked for: json kinds.utility_function",
           "passed": false,
           "expected": null,
-          "actual": "unparsed"
+          "actual": {
+            "count": 1,
+            "files": 1
+          }
         },
         {
           "name": "a baseline from before a kind was renamed still ratchets clean: exit status",
           "passed": false,
           "expected": 0,
-          "actual": 1
+          "actual": 2
         },
         {
           "name": "a kind the baseline predates does not fail the ratchet: exit status",
@@ -1069,8 +1111,8 @@
     "rubocop": {
       "status": 0,
       "files": 880,
-      "seconds": 39.93,
-      "megabytes": 461.4,
+      "seconds": 34.36,
+      "megabytes": 463.2,
       "kinds": {
         "assumed_state": {
           "count": 1,
@@ -1134,8 +1176,8 @@
     "faraday": {
       "status": 0,
       "files": 32,
-      "seconds": 1.98,
-      "megabytes": 51.7,
+      "seconds": 1.35,
+      "megabytes": 50.5,
       "kinds": {
         "complexity": {
           "count": 4,
@@ -1199,8 +1241,8 @@
     "rubygems.org": {
       "status": 0,
       "files": 558,
-      "seconds": 14.81,
-      "megabytes": 202.4,
+      "seconds": 12.25,
+      "megabytes": 200.0,
       "kinds": {
         "complexity": {
           "count": 18,

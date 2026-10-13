@@ -1,6 +1,6 @@
 {
   "label": "after",
-  "commit": "de526c6",
+  "commit": "cc48d0d",
   "ruby": "3.4.7",
   "suites": {
     "complexity": {
@@ -728,8 +728,8 @@
       ]
     },
     "smells": {
-      "passed": 18,
-      "total": 18,
+      "passed": 19,
+      "total": 19,
       "checks": [
         {
           "name": "envy: feature_envy Shop::Checkout#total",
@@ -768,10 +768,16 @@
           "actual": []
         },
         {
-          "name": "indirection: indirection App::Importer#run",
+          "name": "indirection: indirection App::Exporter#run",
           "passed": true,
           "expected": "present",
           "actual": "present"
+        },
+        {
+          "name": "indirection: indirection App::Importer#run",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
         },
         {
           "name": "indirection: indirection App::Pricing#quote",
@@ -842,8 +848,8 @@
       ]
     },
     "cli": {
-      "passed": 29,
-      "total": 29,
+      "passed": 35,
+      "total": 35,
       "checks": [
         {
           "name": "another project's baseline is not applied: exit status",
@@ -853,6 +859,30 @@
         },
         {
           "name": "another project's baseline is not applied: \"boundary Prism\"",
+          "passed": true,
+          "expected": "unsaid",
+          "actual": "unsaid"
+        },
+        {
+          "name": "a project checked out inside another stops at its own root: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "a project checked out inside another stops at its own root: json kinds.utility_function.count",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "a project checked out inside another is read as itself from the enclosing root: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "a project checked out inside another is read as itself from the enclosing root: \"boundary Prism\"",
           "passed": true,
           "expected": "unsaid",
           "actual": "unsaid"
@@ -876,10 +906,10 @@
           "actual": 0
         },
         {
-          "name": "the analyzed project's config is read from elsewhere: json kinds.utility_function",
+          "name": "the analyzed project's config is read from elsewhere: json kinds.utility_function.count",
           "passed": true,
-          "expected": null,
-          "actual": null
+          "expected": 1,
+          "actual": 1
         },
         {
           "name": "a suppression with a reason silences the finding on the next line: exit status",
@@ -972,13 +1002,25 @@
           "actual": 1
         },
         {
-          "name": "a config switch turns a kind off: exit status",
+          "name": "a config switch turns an opt-in kind on: exit status",
           "passed": true,
           "expected": 0,
           "actual": 0
         },
         {
-          "name": "a config switch turns a kind off: json kinds.utility_function",
+          "name": "a config switch turns an opt-in kind on: json kinds.utility_function.count",
+          "passed": true,
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "an opt-in kind stays out of the report unless asked for: exit status",
+          "passed": true,
+          "expected": 0,
+          "actual": 0
+        },
+        {
+          "name": "an opt-in kind stays out of the report unless asked for: json kinds.utility_function",
           "passed": true,
           "expected": null,
           "actual": null
@@ -1068,8 +1110,8 @@
     "rubocop": {
       "status": 0,
       "files": 880,
-      "seconds": 33.74,
-      "megabytes": 482.6,
+      "seconds": 33.0,
+      "megabytes": 497.5,
       "kinds": {
         "assumed_state": {
           "count": 1,
@@ -1080,16 +1122,16 @@
           "per_kloc": 0.47
         },
         "control_parameter": {
-          "count": 17,
-          "per_kloc": 0.21
+          "count": 3,
+          "per_kloc": 0.04
         },
         "cycle": {
           "count": 1,
           "per_kloc": 0.01
         },
         "data_clump": {
-          "count": 52,
-          "per_kloc": 0.63
+          "count": 7,
+          "per_kloc": 0.08
         },
         "duplication": {
           "count": 282,
@@ -1100,8 +1142,8 @@
           "per_kloc": 0.29
         },
         "indirection": {
-          "count": 303,
-          "per_kloc": 3.66
+          "count": 2,
+          "per_kloc": 0.02
         },
         "manual_dispatch": {
           "count": 18,
@@ -1112,24 +1154,24 @@
           "per_kloc": 0.01
         },
         "nil_check": {
-          "count": 61,
-          "per_kloc": 0.74
+          "count": 41,
+          "per_kloc": 0.49
         },
         "repeated_call": {
           "count": 263,
           "per_kloc": 3.17
         },
         "repeated_conditional": {
-          "count": 21,
-          "per_kloc": 0.25
+          "count": 6,
+          "per_kloc": 0.07
         },
         "state_sprawl": {
-          "count": 25,
-          "per_kloc": 0.3
+          "count": 14,
+          "per_kloc": 0.17
         },
         "utility_function": {
-          "count": 41,
-          "per_kloc": 0.49
+          "count": 25,
+          "per_kloc": 0.3
         }
       },
       "kloc": 82.9
@@ -1137,8 +1179,8 @@
     "faraday": {
       "status": 0,
       "files": 32,
-      "seconds": 1.29,
-      "megabytes": 41.2,
+      "seconds": 1.36,
+      "megabytes": 41.3,
       "kinds": {
         "complexity": {
           "count": 5,
@@ -1149,16 +1191,12 @@
           "per_kloc": 0.32
         },
         "data_clump": {
-          "count": 2,
-          "per_kloc": 0.63
+          "count": 1,
+          "per_kloc": 0.32
         },
         "duplication": {
           "count": 15,
           "per_kloc": 4.73
-        },
-        "indirection": {
-          "count": 6,
-          "per_kloc": 1.89
         },
         "manual_dispatch": {
           "count": 4,
@@ -1169,16 +1207,16 @@
           "per_kloc": 0.32
         },
         "nil_check": {
-          "count": 13,
-          "per_kloc": 4.1
+          "count": 9,
+          "per_kloc": 2.84
         },
         "repeated_call": {
           "count": 13,
           "per_kloc": 4.1
         },
         "repeated_conditional": {
-          "count": 3,
-          "per_kloc": 0.95
+          "count": 1,
+          "per_kloc": 0.32
         },
         "state_sprawl": {
           "count": 1,
@@ -1198,16 +1236,16 @@
     "rubygems.org": {
       "status": 0,
       "files": 558,
-      "seconds": 11.61,
-      "megabytes": 165.9,
+      "seconds": 12.2,
+      "megabytes": 165.6,
       "kinds": {
         "complexity": {
           "count": 18,
           "per_kloc": 0.87
         },
         "control_parameter": {
-          "count": 4,
-          "per_kloc": 0.19
+          "count": 1,
+          "per_kloc": 0.05
         },
         "cycle": {
           "count": 2,
@@ -1221,25 +1259,17 @@
           "count": 10,
           "per_kloc": 0.48
         },
-        "indirection": {
-          "count": 18,
-          "per_kloc": 0.87
-        },
         "manual_dispatch": {
           "count": 7,
           "per_kloc": 0.34
         },
         "nil_check": {
-          "count": 37,
-          "per_kloc": 1.78
+          "count": 25,
+          "per_kloc": 1.21
         },
         "repeated_call": {
           "count": 95,
           "per_kloc": 4.58
-        },
-        "repeated_conditional": {
-          "count": 9,
-          "per_kloc": 0.43
         },
         "roll_call": {
           "count": 3,
@@ -1250,12 +1280,12 @@
           "per_kloc": 0.05
         },
         "state_sprawl": {
-          "count": 10,
-          "per_kloc": 0.48
+          "count": 6,
+          "per_kloc": 0.29
         },
         "utility_function": {
-          "count": 24,
-          "per_kloc": 1.16
+          "count": 6,
+          "per_kloc": 0.29
         },
         "wide_edge": {
           "count": 2,
@@ -1285,13 +1315,13 @@
       "high": 0.629
     },
     "nil_check": {
-      "population": 111,
+      "population": 75,
       "sampled": 25,
-      "labeled": 25,
-      "tp": 7,
-      "precision": 0.28,
-      "low": 0.143,
-      "high": 0.476
+      "labeled": 17,
+      "tp": 2,
+      "precision": 0.118,
+      "low": 0.033,
+      "high": 0.343
     },
     "manual_dispatch": {
       "population": 29,
@@ -1312,58 +1342,56 @@
       "high": 0.828
     },
     "control_parameter": {
-      "population": 21,
-      "sampled": 15,
-      "labeled": 15,
-      "tp": 12,
-      "precision": 0.8,
-      "low": 0.548,
-      "high": 0.93
+      "population": 4,
+      "sampled": 4,
+      "labeled": 4,
+      "tp": 4,
+      "precision": 1.0,
+      "low": 0.51,
+      "high": 1.0
     },
     "utility_function": {
-      "population": 70,
+      "population": 36,
       "sampled": 15,
-      "labeled": 15,
-      "tp": 15,
+      "labeled": 8,
+      "tp": 8,
       "precision": 1.0,
-      "low": 0.796,
+      "low": 0.676,
       "high": 1.0
     },
     "data_clump": {
-      "population": 54,
-      "sampled": 15,
-      "labeled": 15,
-      "tp": 12,
-      "precision": 0.8,
-      "low": 0.548,
-      "high": 0.93
+      "population": 8,
+      "sampled": 8,
+      "labeled": 2,
+      "tp": 2,
+      "precision": 1.0,
+      "low": 0.342,
+      "high": 1.0
     },
     "state_sprawl": {
-      "population": 36,
+      "population": 21,
       "sampled": 15,
-      "labeled": 15,
-      "tp": 10,
-      "precision": 0.667,
-      "low": 0.417,
-      "high": 0.848
+      "labeled": 9,
+      "tp": 7,
+      "precision": 0.778,
+      "low": 0.453,
+      "high": 0.937
     },
     "repeated_conditional": {
-      "population": 33,
-      "sampled": 15,
-      "labeled": 15,
-      "tp": 12,
-      "precision": 0.8,
-      "low": 0.548,
-      "high": 0.93
+      "population": 7,
+      "sampled": 7,
+      "labeled": 4,
+      "tp": 4,
+      "precision": 1.0,
+      "low": 0.51,
+      "high": 1.0
     },
     "indirection": {
-      "population": 327,
-      "sampled": 20,
-      "labeled": 20,
-      "tp": 15,
-      "precision": 0.75,
-      "low": 0.531,
-      "high": 0.888
+      "population": 2,
+      "sampled": 2,
+      "labeled": 0,
+      "tp": 0,
+      "precision": null
     }
   }
 }

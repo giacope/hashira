@@ -1,0 +1,758 @@
+---
+- key: rubocop|repeated_call|RuboCop::Cop::Style::RedundantFreeze#on_send
+  message: RuboCop::Cop::Style::RedundantFreeze#on_send repeats identical calls (rubocop/cop/style/redundant_freeze.rb:26).
+    Name the result in a local variable.
+  evidence:
+  - node.receiver × 3 (lines 27, 28, 29)
+  code:
+  - "# rubocop/cop/style/redundant_freeze.rb:26"
+  - '26:         def on_send(node)'
+  - '27:           return unless node.receiver &&'
+  - '28:                         (immutable_literal?(node.receiver) ||'
+  - '29:                          operation_produces_immutable_object?(node.receiver))'
+  - '30: '
+  - '31:           add_offense(node) do |corrector|'
+  - '32:             corrector.remove(node.loc.dot)'
+  - '33:             corrector.remove(node.loc.selector)'
+  - '34:           end'
+  - '35:         end'
+  - '36: '
+  - '37:         private'
+  - '38: '
+  - '39:         def immutable_literal?(node)'
+  - '40:           node = strip_parenthesis(node)'
+  - '41: '
+  - '42:           return true if node.immutable_literal?'
+  - '43:           return true if frozen_string_literal?(node)'
+  - '44: '
+  - '45:           target_ruby_version >= 3.0 && node.type?(:regexp, :range)'
+  - '46:         end'
+  - '47: '
+  - '48:         def strip_parenthesis(node)'
+  - '49:           if node.begin_type? && node.children.first'
+  - '50:             node.children.first'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::SafeNavigationConsistency#operand_in_and?
+  message: RuboCop::Cop::Lint::SafeNavigationConsistency#operand_in_and? repeats identical
+    calls (rubocop/cop/lint/safe_navigation_consistency.rb:138). Name the result in
+    a local variable.
+  evidence:
+  - node.parent × 3 (lines 139, 141)
+  code:
+  - "# rubocop/cop/lint/safe_navigation_consistency.rb:138"
+  - '138:         def operand_in_and?(node)'
+  - '139:           return true if node.parent.and_type?'
+  - '140: '
+  - '141:           parent = node.parent.parent while node.parent.begin_type?'
+  - '142: '
+  - '143:           parent&.and_type?'
+  - '144:         end'
+  - '145: '
+  - '146:         def operand_in_or?(node)'
+  - '147:           return true if node.parent.or_type?'
+  - '148: '
+  - '149:           parent = node.parent.parent while node.parent.begin_type?'
+  - '150: '
+  - '151:           parent&.or_type?'
+  - '152:         end'
+  - '153: '
+  - '154:         def nilable?(node)'
+  - '155:           node.csend_type? || nil_methods.include?(node.method_name)'
+  - '156:         end'
+  - '157:       end'
+  - '158:     end'
+  - '159:   end'
+  - '160: end'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::FormatParameterMismatch#on_send
+  message: RuboCop::Cop::Lint::FormatParameterMismatch#on_send repeats identical calls
+    (rubocop/cop/lint/format_parameter_mismatch.rb:39). Name the result in a local
+    variable.
+  evidence:
+  - node.loc.selector × 2 (lines 43, 49)
+  code:
+  - "# rubocop/cop/lint/format_parameter_mismatch.rb:39"
+  - '39:         def on_send(node)'
+  - '40:           return unless format_string?(node)'
+  - '41: '
+  - '42:           if invalid_format_string?(node)'
+  - '43:             add_offense(node.loc.selector, message: MSG_INVALID)'
+  - '44:             return'
+  - '45:           end'
+  - '46: '
+  - '47:           return unless offending_node?(node)'
+  - '48: '
+  - '49:           add_offense(node.loc.selector, message: message(node))'
+  - '50:         end'
+  - '51: '
+  - '52:         private'
+  - '53: '
+  - '54:         def format_string?(node)'
+  - '55:           called_on_string?(node) && method_with_format_args?(node)'
+  - '56:         end'
+  - '57: '
+  - '58:         def invalid_format_string?(node)'
+  - '59:           string = if sprintf?(node) || format?(node)'
+  - '60:                      node.first_argument.source'
+  - '61:                    else'
+  - '62:                      node.receiver.source'
+  - '63:                    end'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::ArrayAlignment#on_array
+  message: RuboCop::Cop::Layout::ArrayAlignment#on_array repeats identical calls (rubocop/cop/layout/array_alignment.rb:46).
+    Name the result in a local variable.
+  evidence:
+  - node.children × 3 (lines 47, 50)
+  code:
+  - "# rubocop/cop/layout/array_alignment.rb:46"
+  - '46:         def on_array(node)'
+  - '47:           return if node.children.size < 2'
+  - '48:           return if node.parent&.masgn_type?'
+  - '49: '
+  - '50:           check_alignment(node.children, base_column(node, node.children))'
+  - '51:         end'
+  - '52: '
+  - '53:         private'
+  - '54: '
+  - '55:         def autocorrect(corrector, node)'
+  - '56:           AlignmentCorrector.correct(corrector, processed_source, node, column_delta)'
+  - '57:         end'
+  - '58: '
+  - '59:         def message(_range)'
+  - '60:           fixed_indentation? ? FIXED_INDENT_MSG : ALIGN_ELEMENTS_MSG'
+  - '61:         end'
+  - '62: '
+  - '63:         def fixed_indentation?'
+  - '64:           cop_config[''EnforcedStyle''] == ''with_fixed_indentation'''
+  - '65:         end'
+  - '66: '
+  - '67:         def base_column(node, args)'
+  - '68:           if fixed_indentation?'
+  - '69:             lineno = target_method_lineno(node)'
+  - '70:             line = node.source_range.source_buffer.source_line(lineno)'
+- key: rubygems.org|repeated_call|RubygemFs::S3#initialize
+  message: RubygemFs::S3#initialize repeats identical calls (lib/rubygem_fs.rb:158).
+    Name the result in a local variable.
+  evidence:
+  - Gemcutter.config × 3 (lines 159, 163, 164)
+  code:
+  - "# lib/rubygem_fs.rb:158"
+  - '158:     def initialize(config = {})'
+  - '159:       @bucket = config.delete(:bucket) || Gemcutter.config["s3_bucket"]'
+  - '160:       @config = {'
+  - '161:         access_key_id: ENV["S3_KEY"],'
+  - '162:         secret_access_key: ENV["S3_SECRET"],'
+  - '163:         region: Gemcutter.config["s3_region"],'
+  - '164:         endpoint: "https://#{Gemcutter.config[''s3_endpoint'']}"'
+  - '165:       }.merge(config)'
+  - '166:     end'
+  - '167: '
+  - '168:     def in_bucket(bucket)'
+  - '169:       self.class.new(@config.merge(bucket: bucket))'
+  - '170:     end'
+  - '171: '
+  - '172:     def store(key, body, public_acl: true, metadata: {}, **kwargs)'
+  - '173:       allowed_args = kwargs.slice(:content_type, :checksum_sha256, :content_encoding,
+    :cache_control, :content_md5)'
+  - '174:       s3.put_object(key: key,'
+  - '175:                     body: body,'
+  - '176:                     bucket: bucket,'
+  - '177:                     acl: public_acl ? "public-read" : nil,'
+  - '178:                     metadata: metadata,'
+  - '179:                     cache_control: "max-age=31536000",'
+  - '180:                     **allowed_args)'
+  - '181:     end'
+  - '182: '
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?
+  message: RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?
+    repeats identical calls (rubocop/cop/layout/empty_lines_around_attribute_accessor.rb:107).
+    Name the result in a local variable.
+  evidence:
+  - processed_source.[](line) × 2 (line 108)
+  code:
+  - "# rubocop/cop/layout/empty_lines_around_attribute_accessor.rb:107"
+  - '107:         def next_line_empty?(line)'
+  - '108:           processed_source[line].nil? || processed_source[line].blank?'
+  - '109:         end'
+  - '110: '
+  - '111:         def require_empty_line?(node)'
+  - '112:           return false unless node.respond_to?(:type)'
+  - '113: '
+  - '114:           !allow_alias?(node) && !attribute_or_allowed_method?(node)'
+  - '115:         end'
+  - '116: '
+  - '117:         def next_line_node(node)'
+  - '118:           return if node.parent.if_type?'
+  - '119: '
+  - '120:           node.right_sibling'
+  - '121:         end'
+  - '122: '
+  - '123:         def allow_alias?(node)'
+  - '124:           allow_alias_syntax? && node.alias_type?'
+  - '125:         end'
+  - '126: '
+  - '127:         def attribute_or_allowed_method?(node)'
+  - '128:           return false unless node.send_type?'
+  - '129: '
+  - '130:           node.attribute_accessor? || allowed_method?(node.method_name)'
+  - '131:         end'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::UselessNumericOperation#on_send
+  message: RuboCop::Cop::Lint::UselessNumericOperation#on_send repeats identical calls
+    (rubocop/cop/lint/useless_numeric_operation.rb:43). Name the result in a local
+    variable.
+  evidence:
+  - useless_operation?(node) × 2 (lines 44, 46)
+  code:
+  - "# rubocop/cop/lint/useless_numeric_operation.rb:43"
+  - '43:         def on_send(node)'
+  - '44:           return unless useless_operation?(node)'
+  - '45: '
+  - '46:           variable, operation, number = useless_operation?(node)'
+  - '47:           return unless useless?(operation, number)'
+  - '48: '
+  - '49:           add_offense(node) do |corrector|'
+  - '50:             corrector.replace(node, variable)'
+  - '51:           end'
+  - '52:         end'
+  - '53:         alias on_csend on_send'
+  - '54: '
+  - '55:         def on_op_asgn(node)'
+  - '56:           return unless useless_abbreviated_assignment?(node)'
+  - '57: '
+  - '58:           variable, operation, number = useless_abbreviated_assignment?(node)'
+  - '59:           return unless useless?(operation, number)'
+  - '60: '
+  - '61:           add_offense(node) do |corrector|'
+  - '62:             corrector.replace(node, "#{variable} = #{variable}")'
+  - '63:           end'
+  - '64:         end'
+  - '65: '
+  - '66:         private'
+  - '67: '
+- key: rubygems.org|repeated_call|Api::BaseController#deny_shared_cache
+  message: Api::BaseController#deny_shared_cache repeats identical calls (app/controllers/api/base_controller.rb:99).
+    Name the result in a local variable.
+  evidence:
+  - response.headers × 4 (lines 100, 101, 102)
+  code:
+  - "# app/controllers/api/base_controller.rb:99"
+  - '99:   def deny_shared_cache'
+  - '100:     response.headers["Cache-Control"]     = "private, no-store"'
+  - '101:     response.headers["Surrogate-Control"] = "max-age=0"'
+  - '102:     response.headers["Vary"] = [response.headers["Vary"], "Authorization"].compact_blank.join(",
+    ")'
+  - '103:   end'
+  - '104: '
+  - '105:   def render_bad_request(error = "bad request")'
+  - '106:     error = error.message if error.is_a?(Exception)'
+  - '107:     render json: { error: error.to_s }, status: :bad_request'
+  - '108:   end'
+  - '109: end'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::SlicingWithRange#offense_message_for_partial_range
+  message: RuboCop::Cop::Style::SlicingWithRange#offense_message_for_partial_range
+    repeats identical calls (rubocop/cop/style/slicing_with_range.rb:126). Name the
+    result in a local variable.
+  evidence:
+  - node.loc.dot × 2 (lines 127, 128)
+  code:
+  - "# rubocop/cop/style/slicing_with_range.rb:126"
+  - '126:         def offense_message_for_partial_range(node, prefer, offense_range)'
+  - '127:           current = node.loc.dot ? arguments_source(node) : offense_range.source'
+  - '128:           prefer = "[#{prefer}]" unless node.loc.dot'
+  - '129:           format(MSG, prefer: prefer, current: current)'
+  - '130:         end'
+  - '131: '
+  - '132:         def endless(range_node)'
+  - '133:           "#{range_node.begin.source}#{range_node.loc.operator.source}"'
+  - '134:         end'
+  - '135: '
+  - '136:         def beginless(range_node)'
+  - '137:           "#{range_node.loc.operator.source}#{range_node.end.source}"'
+  - '138:         end'
+  - '139: '
+  - '140:         def arguments_source(node)'
+  - '141:           node.first_argument.source_range.join(node.last_argument.source_range.end).source'
+  - '142:         end'
+  - '143:       end'
+  - '144:     end'
+  - '145:   end'
+  - '146: end'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#exist_argument_between_heredoc_end_and_closing_parentheses?
+  message: RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#exist_argument_between_heredoc_end_and_closing_parentheses?
+    repeats identical calls (rubocop/cop/layout/heredoc_argument_closing_parenthesis.rb:223).
+    Name the result in a local variable.
+  evidence:
+  - node.loc.end × 3 (lines 224, 227, 228)
+  - node.loc.end.begin_pos × 2 (lines 227, 228)
+  code:
+  - "# rubocop/cop/layout/heredoc_argument_closing_parenthesis.rb:223"
+  - '223:         def exist_argument_between_heredoc_end_and_closing_parentheses?(node)'
+  - '224:           return true unless node.loc.end'
+  - '225:           return false unless (heredoc_end = find_most_bottom_of_heredoc_end(node.arguments))'
+  - '226: '
+  - '227:           heredoc_end < node.loc.end.begin_pos &&'
+  - '228:             range_between(heredoc_end, node.loc.end.begin_pos).source.strip
+    != '''''
+  - '229:         end'
+  - '230: '
+  - '231:         def find_most_bottom_of_heredoc_end(arguments)'
+  - '232:           arguments.filter_map do |argument|'
+  - '233:             argument.loc.heredoc_end.end_pos if argument.loc.respond_to?(:heredoc_end)'
+  - '234:           end.max'
+  - '235:         end'
+  - '236: '
+  - '237:         # Internal trailing comma helpers.'
+  - '238: '
+  - '239:         def remove_internal_trailing_comma(node, corrector)'
+  - '240:           offset = internal_trailing_comma_offset_from_last_arg(node)'
+  - '241:           last_arg_end_pos = node.children.last.source_range.end_pos'
+  - '242:           corrector.remove(range_between(last_arg_end_pos, last_arg_end_pos
+    + offset))'
+  - '243:         end'
+  - '244: '
+  - '245:         def internal_trailing_comma?(node)'
+  - '246:           !internal_trailing_comma_offset_from_last_arg(node).nil?'
+  - '247:         end'
+- key: rubygems.org|repeated_call|OAuthController#create
+  message: OAuthController#create repeats identical calls (app/controllers/oauth_controller.rb:16).
+    Name the result in a local variable.
+  evidence:
+  - request.env × 2 (lines 17, 19)
+  code:
+  - "# app/controllers/oauth_controller.rb:16"
+  - '16:   def create'
+  - '17:     admin_github_login!(token: request.env["omniauth.auth"].credentials.token)'
+  - '18: '
+  - '19:     redirect_to request.env["omniauth.origin"].presence || avo_root_path'
+  - '20:   end'
+  - '21: '
+  - '22:   def failure'
+  - '23:     render_forbidden params.expect(:message)'
+  - '24:   end'
+  - '25: '
+  - '26:   def development_log_in_as'
+  - '27:     user = Admin::GitHubUser.find(params.expect(:admin_github_user_id))'
+  - '28:     log_in_as(user:)'
+  - '29:     redirect_back_or_to "/admin"'
+  - '30:   end'
+  - '31: '
+  - '32:   private'
+  - '33: '
+  - '34:   def check_valid_omniauth'
+  - '35:     render_not_found unless request.env["omniauth.auth"]&.valid?'
+  - '36:   end'
+  - '37: '
+  - '38:   def check_supported_omniauth_provider'
+  - '39:     render_not_found unless request.env["omniauth.auth"].provider == "github"'
+  - '40:   end'
+- key: rubygems.org|repeated_call|AvatarsController#show
+  message: AvatarsController#show repeats identical calls (app/controllers/avatars_controller.rb:14).
+    Name the result in a local variable.
+  evidence:
+  - resp.headers.[]("last-modified") × 2 (line 23)
+  - resp.headers × 3 (lines 23, 25)
+  - "@user.display_id × 3 (lines 24, 26, 32)"
+  code:
+  - "# app/controllers/avatars_controller.rb:14"
+  - '14:   def show'
+  - '15:     gravatar_url = @user.gravatar_url(size: @size, default: "404", secure:
+    true)'
+  - '16: '
+  - '17:     resp = gravatar_client'
+  - '18:       .get(gravatar_url, nil,'
+  - '19:            { "Accept" => "image/png", "Connection" => "close", "User-Agent"
+    => "RubyGems.org avatar proxy" })'
+  - '20: '
+  - '21:     if resp.success?'
+  - '22:       # don''t copy other headers, since they might leak user info'
+  - '23:       response.headers["last-modified"] = resp.headers["last-modified"] if
+    resp.headers["last-modified"]'
+  - '24:       filename = "#{@user.display_id}_avatar_#{@size}.#{params[:format]}"'
+  - '25:       send_data(resp.body, type: resp.headers["content-type"], disposition:
+    "inline", filename:)'
+  - '26:       set_surrogate_key "avatar/#{@user.display_id}"'
+  - '27:       cache_expiry_headers(expiry: 1800, fastly_expiry: 300)'
+  - '28:     elsif resp.status == 404'
+  - '29:       # means gravatar doesn''t have an avatar for this user'
+  - '30:       # we''ll just redirect to our default avatar instead, so everything
+    is cachable'
+  - '31:       redirect_to default_avatar_url'
+  - '32:       set_surrogate_key "avatar/#{@user.display_id}"'
+  - '33:       cache_expiry_headers(expiry: 1800, fastly_expiry: 300)'
+  - '34:     else'
+  - '35:       # any other error, just redirect to our default avatar'
+  - '36:       # this includes 400, 429, 500s, etc'
+  - '37:       # don''t cache errors so we retry on the next request'
+  - '38:       logger.warn(message: "Failed to fetch gravatar", status: resp.status,
+    url: gravatar_url, user_id: @user.id)'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::BlockComments#eq_end_part
+  message: RuboCop::Cop::Style::BlockComments#eq_end_part repeats identical calls
+    (rubocop/cop/style/block_comments.rb:56). Name the result in a local variable.
+  evidence:
+  - expr.end_pos × 4 (lines 58, 60)
+  code:
+  - "# rubocop/cop/style/block_comments.rb:56"
+  - '56:         def eq_end_part(comment, expr)'
+  - '57:           if comment.text.chomp == comment.text'
+  - '58:             range_between(expr.end_pos - END_LENGTH - 1, expr.end_pos - 2)'
+  - '59:           else'
+  - '60:             range_between(expr.end_pos - END_LENGTH, expr.end_pos)'
+  - '61:           end'
+  - '62:         end'
+  - '63:       end'
+  - '64:     end'
+  - '65:   end'
+  - '66: end'
+- key: rubocop|repeated_call|RuboCop::Plugin::ConfigurationIntegrator.merge_plugin_config_into_default_config!
+  message: RuboCop::Plugin::ConfigurationIntegrator.merge_plugin_config_into_default_config!
+    repeats identical calls (rubocop/plugin/configuration_integrator.rb:71). Name
+    the result in a local variable.
+  evidence:
+  - default_config.[](key) × 2 (lines 73, 74)
+  code:
+  - "# rubocop/plugin/configuration_integrator.rb:71"
+  - '71:         def merge_plugin_config_into_default_config!(default_config, plugin_config)'
+  - '72:           plugin_config.each do |key, value|'
+  - '73:             default_config[key] = if default_config[key].is_a?(Hash)'
+  - '74:                                     resolver.merge(default_config[key], value)'
+  - '75:                                   else'
+  - '76:                                     value'
+  - '77:                                   end'
+  - '78:           end'
+  - '79:         end'
+  - '80: '
+  - '81:         def fake_out_rubocop_default_configuration(default_config)'
+  - '82:           orig_default_config = ConfigLoader.instance_variable_get(:@default_configuration)'
+  - '83: '
+  - '84:           result = yield default_config'
+  - '85: '
+  - '86:           ConfigLoader.instance_variable_set(:@default_configuration, orig_default_config)'
+  - '87: '
+  - '88:           result'
+  - '89:         end'
+  - '90: '
+  - '91:         # rubocop:disable Metrics/AbcSize'
+  - '92:         def load_plugin_rubocop_config(plugin, runner_context)'
+  - '93:           rules = plugin.rules(runner_context)'
+  - '94: '
+  - '95:           case rules.type'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MagicCommentFormat::CommentRange#directives
+  message: RuboCop::Cop::Style::MagicCommentFormat::CommentRange#directives repeats
+    identical calls (rubocop/cop/style/magic_comment_format.rb:125). Name the result
+    in a local variable.
+  evidence:
+  - loc.expression × 2 (lines 131, 132)
+  code:
+  - "# rubocop/cop/style/magic_comment_format.rb:125"
+  - '125:           def directives'
+  - '126:             @directives ||= begin'
+  - '127:               matches = []'
+  - '128: '
+  - '129:               text.scan(DIRECTIVE_REGEXP) do'
+  - '130:                 offset = Regexp.last_match.offset(0)'
+  - '131:                 matches << loc.expression.adjust(begin_pos: offset.first)'
+  - '132:                               .with(end_pos: loc.expression.begin_pos +
+    offset.last)'
+  - '133:               end'
+  - '134: '
+  - '135:               matches'
+  - '136:             end'
+  - '137:           end'
+  - '138: '
+  - '139:           # A magic comment can contain one value (normal style) or'
+  - '140:           # multiple directives (emacs style)'
+  - '141:           def values'
+  - '142:             @values ||= begin'
+  - '143:               matches = []'
+  - '144: '
+  - '145:               text.scan(VALUE_REGEXP) do'
+  - '146:                 offset = Regexp.last_match.offset(1)'
+  - '147:                 matches << loc.expression.adjust(begin_pos: offset.first)'
+  - '148:                               .with(end_pos: loc.expression.begin_pos +
+    offset.last)'
+  - '149:               end'
+- key: rubygems.org|repeated_call|Events::UserEvent::ApiKey::CreatedComponent#view_template
+  message: Events::UserEvent::ApiKey::CreatedComponent#view_template repeats identical
+    calls (app/views/components/events/user_event/api_key/created_component.rb:4).
+    Name the result in a local variable.
+  evidence:
+  - additional.gem × 2 (line 9)
+  code:
+  - "# app/views/components/events/user_event/api_key/created_component.rb:4"
+  - '4:   def view_template'
+  - '5:     div { t(".api_key_name", name: additional.name) }'
+  - '6:     div { t(".api_key_scopes", scopes: additional.scopes&.to_sentence) }'
+  - '7:     if additional.gem.present?'
+  - '8:       div do'
+  - '9:         t(".api_key_gem_html", gem: link_to(additional.gem, rubygem_path(additional.gem)))'
+  - '10:       end'
+  - '11:     end'
+  - '12:     div { t(".api_key_mfa", mfa: additional.mfa ? t(".required") : t(".not_required"))
+    } if additional.has_attribute?(:mfa)'
+  - '13:   end'
+  - '14: end'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::ClassMethods#on_class
+  message: RuboCop::Cop::Style::ClassMethods#on_class repeats identical calls (rubocop/cop/style/class_methods.rb:28).
+    Name the result in a local variable.
+  evidence:
+  - node.body × 5 (lines 29, 31, 32, 33, 34)
+  code:
+  - "# rubocop/cop/style/class_methods.rb:28"
+  - '28:         def on_class(node)'
+  - '29:           return unless node.body'
+  - '30: '
+  - '31:           if node.body.defs_type?'
+  - '32:             check_defs(node.identifier, node.body)'
+  - '33:           elsif node.body.begin_type?'
+  - '34:             node.body.each_child_node(:defs) { |def_node| check_defs(node.identifier,
+    def_node) }'
+  - '35:           end'
+  - '36:         end'
+  - '37:         alias on_module on_class'
+  - '38: '
+  - '39:         private'
+  - '40: '
+  - '41:         def check_defs(name, node)'
+  - '42:           # check if the class/module name matches the definee for the defs
+    node'
+  - '43:           return unless name == node.receiver'
+  - '44: '
+  - '45:           message = format(MSG, method: node.method_name, class: name.source)'
+  - '46: '
+  - '47:           add_offense(node.receiver.loc.name, message: message) do |corrector|'
+  - '48:             corrector.replace(node.receiver, ''self'')'
+  - '49:           end'
+  - '50:         end'
+  - '51:       end'
+  - '52:     end'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::SymbolConversion#on_sym
+  message: RuboCop::Cop::Lint::SymbolConversion#on_sym repeats identical calls (rubocop/cop/lint/symbol_conversion.rb:88).
+    Name the result in a local variable.
+  evidence:
+  - node.value.inspect × 2 (lines 89, 102)
+  code:
+  - "# rubocop/cop/lint/symbol_conversion.rb:88"
+  - '88:         def on_sym(node)'
+  - '89:           return if ignored_node?(node) || properly_quoted?(node.source,
+    node.value.inspect)'
+  - '90: '
+  - '91:           # `alias` arguments are symbols but since a symbol that requires'
+  - '92:           # being quoted is not a valid method identifier, it can be ignored'
+  - '93:           return if in_alias?(node)'
+  - '94: '
+  - '95:           # The `%I[]` and `%i[]` macros are parsed as normal arrays of symbols'
+  - '96:           # so they need to be ignored.'
+  - '97:           return if in_percent_literal_array?(node)'
+  - '98: '
+  - '99:           # Symbol hash keys have a different format and need to be handled
+    separately'
+  - '100:           return correct_hash_key(node) if hash_key?(node)'
+  - '101: '
+  - '102:           register_offense(node, correction: node.value.inspect)'
+  - '103:         end'
+  - '104: '
+  - '105:         def on_hash(node)'
+  - '106:           # For `EnforcedStyle: strict`, hash keys are evaluated in `on_sym`'
+  - '107:           return unless style == :consistent'
+  - '108: '
+  - '109:           keys = node.keys.select(&:sym_type?)'
+  - '110: '
+  - '111:           if keys.any? { |key| requires_quotes?(key) }'
+  - '112:             correct_inconsistent_hash_keys(keys)'
+- key: rubygems.org|repeated_call|WebauthnVerifiable#webauthn_credential_verified?
+  message: WebauthnVerifiable#webauthn_credential_verified? repeats identical calls
+    (app/controllers/concerns/webauthn_verifiable.rb:17). Name the result in a local
+    variable.
+  evidence:
+  - t("credentials_required") × 3 (lines 21, 33, 42)
+  code:
+  - "# app/controllers/concerns/webauthn_verifiable.rb:17"
+  - '17:   def webauthn_credential_verified?'
+  - '18:     @credential = WebAuthn::Credential.from_get(credential_params)'
+  - '19: '
+  - '20:     unless user_webauthn_credential'
+  - '21:       @webauthn_error = t("credentials_required")'
+  - '22:       return false'
+  - '23:     end'
+  - '24: '
+  - '25:     @credential.verify('
+  - '26:       challenge,'
+  - '27:       public_key: user_webauthn_credential.public_key,'
+  - '28:       sign_count: user_webauthn_credential.sign_count'
+  - '29:     )'
+  - '30:     user_webauthn_credential.update!(sign_count: @credential.sign_count)'
+  - '31: '
+  - '32:     if @credential.user_handle.present? && @credential.user_handle != user_webauthn_credential.user.webauthn_id'
+  - '33:       @webauthn_error = t("credentials_required")'
+  - '34:       return false'
+  - '35:     end'
+  - '36: '
+  - '37:     true'
+  - '38:   rescue WebAuthn::Error => e'
+  - '39:     @webauthn_error = e.message'
+  - '40:     false'
+  - '41:   rescue ActionController::ParameterMissing'
+- key: rubygems.org|repeated_call|RefreshOIDCProviderJob#perform
+  message: RefreshOIDCProviderJob#perform repeats identical calls (app/jobs/refresh_oidc_provider_job.rb:11).
+    Name the result in a local variable.
+  evidence:
+  - provider.configuration × 5 (lines 21, 22, 23, 25)
+  - provider.configuration.jwks_uri × 4 (lines 22, 23, 25)
+  code:
+  - "# app/jobs/refresh_oidc_provider_job.rb:11"
+  - '11:   def perform(provider:)'
+  - '12:     connection = Faraday.new(provider.issuer, request: { timeout: 2 }, headers:
+    { "Accept" => "application/json" }) do |f|'
+  - '13:       f.request :json'
+  - '14:       f.response :logger, logger, headers: false, errors: true, bodies: true'
+  - '15:       f.response :raise_error'
+  - '16:       f.response :json, content_type: //'
+  - '17:     end'
+  - '18:     resp = connection.get("/.well-known/openid-configuration")'
+  - '19: '
+  - '20:     provider.configuration = resp.body'
+  - '21:     provider.configuration.validate!'
+  - '22:     if provider.configuration.jwks_uri.blank? || URI.parse(provider.configuration.jwks_uri).host
+    != URI.parse(provider.issuer).host'
+  - '23:       raise JWKSURIMismatchError, "Invalid JWKS URI in OpenID Connect configuration
+    #{provider.configuration.jwks_uri.inspect}"'
+  - '24:     end'
+  - '25:     provider.jwks = connection.get(provider.configuration.jwks_uri).body'
+  - '26:     provider.configuration_updated_at = Time.current'
+  - '27: '
+  - '28:     provider.save!'
+  - '29:   end'
+  - '30: end'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument_node
+  message: RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument_node
+    repeats identical calls (rubocop/cop/layout/empty_line_after_guard_clause.rb:162).
+    Name the result in a local variable.
+  evidence:
+  - node.if_branch × 3 (lines 165, 166, 170)
+  code:
+  - "# rubocop/cop/layout/empty_line_after_guard_clause.rb:162"
+  - '162:         def last_heredoc_argument_node(node)'
+  - '163:           return node unless node.respond_to?(:if_branch)'
+  - '164: '
+  - '165:           if node.if_branch.and_type?'
+  - '166:             node.if_branch.children.first'
+  - '167:           elsif use_heredoc_in_condition?(node.condition)'
+  - '168:             node.condition'
+  - '169:           else'
+  - '170:             node.if_branch.children.last'
+  - '171:           end'
+  - '172:         end'
+  - '173: '
+  - '174:         def heredoc_line(node, heredoc_node)'
+  - '175:           heredoc_body = heredoc_node.loc.heredoc_body'
+  - '176:           num_of_heredoc_lines = heredoc_body.last_line - heredoc_body.first_line'
+  - '177: '
+  - '178:           node.last_line + num_of_heredoc_lines + END_OF_HEREDOC_LINE'
+  - '179:         end'
+  - '180: '
+  - '181:         def heredoc?(node)'
+  - '182:           node.respond_to?(:heredoc?) && node.heredoc?'
+  - '183:         end'
+  - '184: '
+  - '185:         def use_heredoc_in_condition?(condition)'
+  - '186:           condition.descendants.any? do |descendant|'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::FrozenStringLiteralComment#last_special_comment
+  message: RuboCop::Cop::Style::FrozenStringLiteralComment#last_special_comment repeats
+    identical calls (rubocop/cop/style/frozen_string_literal_comment.rb:137). Name
+    the result in a local variable.
+  evidence:
+  - processed_source.tokens.[](token_number) × 2 (lines 139, 140)
+  - processed_source.tokens × 3 (lines 139, 140, 144)
+  code:
+  - "# rubocop/cop/style/frozen_string_literal_comment.rb:137"
+  - '137:         def last_special_comment(processed_source)'
+  - '138:           token_number = 0'
+  - '139:           if processed_source.tokens[token_number].text.start_with?(SHEBANG)'
+  - '140:             token = processed_source.tokens[token_number]'
+  - '141:             token_number += 1'
+  - '142:           end'
+  - '143: '
+  - '144:           next_token = processed_source.tokens[token_number]'
+  - '145:           if next_token&.text&.valid_encoding? && Encoding::ENCODING_PATTERN.match?(next_token.text)'
+  - '146:             token = next_token'
+  - '147:           end'
+  - '148: '
+  - '149:           token'
+  - '150:         end'
+  - '151: '
+  - '152:         def frozen_string_literal_comment(processed_source)'
+  - '153:           processed_source.tokens.find do |token|'
+  - '154:             MagicComment.parse(token.text).frozen_string_literal_specified?'
+  - '155:           end'
+  - '156:         end'
+  - '157: '
+  - '158:         def missing_offense(processed_source)'
+  - '159:           range = source_range(processed_source.buffer, 0, 0)'
+  - '160: '
+  - '161:           add_offense(range, message: MSG_MISSING) { |corrector| insert_comment(corrector)
+    }'
+- key: rubocop|repeated_call|RuboCop::Server::SocketReader#create_command_instance
+  message: RuboCop::Server::SocketReader#create_command_instance repeats identical
+    calls (rubocop/server/socket_reader.rb:53). Name the result in a local variable.
+  evidence:
+  - request.header × 4 (lines 54, 56)
+  code:
+  - "# rubocop/server/socket_reader.rb:53"
+  - '53:       def create_command_instance(request)'
+  - '54:         klass = find_command_class(request.header.command)'
+  - '55: '
+  - '56:         klass.new(request.header.args, token: request.header.token, cwd:
+    request.header.cwd)'
+  - '57:       end'
+  - '58: '
+  - '59:       def find_command_class(command)'
+  - '60:         case command'
+  - '61:         when ''stop'' then ServerCommand::Stop'
+  - '62:         when ''exec'' then ServerCommand::Exec'
+  - '63:         else'
+  - '64:           raise UnknownServerCommandError, "#{command.inspect} is not a valid
+    command"'
+  - '65:         end'
+  - '66:       end'
+  - '67:     end'
+  - '68:   end'
+  - '69: end'
+- key: rubocop|repeated_call|RuboCop::CLI::Command::ExecuteRunner#bug_tracker_uri
+  message: RuboCop::CLI::Command::ExecuteRunner#bug_tracker_uri repeats identical
+    calls (rubocop/cli/command/execute_runner.rb:85). Name the result in a local variable.
+  evidence:
+  - Gem.loaded_specs × 2 (lines 86, 88)
+  code:
+  - "# rubocop/cli/command/execute_runner.rb:85"
+  - '85:         def bug_tracker_uri'
+  - '86:           return unless Gem.loaded_specs.key?(''rubocop'')'
+  - '87: '
+  - '88:           "#{Gem.loaded_specs[''rubocop''].metadata[''bug_tracker_uri'']}\n"'
+  - '89:         end'
+  - '90: '
+  - '91:         def maybe_print_corrected_source'
+  - '92:           # Integration tools (like RubyMine) expect to have only the JSON
+    result'
+  - '93:           # when specifying JSON format. Similar HTML and JUnit are targeted
+    as well.'
+  - '94:           # See: https://github.com/rubocop/rubocop/issues/8673'
+  - '95:           return if INTEGRATION_FORMATTERS.include?(@options[:format])'
+  - '96: '
+  - '97:           return unless @options[:stdin] && @options[:autocorrect]'
+  - '98: '
+  - '99:           (@options[:stderr] ? $stderr : $stdout).puts ''='' * 20'
+  - '100:           print @options[:stdin]'
+  - '101:         end'
+  - '102:       end'
+  - '103:     end'
+  - '104:   end'
+  - '105: end'
+- key: rubygems.org|repeated_call|GemNameReservation#downcase_name_check
+  message: GemNameReservation#downcase_name_check repeats identical calls (app/models/gem_name_reservation.rb:48).
+    Name the result in a local variable.
+  evidence:
+  - name.to_s × 2 (line 49)
+  code:
+  - "# app/models/gem_name_reservation.rb:48"
+  - '48:   def downcase_name_check'
+  - '49:     return unless name.to_s != name.to_s.downcase'
+  - '50:     errors.add(:name, "must be all lowercase")'
+  - '51:   end'
+  - '52: end'

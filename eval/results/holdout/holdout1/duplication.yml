@@ -1,0 +1,627 @@
+---
+- key: rubygems.org|duplication|app/models/advisory/osv/affected_range.rb:15,app/models/advisory/osv/affected_range.rb:8
+  message: 2 similar fragments (mass 21) — differs only in the receiver or message
+    — extract a method taking the receiver.
+  evidence:
+  - app/models/advisory/osv/affected_range.rb:8-13
+  - app/models/advisory/osv/affected_range.rb:15-20
+  code:
+  - "# app/models/advisory/osv/affected_range.rb:8-13"
+  - '8:       unless fixed.nil?'
+  - '9:         bound = parse_bound(fixed)'
+  - '10:         return false if bound.nil?'
+  - '11: '
+  - '12:         return gem_version < bound'
+  - '13:       end'
+  - "# app/models/advisory/osv/affected_range.rb:15-20"
+  - '15:       unless last_affected.nil?'
+  - '16:         bound = parse_bound(last_affected)'
+  - '17:         return false if bound.nil?'
+  - '18: '
+  - '19:         return gem_version <= bound'
+  - '20:       end'
+- key: rubocop|duplication|rubocop/cop/style/strip.rb:34,rubocop/cop/style/zero_length_predicate.rb:63
+  message: 2 similar fragments (mass 26) — extract the shared shape and pass what
+    differs as parameters.
+  evidence:
+  - rubocop/cop/style/strip.rb:34-38
+  - rubocop/cop/style/zero_length_predicate.rb:63-67
+  code:
+  - "# rubocop/cop/style/strip.rb:34-38"
+  - '34:             message = format(MSG, methods: range.source)'
+  - '35: '
+  - '36:             add_offense(range, message: message) do |corrector|'
+  - '37:               corrector.replace(range, ''strip'')'
+  - '38:             end'
+  - "# rubocop/cop/style/zero_length_predicate.rb:63-67"
+  - '63:           message = format(ZERO_MSG, current: offense.source)'
+  - '64: '
+  - '65:           add_offense(offense, message: message) do |corrector|'
+  - '66:             corrector.replace(offense, ''empty?'')'
+  - '67:           end'
+- key: rubocop|duplication|rubocop/cop/style/redundant_format.rb:132,rubocop/cop/style/redundant_format.rb:94
+  message: 2 similar fragments (mass 20) — byte-for-byte identical — extract a shared
+    method and call it from each site.
+  evidence:
+  - rubocop/cop/style/redundant_format.rb:94-96
+  - rubocop/cop/style/redundant_format.rb:132-134
+  code:
+  - "# rubocop/cop/style/redundant_format.rb:94-96"
+  - '94:             add_offense(node, message: message(node, replacement)) do |corrector|'
+  - '95:               corrector.replace(node, replacement)'
+  - '96:             end'
+  - "# rubocop/cop/style/redundant_format.rb:132-134"
+  - '132:           add_offense(node, message: message(node, replacement)) do |corrector|'
+  - '133:             corrector.replace(node, replacement)'
+  - '134:           end'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/example_heredoc_delimiter.rb:40,rubocop/cop/style/mutable_constant.rb:162
+  message: 2 similar fragments (mass 24) — differs only in the receiver or message
+    — extract a method taking the receiver.
+  evidence:
+  - rubocop/cop/internal_affairs/example_heredoc_delimiter.rb:40-45
+  - rubocop/cop/style/mutable_constant.rb:162-165
+  code:
+  - "# rubocop/cop/internal_affairs/example_heredoc_delimiter.rb:40-45"
+  - '40:           return if expected_heredoc_delimiter?(heredoc_node)'
+  - '41:           return if expected_heredoc_delimiter_in_body?(heredoc_node)'
+  - '42: '
+  - '43:           add_offense(heredoc_node) do |corrector|'
+  - '44:             autocorrect(corrector, heredoc_node)'
+  - '45:           end'
+  - "# rubocop/cop/style/mutable_constant.rb:162-165"
+  - '162:           return if frozen_string_literal?(value)'
+  - '163:           return if shareable_constant_value?(value)'
+  - '164: '
+  - '165:           add_offense(value) { |corrector| autocorrect(corrector, value)
+    }'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/redundant_described_class_as_subject.rb:55,rubocop/cop/internal_affairs/redundant_let_rubocop_config_new.rb:67
+  message: 2 similar fragments (mass 20) — differs only in a `&.` one copy has and
+    the other lacks — extract a method, and decide once whether the receiver can be
+    nil.
+  evidence:
+  - rubocop/cop/internal_affairs/redundant_described_class_as_subject.rb:55-59
+  - rubocop/cop/internal_affairs/redundant_let_rubocop_config_new.rb:67-69
+  code:
+  - "# rubocop/cop/internal_affairs/redundant_described_class_as_subject.rb:55-59"
+  - '55:         def find_describe_method_node(block_node)'
+  - '56:           block_node.ancestors.find do |node|'
+  - '57:             node.block_type? && node.method?(:describe)'
+  - '58:           end&.send_node'
+  - '59:         end'
+  - "# rubocop/cop/internal_affairs/redundant_let_rubocop_config_new.rb:67-69"
+  - '67:         def find_describe_method_node(block_node)'
+  - '68:           block_node.ancestors.find { |node| node.block_type? && node.method?(:describe)
+    }.send_node'
+  - '69:         end'
+- key: rubygems.org|duplication|app/components/avo/audited_changes_record_diff/show_component.rb:25,app/components/avo/audited_changes_record_diff/show_component.rb:27
+  message: 2 similar fragments (mass 28) — extract the shared shape and pass what
+    differs as parameters.
+  evidence:
+  - app/components/avo/audited_changes_record_diff/show_component.rb:25-26
+  - app/components/avo/audited_changes_record_diff/show_component.rb:27-28
+  code:
+  - "# app/components/avo/audited_changes_record_diff/show_component.rb:25-26"
+  - '25:     @old_resource = resource_class'
+  - '26:       .new(record: resource.model_class.new(**unchanged, **changes.transform_values(&:first)),
+    view:, user:).detect_fields'
+  - "# app/components/avo/audited_changes_record_diff/show_component.rb:27-28"
+  - '27:     @new_resource = resource_class'
+  - '28:       .new(record: resource.model_class.new(**unchanged, **changes.transform_values(&:last)),
+    view:, user:).detect_fields'
+- key: rubygems.org|duplication|app/jobs/update_versions_list_job.rb:11,app/jobs/upload_info_file_job.rb:6
+  message: 2 similar fragments (mass 28) — extract the shared shape and pass what
+    differs as parameters.
+  evidence:
+  - app/jobs/update_versions_list_job.rb:11-17
+  - app/jobs/upload_info_file_job.rb:6-17
+  code:
+  - "# app/jobs/update_versions_list_job.rb:11-17"
+  - '11:   include GoodJob::ActiveJobExtensions::Concurrency'
+  - '12: '
+  - '13:   good_job_control_concurrency_with('
+  - '14:     enqueue_limit: 1,'
+  - '15:     perform_limit: 1,'
+  - '16:     key: -> { "#{self.class.name}-v#{version_arg}" }'
+  - '17:   )'
+  - "# app/jobs/upload_info_file_job.rb:6-17"
+  - '6:   include GoodJob::ActiveJobExtensions::Concurrency'
+  - '7: '
+  - '8:   good_job_control_concurrency_with('
+  - '9:     # Maximum number of jobs with the concurrency key to be'
+  - '10:     # concurrently enqueued (excludes performing jobs)'
+  - '11:     #'
+  - '12:     # Because the job only uses current state at time of perform,'
+  - '13:     # it makes no sense to enqueue more than one at a time'
+  - '14:     enqueue_limit: 1,'
+  - '15:     perform_limit: 1,'
+  - '16:     key: -> { "#{self.class.name}:#{rubygem_name_arg}" }'
+  - '17:   )'
+- key: rubocop|duplication|rubocop/cop/style/multiline_ternary_operator.rb:49,rubocop/cop/style/one_line_conditional.rb:67
+  message: 2 similar fragments (mass 25) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - rubocop/cop/style/multiline_ternary_operator.rb:49-55
+  - rubocop/cop/style/one_line_conditional.rb:67-73
+  code:
+  - "# rubocop/cop/style/multiline_ternary_operator.rb:49-55"
+  - '49:           add_offense(node, message: message) do |corrector|'
+  - '50:             next if part_of_ignored_node?(node)'
+  - '51: '
+  - '52:             autocorrect(corrector, node)'
+  - '53: '
+  - '54:             ignore_node(node)'
+  - '55:           end'
+  - "# rubocop/cop/style/one_line_conditional.rb:67-73"
+  - '67:           add_offense(node, message: message) do |corrector|'
+  - '68:             next if part_of_ignored_node?(node)'
+  - '69: '
+  - '70:             autocorrect(corrector, node)'
+  - '71: '
+  - '72:             ignore_node(node)'
+  - '73:           end'
+- key: rubocop|duplication|rubocop/cop/mixin/multiline_literal_brace_layout.rb:43,rubocop/cop/mixin/multiline_literal_brace_layout.rb:66
+  message: 2 similar fragments (mass 28) — differs only in a constant — extract a
+    method and parameterize it.
+  evidence:
+  - rubocop/cop/mixin/multiline_literal_brace_layout.rb:43-47
+  - rubocop/cop/mixin/multiline_literal_brace_layout.rb:66-70
+  code:
+  - "# rubocop/cop/mixin/multiline_literal_brace_layout.rb:43-47"
+  - '43:         return unless closing_brace_on_same_line?(node)'
+  - '44: '
+  - '45:         add_offense(node.loc.end, message: self.class::ALWAYS_NEW_LINE_MESSAGE)
+    do |corrector|'
+  - '46:           MultilineLiteralBraceCorrector.correct(corrector, node, processed_source)'
+  - '47:         end'
+  - "# rubocop/cop/mixin/multiline_literal_brace_layout.rb:66-70"
+  - '66:           return unless closing_brace_on_same_line?(node)'
+  - '67: '
+  - '68:           add_offense(node.loc.end, message: self.class::NEW_LINE_MESSAGE)
+    do |corrector|'
+  - '69:             MultilineLiteralBraceCorrector.correct(corrector, node, processed_source)'
+  - '70:           end'
+- key: rubocop|duplication|rubocop/cop/correctors/percent_literal_corrector.rb:38,rubocop/cop/style/sole_nested_conditional.rb:98
+  message: 2 similar fragments (mass 22) — differs in its method names and in the
+    receiver or message — keep each name, calling one shared method that takes the
+    receiver. Both sites change often — fix one, miss the other.
+  evidence:
+  - rubocop/cop/correctors/percent_literal_corrector.rb:38-44
+  - rubocop/cop/style/sole_nested_conditional.rb:98-104
+  code:
+  - "# rubocop/cop/correctors/percent_literal_corrector.rb:38-44"
+  - '38:       def new_contents(node, escape, delimiters)'
+  - '39:         if node.multiline?'
+  - '40:           autocorrect_multiline_words(node, escape, delimiters)'
+  - '41:         else'
+  - '42:           autocorrect_words(node, escape, delimiters)'
+  - '43:         end'
+  - '44:       end'
+  - "# rubocop/cop/style/sole_nested_conditional.rb:98-104"
+  - '98:         def autocorrect(corrector, node, if_branch)'
+  - '99:           if node.modifier_form?'
+  - '100:             autocorrect_outer_condition_modify_form(corrector, node, if_branch)'
+  - '101:           else'
+  - '102:             autocorrect_outer_condition_basic(corrector, node, if_branch)'
+  - '103:           end'
+  - '104:         end'
+- key: rubygems.org|duplication|app/avo/resources/log_ticket.rb:24,app/avo/resources/membership.rb:16,app/avo/resources/ownership.rb:19
+  message: 3 similar fragments (mass 18) — extract the shared shape and pass what
+    differs as parameters. Both sites change often — fix one, miss the other.
+  evidence:
+  - app/avo/resources/log_ticket.rb:24-25
+  - app/avo/resources/membership.rb:16-17
+  - app/avo/resources/ownership.rb:19-21
+  code:
+  - "# app/avo/resources/log_ticket.rb:24-25"
+  - '24:     field :status, as: :select, enum: LogTicket.statuses'
+  - '25:     field :processed_count, as: :number'
+  - "# app/avo/resources/membership.rb:16-17"
+  - '16:     field :role, as: :select, enum: Membership.roles'
+  - '17:     field :push_notifier, as: :boolean'
+  - "# app/avo/resources/ownership.rb:19-21"
+  - '19:     field :role, as: :select, enum: Ownership.roles'
+  - '20: '
+  - '21:     field :token, as: :heading'
+- key: rubocop|duplication|rubocop/cop/layout/else_alignment.rb:119,rubocop/cop/layout/indentation_width.rb:240
+  message: 2 similar fragments (mass 34) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - rubocop/cop/layout/else_alignment.rb:119-124
+  - rubocop/cop/layout/indentation_width.rb:240-245
+  code:
+  - "# rubocop/cop/layout/else_alignment.rb:119-124"
+  - '119:           rhs = first_part_of_call_chain(rhs)'
+  - '120:           return unless rhs'
+  - '121: '
+  - '122:           end_config = config.for_cop(''Layout/EndAlignment'')'
+  - '123:           style = end_config[''EnforcedStyleAlignWith''] || ''keyword'''
+  - '124:           base = variable_alignment?(node.loc, rhs, style.to_sym) ? node
+    : rhs'
+  - "# rubocop/cop/layout/indentation_width.rb:240-245"
+  - '240:           rhs = first_part_of_call_chain(rhs)'
+  - '241:           return unless rhs'
+  - '242: '
+  - '243:           end_config = config.for_cop(''Layout/EndAlignment'')'
+  - '244:           style = end_config[''EnforcedStyleAlignWith''] || ''keyword'''
+  - '245:           base = variable_alignment?(node.loc, rhs, style.to_sym) ? node
+    : rhs'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/cop_description.rb:103,rubocop/cop/mixin/visibility_help.rb:43
+  message: 2 similar fragments (mass 16) — differs in its method names and in the
+    receiver or message — keep each name, calling one shared method that takes the
+    receiver.
+  evidence:
+  - rubocop/cop/internal_affairs/cop_description.rb:103-105
+  - rubocop/cop/mixin/visibility_help.rb:43-45
+  code:
+  - "# rubocop/cop/internal_affairs/cop_description.rb:103-105"
+  - '103:         def first_comment_line(node)'
+  - '104:           node.source.lines.find { |line| comment_line?(line) }'
+  - '105:         end'
+  - "# rubocop/cop/mixin/visibility_help.rb:43-45"
+  - '43:       def find_visibility_start(node)'
+  - '44:         node.left_siblings.reverse.find { |sibling| visibility_block?(sibling)
+    }'
+  - '45:       end'
+- key: rubocop|duplication|rubocop/cop/base.rb:526,rubocop/cop/cop.rb:183
+  message: 2 similar fragments (mass 21) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - rubocop/cop/base.rb:526-532
+  - rubocop/cop/cop.rb:183-189
+  code:
+  - "# rubocop/cop/base.rb:526-532"
+  - '526:       def range_for_original(range)'
+  - '527:         ::Parser::Source::Range.new('
+  - '528:           @current_original.buffer,'
+  - '529:           range.begin_pos + @current_offset,'
+  - '530:           range.end_pos + @current_offset'
+  - '531:         )'
+  - '532:       end'
+  - "# rubocop/cop/cop.rb:183-189"
+  - '183:       def range_for_original(range)'
+  - '184:         ::Parser::Source::Range.new('
+  - '185:           @current_original.buffer,'
+  - '186:           range.begin_pos + @current_offset,'
+  - '187:           range.end_pos + @current_offset'
+  - '188:         )'
+  - '189:       end'
+- key: rubocop|duplication|rubocop/options.rb:418,rubocop/options.rb:427
+  message: 2 similar fragments (mass 27) — differs in its method names and in literal
+    values — keep each name, calling one shared method that takes the literals as
+    arguments.
+  evidence:
+  - rubocop/options.rb:418-425
+  - rubocop/options.rb:427-434
+  code:
+  - "# rubocop/options.rb:418-425"
+  - '418:     def validate_display_only_correctable_and_autocorrect'
+  - '419:       return unless @options.key?(:autocorrect)'
+  - '420:       return if !@options.key?(:display_only_correctable) &&'
+  - '421:                 !@options.key?(:display_only_safe_correctable)'
+  - '422: '
+  - '423:       raise OptionArgumentError,'
+  - '424:             ''--autocorrect cannot be used with --display-only-[safe-]correctable.'''
+  - '425:     end'
+  - "# rubocop/options.rb:427-434"
+  - '427:     def validate_display_only_failed_and_display_only_correctable'
+  - '428:       return unless @options.key?(:display_only_failed)'
+  - '429:       return if !@options.key?(:display_only_correctable) &&'
+  - '430:                 !@options.key?(:display_only_safe_correctable)'
+  - '431: '
+  - '432:       raise OptionArgumentError,'
+  - '433:             ''--display-only-failed cannot be used together with other display
+    options.'''
+  - '434:     end'
+- key: rubocop|duplication|rubocop/cop/lint/literal_as_condition.rb:65,rubocop/cop/lint/literal_as_condition.rb:95
+  message: 2 similar fragments (mass 117) — differs in its method names and in several
+    other ways — keep each name, calling one shared method that takes what else differs
+    as parameters.
+  evidence:
+  - rubocop/cop/lint/literal_as_condition.rb:65-92
+  - rubocop/cop/lint/literal_as_condition.rb:95-122
+  code:
+  - "# rubocop/cop/lint/literal_as_condition.rb:65-92"
+  - '65:         def on_while(node)'
+  - '66:           return if node.condition.source == ''true'''
+  - '67: '
+  - '68:           if node.condition.truthy_literal?'
+  - '69:             add_offense(node.condition) do |corrector|'
+  - '70:               corrector.replace(node.condition, ''true'')'
+  - '71:             end'
+  - '72:           elsif node.condition.falsey_literal?'
+  - '73:             add_offense(node.condition) do |corrector|'
+  - '74:               corrector.remove(node)'
+  - '75:             end'
+  - '76:           end'
+  - '77:         end'
+  - '78: '
+  - '79:         # rubocop:disable Metrics/AbcSize'
+  - '80:         def on_while_post(node)'
+  - '81:           return if node.condition.source == ''true'''
+  - '82: '
+  - '83:           if node.condition.truthy_literal?'
+  - '84:             add_offense(node.condition) do |corrector|'
+  - '85:               corrector.replace(node, node.source.sub(node.condition.source,
+    ''true''))'
+  - '86:             end'
+  - '87:           elsif node.condition.falsey_literal?'
+  - '88:             add_offense(node.condition) do |corrector|'
+  - '89:               corrector.replace(node, node.body.child_nodes.map(&:source).join("\n"))'
+  - '90:             end'
+  - '91:           end'
+  - '92:         end'
+  - "# rubocop/cop/lint/literal_as_condition.rb:95-122"
+  - '95:         def on_until(node)'
+  - '96:           return if node.condition.source == ''false'''
+  - '97: '
+  - '98:           if node.condition.falsey_literal?'
+  - '99:             add_offense(node.condition) do |corrector|'
+  - '100:               corrector.replace(node.condition, ''false'')'
+  - '101:             end'
+  - '102:           elsif node.condition.truthy_literal?'
+  - '103:             add_offense(node.condition) do |corrector|'
+  - '104:               corrector.remove(node)'
+  - '105:             end'
+  - '106:           end'
+  - '107:         end'
+  - '108: '
+  - '109:         # rubocop:disable Metrics/AbcSize'
+  - '110:         def on_until_post(node)'
+  - '111:           return if node.condition.source == ''false'''
+  - '112: '
+  - '113:           if node.condition.falsey_literal?'
+  - '114:             add_offense(node.condition) do |corrector|'
+  - '115:               corrector.replace(node, node.source.sub(node.condition.source,
+    ''false''))'
+  - '116:             end'
+  - '117:           elsif node.condition.truthy_literal?'
+  - '118:             add_offense(node.condition) do |corrector|'
+  - '119:               corrector.replace(node, node.body.child_nodes.map(&:source).join("\n"))'
+  - '120:             end'
+  - '121:           end'
+  - '122:         end'
+- key: faraday|duplication|options.rb:22,options.rb:51
+  message: 2 similar fragments (mass 55) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence).
+  evidence:
+  - options.rb:22-36
+  - options.rb:51-63
+  code:
+  - "# options.rb:22-36"
+  - '22:     def update(obj)'
+  - '23:       obj.each do |key, value|'
+  - '24:         sub_options = self.class.options_for(key)'
+  - '25:         if sub_options'
+  - '26:           new_value = sub_options.from(value) if value'
+  - '27:         elsif value.is_a?(Hash)'
+  - '28:           new_value = value.dup'
+  - '29:         else'
+  - '30:           new_value = value'
+  - '31:         end'
+  - '32: '
+  - '33:         send(:"#{key}=", new_value) unless new_value.nil?'
+  - '34:       end'
+  - '35:       self'
+  - '36:     end'
+  - "# options.rb:51-63"
+  - '51:     def merge!(other)'
+  - '52:       other.each do |key, other_value|'
+  - '53:         self_value = send(key)'
+  - '54:         sub_options = self.class.options_for(key)'
+  - '55:         new_value = if self_value && sub_options && other_value'
+  - '56:                       self_value.merge(other_value)'
+  - '57:                     else'
+  - '58:                       other_value'
+  - '59:                     end'
+  - '60:         send(:"#{key}=", new_value) unless new_value.nil?'
+  - '61:       end'
+  - '62:       self'
+  - '63:     end'
+- key: rubocop|duplication|rubocop/cop/lint/non_deterministic_require_order.rb:68,rubocop/cop/lint/non_deterministic_require_order.rb:79
+  message: 2 similar fragments (mass 47) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence).
+  evidence:
+  - rubocop/cop/lint/non_deterministic_require_order.rb:68-77
+  - rubocop/cop/lint/non_deterministic_require_order.rb:79-88
+  code:
+  - "# rubocop/cop/lint/non_deterministic_require_order.rb:68-77"
+  - '68:         def on_block(node)'
+  - '69:           return unless node.body'
+  - '70:           return unless unsorted_dir_loop?(node.send_node)'
+  - '71: '
+  - '72:           loop_variable(node.arguments) do |var_name|'
+  - '73:             return unless var_is_required?(node.body, var_name)'
+  - '74: '
+  - '75:             add_offense(node.send_node) { |corrector| correct_block(corrector,
+    node.send_node) }'
+  - '76:           end'
+  - '77:         end'
+  - "# rubocop/cop/lint/non_deterministic_require_order.rb:79-88"
+  - '79:         def on_numblock(node)'
+  - '80:           return unless node.body'
+  - '81:           return unless unsorted_dir_loop?(node.send_node)'
+  - '82: '
+  - '83:           node.argument_list'
+  - '84:               .filter { |argument| var_is_required?(node.body, argument.name)
+    }'
+  - '85:               .each do'
+  - '86:                 add_offense(node.send_node) { |corrector| correct_block(corrector,
+    node.send_node) }'
+  - '87:               end'
+  - '88:         end'
+- key: rubocop|duplication|rubocop/cop/layout/space_inside_reference_brackets.rb:83,rubocop/cop/layout/space_inside_string_interpolation.rb:36
+  message: 2 similar fragments (mass 20) — differs only in the receiver or message
+    — extract a method taking the receiver. Both sites change often — fix one, miss
+    the other.
+  evidence:
+  - rubocop/cop/layout/space_inside_reference_brackets.rb:83-87
+  - rubocop/cop/layout/space_inside_string_interpolation.rb:36-40
+  code:
+  - "# rubocop/cop/layout/space_inside_reference_brackets.rb:83-87"
+  - '83:           if style == :no_space'
+  - '84:             no_space_offenses(node, left_token, right_token, MSG)'
+  - '85:           else'
+  - '86:             space_offenses(node, left_token, right_token, MSG)'
+  - '87:           end'
+  - "# rubocop/cop/layout/space_inside_string_interpolation.rb:36-40"
+  - '36:           if style == :no_space'
+  - '37:             no_space_offenses(begin_node, left, right, MSG)'
+  - '38:           else'
+  - '39:             space_offenses(begin_node, left, right, MSG)'
+  - '40:           end'
+- key: rubocop|duplication|rubocop/cop/lint/shadowing_outer_local_variable.rb:96,rubocop/cop/style/double_negation.rb:120
+  message: 2 similar fragments (mass 22) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - rubocop/cop/lint/shadowing_outer_local_variable.rb:96-101
+  - rubocop/cop/style/double_negation.rb:120-125
+  code:
+  - "# rubocop/cop/lint/shadowing_outer_local_variable.rb:96-101"
+  - '96:         def find_conditional_node_from_ascendant(node)'
+  - '97:           return unless (parent = node.parent)'
+  - '98:           return parent if parent.conditional?'
+  - '99: '
+  - '100:           find_conditional_node_from_ascendant(parent)'
+  - '101:         end'
+  - "# rubocop/cop/style/double_negation.rb:120-125"
+  - '120:         def find_conditional_node_from_ascendant(node)'
+  - '121:           return unless (parent = node.parent)'
+  - '122:           return parent if parent.conditional?'
+  - '123: '
+  - '124:           find_conditional_node_from_ascendant(parent)'
+  - '125:         end'
+- key: rubocop|duplication|rubocop/cop/style/eval_with_location.rb:202,rubocop/cop/style/eval_with_location.rb:209
+  message: 2 similar fragments (mass 45) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence).
+  evidence:
+  - rubocop/cop/style/eval_with_location.rb:202-207
+  - rubocop/cop/style/eval_with_location.rb:209-219
+  code:
+  - "# rubocop/cop/style/eval_with_location.rb:202-207"
+  - '202:         def add_offense_for_missing_line(node, code)'
+  - '203:           register_offense(node) do |corrector|'
+  - '204:             line_str = missing_line(node, code)'
+  - '205:             corrector.insert_after(node.last_argument.source_range.end,
+    ", #{line_str}")'
+  - '206:           end'
+  - '207:         end'
+  - "# rubocop/cop/style/eval_with_location.rb:209-219"
+  - '209:         def add_offense_for_missing_location(node, code)'
+  - '210:           if node.method?(:eval) && !with_binding?(node)'
+  - '211:             register_offense(node)'
+  - '212:             return'
+  - '213:           end'
+  - '214: '
+  - '215:           register_offense(node) do |corrector|'
+  - '216:             line_str = missing_line(node, code)'
+  - '217:             corrector.insert_after(node.last_argument.source_range.end,
+    ", __FILE__, #{line_str}")'
+  - '218:           end'
+  - '219:         end'
+- key: rubocop|duplication|rubocop/cop/lint/underscore_prefixed_variable_name.rb:44,rubocop/cop/lint/useless_assignment.rb:45
+  message: 2 similar fragments (mass 22) — extract the shared shape and pass what
+    differs as parameters. Both sites change often — fix one, miss the other.
+  evidence:
+  - rubocop/cop/lint/underscore_prefixed_variable_name.rb:44-52
+  - rubocop/cop/lint/useless_assignment.rb:45-53
+  code:
+  - "# rubocop/cop/lint/underscore_prefixed_variable_name.rb:44-52"
+  - '44:         MSG = ''Do not use prefix `_` for a variable that is used.'''
+  - '45: '
+  - '46:         def self.joining_forces'
+  - '47:           VariableForce'
+  - '48:         end'
+  - '49: '
+  - '50:         def after_leaving_scope(scope, _variable_table)'
+  - '51:           scope.variables.each_value { |variable| check_variable(variable)
+    }'
+  - '52:         end'
+  - "# rubocop/cop/lint/useless_assignment.rb:45-53"
+  - '45:         MSG = ''Useless assignment to variable - `%<variable>s`.'''
+  - '46: '
+  - '47:         def self.joining_forces'
+  - '48:           VariableForce'
+  - '49:         end'
+  - '50: '
+  - '51:         def after_leaving_scope(scope, _variable_table)'
+  - '52:           scope.variables.each_value { |variable| check_for_unused_assignments(variable)
+    }'
+  - '53:         end'
+- key: rubocop|duplication|rubocop/formatter/offense_count_formatter.rb:73,rubocop/formatter/worst_offenders_formatter.rb:55
+  message: 2 similar fragments (mass 24) — byte-for-byte identical — extract a shared
+    method and call it from each site.
+  evidence:
+  - rubocop/formatter/offense_count_formatter.rb:73-79
+  - rubocop/formatter/worst_offenders_formatter.rb:55-61
+  code:
+  - "# rubocop/formatter/offense_count_formatter.rb:73-79"
+  - '73:       def ordered_offense_counts(offense_counts)'
+  - '74:         offense_counts.sort_by { |k, v| [-v, k] }.to_h'
+  - '75:       end'
+  - '76: '
+  - '77:       def total_offense_count(offense_counts)'
+  - '78:         offense_counts.values.sum'
+  - '79:       end'
+  - "# rubocop/formatter/worst_offenders_formatter.rb:55-61"
+  - '55:       def ordered_offense_counts(offense_counts)'
+  - '56:         offense_counts.sort_by { |k, v| [-v, k] }.to_h'
+  - '57:       end'
+  - '58: '
+  - '59:       def total_offense_count(offense_counts)'
+  - '60:         offense_counts.values.sum'
+  - '61:       end'
+- key: rubocop|duplication|rubocop/cop/style/array_first_last.rb:61,rubocop/cop/style/slicing_with_range.rb:102
+  message: 2 similar fragments (mass 22) — differs only in the receiver or message
+    — extract a method taking the receiver.
+  evidence:
+  - rubocop/cop/style/array_first_last.rb:61-67
+  - rubocop/cop/style/slicing_with_range.rb:102-108
+  code:
+  - "# rubocop/cop/style/array_first_last.rb:61-67"
+  - '61:         def find_offense_range(node)'
+  - '62:           if node.loc.dot'
+  - '63:             node.loc.selector.join(node.source_range.end)'
+  - '64:           else'
+  - '65:             node.loc.selector'
+  - '66:           end'
+  - '67:         end'
+  - "# rubocop/cop/style/slicing_with_range.rb:102-108"
+  - '102:         def find_offense_range(node)'
+  - '103:           if node.loc.dot'
+  - '104:             node.loc.dot.join(node.source_range.end)'
+  - '105:           else'
+  - '106:             node.loc.selector'
+  - '107:           end'
+  - '108:         end'
+- key: rubocop|duplication|rubocop/cop/mixin/code_length.rb:58,rubocop/cop/mixin/method_complexity.rb:74
+  message: 2 similar fragments (mass 43) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence). Both sites change often —
+    fix one, miss the other.
+  evidence:
+  - rubocop/cop/mixin/code_length.rb:58-67
+  - rubocop/cop/mixin/method_complexity.rb:74-81
+  code:
+  - "# rubocop/cop/mixin/code_length.rb:58-67"
+  - '58:       def location(node)'
+  - '59:         return node.loc.name if node.casgn_type?'
+  - '60: '
+  - '61:         if LSP.enabled?'
+  - '62:           end_range = node.loc.respond_to?(:name) ? node.loc.name : node.loc.begin'
+  - '63:           node.source_range.begin.join(end_range)'
+  - '64:         else'
+  - '65:           node.source_range'
+  - '66:         end'
+  - '67:       end'
+  - "# rubocop/cop/mixin/method_complexity.rb:74-81"
+  - '74:       def location(node)'
+  - '75:         if LSP.enabled?'
+  - '76:           end_range = node.loc.respond_to?(:name) ? node.loc.name : node.loc.begin'
+  - '77:           node.source_range.begin.join(end_range)'
+  - '78:         else'
+  - '79:           node.source_range'
+  - '80:         end'
+  - '81:       end'

@@ -12,12 +12,12 @@ that scores a hashira checkout: SonarSource conformance, coupling fixtures
 whose cheapest cut is checked by brute force, clusters and non-clusters,
 smell true and false positives, CLI behaviour, and three pinned corpora
 (rubocop, faraday, rubygems.org) with findings per kLOC, runtime, peak memory
-and precision on a fixed labelled sample. `eval/results/README.md` has the
-before and after numbers; on the labelled samples, precision rose for
-feature_envy (0.12 to 0.44), nil_check (0.16 to 0.28), manual_dispatch (0.20
-to 0.36), control_parameter (0.33 to 0.80), repeated_call (0.36 to 1.00 under
-the stated rubric), state_sprawl (0.53 to 0.67) and duplication (0.64 to
-0.68). Every suite passes; main passed between 24% (cli) and 83% of each.
+and precision on a fixed labelled sample. Two independent raters then
+labelled a mixed sample of main and branch findings blind (they agree on 92%,
+κ 0.65): rater 1 found 19 of 200 main findings and 28 of 160 branch findings
+true, rater 2 23 of 200 and 33 of 160. Those numbers set which kinds are on by
+default (below). `eval/results/README.md` has every number. Every suite
+passes; main passes between 31% (cli) and 83% of each.
 
 The first half was found by running hashira against fifteen MIT-licensed
 Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
@@ -25,6 +25,15 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- **Most heuristic kinds are now opt-in.** A heuristic kind is on by default
+  only when its blind precision clears one in three: duplication,
+  manual_dispatch and feature_envy, alongside the measurements (complexity and
+  the coupling kinds). control_parameter, data_clump, repeated_call,
+  repeated_conditional, state_sprawl, utility_function, nil_check, assumed_state,
+  boundary_sprawl, module_initialize and indirection need `checks: all`, a
+  `checks:` setting of their own, `--kind` or `--fail-on`. Add `checks: all` to
+  `.hashira.yml` to keep every kind; a baseline recorded without it sees the
+  opt-in kinds' findings resolved.
 - Baselines are schema 7 and record the kinds the recording hashira knew.
   Findings of a newer kind (`indirection` here) are listed as not ratcheted
   instead of failing the build until `--update-baseline`. Baselines from
@@ -58,24 +67,28 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
-- `indirection`, a complexity kind: a method whose single-use private
-  helpers, read in place at the nesting of their calls, reach the complexity
-  threshold while the method alone does not. The finding gives both scores,
-  the helper count and depth, and lists the helpers. Its threshold is
-  configurable and the ratchet holds it by score.
+- `indirection`, an opt-in complexity kind that counts hollow hops: helpers
+  that are private, called once from their own class, and whose body is one
+  call with no decision and no block, wrapping at most one more call. It
+  reports the path through an entry's single-use helpers that holds the most
+  hollow ones once it holds two (the threshold is configurable); helpers that
+  decide, loop or hold several statements cost nothing. The finding lists the
+  hollow helpers and the ratchet holds it by their count.
 - Inline suppression: `# hashira:disable KIND[,KIND] -- REASON` (this line) or
   `# hashira:disable-next-line ...`. The reason is required; suppressed
   findings and directives that no longer silence anything are listed in the
   text and JSON reports, and a malformed directive stops the run.
-- `checks:` in `.hashira.yml` turns a kind off (`utility_function: false`) or
-  sets its threshold (`complexity: { threshold: 12 }`) for complexity,
-  indirection, state_sprawl, repeated_conditional, boundary_sprawl and
-  wide_edge.
+- `checks:` in `.hashira.yml` turns a kind on (`nil_check: true`) or off
+  (`duplication: false`), or sets its threshold (`complexity: { threshold: 12
+  }`) for complexity, indirection, state_sprawl, repeated_conditional,
+  boundary_sprawl and wide_edge. `checks: all` turns on every kind.
 - Rails associations are references: `belongs_to :user`, `has_many
   :line_items` and `has_one` name their class through ActiveSupport's
   inflection rules, including the app's `config/initializers/inflections.rb`;
   `class_name:` wins and `polymorphic: true` names nothing.
 - `eval/`: the verification suite described above, with `eval/run`.
+  `--seed SALT` draws a fresh precision sample disjoint from every labelled
+  key, for a holdout.
 - `bin/inventory` regenerates `lib/hashira/analysis/inventory.yml`, what a bare
   Ruby ships (core constants, standard and bundled libraries, Kernel and
   BasicObject methods, core value methods, class macros).
@@ -131,23 +144,34 @@ true positive the earlier triage confirmed still fires.
   a rescue, a type test, or the variable's name or last words), that the
   codebase owns, that is not a core class or the method's own, and that
   declares every message sent; the advice names the class. `nil_check` needs
-  the nil to be the codebase's own (its state, a nil it assigns or defaults
-  to, its own methods, a private method's argument, a literal it built, an
-  owned class's records or declared attributes); the boundary advice is gone
-  with the boundary findings. `manual_dispatch` probes must be on self or a
+  the nil to be the codebase's own (its state, a nil it assigns, its own
+  methods, a private method's argument, a literal it built, an owned class's
+  records or declared attributes); the boundary advice is gone with the
+  boundary findings. A nil-defaulted parameter is the caller's option, and a
+  check whose branch raises, or a one-line predicate that answers a nil test,
+  is left alone. `manual_dispatch` probes must be on self or a
   variable of a nameable owned class, and ask for a message the codebase
   defines. `control_parameter` needs a caller that passes the flag as a
-  literal. Each lists every check, probe or flag as evidence.
+  literal, to a method outside callers can reach (a private or protected
+  helper sits behind explicit public methods). Each lists every check, probe or
+  flag as evidence.
+- `utility_function` judges classes only; a module's methods (a mixin, a
+  concern, a view helper) lend behavior. Its advice is to move the method or
+  make it private.
+- `data_clump` needs three or more parameters travelling together.
+- `repeated_conditional` counts comparisons with a fixed value, type tests and
+  `case` subjects; a plain truth test asks about state and stays quiet.
 - `repeated_call` leaves a plain read of self, a local or an instance
   variable (no arguments, or literal keys) made exactly twice alone as style,
   and a reading measured by distance or order against a stored copy of its
   own earlier result as a second sample. The clock and calendar name lists
   are gone; `Time.now` twice is still reported (a constant's query), and so
   is `clock.now` through a helper method.
-- `state_sprawl` weighs each field: one if the constructor, a helper it calls
-  or a registered callback (`before_action :set_user`) sets it, two if it is
-  set elsewhere and another method or a reader takes it up, nothing if no
-  method reads it. That replaces the `*Controller`, `*Mailer` and
+- `state_sprawl` weighs each field: nothing if the constructor takes it
+  straight from an argument (an input, like a component's props), one if the
+  constructor, a helper it calls or a registered callback (`before_action
+  :set_user`) sets it otherwise, two if it is set elsewhere and another method
+  or a reader takes it up, nothing if no method reads it. That replaces the `*Controller`, `*Mailer` and
   `*Component` exemption. The message says what was weighed against what:
   `holds 5 instance variables, weighing 6, more than 4`.
 - Cognitive complexity follows the SonarSource specification on lambdas
@@ -294,6 +318,10 @@ true positive the earlier triage confirmed still fires.
 
 ### Fixed
 
+- The analyzed project's root is the nearest folder holding a project marker
+  (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
+  checked out inside another (a corpus under `eval/tmp`, a vendored gem) no
+  longer reads the enclosing project's baseline and config.
 - A baseline whose analyzers or directories are listed in another order no
   longer blocks the ratchet.
 - `state_sprawl` no longer mixes up nodes by offset in a class reopened

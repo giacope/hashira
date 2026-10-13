@@ -1,0 +1,168 @@
+---
+- key: rubocop|data_clump|RuboCop::Cop::Style::ExplicitBlockArgument
+  message: RuboCop::Cop::Style::ExplicitBlockArgument passes the same parameters between
+    methods (rubocop/cop/style/explicit_block_argument.rb:41). Introduce a parameter
+    object.
+  evidence:
+  - "(block_name, corrector, node) → 3 methods: add_block_argument, insert_argument,
+    correct_call_node"
+  code:
+  - "# rubocop/cop/style/explicit_block_argument.rb:41"
+  - '41:       class ExplicitBlockArgument < Base'
+  - '42:         include RangeHelp'
+  - '43:         extend AutoCorrector'
+  - '44: '
+  - '45:         MSG = ''Consider using explicit block argument in the '' \'
+  - '46:               "surrounding method''s signature over `yield`."'
+  - '47: '
+  - '48:         # @!method yielding_block?(node)'
+  - '49:         def_node_matcher :yielding_block?, <<~PATTERN'
+  - '50:           (block $_ (args $...) (yield $...))'
+  - '51:         PATTERN'
+  - '52: '
+  - '53:         def self.autocorrect_incompatible_with'
+  - '54:           [Lint::UnusedMethodArgument]'
+  - '55:         end'
+  - '56: '
+  - '57:         def initialize(config = nil, options = nil)'
+  - '58:           super'
+  - '59:           @def_nodes = Set.new'
+  - '60:         end'
+  - '61: '
+  - '62:         def on_yield(node)'
+  - '63:           block_node = node.parent'
+  - '64: '
+  - '65:           yielding_block?(block_node) do |send_node, block_args, yield_args|'
+- key: rubocop|data_clump|RuboCop::Cop::PercentLiteralCorrector
+  message: RuboCop::Cop::PercentLiteralCorrector passes the same parameters between
+    methods (rubocop/cop/correctors/percent_literal_corrector.rb:6). Introduce a parameter
+    object.
+  evidence:
+  - "(delimiters, escape, node) → 4 methods: new_contents, autocorrect_multiline_words,
+    autocorrect_words, process_multiline_words"
+  code:
+  - "# rubocop/cop/correctors/percent_literal_corrector.rb:6"
+  - '6:     class PercentLiteralCorrector'
+  - '7:       include Util'
+  - '8: '
+  - '9:       attr_reader :config, :preferred_delimiters'
+  - '10: '
+  - '11:       def initialize(config, preferred_delimiters)'
+  - '12:         @config = config'
+  - '13:         @preferred_delimiters = preferred_delimiters'
+  - '14:       end'
+  - '15: '
+  - '16:       def correct(corrector, node, char)'
+  - '17:         escape = escape_words?(node)'
+  - '18:         char = char.upcase if escape'
+  - '19:         delimiters = delimiters_for("%#{char}")'
+  - '20:         contents = new_contents(node, escape, delimiters)'
+  - '21:         wrap_contents(corrector, node, contents, char, delimiters)'
+  - '22:       end'
+  - '23: '
+  - '24:       private'
+  - '25: '
+  - '26:       def wrap_contents(corrector, node, contents, char, delimiters)'
+  - '27:         corrector.replace(node, "%#{char}#{delimiters[0]}#{contents}#{delimiters[1]}")'
+  - '28:       end'
+  - '29: '
+  - '30:       def escape_words?(node)'
+- key: rubocop|data_clump|RuboCop::Cop::Style::RedundantBegin
+  message: RuboCop::Cop::Style::RedundantBegin passes the same parameters between
+    methods (rubocop/cop/style/redundant_begin.rb:65). Introduce a parameter object.
+  evidence:
+  - "(corrector, node, offense_range) → 3 methods: replace_begin_with_statement, remove_begin,
+    restore_removed_comments"
+  code:
+  - "# rubocop/cop/style/redundant_begin.rb:65"
+  - '65:       class RedundantBegin < Base'
+  - '66:         include RangeHelp'
+  - '67:         extend AutoCorrector'
+  - '68: '
+  - '69:         MSG = ''Redundant `begin` block detected.'''
+  - '70: '
+  - '71:         def self.autocorrect_incompatible_with'
+  - '72:           [Style::BlockDelimiters]'
+  - '73:         end'
+  - '74: '
+  - '75:         # @!method offensive_kwbegins(node)'
+  - '76:         def_node_search :offensive_kwbegins, <<~PATTERN'
+  - '77:           [(kwbegin ...) !#allowable_kwbegin?]'
+  - '78:         PATTERN'
+  - '79: '
+  - '80:         def on_def(node)'
+  - '81:           return unless node.body&.kwbegin_type?'
+  - '82:           return if node.endless?'
+  - '83: '
+  - '84:           register_offense(node.body)'
+  - '85:         end'
+  - '86:         alias on_defs on_def'
+  - '87: '
+  - '88:         def on_block(node)'
+  - '89:           return if target_ruby_version < 2.5'
+- key: rubocop|data_clump|RuboCop::Cop::Team
+  message: RuboCop::Cop::Team passes the same parameters between methods (rubocop/cop/team.rb:13).
+    Introduce a parameter object.
+  evidence:
+  - "(offset, original, report) → 3 methods: autocorrect, autocorrect_report, collate_corrections"
+  code:
+  - "# rubocop/cop/team.rb:13"
+  - '13:     class Team'
+  - '14:       # @return [Team]'
+  - '15:       def self.new(cop_or_classes, config, options = {})'
+  - '16:         # Support v0 api:'
+  - '17:         if cop_or_classes.first.is_a?(Class)'
+  - '18:           warn Rainbow(<<~WARNING).yellow, uplevel: 1'
+  - '19:             `Team.new` with cop classes is deprecated. Use `Team.mobilize`
+    instead.'
+  - '20:           WARNING'
+  - '21:           return mobilize(cop_or_classes, config, options)'
+  - '22:         end'
+  - '23: '
+  - '24:         super'
+  - '25:       end'
+  - '26: '
+  - '27:       # @return [Team] with cops assembled from the given `cop_classes`'
+  - '28:       def self.mobilize(cop_classes, config, options = {})'
+  - '29:         cops = mobilize_cops(cop_classes, config, options)'
+  - '30:         new(cops, config, options)'
+  - '31:       end'
+  - '32: '
+  - '33:       # @return [Array<Cop::Base>]'
+  - '34:       def self.mobilize_cops(cop_classes, config, options = {})'
+  - '35:         cop_classes = Registry.new(cop_classes.to_a, options) unless cop_classes.is_a?(Registry)'
+  - '36: '
+  - '37:         cop_classes.map do |cop_class|'
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets
+  message: RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets passes the same parameters
+    between methods (rubocop/cop/layout/space_inside_array_literal_brackets.rb:78).
+    Introduce a parameter object.
+  evidence:
+  - "(left, node, right) → 3 methods: issue_offenses, compact_offenses, compact_corrections"
+  code:
+  - "# rubocop/cop/layout/space_inside_array_literal_brackets.rb:78"
+  - '78:       class SpaceInsideArrayLiteralBrackets < Base'
+  - '79:         include SurroundingSpace'
+  - '80:         include ConfigurableEnforcedStyle'
+  - '81:         extend AutoCorrector'
+  - '82: '
+  - '83:         MSG = ''%<command>s space inside array brackets.'''
+  - '84:         EMPTY_MSG = ''%<command>s space inside empty array brackets.'''
+  - '85: '
+  - '86:         def on_array(node)'
+  - '87:           return if node.array_type? && !node.square_brackets?'
+  - '88: '
+  - '89:           tokens, left, right = array_brackets(node)'
+  - '90:           return unless left && right'
+  - '91: '
+  - '92:           if empty_brackets?(left, right, tokens: tokens)'
+  - '93:             return empty_offenses(node, left, right, EMPTY_MSG)'
+  - '94:           end'
+  - '95: '
+  - '96:           start_ok = next_to_newline?(node, left)'
+  - '97:           end_ok = node.single_line? ? false : end_has_own_line?(right)'
+  - '98: '
+  - '99:           issue_offenses(node, left, right, start_ok, end_ok)'
+  - '100:         end'
+  - '101:         alias on_array_pattern on_array'
+  - '102: '
