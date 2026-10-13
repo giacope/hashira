@@ -75,16 +75,20 @@ true positive the earlier triage confirmed still fires.
 ### Added
 
 - `fragmentation`, a complexity kind, on by default: a public method that
-  reaches four or more methods of its own class (calls with no receiver or on
-  `self`, `send(:name)`, `method(:name)`; instance to instance, class to class,
-  across reopened classes) along a path at least two deep, when the entry and
-  those methods average 3.5 lines or fewer without blank and comment lines. The
-  finding names the helper count, the mean, the depth and the deepest path, and
-  lists the helpers. `checks: fragmentation: { helpers: N, lines: M }` moves
-  both limits; the ratchet holds it by helper count. A blind readability study
-  set it on 60 entry methods and validated it on 60 more: of the 13 it flagged
-  in the second sample, a rater judged 12 over-fragmented and both raters 9
-  (independent AI reviewers; no human has rated them yet).
+  reaches four or more methods of its own class, named predicates aside (calls
+  with no receiver or on `self`, `send(:name)`, `method(:name)`; instance to
+  instance, class to class, across reopened classes) along a path at least two
+  deep, when the entry and every method it reaches average 3.5 lines or fewer
+  without blank and comment lines. The finding names the helper count, the
+  mean, the depth and the deepest path, and lists the helpers, predicates marked
+  as not counted; its advice is to merge the helpers that only move data and
+  keep named predicates. `checks: fragmentation: { helpers: N, lines: M }`
+  moves both limits; the ratchet holds it by helper count. A blind readability
+  study set it on 60 entry methods and validated it on 60 more: of the 10 it
+  flagged in the second sample, a rater judged 9 over-fragmented and both
+  raters 8 (independent AI reviewers; no human has rated them yet). Predicates
+  are left out because, when rubocop-kata merged its findings away, the
+  raters preferred the original wherever the merge removed a named predicate.
 - `indirection`, an opt-in complexity kind that counts hollow hops: helpers
   that are private, called once from their own class, and whose body is one
   call with no decision and no block, wrapping at most one more call. It

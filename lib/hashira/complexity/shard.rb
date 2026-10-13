@@ -5,6 +5,10 @@ class Hashira::Complexity::Shard
 
   DEPTH = 2
 
+  QUESTION = "?"
+
+  UNCOUNTED = " (predicate, not counted)"
+
   def initialize(entry, reach, notes)
     @entry = entry
     @reach = reach
@@ -15,17 +19,23 @@ class Hashira::Complexity::Shard
 
   private
 
-  def spread?(helpers) = found.size >= helpers && @reach.depth >= DEPTH
+  def spread?(helpers) = counted.size >= helpers && @reach.depth >= DEPTH
 
   def found = @reach.helpers
+
+  def counted = @_counted ||= found.reject { predicate?(it) }
+
+  def predicate?(helper) = helper.node.name.end_with?(QUESTION)
 
   def mean = @_mean ||= methods.sum { Hashira::Complexity::Span.new(it.node, @notes).size }.fdiv(methods.size)
 
   def methods = [@entry.site] + found
 
-  def build = @entry.finding(spread, found.map(&:node))
+  def build = @entry.finding(spread, found.map { cited(it) })
+
+  def cited(helper) = "#{@entry.cite(helper.node)}#{UNCOUNTED if predicate?(helper)}"
 
   def spread
-    Spread.new(site: @entry.spot, helpers: found.size, lines: mean.round(2), depth: @reach.depth, path: @reach.path)
+    Spread.new(site: @entry.spot, helpers: counted.size, lines: mean.round(2), depth: @reach.depth, path: @reach.path)
   end
 end

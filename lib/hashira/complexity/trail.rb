@@ -14,5 +14,5 @@ class Hashira::Complexity::Trail
 
   def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@entry.site.node)
 
-  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path)
+  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path.map { @entry.cite(it) })
 end

@@ -35,7 +35,7 @@ checks that they read it (`rater1.json`, `rater2.json`).
 | readability, house / control (mean of both raters) | 3.0 / 3.9 | 2.95 / 4.0 |
 | name clarity, house / control | 2.5 / 4.1 | 2.7 / 4.1 |
 
-## The rule, calibrated on sample 1 and validated on sample 2
+## The first rule, calibrated on sample 1 and validated on sample 2
 
 An entry is fragmented when it reaches at least 4 same-class methods and the
 entry and those methods average at most 3.5 non-blank, comment-free lines.
@@ -53,12 +53,36 @@ style itself. Of the house items it flags, a rater judged 12 of 12 (sample 1)
 and 11 of 12 (sample 2) over-fragmented. Of the house items it leaves alone, a
 rater judged 4 of 18 and 6 of 18 over-fragmented.
 
-Over every eligible entry, the rule flags 75 of 217 in kimera (35%) and 143 of
-233 in hashira (61%) on `main`, but 3 of 708 in rubocop, 0 of 39 in faraday and
-2 of 135 in rubygems.org. hashira's implementation reproduces the study's
-extraction exactly on kimera, hashira, faraday and rubygems.org. On rubocop it
-finds 2 of the 3, because the study also counted `def_node_matcher`
-declarations as methods.
+Over every eligible entry, this first rule flagged 75 of 217 in kimera (35%)
+and 143 of 233 in hashira (61%) on `main`, but 3 of 708 in rubocop, 0 of 39 in
+faraday and 2 of 135 in rubygems.org.
+
+## Dogfood: named predicates are not fragmentation
+
+rubocop-kata refactored its 21 findings of the first rule away, merging helpers
+into their entries. Two blind AI reviewers then compared 9 before-and-after
+pairs, not told which was which. They preferred the refactored version in 4 and
+the original in 4, agreeing each time, and split on 1. Every loss had the same
+cause: the merge removed a helper that was a named predicate (`deferred?`,
+`raised?`, `guard?`, `alone?`, `bare?`, "exactly one read"), which the
+reviewers read as meaning rather than fragmentation.
+
+So the rule now leaves predicates (helpers whose names end in `?`) out of the
+helper count. The depth and mean-lines conditions are unchanged; predicates
+still count towards the mean and are listed in the evidence as not counted.
+Re-scored on both samples:
+
+| | sample 1 (calibration) | sample 2 (validation) |
+| --- | --- | --- |
+| flagged | 9 | 10 |
+| against both raters agreeing: precision, recall | 9/9, 9/13 (1.0, 0.69) | 8/10, 8/13 (0.80, 0.62) |
+| against either rater: precision, recall | 9/9, 9/18 (1.0, 0.50) | 9/10, 9/19 (0.90, 0.47) |
+
+Precision is what a kind that is on by default needs, and it rises against
+both raters agreeing; recall falls. Over every eligible entry on `main`, the
+rule now flags 65 of 217 in kimera (30%), 121 of 233 in hashira (52%), 1 of 708
+in rubocop, 0 of 39 in faraday and 0 of 135 in rubygems.org. hashira's
+implementation reproduces the study's extraction exactly on all five.
 
 ## Caveat: the blinding is partial
 

@@ -286,8 +286,10 @@ Splitting a method into helpers lowers every score, and past a point it stops
 helping the reader, who now hops between many small methods to follow one piece
 of work. **fragmentation** reports an entry, a public method, that reaches four
 or more methods of its own class along a path at least two deep, when the entry
-and those methods average three and a half lines or fewer (blank and comment
-lines aside, a heredoc's lines in). A method reaches another by calling it with
+and every method it reaches average three and a half lines or fewer (blank and
+comment lines aside, a heredoc's lines in). Named predicates (`deferred?`,
+`alone?`) are left out of the count: readers keep them as meaning, so the
+finding lists them as not counted. A method reaches another by calling it with
 no receiver or on `self`, or by `send(:name)` and `method(:name)`; instance
 methods reach instance methods and class methods class methods, across every
 file that reopens the class.
@@ -295,7 +297,7 @@ file that reopens the class.
 <!-- example: fragmentation lib/app --kind fragmentation -->
 ```console
 Findings (1):
-  fragmentation: Report#render spreads its work over 7 same-class helpers averaging 1.0 lines a method, 3 deep (render → body → lines → line) (report.rb:4). Merge the single-use helpers into it until it reads as one unit.
+  fragmentation: Report#render spreads its work over 7 same-class helpers averaging 1.0 lines a method, 3 deep (render → body → lines → line) (report.rb:4). Merge the helpers that only move data into the entry; keep named predicates.
       · title (line 8)
       · label (line 10)
 ```
@@ -305,8 +307,8 @@ The limits come from a blind readability study
 raters read 60 entry methods with their helpers, half from two codebases
 written in this many-tiny-methods style and half from rubocop, faraday and
 rubygems.org, then 60 fresh ones. The rule was set on the first sample. On the
-second it flagged 13 entries; one rater or both judged 12 of them
-over-fragmented, and both raters 9. The raters were independent AI reviewers,
+second it flagged 10 entries once predicates were left out of the count; one
+rater or both judged 9 of them over-fragmented, and both raters 8. The raters were independent AI reviewers,
 separate model instances that saw only the shuffled items, not their sources or
 hashira's code; no human has rated them yet.
 

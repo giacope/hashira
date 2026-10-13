@@ -102,7 +102,7 @@ module Hashira::Report::Phrases
     detail = finding.detail
     "#{finding.package} spreads its work over #{count(detail.helpers, "same-class helper")} averaging " \
       "#{format("%.1f", detail.lines)} lines a method, #{detail.depth} deep (#{detail.path.join(" → ")}) " \
-      "(#{detail.site}). Merge the single-use helpers into it until it reads as one unit."
+      "(#{detail.site}). Merge the helpers that only move data into the entry; keep named predicates."
   end
 
   def score(value) = format("%.2f", value)

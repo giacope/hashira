@@ -17,8 +17,8 @@
 | --- | --- |
 | files | 880 |
 | kloc | 82.9 |
-| seconds | 32.93 |
-| megabytes | 451.6 |
+| seconds | 33.92 |
+| megabytes | 492.8 |
 | assumed_state | 1 (0.01/kLOC) |
 | complexity | 39 (0.47/kLOC) |
 | control_parameter | 3 (0.04/kLOC) |
@@ -26,7 +26,7 @@
 | data_clump | 7 (0.08/kLOC) |
 | duplication | 282 (3.4/kLOC) |
 | feature_envy | 24 (0.29/kLOC) |
-| fragmentation | 2 (0.02/kLOC) |
+| fragmentation | 1 (0.01/kLOC) |
 | indirection | 2 (0.02/kLOC) |
 | manual_dispatch | 18 (0.22/kLOC) |
 | module_initialize | 1 (0.01/kLOC) |
@@ -42,8 +42,8 @@
 | --- | --- |
 | files | 32 |
 | kloc | 3.17 |
-| seconds | 1.24 |
-| megabytes | 39.2 |
+| seconds | 1.1 |
+| megabytes | 38.8 |
 | complexity | 5 (1.58/kLOC) |
 | cycle | 1 (0.32/kLOC) |
 | data_clump | 1 (0.32/kLOC) |
@@ -63,14 +63,13 @@
 | --- | --- |
 | files | 558 |
 | kloc | 20.73 |
-| seconds | 10.73 |
-| megabytes | 173.6 |
+| seconds | 11.38 |
+| megabytes | 180.6 |
 | complexity | 18 (0.87/kLOC) |
 | control_parameter | 1 (0.05/kLOC) |
 | cycle | 2 (0.1/kLOC) |
 | duplication | 147 (7.09/kLOC) |
 | feature_envy | 10 (0.48/kLOC) |
-| fragmentation | 2 (0.1/kLOC) |
 | manual_dispatch | 7 (0.34/kLOC) |
 | nil_check | 25 (1.21/kLOC) |
 | repeated_call | 95 (4.58/kLOC) |

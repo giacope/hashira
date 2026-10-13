@@ -1,6 +1,6 @@
 {
   "label": "after",
-  "commit": "e7b3c07",
+  "commit": "b1d1b85",
   "ruby": "3.4.7",
   "suites": {
     "complexity": {
@@ -1134,8 +1134,8 @@
     "rubocop": {
       "status": 0,
       "files": 880,
-      "seconds": 32.93,
-      "megabytes": 451.6,
+      "seconds": 33.92,
+      "megabytes": 492.8,
       "kinds": {
         "assumed_state": {
           "count": 1,
@@ -1166,8 +1166,8 @@
           "per_kloc": 0.29
         },
         "fragmentation": {
-          "count": 2,
-          "per_kloc": 0.02
+          "count": 1,
+          "per_kloc": 0.01
         },
         "indirection": {
           "count": 2,
@@ -1207,8 +1207,8 @@
     "faraday": {
       "status": 0,
       "files": 32,
-      "seconds": 1.24,
-      "megabytes": 39.2,
+      "seconds": 1.1,
+      "megabytes": 38.8,
       "kinds": {
         "complexity": {
           "count": 5,
@@ -1264,8 +1264,8 @@
     "rubygems.org": {
       "status": 0,
       "files": 558,
-      "seconds": 10.73,
-      "megabytes": 173.6,
+      "seconds": 11.38,
+      "megabytes": 180.6,
       "kinds": {
         "complexity": {
           "count": 18,
@@ -1286,10 +1286,6 @@
         "feature_envy": {
           "count": 10,
           "per_kloc": 0.48
-        },
-        "fragmentation": {
-          "count": 2,
-          "per_kloc": 0.1
         },
         "manual_dispatch": {
           "count": 7,

@@ -43,7 +43,8 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
 
   it "says how many helpers, how short, how deep, and what to do" do
     said = "Walk#run spreads its work over 4 same-class helpers averaging 1.0 lines a method, 3 deep " \
-      "(run → first → third → fourth) (walk.rb:2). Merge the single-use helpers into it until it reads as one unit."
+      "(run → first → third → fourth) (walk.rb:2). Merge the helpers that only move data into the entry; " \
+      "keep named predicates."
     expect(message(found(walk).first)).to(eq(said))
   end
 
@@ -84,5 +85,13 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
   it "counts a helper reached along two paths once" do
     twice = walk.sub("def third(rows) = fourth(rows)", "def third(rows) = fourth(rows) + second(rows)")
     expect(found(twice).first.detail.helpers).to(eq(4))
+  end
+
+  it "leaves named predicates out of the count, and lists them as not counted" do
+    asked = walk.gsub("fourth(rows)", "fourth?(rows)")
+    fifth = asked.sub("def second(rows) = rows.size", "def second(rows) = fifth(rows)\n  def fifth(rows) = rows.size")
+    evidence = ["first (line 6)", "second (line 8)", "fifth (line 9)", "third (line 11)"]
+    evidence << "fourth? (line 13) (predicate, not counted)"
+    expect([found(asked), found(fifth).map { [it.detail.helpers, it.evidence] }]).to(eq([[], [[4, evidence]]]))
   end
 end

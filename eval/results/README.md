@@ -239,8 +239,8 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 880 | 880 |
 | kloc | 82.9 | 82.9 |
-| seconds | 34.36 | 32.93 |
-| megabytes | 463.2 | 451.6 |
+| seconds | 34.36 | 33.92 |
+| megabytes | 463.2 | 492.8 |
 | assumed_state | 1 (0.01/kLOC) | 1 (0.01/kLOC) |
 | complexity | 38 (0.46/kLOC) | 39 (0.47/kLOC) |
 | control_parameter | 88 (1.06/kLOC) | 3 (0.04/kLOC) |
@@ -248,7 +248,7 @@ has no opt-in kinds).
 | data_clump | 52 (0.63/kLOC) | 7 (0.08/kLOC) |
 | duplication | 251 (3.03/kLOC) | 282 (3.4/kLOC) |
 | feature_envy | 202 (2.44/kLOC) | 24 (0.29/kLOC) |
-| fragmentation | 0 | 2 (0.02/kLOC) |
+| fragmentation | 0 | 1 (0.01/kLOC) |
 | indirection | 0 | 2 (0.02/kLOC) |
 | manual_dispatch | 123 (1.48/kLOC) | 18 (0.22/kLOC) |
 | module_initialize | 1 (0.01/kLOC) | 1 (0.01/kLOC) |
@@ -264,8 +264,8 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 32 | 32 |
 | kloc | 3.17 | 3.17 |
-| seconds | 1.35 | 1.24 |
-| megabytes | 50.5 | 39.2 |
+| seconds | 1.35 | 1.1 |
+| megabytes | 50.5 | 38.8 |
 | complexity | 4 (1.26/kLOC) | 5 (1.58/kLOC) |
 | control_parameter | 1 (0.32/kLOC) | 0 |
 | cycle | 1 (0.32/kLOC) | 1 (0.32/kLOC) |
@@ -287,14 +287,13 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 558 | 558 |
 | kloc | 20.73 | 20.73 |
-| seconds | 12.25 | 10.73 |
-| megabytes | 200.0 | 173.6 |
+| seconds | 12.25 | 11.38 |
+| megabytes | 200.0 | 180.6 |
 | complexity | 18 (0.87/kLOC) | 18 (0.87/kLOC) |
 | control_parameter | 16 (0.77/kLOC) | 1 (0.05/kLOC) |
 | cycle | 2 (0.1/kLOC) | 2 (0.1/kLOC) |
 | duplication | 136 (6.56/kLOC) | 147 (7.09/kLOC) |
 | feature_envy | 20 (0.96/kLOC) | 10 (0.48/kLOC) |
-| fragmentation | 0 | 2 (0.1/kLOC) |
 | manual_dispatch | 13 (0.63/kLOC) | 7 (0.34/kLOC) |
 | nil_check | 90 (4.34/kLOC) | 25 (1.21/kLOC) |
 | repeated_call | 165 (7.96/kLOC) | 95 (4.58/kLOC) |
