@@ -13,7 +13,7 @@ class Hashira::Coupling::WideEdge < Hashira::Coupling::Rule
 
   private
 
-  def wide?(edge) = graph.constants(edge).size >= WIDTH
+  def wide?(edge) = graph.constants(edge).size >= threshold(WIDTH)
 
   def entry(edge)
     from, to = edge.deconstruct

@@ -3,12 +3,14 @@
 class Hashira::Project
   ROOT_PACKAGE = "(root)"
 
-  def initialize(requested, boundaries: [])
+  def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
     @boundaries = boundaries
+    @home = home
+    @rules = rules
   end
 
-  attr_reader :boundaries
+  attr_reader :boundaries, :home, :rules
 
   def directories = @_directories ||= resolved
 

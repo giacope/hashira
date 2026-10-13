@@ -2,7 +2,9 @@
 
 RSpec.describe(Hashira::Report::Json) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:)
+    Hashira::Report::View.new(
+      project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:, screened: Fixtures::CLEAR
+    )
   end
 
   def full(pipeline, top: nil)

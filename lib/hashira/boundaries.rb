@@ -17,9 +17,10 @@ class Hashira::Boundaries
       def present?(value) = value.is_a?(String) && !value.empty?
     end
 
-  def initialize(records, trees)
+  def initialize(records, trees, home = ".")
     @records = records
     @trees = trees
+    @home = home
   end
 
   def interpreted
@@ -60,5 +61,5 @@ class Hashira::Boundaries
     node.is_a?(Prism::CallNode) && Hashira::Analysis::Syntax.segments(node.receiver).first == root
   end
 
-  def same?(file, entrypoint) = File.expand_path(file) == File.expand_path(entrypoint)
+  def same?(file, entrypoint) = File.expand_path(file) == File.expand_path(entrypoint, @home)
 end

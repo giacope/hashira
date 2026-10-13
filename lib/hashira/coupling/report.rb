@@ -10,15 +10,16 @@ require_relative "wide_edge"
 class Hashira::Coupling::Report
   RULES = Hashira::Coupling::Rule.subclasses.sort_by(&:name).freeze
 
-  def initialize(project, trees, packaging:)
+  def initialize(project, trees, packaging:, rules:)
     @project = project
     @trees = trees
     @packaging = packaging
+    @rules = rules
   end
 
   def graph = @_graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
 
-  def findings = RULES.flat_map { it.new(@project, graph).list }
+  def findings = RULES.flat_map { it.new(@project, graph, @rules).list }
 
   private
 

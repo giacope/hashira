@@ -15,7 +15,9 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @_findings ||= accepted.screen(sieve.narrow(@pipeline.findings))
+  def findings = @_findings ||= accepted.screen(sieve.narrow(screened.kept))
+
+  def screened = @pipeline.screened
 
   def sieve = @_sieve ||= Hashira::CLI::Sieve.new(@pipeline.focus, @options.kinds)
 
@@ -59,7 +61,7 @@ class Hashira::CLI::Run
     Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:)
   end
 
-  def targets = @pipeline.project.directories
+  def targets = @pipeline.project.directories.map { @options.home.relative(it) }
 
   def gate = Hashira::CI::Gate.new(findings, @options.fail_on)
 
@@ -69,7 +71,7 @@ class Hashira::CLI::Run
     Hashira::Report::View.new(
       project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
       complexity: @pipeline.complexity, duplication: @pipeline.duplication,
-      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact
+      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact, screened:
     )
   end
 end

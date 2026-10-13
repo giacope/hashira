@@ -25,7 +25,14 @@ class Hashira::Report::Json
       .merge(files: project.files.size)
   end
 
-  def base = { findings: shown(:findings).map { rendered(it) }, kinds:, accepted: }
+  def base = { findings: shown(:findings).map { rendered(it) }, kinds:, accepted: }.merge(suppressed)
+
+  def suppressed
+    { suppressed: @view.suppressed.map { |finding, directive| silenced(finding, directive) } }
+      .merge(unused_suppressions: @view.screened.unused.map(&:to_h))
+  end
+
+  def silenced(finding, directive) = rendered(finding).merge(site: directive.site, reason: directive.reason)
 
   def kinds = Hashira::Report::Tally.new(@view.findings.all).to_h
 

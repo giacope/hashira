@@ -9,10 +9,11 @@ class Hashira::Smells::BoundarySprawl
 
   SHOWN = 4
 
-  def initialize(subjects, ownership, interpreted = [])
+  def initialize(subjects, ownership, interpreted, rules)
     @subjects = subjects
     @ownership = ownership
     @interpreted = interpreted
+    @rules = rules
   end
 
   def findings
@@ -38,7 +39,7 @@ class Hashira::Smells::BoundarySprawl
     build(root, contexts, files) if wide?(contexts.size, files.size)
   end
 
-  def wide?(methods, files) = methods >= METHOD_FLOOR && files >= FILE_FLOOR
+  def wide?(methods, files) = methods >= @rules.threshold(KIND, METHOD_FLOOR) && files >= FILE_FLOOR
 
   def build(root, contexts, files)
     Hashira::Analysis::Finding.new(

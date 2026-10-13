@@ -13,20 +13,25 @@
   "edges": [
     "(root) -> analysis",
     "(root) -> complexity",
+    "(root) -> config",
     "(root) -> coupling",
     "(root) -> duplication",
     "(root) -> hotspots",
     "(root) -> smells",
+    "(root) -> suppression",
     "ci -> report",
     "cli -> (root)",
     "cli -> ci",
+    "cli -> config",
     "cli -> diagram",
     "cli -> report",
     "complexity -> analysis",
     "coupling -> analysis",
     "duplication -> analysis",
     "report -> duplication",
-    "smells -> analysis"
+    "smells -> analysis",
+    "suppression -> analysis",
+    "suppression -> config"
   ],
   "findings": {},
   "boundaries": [

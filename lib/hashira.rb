@@ -16,6 +16,9 @@ module Hashira
   module Complexity
   end
 
+  module Config
+  end
+
   module Diagram
   end
 
@@ -30,8 +33,15 @@ module Hashira
 
   module Smells
   end
+
+  module Suppression
+  end
 end
 
+require_relative "hashira/config/error"
+require_relative "hashira/config/rules"
+require_relative "hashira/config/rule"
+require_relative "hashira/config/setting"
 require_relative "hashira/analysis/finding"
 require_relative "hashira/analysis/node_walk"
 require_relative "hashira/analysis/syntax"
@@ -60,6 +70,7 @@ require_relative "hashira/cli/config_file"
 require_relative "hashira/cli/fail_on"
 require_relative "hashira/cli/flag"
 require_relative "hashira/cli/flags"
+require_relative "hashira/cli/home"
 require_relative "hashira/cli/format"
 require_relative "hashira/cli/kinds"
 require_relative "hashira/cli/needs"
@@ -150,7 +161,6 @@ require_relative "hashira/duplication/sink"
 require_relative "hashira/duplication/union_find"
 require_relative "hashira/duplication/variance"
 require_relative "hashira/duplication/walks"
-require_relative "hashira/error"
 require_relative "hashira/boundaries"
 require_relative "hashira/focus"
 require_relative "hashira/hotspots/file_cost"
@@ -172,6 +182,7 @@ require_relative "hashira/report/notices"
 require_relative "hashira/report/phrases"
 require_relative "hashira/report/clone_phrases"
 require_relative "hashira/report/smell_phrases"
+require_relative "hashira/report/silenced"
 require_relative "hashira/report/spread"
 require_relative "hashira/report/tally"
 require_relative "hashira/report/text"
@@ -217,5 +228,9 @@ require_relative "hashira/smells/validations"
 require_relative "hashira/smells/visibility"
 require_relative "hashira/smells/vocabulary"
 require_relative "hashira/smells/whole"
+require_relative "hashira/suppression/directive"
+require_relative "hashira/suppression/directives"
+require_relative "hashira/suppression/silence"
+require_relative "hashira/suppression/suppressions"
 require_relative "hashira/trees"
 require_relative "hashira/version"

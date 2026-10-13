@@ -72,6 +72,26 @@
       end
   args: [lib/app, --fail-on, complexity]
   status: 0
+
+- name: suppressions are listed in the report
+  files:
+    lib/app/table.rb: |
+      class Table
+        # hashira:disable-next-line complexity -- a generated state table, regenerated from grammar.y
+        def step(state, token)
+          if state == 1
+            if token == :a then 2 elsif token == :b then 3 else 4 end
+          elsif state == 2
+            if token == :a then 1 elsif token == :b then 3 else 4 end
+          elsif state == 3
+            token == :a ? 1 : (token == :b ? 2 : 4)
+          else
+            4
+          end
+        end
+      end
+  args: [lib/app]
+  status: 0
   includes: ["Suppressed (1)", "a generated state table"]
 
 - name: suppressions are listed in --json

@@ -44,7 +44,9 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def smelly? = subject.kind == :class && repeats.any?
 
-  def repeats = @_repeats ||= groups.select { it.size > LIMIT }.uniq { |tests| tests.map { it.root.object_id } }
+  def repeats = @_repeats ||= groups.select { it.size > threshold(LIMIT) }.uniq { |tests| roots(tests) }
+
+  def roots(tests) = tests.map { it.root.object_id }
 
   def groups = tests.group_by(&:key).values
 

@@ -63,13 +63,18 @@ class Hashira::Report::Text
     all = @view.findings.all
     @io.puts("Findings (#{all.size}):")
     list(all)
-    accepted
+    decided
     @io.puts("\n  Full evidence + machine format: hashira --json") unless all.empty?
   end
 
   def list(all)
     return @io.puts("  none ✓ — structure is healthy") if all.empty?
     table(Hashira::Report::FindingList, all)
+  end
+
+  def decided
+    accepted
+    Hashira::Report::Silenced.new(@view.screened, io: @io).print
   end
 
   def accepted

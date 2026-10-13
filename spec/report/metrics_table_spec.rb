@@ -80,7 +80,7 @@ RSpec.describe(Hashira::Report::MetricsTable) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
       view = Hashira::Report::View.new(
         project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
-        hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+        hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR
       )
       output = capture { Hashira::Report::Text.new(view).print }
       expect(output).to(include("Folded (packages joined to the one they belong to):"))

@@ -13,6 +13,8 @@ class Hashira::Pipeline
     Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
   ).sort.freeze
 
+  KINDS = (STRUCTURAL + %w[complexity duplication] + SMELLS).sort.freeze
+
   def initialize(project, enabled: ANALYZERS, packaging: :auto, only: [])
     @project = project
     @enabled = enabled
@@ -24,18 +26,21 @@ class Hashira::Pipeline
 
   def verify
     boundaries.interpreted
+    suppressions.directives
     self
   end
+
+  def screened = @_screened ||= suppressions.screen(findings)
 
   def unparsed = parsed.unparsed
 
   def graph = coupling.graph
 
-  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores)
+  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules)
 
   def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 
-  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report, boundaries)
+  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report, boundaries, rules)
 
   def hotspots
     @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
@@ -49,18 +54,25 @@ class Hashira::Pipeline
     kind.new(@project, parsed.all, *extra) if enabled?(name)
   end
 
-  def findings = focus.narrow(structural + listed(complexity) + listed(duplication) + listed(smells))
+  def findings
+    found = structural + listed(complexity) + listed(duplication) + listed(smells)
+    focus.narrow(found.select { rules.enabled?(it.kind) })
+  end
 
   def focus = @_focus ||= Hashira::Focus.new(@project, @only)
 
   private
 
+  def rules = @project.rules
+
   def parsed = @_parsed ||= Hashira::Trees.new(@project)
 
-  def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all)
+  def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all, @project.home)
+
+  def suppressions = @_suppressions ||= Hashira::Suppression::Suppressions.new(@project, parsed, KINDS)
 
   def coupling
-    @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging))
+    @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging), rules: rules)
   end
 
   def settle(packaging)

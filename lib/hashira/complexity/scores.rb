@@ -3,9 +3,12 @@
 class Hashira::Complexity::Scores
   THRESHOLD = 10
 
-  def initialize(project, trees)
+  KIND = Hashira::Complexity::MethodFinding::KIND
+
+  def initialize(project, trees, rules)
     @project = project
     @trees = trees
+    @rules = rules
   end
 
   def ranked = scores.sort_by { -it.cognitive }
@@ -22,7 +25,7 @@ class Hashira::Complexity::Scores
 
   def scores = @_scores ||= sites.map { |relative, site| score(relative, site) }
 
-  def flagged = ranked.select { it.cognitive >= THRESHOLD }
+  def flagged = ranked.select { it.cognitive >= @rules.threshold(KIND, THRESHOLD) }
 
   def harvest(relative, tree) = Hashira::Complexity::Sites.new(tree).to_enum(:each).map { [relative, it] }
 

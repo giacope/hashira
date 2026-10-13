@@ -12,7 +12,9 @@ class Hashira::Duplication::DuplicationFinding
 
   def to_finding
     site = @cluster.canonical
-    Hashira::Analysis::Finding.new(kind: KIND, package: site.location, digest: site.digest, detail:, evidence:)
+    Hashira::Analysis::Finding.new(
+      kind: KIND, package: site.location, digest: site.digest, detail:, evidence:, anchors: sorted.map(&:location)
+    )
   end
 
   private
@@ -24,5 +26,7 @@ class Hashira::Duplication::DuplicationFinding
     )
   end
 
-  def evidence = @cluster.sites.sort_by(&:rank).map(&:range)
+  def evidence = sorted.map(&:range)
+
+  def sorted = @cluster.sites.sort_by(&:rank)
 end

@@ -54,14 +54,15 @@ module Fixtures
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, NONE))
     end
   end
 
   def smells(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Smells::Report.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+      yield(Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), NONE))
     end
   end
 
@@ -95,6 +96,10 @@ module Fixtures
   ensure
     $stdout, $stderr = original
   end
+
+  NONE = Hashira::Config::Rules::NONE
+
+  CLEAR = Hashira::Suppression::Suppressions::CLEAR
 
   CYCLIC_FILES = {
     "lib/app/alpha/one.rb" => <<~RUBY,

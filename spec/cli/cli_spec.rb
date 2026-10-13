@@ -285,4 +285,90 @@ RSpec.describe(Hashira::CLI::Session) do
       expect(described_class.new([nil]).status).to(eq(70))
     end.to(output(%r{\Ahashira: internal error — \w+.*\n  at .*\n.*report it at https://}m).to_stderr)
   end
+
+  describe "run from outside the analyzed project" do
+    def cart = "class Cart\n  def initialize(i) = @i = i\n  def total = @i.sum\n  def price(it) = it.amount\nend\n"
+
+    def json(argv) = JSON.parse(capture { expect(described_class.new(argv).status).to(eq(0)) })
+
+    def run(argv) = capture { described_class.new(argv).status }
+
+    it "reads the project's own baseline and config, never the ones where it runs" do
+      accepted = { kind: "utility_function", package: "Cart#price", reason: "kept public" }
+      files = {
+        "tool/hashira_baseline.json" => JSON.generate(boundaries: [boundary]), "tool/.hashira.yml" => "fail-on: x\n",
+        "proj/hashira_baseline.json" => JSON.generate(accepted: [accepted]), "proj/lib/app/cart.rb" => cart
+      }
+      within(files) { Dir.chdir("tool") { expect(json(%w[../proj/lib/app --json])["accepted"].size).to(eq(1)) } }
+    end
+
+    it "records the project's baseline in the project, with its directories named from there" do
+      within("proj/Gemfile" => "", "proj/lib/app/cart.rb" => cart, "here/README" => "") do
+        Dir.chdir("here") { run(%w[../proj/lib/app --update-baseline]) }
+        expect(JSON.parse(File.read("proj/hashira_baseline.json"))["targets"]).to(eq(["lib/app"]))
+        expect(File.exist?("here/hashira_baseline.json")).to(be(false))
+        Dir.chdir("proj") { expect(run(%w[lib/app --ratchet])).to(include("Ratchet OK")) }
+      end
+    end
+
+    it "reads a config's baseline setting from the config's own folder" do
+      files = { "proj/.hashira.yml" => "baseline: ci/base.json\n", "proj/lib/app/cart.rb" => cart }
+      within(files.merge("proj/ci/README" => "", "here/README" => "")) do
+        Dir.chdir("here") { run(%w[../proj/lib/app --update-baseline]) }
+        expect(File.exist?("proj/ci/base.json")).to(be(true))
+      end
+    end
+  end
+
+  describe "checks in the config file" do
+    def gate = "class Gate\n  def open?(a, b)\n    if a\n      b ? 1 : 2\n    end\n  end\nend\n"
+
+    def cart = "class Cart\n  def price(i) = i.round\nend\n"
+
+    it "moves a threshold and turns a kind off" do
+      yaml = "checks:\n  complexity:\n    threshold: 3\n  utility_function: false\n"
+      within(".hashira.yml" => yaml, "lib/app/gate.rb" => gate, "lib/app/cart.rb" => cart) do
+        kinds = JSON.parse(capture { described_class.new(%w[lib/app --json]).status })["kinds"]
+        expect(kinds.keys).to(include("complexity"))
+        expect(kinds.keys).not_to(include("utility_function"))
+      end
+    end
+
+    it "names the file when a check is wrong" do
+      within(".hashira.yml" => "checks:\n  envy: false\n", "lib/app/gate.rb" => gate) do
+        expect { described_class.new(%w[lib/app]).status }
+          .to(output(/\.hashira\.yml: checks: unknown kind "envy"/).to_stderr)
+      end
+    end
+  end
+
+  describe "inline suppressions" do
+    def table(comment)
+      "class Table\n  #{comment}\n  def step(a, b, c, d)\n    if a\n      if b\n        if c\n          " \
+        "d ? 1 : 2\n        end\n      end\n    end\n  end\n  " \
+        "def calm = 1 # hashira:disable complexity -- stale\nend\n"
+    end
+
+    it "lists what they silence and which ones silence nothing, in text and JSON" do
+      within("lib/app/table.rb" => table("# hashira:disable-next-line complexity -- generated table")) do
+        gated = capture { described_class.new(%w[lib/app --fail-on complexity]).status }
+        expect(gated).to(include("Gate OK"))
+        expect(capture { described_class.new(%w[lib/app]).status }).to(
+          include("~ complexity/Table#step — generated table (table.rb:2)", "Unused suppressions (1)"),
+          include("? complexity at table.rb:12")
+        )
+        json = JSON.parse(capture { described_class.new(%w[lib/app --json]).status })
+        expect(json["suppressed"].first.slice("kind", "site", "reason")).to(
+          eq("kind" => "complexity", "site" => "table.rb:2", "reason" => "generated table")
+        )
+        expect(json["unused_suppressions"].size).to(eq(1))
+      end
+    end
+
+    it "refuses a suppression without a reason as misuse" do
+      within("lib/app/table.rb" => table("# hashira:disable-next-line complexity")) do
+        expect { expect(described_class.new(%w[lib/app]).status).to(eq(2)) }.to(output(/needs a reason/).to_stderr)
+      end
+    end
+  end
 end

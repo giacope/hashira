@@ -18,7 +18,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && weight > LIMIT && !cohesive?
+  def smelly? = subject.kind == :class && weight > threshold(LIMIT) && !cohesive?
 
   def weight = names.size + (rendering? ? 0 : parked.size)
 

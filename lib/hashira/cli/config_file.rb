@@ -5,15 +5,20 @@ require "yaml"
 class Hashira::CLI::ConfigFile
   DEFAULT = ".hashira.yml"
   FLAGS = %w[fail-on skip kind top package-by baseline].freeze
-  KEYS = ["directories", *FLAGS].freeze
+  KEYS = ["directories", "checks", *FLAGS].freeze
 
-  def initialize(argv)
+  def initialize(argv, home)
     @argv = argv
+    @home = home
   end
+
+  attr_reader :home
 
   def directories = setting("directories").split(",")
 
-  def flags = FLAGS.filter_map { |key| ["--#{key}", setting(key)] if settings.key?(key) }
+  def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
+
+  def rules = blamed { settings.key?("checks") ? checks : Hashira::Config::Rules::NONE }
 
   def vet
     argv = directories + flags.flatten
@@ -34,7 +39,14 @@ class Hashira::CLI::ConfigFile
 
   def unread(named) = named.empty? ? "" : raise(Hashira::Error, "conflicting options: --config and --no-config")
 
-  def fallback = File.exist?(DEFAULT) ? DEFAULT : ""
+  def fallback
+    found = @home.join(DEFAULT)
+    File.exist?(found) ? found : ""
+  end
+
+  def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Pipeline::KINDS)
+
+  def placed(key) = key == "baseline" ? @home.expand(setting(key)) : setting(key)
 
   def settings = @_settings ||= path.empty? ? {} : checked(loaded)
 
