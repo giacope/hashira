@@ -92,6 +92,14 @@ module Hashira::Report::Phrases
       "(#{detail.site}). #{COMPLEXITY_ADVICE.fetch(detail.dominant)}"
   end
 
+  def on_indirection(finding)
+    detail = finding.detail.to_h
+    helpers = count(detail[:helpers], "single-use helper")
+    "#{finding.package} scores cognitive #{detail[:cognitive]} with its #{helpers} " \
+      "(#{detail[:depth]} deep) read in place, #{detail[:own]} by itself (#{detail[:site]}). " \
+      "Inline the helpers that only move code, and reduce the logic itself."
+  end
+
   def score(value) = format("%.2f", value)
 
   def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"

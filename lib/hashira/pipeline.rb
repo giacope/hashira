@@ -13,7 +13,7 @@ class Hashira::Pipeline
     Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
   ).sort.freeze
 
-  KINDS = (STRUCTURAL + %w[complexity duplication] + SMELLS).sort.freeze
+  KINDS = (STRUCTURAL + %w[complexity duplication indirection] + SMELLS).sort.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto, only: [])
     @project = project

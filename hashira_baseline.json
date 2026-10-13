@@ -1,5 +1,5 @@
 {
-  "version": 6,
+  "version": 7,
   "packaging": "folder",
   "analyzers": [
     "complexity",
@@ -9,6 +9,28 @@
   ],
   "targets": [
     "lib/hashira"
+  ],
+  "kinds": [
+    "assumed_state",
+    "boundary_sprawl",
+    "complexity",
+    "control_parameter",
+    "cycle",
+    "data_clump",
+    "duplication",
+    "feature_envy",
+    "indirection",
+    "manual_dispatch",
+    "mixed_audience",
+    "module_initialize",
+    "nil_check",
+    "repeated_call",
+    "repeated_conditional",
+    "roll_call",
+    "sdp_violation",
+    "state_sprawl",
+    "utility_function",
+    "wide_edge"
   ],
   "edges": [
     "(root) -> analysis",
@@ -33,7 +55,24 @@
     "suppression -> analysis",
     "suppression -> config"
   ],
-  "findings": {},
+  "findings": {
+    "indirection:Hashira::CLI::ConfigFile#settings": 10,
+    "indirection:Hashira::CLI::Settings#options": 11,
+    "indirection:Hashira::Report::Confidence#of": 11,
+    "indirection:Hashira::Smells::Branches#chart": 10,
+    "indirection:Hashira::Smells::NilCheck#checks": 12,
+    "indirection:Hashira::Smells::Provenance#made?": 12,
+    "indirection:Hashira::Smells::Visibility#classify": 10
+  },
+  "traces": {
+    "indirection:Hashira::CLI::ConfigFile#settings": "indirection|cli/config_file.rb|loaded;checked",
+    "indirection:Hashira::CLI::Settings#options": "indirection|cli/settings.rb|layered;widened;fits?;settled",
+    "indirection:Hashira::Report::Confidence#of": "indirection|report/confidence.rb|inferred;copied",
+    "indirection:Hashira::Smells::Branches#chart": "indirection|smells/branches.rb|taken;arm_for",
+    "indirection:Hashira::Smells::NilCheck#checks": "indirection|smells/nil_check.rb|check?;probe?;shorthand?;fallback?",
+    "indirection:Hashira::Smells::Provenance#made?": "indirection|smells/provenance.rb|answered?;own?;constant?;typed?",
+    "indirection:Hashira::Smells::Visibility#classify": "indirection|smells/visibility.rb|heed;lift?;bare?;switch;tag;enclose"
+  },
   "boundaries": [
     {
       "root": "Prism",

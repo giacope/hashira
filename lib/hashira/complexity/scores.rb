@@ -17,7 +17,9 @@ class Hashira::Complexity::Scores
 
   def lists = { methods: ranked, classes: }
 
-  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding }
+  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } + indirection.findings
+
+  def indirection = Hashira::Complexity::Indirection.new(sites, @trees.values, @rules)
 
   def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 

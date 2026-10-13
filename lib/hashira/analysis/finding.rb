@@ -4,7 +4,8 @@ module Hashira
   module Analysis
     CLONES = "duplication"
 
-    MAGNITUDES = { "complexity" => :cognitive, "duplication" => :mass, "boundary_sprawl" => :count }.freeze
+    MAGNITUDES = { "duplication" => :mass, "boundary_sprawl" => :count }
+      .merge(%w[complexity indirection].to_h { [it, :cognitive] }).freeze
 
     TRACKS = [/ \(lines? [\d, ]+\)/, /:[\d, -]+\z/, /:\d+(?=:)/].freeze
 
