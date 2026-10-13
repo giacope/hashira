@@ -14,6 +14,12 @@
   - "@formatter.respond_to?(:exception) (line 33)"
   label: fp
   why: "@formatter is a user-supplied logging formatter: a plugin boundary"
+- key: faraday|manual_dispatch|Faraday::Response::RaiseError#on_complete
+  evidence:
+  - 'env[:status]: ClientErrorStatuses, ServerErrorStatuses (lines 35, 37)'
+  label: fp
+  why: 'switching an HTTP status code (outside data) between client and server error
+    ranges: the mapping is the middleware''s purpose'
 - key: faraday|manual_dispatch|Faraday::Utils#URI
   evidence: []
   label: fp
@@ -122,6 +128,12 @@
   evidence: []
   label: fp
   why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Naming::RescuedExceptionsVariableName#variable_name
+  evidence:
+  - node.exception_variable.respond_to?(:name) (line 157)
+  label: fp
+  why: node.exception_variable is a rubocop-ast child (library type); the probe guards
+    a library data model
 - key: rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?
   evidence: []
   label: fp
@@ -195,6 +207,12 @@
   label: tp
   why: 'the base policy asks itself whether a subclass defines organization: a nil-returning
     default on ApplicationPolicy is the polymorphic fix'
+- key: rubygems.org|manual_dispatch|GemPackageEnumerator#initialize
+  evidence:
+  - "@package.respond_to?(:verify) (line 9)"
+  label: fp
+  why: 'the constructor checks that an injected package quacks like Gem::Package (a
+    library type): validating an interface it does not own'
 - key: rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number
   evidence: []
   label: tp

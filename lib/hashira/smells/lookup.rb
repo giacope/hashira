@@ -6,7 +6,7 @@ require_relative "foreign"
 module Hashira::Smells::Lookup
   KEYED = Hashira::Smells::Foreign::KEYED_READS
 
-  KEYS = Hashira::Smells::Foreign::KEYS
+  KEYS = (Hashira::Smells::Foreign::KEYS + [Prism::IntegerNode]).freeze
 
   NEAR = [NilClass, Prism::SelfNode, Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 

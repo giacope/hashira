@@ -81,6 +81,17 @@
   label: fp
   why: 'three running totals of a streaming formatter, and the message says 3 while
     the rule needs more than 4: the doubled weight is invisible to the reader'
+- key: rubocop|state_sprawl|RuboCop::Lsp::StdinRunner
+  evidence:
+  - "@config_for_working_directory"
+  - "@errors"
+  - "@offenses"
+  - "@options"
+  - "@prism_result (read by no method: handed off)"
+  - "@warnings"
+  label: tp
+  why: 'six fields where offenses, warnings and errors travel together as the run''s
+    diagnostics: a value object would gather them'
 - key: rubocop|state_sprawl|RuboCop::Runner
   evidence:
   - "@aborting"
@@ -123,6 +134,21 @@
   label: tp
   why: 'eight inputs and derivations held by one component: the old/new/changes trio
     is one diff object'
+- key: rubygems.org|state_sprawl|GemValidator::Package
+  evidence:
+  - "@calculated_checksums"
+  - "@files"
+  - "@gemspec_ast"
+  - "@io"
+  - "@max_checksums_size"
+  - "@max_metadata_size"
+  - "@max_sig_size"
+  - "@reported_checksums"
+  - "@security_policy"
+  - "@signatures"
+  label: tp
+  why: 'ten fields mixing the io, size limits, a security policy, checksums, signatures
+    and files: limits and checksums are value objects waiting to be named'
 - key: rubygems.org|state_sprawl|Mailer
   evidence:
   - "@api_key"

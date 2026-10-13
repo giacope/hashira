@@ -179,6 +179,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
             def helped = helper.respond_to?(:honk)
 
             def plugged = @manager.respond_to?(:honk)
+
+            def chained(node) = node.duck.respond_to?(:honk)
           end
         end
       end

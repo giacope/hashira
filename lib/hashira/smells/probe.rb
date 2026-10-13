@@ -12,6 +12,8 @@ class Hashira::Smells::Probe
 
   SELVES = [NilClass, Prism::SelfNode].freeze
 
+  NAMED = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
+
   def initialize(call, subject, foreign)
     @call = call
     @subject = subject
@@ -40,7 +42,11 @@ class Hashira::Smells::Probe
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
-  def unknown? = !SELVES.include?(receiver.class) && @foreign.kinds(holder).none? { @subject.ownership.owned?(it) }
+  def unknown? = !SELVES.include?(receiver.class) && !(named? && typed?)
+
+  def typed? = @foreign.kinds(holder).any? { @subject.ownership.owned?(it) }
+
+  def named? = NAMED.include?(receiver.class)
 
   def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, @subject.node)
 

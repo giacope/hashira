@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
           class Thing
             def guard(node) = node.parent && use(node.parent)
 
-            def keyed = [@params[:id], @params[:id]]
+            def keyed(match) = [@params[:id], @params[:id], match[1], match[1]]
 
             def thrice(node) = [node.parent, node.parent, node.parent]
 
@@ -99,7 +99,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def fetchy
-              fetch(:host, 1) + fetch(:host, 1)
+              fetch(:host, @ttl) + fetch(:host, @ttl)
             end
 
             def mappy(rows)
@@ -117,7 +117,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(
       eq(
         [
-          "@maybe&.load(1) × 2 (line 5)", "fetch(:host, 1) × 2 (line 9)",
+          "@maybe&.load(1) × 2 (line 5)", "fetch(:host, @ttl) × 2 (line 9)",
           "rows.map(&:name) × 2 (line 13)", "@io.tick(1) × 2 (lines 17, 18)"
         ]
       )
