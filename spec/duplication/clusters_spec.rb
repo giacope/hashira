@@ -299,6 +299,16 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters("a.rb" => header["A", 1], "b.rb" => header["B", 2])).to(be_empty)
   end
 
+  it "reads a frozen list of constants, or a literal's plain message, as a declaration" do
+    declared =
+      lambda do |name|
+        "class #{name}\n include Comparable\n extend Forwardable\n NAME = \"Thing\".downcase\n " \
+          "KINDS = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze\n " \
+          "MORE = [Prism::CallNode, Prism::ConstantReadNode].freeze\nend\n"
+      end
+    expect(clusters("a.rb" => declared["A"], "b.rb" => declared["B"])).to(be_empty)
+  end
+
   it "reads a heredoc that interpolates, or a constant built by a message, as code" do
     header =
       lambda do |name, value|

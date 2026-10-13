@@ -128,7 +128,12 @@ class Hashira::Duplication::Fragment
 
   def bare?(node) = node.is_a?(Prism::CallNode) && [node.receiver, node.arguments, node.block].none?
 
-  def constant?(call) = !call.arguments && !call.block && Hashira::Duplication::Literal.new(call.receiver).literal?
+  def constant?(call) = !call.arguments && !call.block && fixed?(call)
+
+  def fixed?(call)
+    held = Hashira::Duplication::Literal.new(call.receiver)
+    call.name == :freeze ? held.declarative? : held.literal?
+  end
 
   def literals?(arguments) = Hashira::Duplication::Literal.new(arguments, pardoned).literals?
 end
