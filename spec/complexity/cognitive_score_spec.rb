@@ -121,4 +121,21 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
     expect(increments.map(&:label)).to(eq(["if"]))
     expect(increments.first.line).to(eq(2))
   end
+
+  it "nests a lambda literal the way it nests a block" do
+    expect(total("def m\n -> { x if a }\nend")).to(eq(2))
+    expect(total("def m\n -> do\n  x if a\n end\nend")).to(eq(2))
+  end
+
+  it "keeps one sequence of like operators through the parentheses that group it" do
+    expect(total("def m = a && (b && c)")).to(eq(1))
+    expect(total("def m = (a || b) || c")).to(eq(1))
+    expect(total("def m = a && ((b && c))")).to(eq(1))
+    expect(total("def m = a && (b || c)")).to(eq(2))
+  end
+
+  it "lets a multi-statement or empty group end a sequence" do
+    expect(total("def m = a && (b; c && d)")).to(eq(2))
+    expect(total("def m = a && ()")).to(eq(1))
+  end
 end

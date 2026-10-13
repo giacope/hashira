@@ -16,24 +16,23 @@ class Hashira::Complexity::Scores
 
   def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding }
 
+  def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
+
   private
 
-  def scores = @_scores ||= @trees.flat_map { |path, tree| harvest(path, tree) }
+  def scores = @_scores ||= sites.map { |relative, site| score(relative, site) }
 
   def flagged = ranked.select { it.cognitive >= THRESHOLD }
 
-  def harvest(path, tree)
-    relative = @project.relative(path)
-    Hashira::Complexity::Sites.new(tree).to_enum(:each).map { score(relative, it) }
-  end
+  def harvest(relative, tree) = Hashira::Complexity::Sites.new(tree).to_enum(:each).map { [relative, it] }
+
+  def recursion = @_recursion ||= Hashira::Complexity::Recursion.new(sites.map(&:last))
 
   def score(relative, site)
     node = site.node
     Hashira::Complexity::MethodScore.new(
       subject: site.subject, file: relative, line: node.location.start_line,
-      **tallies(Hashira::Complexity::CognitiveScore.new(node))
+      **Hashira::Complexity::CognitiveScore.new(node).tallies(recursion.increments(site))
     )
   end
-
-  def tallies(score) = { cognitive: score.total, calls: score.calls, increments: score.increments }
 end

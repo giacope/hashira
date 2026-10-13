@@ -16,7 +16,8 @@ module Hashira::Report::Phrases
     "while" => LOOP_BODY, "until" => LOOP_BODY, "for" => LOOP_BODY
   ).merge(
     "unless" => "invert to a guard clause or a named predicate.",
-    "ternary" => "extract the nested ternary into a named method."
+    "ternary" => "extract the nested ternary into a named method.",
+    "recursion" => "a recursion is a loop the reader unwinds by hand; name the traversal or make it iterative."
   ).freeze
 
   ROSTER = 6

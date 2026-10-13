@@ -13,8 +13,15 @@ class Hashira::Complexity::BooleanRun
   private
 
   def operands(node)
-    node.compact_child_nodes.flat_map { kin?(it, node) ? operands(it) : [it] }
+    node.compact_child_nodes.flat_map do |child|
+      inner = bare(child)
+      inner.instance_of?(node.class) ? operands(inner) : [child]
+    end
   end
 
-  def kin?(child, node) = child.instance_of?(node.class)
+  def bare(node)
+    body = node.body if node.is_a?(Prism::ParenthesesNode)
+    lone = body.body if body.is_a?(Prism::StatementsNode)
+    lone&.one? ? bare(lone.first) : node
+  end
 end

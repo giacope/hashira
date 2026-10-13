@@ -4,6 +4,7 @@ require "prism"
 
 class Hashira::Complexity::CognitiveScore
   HANDLERS = { Prism::IfNode => :on_if, Prism::BeginNode => :on_begin, Prism::BlockNode => :on_block }
+    .merge(Prism::LambdaNode => :on_block)
     .merge(Prism::AndNode => :on_boolean, Prism::OrNode => :on_boolean, Prism::CallNode => :on_call)
     .merge(Prism::UnlessNode => :on_unless, Prism::WhileNode => :on_nester, Prism::UntilNode => :on_nester)
     .merge(Prism::ForNode => :on_nester, Prism::CaseNode => :on_nester, Prism::CaseMatchNode => :on_nester)
@@ -30,6 +31,11 @@ class Hashira::Complexity::CognitiveScore
   def nesting = @_nesting
 
   def total = increments.sum(&:cost)
+
+  def tallies(extra)
+    all = increments + extra
+    { cognitive: all.sum(&:cost), calls:, increments: all }
+  end
 
   def visit(node)
     return unless node
