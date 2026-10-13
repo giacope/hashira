@@ -29,8 +29,14 @@ module Hashira::Report::Phrases
   def on_cycle(finding)
     detail = finding.detail
     "#{roster(detail[:members])} depend on each other in a cycle#{joined(detail[:folded])} — " \
-      "any change may ripple back around. " \
-      "The cheapest cut is #{detail[:cut].map { link(it) }.join(", ")}."
+      "any change may ripple back around. #{cut(detail[:cut], detail[:exact])}"
+  end
+
+  def cut(edges, exact)
+    shown = edges.first(ROSTER).map { link(it) }.join(", ")
+    rest = edges.size - ROSTER
+    tail = rest.positive? ? " and #{rest} more (#{edges.sum { it[:weight] }} refs in all)" : ""
+    "The cheapest cut#{" found" if exact == false} is #{shown}#{tail}."
   end
 
   def roster(members)

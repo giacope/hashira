@@ -109,4 +109,11 @@ RSpec.describe(Hashira::Report::Phrases) do
       end_with("call it from each site. Both sites change often — fix one, miss the other.")
     )
   end
+
+  it "names a long cut in part, with its total, and says when it is a best effort" do
+    cut = ("a".."h").map { { from: it, to: "z", weight: 2 } }
+    detail = { members: %w[a z], folded: [], cut:, exact: false }
+    said = message(Hashira::Analysis::Finding.new(kind: "cycle", package: "a", evidence: [], detail:))
+    expect(said).to(include("The cheapest cut found is a -> z (2 refs)", "f -> z (2 refs) and 2 more (16 refs in all)"))
+  end
 end
