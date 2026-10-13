@@ -13,6 +13,8 @@ class Hashira::Coupling::Catalog
 
   def strip(path) = naming.strip(path)
 
+  def rooted(path) = naming.rooted(path)
+
   def roots = @definitions.roots
 
   def folders = @definitions.packages

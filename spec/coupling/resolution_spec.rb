@@ -461,4 +461,15 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       end
     end
   end
+
+  it "resolves a reference in a compactly named class from that class alone, as Ruby's lexical scope does" do
+    files = {
+      "lib/shop/shipping/rate.rb" => "class Shop::Shipping::Rate\n  def bill = Billing::Invoice.new\nend\n",
+      "lib/shop/billing/invoice.rb" => "module Shop; module Billing; class Invoice; def q = Shipping::Rate.new; end; end; end",
+      "lib/shop/shipping.rb" => "module Shop\n  module Shipping\n    def self.zones = 3\n  end\nend\n"
+    }
+    analyze(files, directories: ["lib/shop"]) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(eq(["billing -> shipping"]))
+    end
+  end
 end
