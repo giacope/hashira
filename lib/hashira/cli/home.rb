@@ -28,13 +28,13 @@ class Hashira::CLI::Home
 
   def start = File.expand_path(@directories.first)
 
-  def found = climb(OWN) || (inside? ? @here : outside)
+  def found = ancestors.find { rooted?(it) } || climb(LAYOUT) || start
 
-  def outside = climb(MARKERS) || climb(LAYOUT) || start
+  def rooted?(directory) = directory == @here || holds?(directory, OWN + MARKERS)
 
-  def inside? = start == @here || start.start_with?("#{@here}/")
+  def climb(names) = ancestors.find { holds?(it, names) }
 
-  def climb(names) = ancestors.find { |directory| names.any? { Dir.glob(it, base: directory).any? } }
+  def holds?(directory, names) = names.any? { Dir.glob(it, base: directory).any? }
 
   def ancestors = Pathname(start).ascend.map(&:to_s)
 end

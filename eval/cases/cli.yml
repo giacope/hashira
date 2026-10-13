@@ -17,6 +17,42 @@
   status: 0
   excludes: ["boundary Prism"]
 
+- name: a project checked out inside another stops at its own root
+  files:
+    hashira_baseline.json: |
+      {"version": 6, "boundaries": [{"root": "Prism", "role": "interpreted_model",
+        "entrypoint": "lib/tool/trees.rb", "reason": "the AST is the input"}]}
+    .hashira.yml: |
+      skip: smells
+    vendor/gem/.git/HEAD: "ref: refs/heads/main\n"
+    vendor/gem/Gemfile: "source 'https://rubygems.org'\n"
+    vendor/gem/lib/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+  cwd: vendor/gem
+  args: [lib, --json]
+  status: 0
+  json:
+    kinds.utility_function.count: 1
+
+- name: a project checked out inside another is read as itself from the enclosing root
+  files:
+    hashira_baseline.json: |
+      {"version": 6, "boundaries": [{"root": "Prism", "role": "interpreted_model",
+        "entrypoint": "lib/tool/trees.rb", "reason": "the AST is the input"}]}
+    vendor/gem/Gemfile: "source 'https://rubygems.org'\n"
+    vendor/gem/lib/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+      end
+  args: [vendor/gem/lib]
+  status: 0
+  excludes: ["boundary Prism"]
+
 - name: the analyzed project's own baseline is applied from elsewhere
   files:
     project/hashira_baseline.json: |

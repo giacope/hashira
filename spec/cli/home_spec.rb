@@ -17,8 +17,21 @@ RSpec.describe(Hashira::CLI::Home) do
     end
   end
 
-  it "stays where hashira runs when that folder holds the directory and no hashira file sits between" do
-    within("lib/app/x.rb" => "", "lib/Gemfile" => "") { expect(home(["lib/app"]).path).to(eq(Dir.pwd)) }
+  it "stops where hashira runs when no project root sits between it and the directory" do
+    within("lib/app/x.rb" => "", "Gemfile" => "") { expect(home(["lib/app"]).path).to(eq(Dir.pwd)) }
+  end
+
+  it "stops at the first project root above the directory, never reading an enclosing project's files" do
+    files = {
+      ".hashira.yml" => "", "hashira_baseline.json" => "{}", "vendor/gem/.git/HEAD" => "",
+      "vendor/gem/lib/x.rb" => "", "vendor/app/Gemfile" => "", "vendor/app/lib/y.rb" => "",
+      "vendor/kit/kit.gemspec" => "", "vendor/kit/lib/z.rb" => ""
+    }
+    within(files) do
+      roots = %w[gem app kit].map { home(["vendor/#{it}/lib"]).path }
+      expect(roots).to(eq(%w[gem app kit].map { File.expand_path("vendor/#{it}") }))
+      Dir.chdir("vendor/gem") { expect(home(["lib"]).path).to(eq(Dir.pwd)) }
+    end
   end
 
   it "climbs to the project's markers from outside it, then to the folder holding lib" do
