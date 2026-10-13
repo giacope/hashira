@@ -58,7 +58,7 @@ class Hashira::CLI::Run
   def ratchet = @_ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
 
   def baseline
-    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:)
+    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: Hashira::Pipeline::KINDS)
   end
 
   def targets = @pipeline.project.directories.map { @options.home.relative(it) }
