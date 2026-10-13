@@ -19,7 +19,7 @@ class Hashira::Complexity::Recursion
 
   def looped?((first, *rest)) = rest.any? || graph.fetch(first).include?(first)
 
-  def graph = @_graph ||= @sites.to_h { [it.subject, it.callees & known] }
+  def graph = @_graph ||= @sites.to_h { [it.subject, it.callees.select { known.include?(it) }] }
 
-  def known = @_known ||= @sites.map(&:subject)
+  def known = @_known ||= @sites.to_set(&:subject)
 end
