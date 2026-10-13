@@ -4,7 +4,10 @@ module Hashira
   module Coupling
     Inflections =
       Data.define(:plurals, :singulars, :uncountables, :acronyms) do
-        def self.of(tree) = tree ? Declared.new(tree).onto(STOCK) : STOCK
+        def self.of(tree)
+          stock = STOCK.irregulars(Inflection::IRREGULARS)
+          tree ? Declared.new(tree).onto(stock) : stock
+        end
 
         def irregulars(pairs) = pairs.reduce(self) { |table, (one, many)| table.irregular(one, many) }
 
@@ -21,6 +24,6 @@ module Hashira
     STOCK = Inflections.new(
       plurals: Inflection::PLURALS.reverse, singulars: Inflection::SINGULARS.reverse,
       uncountables: Inflection::UNCOUNTABLES, acronyms: []
-    ).irregulars(Inflection::IRREGULARS)
+    )
   end
 end
