@@ -1,0 +1,207 @@
+---
+- key: rubocop|indirection|RuboCop::Cop::InternalAffairs::NodeMatcherDirective#register_offense
+  evidence:
+  - formatted_message (line 150)
+  - correct_method_directive (line 222)
+  - remove_scope_directive (line 231)
+  - insert_scope_directive (line 187)
+  - insert_method_directive (line 175)
+  - pattern_arguments (line 195)
+  - add_newline? (line 202)
+  label: tp
+  why: 'seven single-use helpers hold 18 of 20: the offense registration is one long
+    trace'
+- key: rubocop|indirection|RuboCop::Cop::InternalAffairs::NodePatternGroups::ASTWalker#walk
+  evidence:
+  - on_union (line 59)
+  - sequences_match? (line 116)
+  - node_group_data (line 104)
+  - each_node_group (line 85)
+  - get_relevant_nodes (line 96)
+  label: fp
+  why: 'five helpers bring a 2-point walk to exactly 10: marginal'
+- key: rubocop|indirection|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#on_send
+  evidence:
+  - expected_empty_lines? (line 105)
+  - empty_lines_around? (line 161)
+  - allowed_only_before_style? (line 116)
+  - should_insert_line_before? (line 216)
+  - correct_next_line_if_denied_style (line 125)
+  - should_insert_line_after? (line 224)
+  - next_empty_line_range (line 183)
+  label: tp
+  why: 'seven single-use helpers take the hook from 6 to 40: the complexity is real
+    and hidden'
+- key: rubocop|indirection|RuboCop::Cop::Lint::MissingSuper#on_def
+  evidence:
+  - offender? (line 123)
+  - inside_class_with_stateful_parent? (line 137)
+  label: fp
+  why: 'two named predicates add 8 to a 4-point method: near the bar, the predicates
+    name the rule''s conditions'
+- key: rubocop|indirection|RuboCop::Cop::Lint::RedundantSplatExpansion#autocorrect
+  evidence:
+  - replacement_range_and_content (line 139)
+  - redundant_brackets? (line 171)
+  - remove_brackets (line 179)
+  label: tp
+  why: three single-use helpers hold all 13 of the correction
+- key: rubocop|indirection|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#calculate
+  evidence:
+  - calculate_node (line 76)
+  - branch? (line 123)
+  - evaluate_branch_nodes (line 51)
+  - condition? (line 131)
+  - evaluate_condition_node (line 60)
+  - else_branch? (line 65)
+  label: tp
+  why: 'six single-use helpers hold all 20 of the calculation: the method that reads
+    as a one-liner is the algorithm'
+- key: rubocop|indirection|RuboCop::Cop::Naming::FileName#on_new_investigation
+  evidence:
+  - for_bad_filename (line 63)
+  - filename_good? (line 136)
+  - perform_class_and_module_naming_checks (line 75)
+  - expect_matching_definition? (line 116)
+  - check_definition_path_hierarchy? (line 120)
+  - matching_definition? (line 86)
+  - matching_class? (line 90)
+  - bad_filename_allowed? (line 94)
+  - ignore_executable_scripts? (line 112)
+  - other_message (line 104)
+  label: tp
+  why: 'ten single-use helpers hold 17 of 19: the investigation is a deep trace of
+    one check'
+- key: rubocop|indirection|RuboCop::Cop::PercentLiteralCorrector#correct
+  evidence:
+  - escape_words? (line 30)
+  - delimiters_for (line 34)
+  - new_contents (line 38)
+  - autocorrect_multiline_words (line 46)
+  - process_multiline_words (line 58)
+  - line_breaks (line 69)
+  - first_line? (line 78)
+  - process_lines (line 82)
+  - end_content (line 110)
+  - autocorrect_words (line 52)
+  - wrap_contents (line 26)
+  label: tp
+  why: 'eleven single-use helpers, five deep, for one correction scoring 15: the trace
+    is the complexity'
+- key: rubocop|indirection|RuboCop::Cop::Style::AccessModifierDeclarations#autocorrect
+  evidence:
+  - autocorrect_group_style (line 204)
+  - replace_defs (line 324)
+  - def_source (line 356)
+  - find_argument_less_modifier_node (line 310)
+  - autocorrect_inline_style (line 211)
+  - remove_modifier_node_within_begin (line 350)
+  - insert_inline_modifier (line 340)
+  label: tp
+  why: 'seven single-use helpers, three deep, hold 12 of 13: one autocorrect traced
+    through seven fragments'
+- key: rubocop|indirection|RuboCop::Cop::Style::FormatStringToken#on_str
+  evidence:
+  - format_string_token? (line 135)
+  - use_allowed_method? (line 139)
+  - collect_detections (line 226)
+  - allowed_string? (line 178)
+  - conservative? (line 249)
+  - allowed_unannotated? (line 236)
+  - max_unannotated_placeholders_allowed (line 245)
+  - check_sequence (line 146)
+  - autocorrect_sequence (line 161)
+  label: tp
+  why: nine single-use helpers take the hook from 4 to 32
+- key: rubocop|indirection|RuboCop::Cop::Style::HashSyntax#on_hash
+  evidence:
+  - hash_rockets_check (line 167)
+  - ruby19_no_mixed_keys_check (line 171)
+  - no_mixed_keys_check (line 181)
+  - ruby19_check (line 163)
+  label: tp
+  why: 'four style checks, each called once, take the hook from 6 to 15: the style
+    dispatch is the hook''s complexity'
+- key: rubocop|indirection|RuboCop::Cop::Style::IfUnlessModifier#message
+  evidence:
+  - named_capture_in_condition? (line 239)
+  - too_long_due_to_modifier? (line 180)
+  - too_long_single_line? (line 196)
+  - line_length_enabled_at_line? (line 235)
+  - too_long_line_based_on_config? (line 209)
+  - too_long_line_based_on_ignore_cop_directives? (line 218)
+  - too_long_line_based_on_allow_uri? (line 226)
+  - another_statement_on_same_line? (line 251)
+  label: tp
+  why: eight single-use helpers, four deep, take the message from 3 to 19
+- key: rubocop|indirection|RuboCop::Cop::Style::MapCompactWithConditionalBlock#inspect
+  evidence:
+  - returns_block_argument? (line 114)
+  - truthy_branch? (line 118)
+  - truthy_branch_for_guard? (line 138)
+  label: fp
+  why: 'three named predicates take a 6-point method to 12: near the bar, and the
+    predicates name real concepts'
+- key: rubocop|indirection|RuboCop::Cop::Style::MethodCallWithArgsParentheses::RequireParentheses#require_parentheses
+  evidence:
+  - allowed_method_name? (line 27)
+  - eligible_for_parentheses_omission? (line 31)
+  - ignored_macro? (line 39)
+  - included_macros_list (line 35)
+  label: fp
+  why: 'the method scores 7 itself and four named predicates add 3: a marginal trace
+    of well-named concepts, nothing a reviewer would inline'
+- key: rubocop|indirection|RuboCop::Cop::Style::MethodDefParentheses#on_def
+  evidence:
+  - forced_parentheses? (line 131)
+  - anonymous_arguments? (line 169)
+  - require_parentheses? (line 142)
+  - arguments_without_parentheses? (line 147)
+  - missing_parentheses (line 151)
+  - unwanted_parentheses (line 161)
+  - correct_arguments (line 126)
+  label: tp
+  why: seven single-use helpers double a 7-point hook to 14
+- key: rubocop|indirection|RuboCop::Cop::Style::ParenthesesAroundCondition#process_control_op
+  evidence:
+  - require_parentheses? (line 96)
+  - semicolon_separated_expressions? (line 103)
+  - modifier_op? (line 111)
+  - parens_allowed? (line 124)
+  - allow_multiline_conditions? (line 130)
+  label: tp
+  why: 'five single-use helpers take a 8-point method to 24: the condition logic is
+    spread, not abstracted'
+- key: rubocop|indirection|RuboCop::Cop::Style::SafeNavigation#offending_node?
+  evidence:
+  - use_var_only_in_unless_modifier? (line 244)
+  - chain_length (line 329)
+  - max_chain_length (line 389)
+  - unsafe_method_used? (line 337)
+  label: tp
+  why: four single-use helpers take a 7-point predicate to 19
+- key: rubocop|indirection|RuboCop::Cop::Style::SlicingWithRange#on_send
+  evidence:
+  - find_offense_range (line 102)
+  - offense_message_with_removal_range (line 110)
+  - endless (line 132)
+  - beginless (line 136)
+  - unparenthesized_call? (line 98)
+  label: fp
+  why: 'five helpers add 7 to a 4-point method and land at 11: marginal'
+- key: rubocop|indirection|RuboCop::Cop::Team#investigate
+  evidence:
+  - be_ready (line 158)
+  - roundup_relevant_cops (line 178)
+  - process_errors (line 252)
+  - handle_warning (line 269)
+  label: tp
+  why: 'four single-use steps hold 19 of 20: the investigation reads as a sequence
+    and is not simple'
+- key: rubygems.org|indirection|Avo::Actions::DeleteUser::ActionHandler#handle
+  evidence:
+  - process_user (line 47)
+  - add_summary_messages (line 72)
+  label: tp
+  why: 'two single-use helpers hold 15 of the trace''s 16: the action reads as trivial
+    and is not'
