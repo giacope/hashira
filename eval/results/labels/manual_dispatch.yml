@@ -138,6 +138,12 @@
   evidence: []
   label: fp
   why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::StringHelp#on_str
+  evidence:
+  - self.respond_to?(:autocorrect) (line 19)
+  label: tp
+  why: 'the mixin asks itself whether the including cop defines autocorrect: a no-op
+    default on the mixin would let polymorphism decide'
 - key: rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes
   evidence: []
   label: fp

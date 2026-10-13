@@ -129,6 +129,13 @@
   - identifier.text × 2 (lines 76, 78)
   label: fp
   why: 'one-hop reader read twice: optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Naming::InclusiveLanguage#preprocess_check_config
+  evidence:
+  - cop_config.[]('CheckVariables') × 3 (lines 134, 135, 136)
+  - cop_config.[]('CheckStrings') × 2 (lines 138, 139)
+  label: tp
+  why: 'cop_config[''CheckVariables''] looked up three times through a helper (and
+    CheckStrings twice): name each setting once'
 - key: rubocop|repeated_call|RuboCop::Cop::Style::AccessModifierDeclarations#autocorrect_inline_style
   evidence:
   - node.parent × 2 (lines 212, 213)
