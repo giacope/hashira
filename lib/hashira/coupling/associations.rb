@@ -23,11 +23,7 @@ class Hashira::Coupling::Associations
 
   private
 
-  def options(call) = call.arguments.arguments.grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
-
-  def option(call, key) = options(call).find { keyed?(it.key, key) }&.value
-
-  def keyed?(node, key) = node.is_a?(Prism::SymbolNode) && node.unescaped == key
+  def option(call, key) = Hashira::Analysis::Syntax.option(call, key)
 
   def given(call)
     named = option(call, "class_name")

@@ -35,9 +35,7 @@ class Hashira::Smells::Validations
 
   def option?(call, key) = options(call).any? { it.key.unescaped.to_sym == key && !OFF.include?(it.value.class) }
 
-  def options(call) = pairs(call).select { it.key.is_a?(Prism::SymbolNode) }
-
-  def pairs(call) = given(call).grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
+  def options(call) = Hashira::Analysis::Syntax.options(call).select { it.key.is_a?(Prism::SymbolNode) }
 
   def given(call) = call.arguments.arguments
 end

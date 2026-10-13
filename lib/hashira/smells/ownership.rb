@@ -14,12 +14,18 @@ class Hashira::Smells::Ownership
 
   def repertoire = @_repertoire ||= Hashira::Smells::Repertoire.new(@trees)
 
+  def calls(name) = sent.fetch(name, [])
+
   def keys(segments)
     surveyed
     @_tables.fetch(segments.join("::"), [])
   end
 
   private
+
+  def sent = @_sent ||= @trees.flat_map { called(it) }.group_by(&:name)
+
+  def called(tree) = Hashira::Analysis::NodeWalk.collect(tree).grep(Prism::CallNode)
 
   def surveyed
     return if @_surveyed

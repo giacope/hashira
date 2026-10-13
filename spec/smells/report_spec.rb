@@ -75,7 +75,7 @@ RSpec.describe(Hashira::Smells::Report) do
 
   it "handles every parameter shape when hunting control parameters" do
     files = {
-      "lib/app/zone/thing.rb" => <<~RUBY
+      "lib/app/zone/thing.rb" => <<~RUBY,
         module App
           module Zone
             class Thing
@@ -96,6 +96,7 @@ RSpec.describe(Hashira::Smells::Report) do
           end
         end
       RUBY
+      "lib/app/zone/caller.rb" => "class Caller\n def run = [mixed, mixed(1, true, 2, delta: :d), sneaky(:x)]\nend\n"
     }
     findings = sniffed(files, "control_parameter")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))
