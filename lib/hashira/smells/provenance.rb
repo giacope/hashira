@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::Provenance
+  HIDDEN = %i[private protected].freeze
+
   def initialize(subject, foreign)
     @subject = subject
     @foreign = foreign
@@ -22,7 +24,7 @@ class Hashira::Smells::Provenance
 
   def argument?(name) = @subject.parameters.include?(name)
 
-  def handed?(name) = !@subject.public? || defaults.any? { it.name == name && it.value.is_a?(Prism::NilNode) }
+  def handed?(name) = HIDDEN.include?(@subject.section) || defaults.any? { it.name == name && it.value.is_a?(Prism::NilNode) }
 
   def defaults = Hashira::Smells::Parameters.parts(@subject.node).select { it.respond_to?(:value) }
 

@@ -78,6 +78,12 @@ RSpec.describe(Hashira::Smells::NilCheck) do
             def mixed(params) = params["id"] == nil || @cache.nil?
 
             def optional(given, rest = nil) = given.nil?
+
+            def self.parse(text) = text.nil?
+
+            module_function
+
+            def shared(text) = text.nil?
           end
         end
       end
