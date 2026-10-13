@@ -164,6 +164,14 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "leaves opt-in kinds out of a plain run and gates on one that --fail-on names" do
+    within(Fixtures::CYCLIC_FILES) do
+      expect(capture { described_class.new(["lib/app"]).status }).not_to(include("utility_function"))
+      gate = capture { expect(described_class.new(%w[lib/app --fail-on utility_function]).status).to(eq(1)) }
+      expect(gate).to(include("Gate FAILED: 4 finding(s) — utility_function 4."))
+    end
+  end
+
   it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
     within(Fixtures::CYCLIC_FILES) do
       capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
@@ -297,7 +305,8 @@ RSpec.describe(Hashira::CLI::Session) do
       accepted = { kind: "utility_function", package: "Cart#price", reason: "kept public" }
       files = {
         "tool/hashira_baseline.json" => JSON.generate(boundaries: [boundary]), "tool/.hashira.yml" => "fail-on: x\n",
-        "proj/hashira_baseline.json" => JSON.generate(accepted: [accepted]), "proj/lib/app/cart.rb" => cart
+        "proj/hashira_baseline.json" => JSON.generate(accepted: [accepted]), "proj/lib/app/cart.rb" => cart,
+        "proj/.hashira.yml" => "checks: all\n"
       }
       within(files) { Dir.chdir("tool") { expect(json(%w[../proj/lib/app --json])["accepted"].size).to(eq(1)) } }
     end

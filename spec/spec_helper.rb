@@ -46,7 +46,7 @@ module Fixtures
 
   def with_pipeline(&)
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL))
       yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
     end
   end

@@ -15,7 +15,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
 
   def verdicts(files, directories: ["lib/app"])
     within(files) do
-      yield(Hashira::Pipeline.new(Hashira::Project.new(directories)).findings)
+      yield(Hashira::Pipeline.new(Hashira::Project.new(directories, rules: Hashira::Config::Rules::ALL)).findings)
     end
   end
   it "reports cycles with members, a sample path, the cheapest cut, and its evidence" do

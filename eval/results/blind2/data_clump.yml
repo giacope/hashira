@@ -1,0 +1,86 @@
+---
+- key: faraday|data_clump|Faraday::DecodeMethods
+  versions:
+  - branch
+  label: tp
+  why: subkey+is_array form a parsed key-segment value object
+- key: faraday|data_clump|Faraday::EncodeMethods
+  versions:
+  - branch
+  label: fp
+  why: Recursive encoder arguments, not a clump
+- key: rubocop|data_clump|RuboCop::ConfigLoaderResolver
+  versions:
+  - main
+  label: fp
+  why: Resolver param passing; parameter object would not help
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLineBetweenDefs
+  versions:
+  - main
+  label: fp
+  why: Def pair arguments in small helpers
+- key: rubocop|data_clump|RuboCop::Cop::Layout::EmptyLinesAroundBody
+  versions:
+  - main
+  label: fp
+  why: Line pair small and local
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  versions:
+  - main
+  label: fp
+  why: Token pair in tiny private helpers; parameter object is overkill
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceBeforeBlockBraces
+  versions:
+  - main
+  label: fp
+  why: Brace token args in small helpers
+- key: rubocop|data_clump|RuboCop::Cop::Layout::SpaceInsideBlockBraces
+  versions:
+  - main
+  label: fp
+  why: Brace token args in small helpers
+- key: rubocop|data_clump|RuboCop::Cop::Lint::UnmodifiedReduceAccumulator
+  versions:
+  - main
+  label: fp
+  why: Small analysis args
+- key: rubocop|data_clump|RuboCop::Cop::MultilineElementIndentation
+  versions:
+  - main
+  label: fp
+  why: Indentation helper args; parameter object would not clarify
+- key: rubocop|data_clump|RuboCop::Cop::Style::CaseLikeIf
+  versions:
+  - main
+  label: fp
+  why: Recursive condition collection args
+- key: rubocop|data_clump|RuboCop::Cop::Style::InverseMethods
+  versions:
+  - main
+  label: fp
+  why: Standard autocorrect parameter passing
+- key: rubocop|data_clump|RuboCop::Cop::Style::SelfAssignment
+  versions:
+  - main
+  label: fp
+  why: Node/rhs args in small cop helpers
+- key: rubocop|data_clump|RuboCop::Cop::Style::SoleNestedConditional
+  versions:
+  - main
+  label: fp
+  why: Standard autocorrect parameter passing in RuboCop cops
+- key: rubocop|data_clump|RuboCop::FileFinder
+  versions:
+  - main
+  label: fp
+  why: Finder args; parameter object overkill
+- key: rubocop|data_clump|RuboCop::RSpec::ExpectOffense
+  versions:
+  - main
+  label: fp
+  why: Test helper keyword passthrough
+- key: rubocop|data_clump|RuboCop::TargetFinder
+  versions:
+  - main
+  label: fp
+  why: Traversal arguments; parameter object overkill

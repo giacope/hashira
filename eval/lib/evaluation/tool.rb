@@ -3,6 +3,8 @@
 class Evaluation::Tool
   PEAK = File.join(Evaluation::ROOT, "probe", "peak.rb")
 
+  EVERY = File.join(Evaluation::ROOT, "probe", "every.yml")
+
   QUIET = %w[BUNDLE_GEMFILE BUNDLE_BIN_PATH RUBYOPT RUBYLIB].to_h { [it, nil] }.freeze
 
   def self.build(root) = new(File.expand_path(root))
@@ -14,6 +16,8 @@ class Evaluation::Tool
   def call(directory, arguments)
     Dir.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
   end
+
+  def every = @_every ||= opting? ? ["--config", EVERY] : []
 
   def commit = Open3.capture2e("git", "-C", @root, "rev-parse", "--short", "HEAD").first.strip
 
@@ -27,6 +31,8 @@ class Evaluation::Tool
     peak = Evaluation::Peak.of(report)
     Evaluation::Outcome.new(status: status.exitstatus, output:, error:, peak:, json: Evaluation::Outcome.parse(output))
   end
+
+  def opting? = Open3.capture2e(*command, "--help").first.include?("checks: all")
 
   def command = ["ruby", "-r#{PEAK}", "-I#{@root}/lib", "#{@root}/exe/hashira"]
 end

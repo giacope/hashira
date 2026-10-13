@@ -16,7 +16,7 @@ class Evaluation::Smells
 
   def verdicts(fixture)
     expect = YAML.safe_load_file(File.join(fixture, "expect.yml"))
-    outcome = Evaluation::Sandbox.copy(File.join(fixture, "project")) { @tool.call(it, expect.fetch("args", []) + ["--json"]) }
+    outcome = Evaluation::Sandbox.copy(File.join(fixture, "project")) { @tool.call(it, expect.fetch("args", []) + @tool.every + ["--json"]) }
     Evaluation::Sniff.new(File.basename(fixture), expect, outcome.findings).checks
   end
 end

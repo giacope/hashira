@@ -1,0 +1,110 @@
+---
+- key: faraday|repeated_conditional|Faraday::Connection
+  versions:
+  - branch
+  label: fp
+  why: Proxy mode flag checks are few and clear
+- key: faraday|repeated_conditional|Faraday::Error
+  versions:
+  - branch
+  label: tp
+  why: Response type check repeated in three accessors; normalize once
+- key: faraday|repeated_conditional|Faraday::Response
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Nine accessors guard on finished?; a pending/null env state would remove the
+    scattered checks
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier
+  versions:
+  - main
+  label: fp
+  why: Config style checks; idiomatic
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  versions:
+  - main
+  label: fp
+  why: Config style checks; idiomatic
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessModifierDeclarations
+  versions:
+  - main
+  label: fp
+  why: Config style checks in a cop; polymorphism overkill
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessorGrouping
+  versions:
+  - main
+  label: fp
+  why: Config style checks; idiomatic
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::ConditionalAssignment
+  versions:
+  - main
+  label: fp
+  why: Config style checks
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::SignalException
+  versions:
+  - main
+  label: fp
+  why: Config style checks
+- key: rubocop|repeated_conditional|RuboCop::LSP::Runtime
+  versions:
+  - main
+  label: fp
+  why: Two-flag check is small and clear; polymorphism overkill
+- key: rubocop|repeated_conditional|RuboCop::Runner
+  versions:
+  - main
+  label: fp
+  why: Debug option checks; trivial
+- key: rubygems.org|repeated_conditional|Avo::Actions::DeleteUser
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Avo DSL lambda; record presence check is framework contract
+- key: rubygems.org|repeated_conditional|Dependency
+  versions:
+  - branch
+  label: fp
+  why: Association presence checks in AR callbacks
+- key: rubygems.org|repeated_conditional|EmailConfirmationsController
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Repeated signed_in? ternary for redirect path; extract one decision point
+- key: rubygems.org|repeated_conditional|MembershipPolicy
+  versions:
+  - branch
+  label: fp
+  why: Distinct policy rules referencing role
+- key: rubygems.org|repeated_conditional|OrganizationOnboarding
+  versions:
+  - branch
+  label: fp
+  why: Defensive guards in independent validators
+- key: rubygems.org|repeated_conditional|Pusher
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Owner-type branching (user vs trusted publisher) scattered through Pusher;
+    push onto owner types
+- key: rubygems.org|repeated_conditional|Rubygem::TabNavComponent
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Local styling condition in one method
+- key: rubygems.org|repeated_conditional|RubygemTransfer
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Defensive guards in independent validators
+- key: rubygems.org|repeated_conditional|Version
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Scattered predicates in large AR model; polymorphism not feasible

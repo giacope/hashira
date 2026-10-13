@@ -33,7 +33,7 @@
         def price(item) = item.amount.round
       end
   cwd: vendor/gem
-  args: [lib, --json]
+  args: [lib, --kind, utility_function, --json]
   status: 0
   json:
     kinds.utility_function.count: 1
@@ -66,7 +66,7 @@
       end
     elsewhere/README: "elsewhere\n"
   cwd: elsewhere
-  args: [../project/lib/app, --json]
+  args: [../project/lib/app, --kind, utility_function, --json]
   status: 0
   json:
     accepted.size: 1
@@ -74,8 +74,7 @@
 - name: the analyzed project's config is read from elsewhere
   files:
     project/.hashira.yml: |
-      checks:
-        utility_function: false
+      checks: all
     project/lib/app/cart.rb: |
       class Cart
         def initialize(items) = @items = items
@@ -87,7 +86,7 @@
   args: [../project/lib/app, --json]
   status: 0
   json:
-    kinds.utility_function: null
+    kinds.utility_function.count: 1
 
 - name: a suppression with a reason silences the finding on the next line
   files:
@@ -195,11 +194,24 @@
   json:
     kinds.complexity.count: 1
 
-- name: a config switch turns a kind off
+- name: a config switch turns an opt-in kind on
   files:
     .hashira.yml: |
       checks:
-        utility_function: false
+        utility_function: true
+    lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+  args: [lib/app, --json]
+  status: 0
+  json:
+    kinds.utility_function.count: 1
+
+- name: an opt-in kind stays out of the report unless asked for
+  files:
     lib/app/cart.rb: |
       class Cart
         def initialize(items) = @items = items
@@ -216,6 +228,7 @@
     hashira_baseline.json: |
       {"version": 4, "packaging": "folder", "analyzers": ["smells"], "targets": ["lib/app"],
        "edges": [], "findings": {"duplicate_method_call:Cart#label": null}}
+    .hashira.yml: "checks: all\n"
     lib/app/cart.rb: |
       class Cart
         def initialize(owner) = @owner = owner

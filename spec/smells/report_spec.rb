@@ -3,10 +3,12 @@
 RSpec.describe(Hashira::Smells::Report) do
   it "runs inside the pipeline by default and steps aside when skipped" do
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      every = Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL)
+      pipeline = Hashira::Pipeline.new(every)
       expect(pipeline.smells).to(be_a(described_class))
       expect(pipeline.findings.map(&:kind)).to(include("utility_function"))
-      trimmed = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled: %i[coupling])
+      expect(Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])).findings.map(&:kind)).to(eq(%w[cycle]))
+      trimmed = Hashira::Pipeline.new(every, enabled: %i[coupling])
       expect(trimmed.smells).to(be_nil)
       expect(trimmed.findings.map(&:kind)).not_to(include("utility_function"))
     end

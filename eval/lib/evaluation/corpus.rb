@@ -30,7 +30,7 @@ class Evaluation::Corpus
 
   def run(project)
     home = checkout(project)
-    Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + ["--json"]))
+    Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + @tool.every + ["--json"]))
   end
 
   def checkout(project)

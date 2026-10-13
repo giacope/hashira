@@ -5,7 +5,9 @@ class Evaluation::Labels
 
   BLIND = File.join(Evaluation::ROOT, "results", "blind")
 
-  DEV = [ROOT, BLIND].freeze
+  SECOND = File.join(Evaluation::ROOT, "results", "blind2")
+
+  DEV = [ROOT, BLIND, SECOND].freeze
 
   VERDICTS = %w[tp fp].freeze
 

@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Suppression::Suppressions) do
   def screened(files, enabled: Hashira::Pipeline::ANALYZERS)
-    within(files) { return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled:).verify.screened }
+    within(files) { return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL), enabled:).verify.screened }
   end
 
   def nested(name)

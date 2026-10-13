@@ -1,0 +1,174 @@
+---
+- key: faraday|manual_dispatch|Faraday::Connection#in_parallel
+  versions:
+  - main
+  label: fp
+  why: Deprecated compatibility path for old parallel managers
+- key: faraday|manual_dispatch|Faraday::Connection#support_parallel?
+  versions:
+  - branch
+  label: fp
+  why: Third-party adapters may not subclass Faraday::Adapter; defensive probe justified
+- key: faraday|manual_dispatch|Faraday::Middleware#call
+  versions:
+  - branch
+  label: tp
+  why: Optional hooks probed with respond_to?; define no-op defaults in base class
+- key: faraday|manual_dispatch|Faraday::Response::Logger#on_error
+  versions:
+  - branch
+  label: fp
+  why: Third-party formatters may lack the hook; probe is deliberate
+- key: faraday|manual_dispatch|Faraday::Response::RaiseError#on_complete
+  versions:
+  - branch
+  label: fp
+  why: Status-range mapping to error classes is idiomatic
+- key: faraday|manual_dispatch|Faraday::Utils#URI
+  versions:
+  - main
+  label: fp
+  why: Conversion function accepting URI or string is idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::CheckLineBreakable#first_argument_is_heredoc?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_investigation_end
+  versions:
+  - main
+  label: fp
+  why: Legacy API compatibility hook; respond_to? is intentional
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_new_investigation
+  versions:
+  - main
+  label: fp
+  why: Legacy API compatibility hook; respond_to? is intentional
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument
+  versions:
+  - main
+  label: fp
+  why: AST node shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#find_most_bottom_of_heredoc_end
+  versions:
+  - main
+  label: fp
+  why: AST location map shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineContinuationSpacing#ignored_literal_ranges
+  versions:
+  - main
+  label: fp
+  why: AST location map shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineLength#string_delimiter
+  versions:
+  - main
+  label: fp
+  why: AST location map shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node
+  versions:
+  - main
+  label: fp
+  why: AST node capability guard
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::ClassLength#on_casgn
+  versions:
+  - main
+  label: fp
+  why: AST node capability check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#assignment?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?
+  versions:
+  - main
+  label: fp
+  why: AST node capability guard; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes
+  versions:
+  - main
+  label: fp
+  why: AST argument shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::MapIntoArray#return_value_used?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#find_offense_message
+  versions:
+  - main
+  label: fp
+  why: AST node capability check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#variable?
+  versions:
+  - main
+  label: fp
+  why: AST node capability check; idiomatic
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelf#on_argument
+  versions:
+  - main
+  label: fp
+  why: AST node shape check; idiomatic in RuboCop
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::SwapValues#simple_assignment?
+  versions:
+  - main
+  label: fp
+  why: AST node shape check
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#process_errors
+  versions:
+  - main
+  label: fp
+  why: Exception class dispatch is idiomatic error handling
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#validate_config
+  versions:
+  - main
+  label: tp
+  why: Optional validate_config hook probed with respond_to?; define no-op on Base
+- key: rubocop|manual_dispatch|RuboCop::Cop::TrailingComma#heredoc?
+  versions:
+  - main
+  label: fp
+  why: AST location map shape check
+- key: rubocop|manual_dispatch|RuboCop::LSP::Routes#for
+  versions:
+  - main
+  label: fp
+  why: Dynamic route lookup; respond_to? is the mechanism
+- key: rubygems.org|manual_dispatch|Advisory#to_gem_version
+  versions:
+  - branch
+  label: fp
+  why: Conversion function accepting version or string is idiomatic
+- key: rubygems.org|manual_dispatch|Api::BaseController#render_forbidden
+  versions:
+  - branch
+  label: fp
+  why: Accepts error or message; small
+- key: rubygems.org|manual_dispatch|ApplicationHelper#gem_info
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Helper probes model vs search-result shape; polymorphic info method would remove
+    it
+- key: rubygems.org|manual_dispatch|ApplicationPolicy#organization_member_with_role?
+  versions:
+  - branch
+  label: tp
+  why: Base policy probes subclass for organization; define a nil default and override
+- key: rubygems.org|manual_dispatch|GemPackageEnumerator#initialize
+  versions:
+  - branch
+  label: fp
+  why: Constructor argument validation guard, not dispatch
+- key: rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Helper probes object type to get version; give each type a uniform method
+- key: rubygems.org|manual_dispatch|SyncDisposableEmailDomainsJob#last_attempt?
+  versions:
+  - branch
+  label: fp
+  why: Exception class retry policy via case is idiomatic

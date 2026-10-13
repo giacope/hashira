@@ -11,6 +11,7 @@ module Hashira
       end
 
     Rule::ON = Rule.new(enabled: true, threshold: nil)
+    Rule::OFF = Rule.new(enabled: false, threshold: nil)
 
     Switch =
       Data.define(:kind, :setting) do

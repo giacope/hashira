@@ -1,0 +1,116 @@
+---
+- key: faraday|state_sprawl|Faraday::Connection
+  versions:
+  - branch
+  label: fp
+  why: Core facade; fields already grouped into option objects
+- key: rubocop|state_sprawl|RuboCop::Config
+  versions:
+  - main
+  label: fp
+  why: Caches plus config data; cohesive
+- key: rubocop|state_sprawl|RuboCop::Cop::AnnotationComment
+  versions:
+  - main
+  label: fp
+  why: Ivars are parsed parts of one comment; cohesive
+- key: rubocop|state_sprawl|RuboCop::Cop::Metrics::Utils::CodeLengthCalculator
+  versions:
+  - main
+  label: fp
+  why: Calculator state cohesive
+- key: rubocop|state_sprawl|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector
+  versions:
+  - main
+  label: fp
+  why: Corrector state cohesive
+- key: rubocop|state_sprawl|RuboCop::Cop::VariableForce::Variable
+  versions:
+  - main
+  label: fp
+  why: Variable model fields are cohesive
+- key: rubocop|state_sprawl|RuboCop::Formatter::DisabledConfigFormatter
+  versions:
+  - main
+  label: fp
+  why: Formatter state cohesive
+- key: rubocop|state_sprawl|RuboCop::Formatter::SimpleTextFormatter
+  versions:
+  - main
+  label: fp
+  why: Three counters; cohesive
+- key: rubocop|state_sprawl|RuboCop::Runner
+  versions:
+  - main
+  label: fp
+  why: Runner state is cohesive
+- key: rubygems.org|state_sprawl|Avo::Actions::ApplicationAction::Avo::Actions::ActionHandler
+  versions:
+  - branch
+  label: fp
+  why: Framework handler context; cohesive
+- key: rubygems.org|state_sprawl|Avo::Actions::DeleteUser::ActionHandler
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Counters for one action run; cohesive
+- key: rubygems.org|state_sprawl|Avo::AuditedChangesRecordDiff::ShowComponent
+  versions:
+  - main
+  - branch
+  label: fp
+  why: View component state derived from inputs; acceptable
+- key: rubygems.org|state_sprawl|ButtonComponent
+  versions:
+  - branch
+  label: fp
+  why: Component options; cohesive
+- key: rubygems.org|state_sprawl|GemValidator::Package
+  versions:
+  - branch
+  label: tp
+  why: Size limit settings could be grouped into a limits value object apart from
+    parse state
+- key: rubygems.org|state_sprawl|Mailer
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Mailer ivars per action are the Rails template contract
+- key: rubygems.org|state_sprawl|NotifyWebHookJob
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Job arguments unpacked into readers; cohesive
+- key: rubygems.org|state_sprawl|OrganizationsController
+  versions:
+  - main
+  label: fp
+  why: Controller ivars feed views
+- key: rubygems.org|state_sprawl|ProfilesController
+  versions:
+  - main
+  label: fp
+  why: Controller ivars feed views
+- key: rubygems.org|state_sprawl|Pusher
+  versions:
+  - branch
+  label: tp
+  why: Pusher accumulates parse/auth/persist state across many steps; split responsibilities
+- key: rubygems.org|state_sprawl|RubygemContents::Entry
+  versions:
+  - branch
+  label: fp
+  why: Data record of file metadata; cohesive
+- key: rubygems.org|state_sprawl|RubygemsController
+  versions:
+  - main
+  label: fp
+  why: Controller ivars feed views per action
+- key: rubygems.org|state_sprawl|TooltipComponent
+  versions:
+  - branch
+  label: fp
+  why: Component keyword options; cohesive
