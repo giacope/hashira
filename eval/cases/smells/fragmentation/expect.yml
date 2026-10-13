@@ -1,0 +1,11 @@
+# Report#render reaches seven same-class helpers, three deep, averaging one
+# line each: the reader hops through seven names to read one method's work.
+# Invoice#total has two helpers that each hold a step. Pipeline#run calls four
+# short steps straight from one flat recipe, so its path is one deep.
+present:
+  - {kind: fragmentation, package: "App::Report#render"}
+absent:
+  - {kind: fragmentation, package: "App::Invoice#total"}
+  - {kind: fragmentation, package: "App::Pipeline#run"}
+messages:
+  - {kind: fragmentation, package: "App::Report#render", includes: "7 same-class helpers averaging 1.0 lines a method, 3 deep"}

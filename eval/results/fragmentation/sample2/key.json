@@ -1,0 +1,1286 @@
+{
+  "Q01": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/views/components/oidc/trusted_publisher/github_action/form_component.rb",
+    "entry": "OIDC::TrustedPublisher::GitHubAction::FormComponent#view_template",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 2,
+      "mean_lines_per_method": 6.4,
+      "single_use_share": 0.75,
+      "methods_shown": 5,
+      "excerpt_lines": 38,
+      "helper_names": [
+        "field",
+        "label_class",
+        "field_class",
+        "note_class"
+      ]
+    }
+  },
+  "Q02": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/request/url_encoded.rb",
+    "entry": "Faraday::Request::UrlEncoded#match_content_type",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.0,
+      "single_use_share": 1.0,
+      "methods_shown": 3,
+      "excerpt_lines": 21,
+      "helper_names": [
+        "process_request?",
+        "request_type"
+      ]
+    }
+  },
+  "Q03": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/layout/space_around_keyword.rb",
+    "entry": "RuboCop::Cop::Layout::SpaceAroundKeyword#on_or",
+    "metrics": {
+      "helpers": 14,
+      "max_depth": 5,
+      "mean_lines_per_method": 5.4,
+      "single_use_share": 0.786,
+      "methods_shown": 15,
+      "excerpt_lines": 107,
+      "helper_names": [
+        "check",
+        "check_begin",
+        "check_keyword",
+        "space_before_missing?",
+        "preceded_by_operator?",
+        "space_after_missing?",
+        "accepted_opening_delimiter?",
+        "accept_left_square_bracket?",
+        "accept_left_parenthesis?",
+        "safe_navigation_call?",
+        "accept_namespace_operator?",
+        "namespace_operator?",
+        "check_end",
+        "do?"
+      ]
+    }
+  },
+  "Q04": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/ci/comparison.rb",
+    "entry": "Hashira::CI::Comparison#diff",
+    "metrics": {
+      "helpers": 7,
+      "max_depth": 2,
+      "mean_lines_per_method": 1.88,
+      "single_use_share": 0.714,
+      "methods_shown": 8,
+      "excerpt_lines": 24,
+      "helper_names": [
+        "renamed",
+        "fresh",
+        "pool",
+        "gone",
+        "worsened",
+        "paired",
+        "entry"
+      ]
+    }
+  },
+  "Q05": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/cli/config_file.rb",
+    "entry": "Hashira::CLI::ConfigFile#flags",
+    "metrics": {
+      "helpers": 9,
+      "max_depth": 5,
+      "mean_lines_per_method": 2.9,
+      "single_use_share": 0.667,
+      "methods_shown": 10,
+      "excerpt_lines": 40,
+      "helper_names": [
+        "setting",
+        "settings",
+        "path",
+        "chosen",
+        "unread",
+        "read",
+        "fallback",
+        "checked",
+        "loaded"
+      ]
+    }
+  },
+  "Q06": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/duplication/fragment.rb",
+    "entry": "Hashira::Duplication::Fragment#statements",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 1.0,
+      "single_use_share": 1.0,
+      "methods_shown": 3,
+      "excerpt_lines": 7,
+      "helper_names": [
+        "body",
+        "opened?"
+      ]
+    }
+  },
+  "Q07": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/models/oidc/trusted_publisher/github_action.rb",
+    "entry": "OIDC::TrustedPublisher::GitHubAction#to_access_policy",
+    "metrics": {
+      "helpers": 9,
+      "max_depth": 3,
+      "mean_lines_per_method": 7.8,
+      "single_use_share": 0.667,
+      "methods_shown": 10,
+      "excerpt_lines": 89,
+      "helper_names": [
+        "repository_condition",
+        "environment_condition",
+        "repository_owner_id_condition",
+        "audience_condition",
+        "job_workflow_refs",
+        "workflow_repository",
+        "repository",
+        "workflow_slug",
+        "job_workflow_ref_condition"
+      ]
+    }
+  },
+  "Q08": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/rack_builder.rb",
+    "entry": "Faraday::RackBuilder#build",
+    "metrics": {
+      "helpers": 7,
+      "max_depth": 4,
+      "mean_lines_per_method": 4.5,
+      "single_use_share": 0.714,
+      "methods_shown": 8,
+      "excerpt_lines": 47,
+      "helper_names": [
+        "raise_if_locked",
+        "locked?",
+        "request",
+        "use_symbol",
+        "use",
+        "raise_if_adapter",
+        "adapter"
+      ]
+    }
+  },
+  "Q09": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/models/version_manifest.rb",
+    "entry": "VersionManifest#unique_checksums",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.4,
+      "single_use_share": 0.75,
+      "methods_shown": 5,
+      "excerpt_lines": 29,
+      "helper_names": [
+        "checksums",
+        "checksums_file",
+        "checksums_key",
+        "checksums_root"
+      ]
+    }
+  },
+  "Q10": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/cli/survivors.rb",
+    "entry": "Kimera::CLI::Survivors#run",
+    "metrics": {
+      "helpers": 10,
+      "max_depth": 4,
+      "mean_lines_per_method": 5.0,
+      "single_use_share": 1.0,
+      "methods_shown": 11,
+      "excerpt_lines": 67,
+      "helper_names": [
+        "attempt",
+        "parse",
+        "positional",
+        "report?",
+        "load",
+        "show",
+        "missing",
+        "list",
+        "matches",
+        "none"
+      ]
+    }
+  },
+  "Q11": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/config_finder.rb",
+    "entry": "RuboCop::ConfigFinder.find_config_path",
+    "metrics": {
+      "helpers": 7,
+      "max_depth": 3,
+      "mean_lines_per_method": 4.75,
+      "single_use_share": 0.857,
+      "methods_shown": 8,
+      "excerpt_lines": 55,
+      "helper_names": [
+        "find_project_dotfile",
+        "project_root",
+        "find_project_root",
+        "find_project_root_dot_config",
+        "find_user_dotfile",
+        "find_user_xdg_config",
+        "expand_path"
+      ]
+    }
+  },
+  "Q12": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/smells/refs.rb",
+    "entry": "Hashira::Smells::Refs#envious",
+    "metrics": {
+      "helpers": 10,
+      "max_depth": 5,
+      "mean_lines_per_method": 2.82,
+      "single_use_share": 0.8,
+      "methods_shown": 11,
+      "excerpt_lines": 43,
+      "helper_names": [
+        "tallies",
+        "walk",
+        "record",
+        "note",
+        "selfish?",
+        "implicit?",
+        "holder",
+        "envy?",
+        "local?",
+        "nested"
+      ]
+    }
+  },
+  "Q13": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/cli/run/narrowing.rb",
+    "entry": "Kimera::CLI::Run::Narrowing#provenance",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 4,
+      "mean_lines_per_method": 3.4,
+      "single_use_share": 0.25,
+      "methods_shown": 5,
+      "excerpt_lines": 23,
+      "helper_names": [
+        "narrowed?",
+        "counts",
+        "measure",
+        "files"
+      ]
+    }
+  },
+  "Q14": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/rewrite/outcomes.rb",
+    "entry": "Kimera::Rewrite::Outcomes#distinct",
+    "metrics": {
+      "helpers": 12,
+      "max_depth": 6,
+      "mean_lines_per_method": 3.85,
+      "single_use_share": 0.583,
+      "methods_shown": 13,
+      "excerpt_lines": 64,
+      "helper_names": [
+        "program",
+        "programs",
+        "outcome",
+        "rendered",
+        "nodes",
+        "index",
+        "offsets",
+        "tree",
+        "form",
+        "bare",
+        "lone",
+        "value"
+      ]
+    }
+  },
+  "Q15": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/registry/mutation_point.rb",
+    "entry": "Kimera::MutationPoint#taint!",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.0,
+      "single_use_share": 0.0,
+      "methods_shown": 4,
+      "excerpt_lines": 21,
+      "helper_names": [
+        "safe?",
+        "safe",
+        "unsafe!"
+      ]
+    }
+  },
+  "Q16": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/options.rb",
+    "entry": "Faraday::Options#fetch",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 6.33,
+      "single_use_share": 0.5,
+      "methods_shown": 3,
+      "excerpt_lines": 23,
+      "helper_names": [
+        "symbolized_key_set",
+        "keys"
+      ]
+    }
+  },
+  "Q17": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/utils/params_hash.rb",
+    "entry": "Faraday::Utils::ParamsHash#merge_query",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 3,
+      "mean_lines_per_method": 4.0,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 22,
+      "helper_names": [
+        "update",
+        "[]=",
+        "convert_key"
+      ]
+    }
+  },
+  "Q18": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/coupling/cut.rb",
+    "entry": "Hashira::Coupling::Cut#edges",
+    "metrics": {
+      "helpers": 8,
+      "max_depth": 4,
+      "mean_lines_per_method": 1.44,
+      "single_use_share": 0.625,
+      "methods_shown": 9,
+      "excerpt_lines": 23,
+      "helper_names": [
+        "trim",
+        "settle",
+        "split?",
+        "largest",
+        "reach",
+        "ranked",
+        "rank",
+        "depth"
+      ]
+    }
+  },
+  "Q19": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/utils.rb",
+    "entry": "Faraday::Utils#normalize_path",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.0,
+      "single_use_share": 1.0,
+      "methods_shown": 4,
+      "excerpt_lines": 25,
+      "helper_names": [
+        "URI",
+        "default_uri_parser",
+        "sort_query_params"
+      ]
+    }
+  },
+  "Q20": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/models/concerns/user_multifactor_methods.rb",
+    "entry": "UserMultifactorMethods#mfa_recommended_not_yet_enabled?",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 3.5,
+      "single_use_share": 0.0,
+      "methods_shown": 4,
+      "excerpt_lines": 21,
+      "helper_names": [
+        "mfa_recommended?",
+        "strong_mfa_level?",
+        "mfa_required?"
+      ]
+    }
+  },
+  "Q21": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/lib/rubygem_fs.rb",
+    "entry": "RubygemFs::Local#in_bucket",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.0,
+      "single_use_share": 0.0,
+      "methods_shown": 3,
+      "excerpt_lines": 16,
+      "helper_names": [
+        "path_for",
+        "descendant?"
+      ]
+    }
+  },
+  "Q22": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/logging/formatter.rb",
+    "entry": "Faraday::Logging::Formatter#request",
+    "metrics": {
+      "helpers": 9,
+      "max_depth": 3,
+      "mean_lines_per_method": 5.2,
+      "single_use_share": 0.333,
+      "methods_shown": 10,
+      "excerpt_lines": 65,
+      "helper_names": [
+        "log_level",
+        "apply_filters",
+        "log_headers",
+        "dump_headers",
+        "log_headers?",
+        "log_body",
+        "dump_body",
+        "pretty_inspect",
+        "log_body?"
+      ]
+    }
+  },
+  "Q23": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/lib/rstuf/client.rb",
+    "entry": "Rstuf::Client.task_state",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.33,
+      "single_use_share": 0.5,
+      "methods_shown": 3,
+      "excerpt_lines": 21,
+      "helper_names": [
+        "get_task",
+        "connection"
+      ]
+    }
+  },
+  "Q24": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/frameworks/group_scope.rb",
+    "entry": "Kimera::Frameworks::GroupScope#narrow",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.5,
+      "single_use_share": 0.667,
+      "methods_shown": 4,
+      "excerpt_lines": 23,
+      "helper_names": [
+        "swap",
+        "prune",
+        "adopt"
+      ]
+    }
+  },
+  "Q25": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/utils/headers.rb",
+    "entry": "Faraday::Utils::Headers#parse",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 7.25,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 37,
+      "helper_names": [
+        "add_parsed",
+        "[]=",
+        "[]"
+      ]
+    }
+  },
+  "Q26": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/coupling/words.rb",
+    "entry": "Hashira::Coupling::Words#list",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.0,
+      "single_use_share": 0.667,
+      "methods_shown": 4,
+      "excerpt_lines": 21,
+      "helper_names": [
+        "entries",
+        "word",
+        "keys"
+      ]
+    }
+  },
+  "Q27": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/duplication/literal.rb",
+    "entry": "Hashira::Duplication::Literal#literal?",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 1.0,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 9,
+      "helper_names": [
+        "type",
+        "parts",
+        "children"
+      ]
+    }
+  },
+  "Q28": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/coupling/audiences.rb",
+    "entry": "Hashira::Coupling::Audiences#split?",
+    "metrics": {
+      "helpers": 11,
+      "max_depth": 4,
+      "mean_lines_per_method": 2.08,
+      "single_use_share": 0.727,
+      "methods_shown": 12,
+      "excerpt_lines": 38,
+      "helper_names": [
+        "parts",
+        "common",
+        "clients",
+        "shared",
+        "tally",
+        "slices",
+        "groups",
+        "joined?",
+        "residue",
+        "pooled",
+        "weight"
+      ]
+    }
+  },
+  "Q29": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/controllers/passwords_controller.rb",
+    "entry": "PasswordsController#reset",
+    "metrics": {
+      "helpers": 5,
+      "max_depth": 2,
+      "mean_lines_per_method": 3.5,
+      "single_use_share": 0.2,
+      "methods_shown": 6,
+      "excerpt_lines": 29,
+      "helper_names": [
+        "render_password_reset",
+        "password_reset_requires_mfa?",
+        "password_reset_verification_active?",
+        "mark_password_reset_verified",
+        "set_compromised_flag"
+      ]
+    }
+  },
+  "Q30": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/controllers/sessions_controller.rb",
+    "entry": "SessionsController#webauthn_create",
+    "metrics": {
+      "helpers": 8,
+      "max_depth": 3,
+      "mean_lines_per_method": 9.44,
+      "single_use_share": 0.25,
+      "methods_shown": 9,
+      "excerpt_lines": 98,
+      "helper_names": [
+        "record_mfa_login_duration",
+        "do_login",
+        "set_login_flash",
+        "url_after_create",
+        "initiate_compromised_password_reset!",
+        "who",
+        "login_failure",
+        "webauthn_new_setup"
+      ]
+    }
+  },
+  "Q31": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/if_with_boolean_literal_branches.rb",
+    "entry": "RuboCop::Cop::Style::IfWithBooleanLiteralBranches#on_if",
+    "metrics": {
+      "helpers": 7,
+      "max_depth": 2,
+      "mean_lines_per_method": 6.5,
+      "single_use_share": 1.0,
+      "methods_shown": 8,
+      "excerpt_lines": 68,
+      "helper_names": [
+        "if_with_boolean_literal_branches?",
+        "multiple_elsif?",
+        "offense_range_with_keyword",
+        "message",
+        "replacement_condition",
+        "opposite_condition?",
+        "require_parentheses?"
+      ]
+    }
+  },
+  "Q32": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/nested_ternary_operator.rb",
+    "entry": "RuboCop::Cop::Style::NestedTernaryOperator#on_if",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 7.25,
+      "single_use_share": 0.667,
+      "methods_shown": 4,
+      "excerpt_lines": 36,
+      "helper_names": [
+        "autocorrect",
+        "replace_loc_and_whitespace",
+        "remove_parentheses"
+      ]
+    }
+  },
+  "Q33": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/frameworks/minitest_adapter.rb",
+    "entry": "Kimera::Frameworks::MinitestAdapter#source",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.0,
+      "single_use_share": 1.0,
+      "methods_shown": 5,
+      "excerpt_lines": 31,
+      "helper_names": [
+        "paths",
+        "prepend",
+        "reindex",
+        "index"
+      ]
+    }
+  },
+  "Q34": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/connection.rb",
+    "entry": "Faraday::Connection#build_request",
+    "metrics": {
+      "helpers": 5,
+      "max_depth": 5,
+      "mean_lines_per_method": 10.17,
+      "single_use_share": 0.4,
+      "methods_shown": 6,
+      "excerpt_lines": 74,
+      "helper_names": [
+        "options",
+        "run_request",
+        "proxy_for_request",
+        "proxy_from_env",
+        "find_default_proxy"
+      ]
+    }
+  },
+  "Q35": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/smells/conditions.rb",
+    "entry": "Hashira::Smells::Conditions#seek",
+    "metrics": {
+      "helpers": 5,
+      "max_depth": 2,
+      "mean_lines_per_method": 2.0,
+      "single_use_share": 0.2,
+      "methods_shown": 6,
+      "excerpt_lines": 19,
+      "helper_names": [
+        "fence?",
+        "steers?",
+        "tested?",
+        "couple?",
+        "carried?"
+      ]
+    }
+  },
+  "Q36": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/pipeline.rb",
+    "entry": "Hashira::Pipeline#graph",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 2.25,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 14,
+      "helper_names": [
+        "coupling",
+        "parsed",
+        "settle"
+      ]
+    }
+  },
+  "Q37": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/scope/config.rb",
+    "entry": "Kimera::Config#ignores_from",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 3,
+      "mean_lines_per_method": 4.2,
+      "single_use_share": 0.5,
+      "methods_shown": 5,
+      "excerpt_lines": 27,
+      "helper_names": [
+        "validate",
+        "reason",
+        "reasonless?",
+        "symbolize"
+      ]
+    }
+  },
+  "Q38": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/coupling/namespace_placement.rb",
+    "entry": "Hashira::Coupling::NamespacePlacement#folding",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 1.0,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 9,
+      "helper_names": [
+        "domain",
+        "served?",
+        "suffixes"
+      ]
+    }
+  },
+  "Q39": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/encoders/nested_params_encoder.rb",
+    "entry": "Faraday::EncodeMethods#encode",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 13.5,
+      "single_use_share": 0.667,
+      "methods_shown": 4,
+      "excerpt_lines": 65,
+      "helper_names": [
+        "encode_pair",
+        "encode_hash",
+        "encode_array"
+      ]
+    }
+  },
+  "Q40": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/coupling/census.rb",
+    "entry": "Hashira::Coupling::Census#web?",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 1.0,
+      "single_use_share": 0.0,
+      "methods_shown": 3,
+      "excerpt_lines": 7,
+      "helper_names": [
+        "placement",
+        "catalog"
+      ]
+    }
+  },
+  "Q41": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/execution/verdicts.rb",
+    "entry": "Kimera::Execution::Verdicts#timeout",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.0,
+      "single_use_share": 0.0,
+      "methods_shown": 3,
+      "excerpt_lines": 16,
+      "helper_names": [
+        "path",
+        "point"
+      ]
+    }
+  },
+  "Q42": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/scope/file_set.rb",
+    "entry": "Kimera::FileSet#scoped",
+    "metrics": {
+      "helpers": 5,
+      "max_depth": 3,
+      "mean_lines_per_method": 3.5,
+      "single_use_share": 0.4,
+      "methods_shown": 6,
+      "excerpt_lines": 28,
+      "helper_names": [
+        "expand",
+        "exclude",
+        "resolve",
+        "matches?",
+        "globs"
+      ]
+    }
+  },
+  "Q43": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/redundant_initialize.rb",
+    "entry": "RuboCop::Cop::Style::RedundantInitialize#on_def",
+    "metrics": {
+      "helpers": 6,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.86,
+      "single_use_share": 0.833,
+      "methods_shown": 7,
+      "excerpt_lines": 47,
+      "helper_names": [
+        "acceptable?",
+        "forwards?",
+        "allow_comments?",
+        "register_offense",
+        "initialize_forwards?",
+        "same_args?"
+      ]
+    }
+  },
+  "Q44": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/memoization.rb",
+    "entry": "Kimera::Memoization#holes",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.33,
+      "single_use_share": 0.5,
+      "methods_shown": 3,
+      "excerpt_lines": 20,
+      "helper_names": [
+        "body",
+        "span"
+      ]
+    }
+  },
+  "Q45": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/execution/worker_pool.rb",
+    "entry": "Kimera::Execution::WorkerPool#run",
+    "metrics": {
+      "helpers": 16,
+      "max_depth": 5,
+      "mean_lines_per_method": 4.06,
+      "single_use_share": 0.625,
+      "methods_shown": 17,
+      "excerpt_lines": 87,
+      "helper_names": [
+        "bootstrap",
+        "fleet",
+        "assign",
+        "close",
+        "limit",
+        "trace",
+        "listeners",
+        "poll",
+        "service",
+        "hangup",
+        "deliver",
+        "dispatch",
+        "finish",
+        "relay",
+        "watch",
+        "expire"
+      ]
+    }
+  },
+  "Q46": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/execution/stack_dump.rb",
+    "entry": "Kimera::Execution::StackDump#take",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 2,
+      "mean_lines_per_method": 3.6,
+      "single_use_share": 0.75,
+      "methods_shown": 5,
+      "excerpt_lines": 24,
+      "helper_names": [
+        "collect",
+        "late?",
+        "consume",
+        "path"
+      ]
+    }
+  },
+  "Q47": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/in_pattern_then.rb",
+    "entry": "RuboCop::Cop::Style::InPatternThen#on_in_pattern",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 6.67,
+      "single_use_share": 1.0,
+      "methods_shown": 3,
+      "excerpt_lines": 28,
+      "helper_names": [
+        "alternative_pattern_source",
+        "collect_alternative_patterns"
+      ]
+    }
+  },
+  "Q48": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/execution/isolated.rb",
+    "entry": "Kimera::Execution::IsolatedExecution#run",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.2,
+      "single_use_share": 0.5,
+      "methods_shown": 5,
+      "excerpt_lines": 27,
+      "helper_names": [
+        "progress",
+        "report",
+        "jobs",
+        "plan"
+      ]
+    }
+  },
+  "Q49": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/layout/end_alignment.rb",
+    "entry": "RuboCop::Cop::Layout::EndAlignment#on_case",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 8.0,
+      "single_use_share": 0.333,
+      "methods_shown": 4,
+      "excerpt_lines": 39,
+      "helper_names": [
+        "check_asgn_alignment",
+        "asgn_variable_align_with",
+        "check_other_alignment"
+      ]
+    }
+  },
+  "Q50": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/app/controllers/webauthn_credentials_controller.rb",
+    "entry": "WebauthnCredentialsController#callback",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 9.0,
+      "single_use_share": 1.0,
+      "methods_shown": 4,
+      "excerpt_lines": 43,
+      "helper_names": [
+        "build_webauthn_credential",
+        "webauthn_credential_params",
+        "render_callback_redirect"
+      ]
+    }
+  },
+  "Q51": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/combinable_loops.rb",
+    "entry": "RuboCop::Cop::Style::CombinableLoops#on_for",
+    "metrics": {
+      "helpers": 3,
+      "max_depth": 2,
+      "mean_lines_per_method": 5.5,
+      "single_use_share": 0.667,
+      "methods_shown": 4,
+      "excerpt_lines": 30,
+      "helper_names": [
+        "same_collection_looping_for?",
+        "combine_with_left_sibling",
+        "correct_end_of_block"
+      ]
+    }
+  },
+  "Q52": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/complexity/scores.rb",
+    "entry": "Hashira::Complexity::Scores#findings",
+    "metrics": {
+      "helpers": 6,
+      "max_depth": 6,
+      "mean_lines_per_method": 2.29,
+      "single_use_share": 0.667,
+      "methods_shown": 7,
+      "excerpt_lines": 24,
+      "helper_names": [
+        "flagged",
+        "ranked",
+        "scores",
+        "harvest",
+        "score",
+        "tallies"
+      ]
+    }
+  },
+  "Q53": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/execution/pool_driver.rb",
+    "entry": "Kimera::Execution::Pool#channel",
+    "metrics": {
+      "helpers": 10,
+      "max_depth": 6,
+      "mean_lines_per_method": 3.73,
+      "single_use_share": 0.7,
+      "methods_shown": 11,
+      "excerpt_lines": 53,
+      "helper_names": [
+        "launch",
+        "channels",
+        "spawn",
+        "stacks",
+        "boot",
+        "database",
+        "serve",
+        "build",
+        "coverage",
+        "pulse"
+      ]
+    }
+  },
+  "Q54": {
+    "group": "C",
+    "source": "rubygems.org",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubygems.org/lib/clearance_backdoor.rb",
+    "entry": "ClearanceBackdoor#call",
+    "metrics": {
+      "helpers": 2,
+      "max_depth": 2,
+      "mean_lines_per_method": 4.67,
+      "single_use_share": 1.0,
+      "methods_shown": 3,
+      "excerpt_lines": 18,
+      "helper_names": [
+        "sign_in_through_the_back_door",
+        "params"
+      ]
+    }
+  },
+  "Q55": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/style/multiline_ternary_operator.rb",
+    "entry": "RuboCop::Cop::Style::MultilineTernaryOperator#on_if",
+    "metrics": {
+      "helpers": 6,
+      "max_depth": 2,
+      "mean_lines_per_method": 6.0,
+      "single_use_share": 0.667,
+      "methods_shown": 7,
+      "excerpt_lines": 55,
+      "helper_names": [
+        "offense?",
+        "replacement",
+        "enforce_single_line_ternary_operator?",
+        "use_assignment_method?",
+        "autocorrect",
+        "comments_in_condition"
+      ]
+    }
+  },
+  "Q56": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/duplication/variance.rb",
+    "entry": "Hashira::Duplication::Variance#kinds",
+    "metrics": {
+      "helpers": 7,
+      "max_depth": 3,
+      "mean_lines_per_method": 2.0,
+      "single_use_share": 0.429,
+      "methods_shown": 8,
+      "excerpt_lines": 25,
+      "helper_names": [
+        "differing",
+        "pairs",
+        "signature",
+        "value",
+        "guarded?",
+        "category",
+        "relayed?"
+      ]
+    }
+  },
+  "Q57": {
+    "group": "C",
+    "source": "faraday",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/faraday/lib/faraday/response.rb",
+    "entry": "Faraday::Response#marshal_dump",
+    "metrics": {
+      "helpers": 6,
+      "max_depth": 2,
+      "mean_lines_per_method": 3.57,
+      "single_use_share": 0.833,
+      "methods_shown": 7,
+      "excerpt_lines": 33,
+      "helper_names": [
+        "finished?",
+        "to_hash",
+        "status",
+        "body",
+        "headers",
+        "url"
+      ]
+    }
+  },
+  "Q58": {
+    "group": "H",
+    "source": "hashira",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/hashira-work/base/lib/hashira/smells/census.rb",
+    "entry": "Hashira::Smells::Census#types",
+    "metrics": {
+      "helpers": 6,
+      "max_depth": 3,
+      "mean_lines_per_method": 2.0,
+      "single_use_share": 1.0,
+      "methods_shown": 7,
+      "excerpt_lines": 22,
+      "helper_names": [
+        "placed",
+        "settled",
+        "ownership",
+        "harvest",
+        "roots",
+        "kind"
+      ]
+    }
+  },
+  "Q59": {
+    "group": "C",
+    "source": "rubocop",
+    "source_file": "/home/user/hashira/eval/tmp/corpus/rubocop/lib/rubocop/cop/lint/float_comparison.rb",
+    "entry": "RuboCop::Cop::Lint::FloatComparison#on_case",
+    "metrics": {
+      "helpers": 4,
+      "max_depth": 3,
+      "mean_lines_per_method": 9.0,
+      "single_use_share": 0.5,
+      "methods_shown": 5,
+      "excerpt_lines": 55,
+      "helper_names": [
+        "float?",
+        "check_send",
+        "check_numeric_returning_method",
+        "literal_safe?"
+      ]
+    }
+  },
+  "Q60": {
+    "group": "H",
+    "source": "kimera",
+    "source_file": "/tmp/claude-0/-home-user/826c9fc5-a8b5-53c7-bdbc-e3d4f5d63b82/scratchpad/kimera-work/base/lib/kimera/cli/test_command.rb",
+    "entry": "Kimera::CLI::TestCommand#baselines",
+    "metrics": {
+      "helpers": 16,
+      "max_depth": 4,
+      "mean_lines_per_method": 2.82,
+      "single_use_share": 0.625,
+      "methods_shown": 17,
+      "excerpt_lines": 66,
+      "helper_names": [
+        "baseline",
+        "check",
+        "capture",
+        "summary",
+        "headline",
+        "reason",
+        "run",
+        "minitest?",
+        "ruby",
+        "rspec",
+        "advice",
+        "failing",
+        "culprits",
+        "parallel",
+        "shards",
+        "shard"
+      ]
+    }
+  }
+}

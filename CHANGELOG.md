@@ -15,8 +15,13 @@ smell true and false positives, CLI behaviour, and three pinned corpora
 and precision on a fixed labelled sample. Two independent raters then
 labelled a mixed sample of main and branch findings blind (they agree on 92%,
 κ 0.65): rater 1 found 19 of 200 main findings and 28 of 160 branch findings
-true, rater 2 23 of 200 and 33 of 160. Those numbers set which kinds are on by
-default (below). `eval/results/README.md` has every number. Every suite
+true, rater 2 23 of 200 and 33 of 160. A fresh holdout of 117 findings, drawn
+after the rules changed and labelled the same way (κ 0.66), settled which kinds
+are on by default (below). A separate blind readability study of 120 entry
+methods calibrated and validated `fragmentation`. The raters in both were
+independent AI reviewers: separate model instances that saw only the shuffled,
+version-blind items and the corpus source, not hashira's code or labels. No
+human has relabelled them yet. `eval/results/README.md` has every number. Every suite
 passes; main passes between 31% (cli) and 83% of each.
 
 The first half was found by running hashira against fifteen MIT-licensed
@@ -25,13 +30,15 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
-- **Most heuristic kinds are now opt-in.** A heuristic kind is on by default
-  only when its blind precision clears one in three: duplication,
-  manual_dispatch and feature_envy, alongside the measurements (complexity and
-  the coupling kinds). control_parameter, data_clump, repeated_call,
-  repeated_conditional, state_sprawl, utility_function, nil_check, assumed_state,
-  boundary_sprawl, module_initialize and indirection need `checks: all`, a
-  `checks:` setting of their own, `--kind` or `--fail-on`. Add `checks: all` to
+- **Every design smell is now opt-in.** A heuristic kind is on by default only
+  when its blind precision, over the sample and the holdout together, clears
+  one in three: duplication (42 of 100) does, and fragmentation, measured by its
+  own study, joins it beside the measurements (complexity and the coupling
+  kinds). feature_envy (7 of 34), manual_dispatch (8 of 26), data_clump,
+  repeated_call, control_parameter, utility_function, repeated_conditional,
+  state_sprawl, nil_check, assumed_state, boundary_sprawl, module_initialize and
+  indirection need `checks: all`, a `checks:` setting of their own, `--kind` or
+  `--fail-on`. Add `checks: all` to
   `.hashira.yml` to keep every kind; a baseline recorded without it sees the
   opt-in kinds' findings resolved.
 - Baselines are schema 7 and record the kinds the recording hashira knew.
@@ -67,6 +74,17 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- `fragmentation`, a complexity kind, on by default: a public method that
+  reaches four or more methods of its own class (calls with no receiver or on
+  `self`, `send(:name)`, `method(:name)`; instance to instance, class to class,
+  across reopened classes) along a path at least two deep, when the entry and
+  those methods average 3.5 lines or fewer without blank and comment lines. The
+  finding names the helper count, the mean, the depth and the deepest path, and
+  lists the helpers. `checks: fragmentation: { helpers: N, lines: M }` moves
+  both limits; the ratchet holds it by helper count. A blind readability study
+  set it on 60 entry methods and validated it on 60 more: of the 13 it flagged
+  in the second sample, a rater judged 12 over-fragmented and both raters 9
+  (independent AI reviewers; no human has rated them yet).
 - `indirection`, an opt-in complexity kind that counts hollow hops: helpers
   that are private, called once from their own class, and whose body is one
   call with no decision and no block, wrapping at most one more call. It
@@ -174,6 +192,8 @@ true positive the earlier triage confirmed still fires.
   or a reader takes it up, nothing if no method reads it. That replaces the `*Controller`, `*Mailer` and
   `*Component` exemption. The message says what was weighed against what:
   `holds 5 instance variables, weighing 6, more than 4`.
+- A call made by symbol (`send(:name)`, `public_send`, `__send__`,
+  `method(:name)`) is a call to that method, for recursion and the helper kinds.
 - Cognitive complexity follows the SonarSource specification on lambdas
   (they nest), recursion (+1), `a && (b && c)` (one run), and `define_method`
   bodies (scored as methods).

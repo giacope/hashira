@@ -30,7 +30,8 @@ default.
   must not (same shape saying different things, log and error-report lines,
   inverse pairs, relays, schemas).
 - **smells** — true positives and true negatives built from real patterns
-  (timers, library nodes, owned types, evidence, sprawl weights, indirection).
+  (timers, library nodes, owned types, evidence, sprawl weights, indirection,
+  fragmentation).
 - **cli** — baseline and config resolution from another directory,
   suppressions (reason required, listed, unused), per-kind switches and
   thresholds, old baselines and kind renames, a kind the baseline predates.
@@ -59,10 +60,14 @@ reason:
   labels, in that order, so they are an upper estimate, not a measurement.
 - `blind/` and `blind2/` — two independent raters who labelled a mixed sample of
   `main` and branch findings without knowing which version reported which. They
-  agree on 298 of 324 (92%, Cohen's κ 0.65).
-- `holdout/<salt>/` — a fresh sample drawn after the rules were changed, with no
-  labels; its labels go in `labels/holdout/<salt>/`, where `eval/run --seed
-  <salt>` reads them.
+  agree on 298 of 324 (92%, Cohen's κ 0.65). The raters are independent AI
+  reviewers: separate model instances that saw only the shuffled, version-blind
+  items and the corpus source, not hashira's code or labels. No human has
+  relabelled them yet; the same two raters labelled the holdout.
+- `holdout/<salt>/` — a fresh sample drawn after the rules were changed, as it
+  was handed to the raters, with no labels.
+- `blind/sample.json` and `blind/holdout1.json` — both raters' raw labels for
+  the sample and for `holdout1`, side by side.
 
 ### Blind precision
 
@@ -89,12 +94,30 @@ true; rater 2 found 23 of 200 and 33 of 160.
 ### Defaults follow the blind numbers
 
 A heuristic kind is shown and gated by default only when its pooled blind
-precision clears one in three, on at least ten findings per rater: duplication,
-manual_dispatch and feature_envy. The measurement kinds (complexity, cycle,
-sdp_violation, mixed_audience, wide_edge, roll_call) stay on. Every other kind
-is opt-in, through `checks: all`, a per-kind `checks:` setting, `--kind` or
-`--fail-on`. manual_dispatch and feature_envy clear the bar narrowly, with wide
-intervals; the holdout decides whether they stay.
+precision clears one in three. The first decision used the sample alone and
+kept duplication, manual_dispatch and feature_envy on, two of them narrowly.
+The holdout (below) failed both: feature_envy 0 of 14, manual_dispatch 0 of 4.
+Over the sample and the holdout together:
+
+| kind | sample (rater 1, rater 2) | holdout (rater 1, rater 2) | pooled | default |
+| --- | --- | --- | --- | --- |
+| duplication | 11/25, 9/25 | 11/25, 11/25 | 42/100 (42%) | on |
+| manual_dispatch | 4/11, 4/11 | 0/2, 0/2 | 8/26 (31%) | opt-in |
+| data_clump | 0/2, 1/2 | 2/5, 1/5 | 4/14 (29%) | opt-in |
+| repeated_call | 6/25, 4/25 | 8/25, 9/25 | 27/100 (27%) | opt-in |
+| control_parameter | 0/4, 2/4 | — | 2/8 (25%) | opt-in |
+| feature_envy | 3/10, 4/10 | 0/7, 0/7 | 7/34 (21%) | opt-in |
+| utility_function | 1/15, 2/15 | 2/15, 6/15 | 11/60 (18%) | opt-in |
+| repeated_conditional | 1/12, 4/12 | 0/2, 0/2 | 5/28 (18%) | opt-in |
+| state_sprawl | 1/11, 2/11 | 1/9, 0/9 | 4/40 (10%) | opt-in |
+| nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
+| indirection (hollow hops) | — | 2/2, 0/2 | 2/4 | opt-in |
+
+So duplication is the one heuristic on by default, beside the measurement kinds
+(complexity, cycle, sdp_violation, mixed_audience, wide_edge, roll_call) and
+`fragmentation`, which a separate readability study measured
+([fragmentation/](fragmentation/README.md)). Every other kind is opt-in,
+through `checks: all`, a per-kind `checks:` setting, `--kind` or `--fail-on`.
 
 ### What the reasons changed, and the dev set since
 
@@ -128,8 +151,8 @@ measurement):
 | indirection | 0/0 | 0/0 | — | 327 → 2 |
 
 The fixes cut the weak kinds' volume by a third to six sevenths without
-lifting their dev precision much; they stay opt-in until the holdout says
-otherwise. The dev rows also hold `main`-only findings the branch now reports,
+lifting their dev precision much, and the holdout confirmed it: none of them
+clears the bar. The dev rows also hold `main`-only findings the branch now reports,
 which is why feature_envy and manual_dispatch read lower here than on the
 branch sample above.
 
@@ -138,7 +161,8 @@ branch sample above.
 `eval/run --hashira . --suites corpus --seed holdout1` drew `holdout/holdout1/`:
 117 findings across ten kinds, none of them in any dev label file (fewer than
 the sample size where the dev labels had already taken most of a kind's
-population). It carries no labels.
+population). The two raters labelled it blind and agree on 102 of 117 (87%,
+κ 0.66); their labels are in `blind/holdout1.json`.
 
 ## Indirection: hollow hops
 
@@ -165,8 +189,13 @@ None of the 20 dev findings is reported any more. kimera's
 (so it is called twice), `dispatch` lives in a mixin and decides, `guard` runs
 a block and is called from two places, and `branch` holds three statements.
 Only the two rubocop config lookups (`unless_else_cop_enabled? →
-unless_else_config`) are pure forwarders two deep, and they are in the
-holdout.
+unless_else_config`) are pure forwarders two deep. In the holdout one rater
+judged both true and the other both false.
+
+The readability study behind `fragmentation` shows what readers of the house
+style actually object to: many small same-class helpers, not hollow hops (0
+findings on kimera and hashira). indirection stays, opt-in: fragmentation does
+not cover its two findings, and while it is off it costs nothing.
 
 ## Known limits
 
@@ -183,6 +212,8 @@ holdout.
   are no longer reported.
 - Hollow-hop indirection is nearly silent on these corpora; with two findings
   its precision cannot be measured on them.
+- Duplication is the only heuristic that clears the bar, at 42%: the default
+  report is mostly measurements.
 
 ## Before and after
 
@@ -196,7 +227,7 @@ has no opt-in kinds).
 | complexity | 55/66 (83.3%) | 66/66 (100.0%) |
 | coupling | 17/25 (68.0%) | 25/25 (100.0%) |
 | duplication | 6/10 (60.0%) | 10/10 (100.0%) |
-| smells | 11/19 (57.9%) | 19/19 (100.0%) |
+| smells | 11/19 (57.9%) | 23/23 (100.0%) |
 | cli | 11/35 (31.4%) | 35/35 (100.0%) |
 | corpus | 5/6 (83.3%) | 6/6 (100.0%) |
 
@@ -208,8 +239,8 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 880 | 880 |
 | kloc | 82.9 | 82.9 |
-| seconds | 34.36 | 33.0 |
-| megabytes | 463.2 | 497.5 |
+| seconds | 34.36 | 32.93 |
+| megabytes | 463.2 | 451.6 |
 | assumed_state | 1 (0.01/kLOC) | 1 (0.01/kLOC) |
 | complexity | 38 (0.46/kLOC) | 39 (0.47/kLOC) |
 | control_parameter | 88 (1.06/kLOC) | 3 (0.04/kLOC) |
@@ -217,6 +248,7 @@ has no opt-in kinds).
 | data_clump | 52 (0.63/kLOC) | 7 (0.08/kLOC) |
 | duplication | 251 (3.03/kLOC) | 282 (3.4/kLOC) |
 | feature_envy | 202 (2.44/kLOC) | 24 (0.29/kLOC) |
+| fragmentation | 0 | 2 (0.02/kLOC) |
 | indirection | 0 | 2 (0.02/kLOC) |
 | manual_dispatch | 123 (1.48/kLOC) | 18 (0.22/kLOC) |
 | module_initialize | 1 (0.01/kLOC) | 1 (0.01/kLOC) |
@@ -232,8 +264,8 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 32 | 32 |
 | kloc | 3.17 | 3.17 |
-| seconds | 1.35 | 1.36 |
-| megabytes | 50.5 | 41.3 |
+| seconds | 1.35 | 1.24 |
+| megabytes | 50.5 | 39.2 |
 | complexity | 4 (1.26/kLOC) | 5 (1.58/kLOC) |
 | control_parameter | 1 (0.32/kLOC) | 0 |
 | cycle | 1 (0.32/kLOC) | 1 (0.32/kLOC) |
@@ -255,13 +287,14 @@ has no opt-in kinds).
 | --- | --- | --- |
 | files | 558 | 558 |
 | kloc | 20.73 | 20.73 |
-| seconds | 12.25 | 12.2 |
-| megabytes | 200.0 | 165.6 |
+| seconds | 12.25 | 10.73 |
+| megabytes | 200.0 | 173.6 |
 | complexity | 18 (0.87/kLOC) | 18 (0.87/kLOC) |
 | control_parameter | 16 (0.77/kLOC) | 1 (0.05/kLOC) |
 | cycle | 2 (0.1/kLOC) | 2 (0.1/kLOC) |
 | duplication | 136 (6.56/kLOC) | 147 (7.09/kLOC) |
 | feature_envy | 20 (0.96/kLOC) | 10 (0.48/kLOC) |
+| fragmentation | 0 | 2 (0.1/kLOC) |
 | manual_dispatch | 13 (0.63/kLOC) | 7 (0.34/kLOC) |
 | nil_check | 90 (4.34/kLOC) | 25 (1.21/kLOC) |
 | repeated_call | 165 (7.96/kLOC) | 95 (4.58/kLOC) |

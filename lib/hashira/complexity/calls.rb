@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Complexity::Calls
+  SENDS = %i[send public_send __send__ method].freeze
+
   def initialize(node)
     @node = node
   end
@@ -15,8 +17,13 @@ class Hashira::Complexity::Calls
 
   def gathered(node)
     return [] if node.is_a?(Prism::DefNode)
-    (own?(node) ? [node.name] : []) + node.compact_child_nodes.flat_map { gathered(it) }
+    (own?(node) ? [node.name, *aimed(node)] : []) + node.compact_child_nodes.flat_map { gathered(it) }
   end
 
   def own?(node) = node.is_a?(Prism::CallNode) && [NilClass, Prism::SelfNode].include?(node.receiver.class)
+
+  def aimed(call)
+    target = call.arguments&.arguments&.first
+    SENDS.include?(call.name) && target.is_a?(Prism::SymbolNode) ? [target.unescaped.to_sym] : []
+  end
 end

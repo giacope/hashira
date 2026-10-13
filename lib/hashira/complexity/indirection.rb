@@ -21,7 +21,9 @@ class Hashira::Complexity::Indirection
 
   private
 
-  def trail(file, site) = Hashira::Complexity::Trail.new(file, site, helpers(site.family))
+  def trail(file, site) = Hashira::Complexity::Trail.new(entry(file, site), helpers(site.family))
+
+  def entry(file, site) = Hashira::Complexity::Entry.new(KIND, file, site)
 
   def limit = @rules.threshold(KIND, THRESHOLD)
 
@@ -33,11 +35,7 @@ class Hashira::Complexity::Indirection
 
   def helper?(family, name, site) = hidden.include?(site.node) && single?(family, name)
 
-  def hidden = @_hidden ||= Set.new.compare_by_identity.merge(@trees.flat_map { privates(it) })
-
-  def privates(tree) = Hashira::Analysis::TypeWalk.to_enum(:each, tree).flat_map { |type, *| secluded(type) }
-
-  def secluded(type) = Hashira::Analysis::TypeWalk.sections(type).filter_map { |node, part| node if part == PRIVATE }
+  def hidden = @_hidden ||= Hashira::Analysis::TypeWalk.parted(@trees, [PRIVATE])
 
   def defined(family) = families.fetch(family).select { it.node.is_a?(Prism::DefNode) }.to_h { [it.node.name, it] }
 

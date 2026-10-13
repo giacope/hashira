@@ -5,10 +5,11 @@ class Hashira::Complexity::Scores
 
   KIND = Hashira::Complexity::MethodFinding::KIND
 
-  def initialize(project, trees, rules)
+  def initialize(project, trees, rules, comments = {})
     @project = project
     @trees = trees
     @rules = rules
+    @comments = comments
   end
 
   def ranked = scores.sort_by { -it.cognitive }
@@ -17,9 +18,15 @@ class Hashira::Complexity::Scores
 
   def lists = { methods: ranked, classes: }
 
-  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } + indirection.findings
+  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } + derived
+
+  def derived = indirection.findings + fragmentation.findings
 
   def indirection = Hashira::Complexity::Indirection.new(sites, @trees.values, @rules)
+
+  def fragmentation = Hashira::Complexity::Fragmentation.new(sites, notes, @trees.values, @rules)
+
+  def notes = @trees.keys.to_h { [@project.relative(it), Hashira::Complexity::Notes.new(it, @comments.fetch(it, []))] }
 
   def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 

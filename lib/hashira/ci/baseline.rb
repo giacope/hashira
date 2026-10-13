@@ -11,7 +11,7 @@ class Hashira::CI::Baseline
     "instance_variable_assumption" => "assumed_state"
   }.freeze
 
-  INTRODUCED = { "indirection" => 7 }.freeze
+  INTRODUCED = { "indirection" => 7, "fragmentation" => 7 }.freeze
 
   def initialize(path, analyzers: [], targets: [], kinds: [])
     @path = path

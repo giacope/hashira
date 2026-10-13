@@ -48,7 +48,7 @@ fixture, so what you read is what hashira prints.
 
 ---
 
-[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Rails apps](#rails-apps) · [Complexity and indirection](#complexity-and-indirection) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
+[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Rails apps](#rails-apps) · [Complexity and fragmentation](#complexity-and-fragmentation) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
 
 ## Install
 
@@ -99,11 +99,13 @@ checks:
   duplication: false               # turn a kind off
   nil_check: true                  # or an opt-in kind on
   complexity: { threshold: 12 }    # or move a threshold
-  indirection: { threshold: 3 }    # (which turns an opt-in kind on too)
+  fragmentation: { helpers: 6 }    # fragmentation has two limits
+  indirection: { threshold: 3 }    # (a setting turns an opt-in kind on too)
 ```
 
 `checks: all` turns every kind on. Kinds with a threshold, and what reaches it:
-`complexity` (a score of 10 or more), `indirection` (2 or more hollow helpers),
+`complexity` (a score of 10 or more), `fragmentation` (`helpers:` 4 or more,
+averaging `lines:` 3.5 or fewer), `indirection` (2 or more hollow helpers),
 `boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
 `state_sprawl` (a weight of more than 4) and `repeated_conditional` (more than 2
 tests). A flag on the command line wins over
@@ -113,35 +115,39 @@ the file, and a key the command line rules out sits that run out (`fail-on` unde
 ### Which kinds are on by default
 
 A kind is on by default when it reports a measurement (`complexity` and the
-coupling kinds), or when it is a heuristic whose precision, measured
-independently, clears one in three. Two raters labelled a fixed sample of the
-findings on rubocop, faraday and rubygems.org without knowing which version of
-hashira had reported them (they agreed on 92%, κ 0.65; see
-[eval/results](eval/results/README.md)). Pooled over both raters:
+coupling kinds), or when its precision, measured independently, clears one in
+three. Two raters labelled findings on rubocop, faraday and rubygems.org without
+knowing which version of hashira had reported them: a sample drawn before the
+rules below were last changed, and a fresh holdout drawn after (they agreed on
+92% and 87%, κ 0.65 and 0.66; see [eval/results](eval/results/README.md)). The
+raters were independent AI reviewers: separate model instances that saw only the
+shuffled, version-blind findings and the corpus source, not hashira's code or
+labels. No human has relabelled them yet. True findings, per rater:
 
-| kind | precision | default |
-| --- | --- | --- |
-| duplication | 20/50 (40%) | on |
-| manual_dispatch | 8/22 (36%) | on |
-| feature_envy | 7/20 (35%) | on |
-| control_parameter | 2/8 (25%) | opt-in |
-| repeated_conditional | 5/24 (21%) | opt-in |
-| repeated_call | 10/50 (20%) | opt-in |
-| state_sprawl | 3/22 (14%) | opt-in |
-| utility_function | 3/30 (10%) | opt-in |
-| nil_check | 2/50 (4%) | opt-in |
-| data_clump | 1/4 | opt-in |
-| indirection | 0/40 | opt-in |
+| kind | sample | holdout | pooled | default |
+| --- | --- | --- | --- | --- |
+| duplication | 11/25, 9/25 | 11/25, 11/25 | 42/100 (42%) | on |
+| manual_dispatch | 4/11, 4/11 | 0/2, 0/2 | 8/26 (31%) | opt-in |
+| data_clump | 0/2, 1/2 | 2/5, 1/5 | 4/14 (29%) | opt-in |
+| repeated_call | 6/25, 4/25 | 8/25, 9/25 | 27/100 (27%) | opt-in |
+| control_parameter | 0/4, 2/4 | — | 2/8 (25%) | opt-in |
+| feature_envy | 3/10, 4/10 | 0/7, 0/7 | 7/34 (21%) | opt-in |
+| utility_function | 1/15, 2/15 | 2/15, 6/15 | 11/60 (18%) | opt-in |
+| repeated_conditional | 1/12, 4/12 | 0/2, 0/2 | 5/28 (18%) | opt-in |
+| state_sprawl | 1/11, 2/11 | 1/9, 0/9 | 4/40 (10%) | opt-in |
+| nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
+| indirection | — | 2/2, 0/2 | 2/4 | opt-in |
 
-`assumed_state`, `boundary_sprawl` and `module_initialize` are too rare in the
-corpus to measure, so they are opt-in too. `--kind` and `--fail-on` turn on the
-kinds they name, and a `checks:` setting for a kind turns it on.
+`fragmentation` is on: a separate blind readability study measured it (see
+[Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
+`boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
+so they are opt-in too. `--kind` and `--fail-on` turn on the kinds they name,
+and a `checks:` setting for a kind turns it on.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
-nearest folder at or above the analyzed directory holding a `.hashira.yml` or a
-`hashira_baseline.json`; failing that, where hashira runs if the directory is
-inside it, else the nearest folder holding `.git`, a `Gemfile` or a
-`*.gemspec`. So `hashira ../other/lib` reads and writes the other project's
+nearest folder at or above the analyzed directory that is where hashira runs or
+holds a `.hashira.yml`, a `hashira_baseline.json`, `.git`, a `Gemfile` or a
+`*.gemspec`. A project checked out inside another stops at its own root. So `hashira ../other/lib` reads and writes the other project's
 files, not the ones where you stand. Paths inside the file are read from that
 root.
 
@@ -251,7 +257,7 @@ Findings (1):
 `--package-by folder` or `--package-by namespace` forces either grouping
 anywhere.
 
-## Complexity and indirection
+## Complexity and fragmentation
 
 Every method gets a **cognitive complexity** score, per the
 [SonarSource specification](https://www.sonarsource.com/docs/CognitiveComplexity.pdf):
@@ -276,9 +282,37 @@ Findings (1):
       · boolean +2 (line 14)
 ```
 
-Splitting a method into helpers is how it gets readable, until a helper adds
-nothing: a private one-liner, called once, that only passes a call on. The
-reader still makes the hop. **indirection** counts those hollow hops. A helper
+Splitting a method into helpers lowers every score, and past a point it stops
+helping the reader, who now hops between many small methods to follow one piece
+of work. **fragmentation** reports an entry, a public method, that reaches four
+or more methods of its own class along a path at least two deep, when the entry
+and those methods average three and a half lines or fewer (blank and comment
+lines aside, a heredoc's lines in). A method reaches another by calling it with
+no receiver or on `self`, or by `send(:name)` and `method(:name)`; instance
+methods reach instance methods and class methods class methods, across every
+file that reopens the class.
+
+<!-- example: fragmentation lib/app --kind fragmentation -->
+```console
+Findings (1):
+  fragmentation: Report#render spreads its work over 7 same-class helpers averaging 1.0 lines a method, 3 deep (render → body → lines → line) (report.rb:4). Merge the single-use helpers into it until it reads as one unit.
+      · title (line 8)
+      · label (line 10)
+```
+
+The limits come from a blind readability study
+([eval/results/fragmentation](eval/results/fragmentation/README.md)): two
+raters read 60 entry methods with their helpers, half from two codebases
+written in this many-tiny-methods style and half from rubocop, faraday and
+rubygems.org, then 60 fresh ones. The rule was set on the first sample. On the
+second it flagged 13 entries; one rater or both judged 12 of them
+over-fragmented, and both raters 9. The raters were independent AI reviewers,
+separate model instances that saw only the shuffled items, not their sources or
+hashira's code; no human has rated them yet.
+
+A helper can also add nothing at all: a private one-liner, called once, that
+only passes a call on. The reader still makes the hop. **indirection**, opt-in,
+counts those hollow hops. A helper
 is hollow when it is private, called exactly once from its own class (never by
 name, `send`, or through a receiver), and its body is one call with no decision
 and no block, wrapping at most one more call (`def import(rows) =
@@ -348,9 +382,9 @@ other drifts.
 ## Design smells
 
 RuboCop measures one method at a time; these are about how objects treat each
-other. Each is reported only where its advice applies to code the project owns. Only
-`feature_envy` and `manual_dispatch` are on by default; the rest are opt-in (see
-[which kinds are on by default](#which-kinds-are-on-by-default)).
+other. Each is reported only where its advice applies to code the project owns.
+None clears the precision bar on independent labels, so all of them are opt-in
+(see [which kinds are on by default](#which-kinds-are-on-by-default)).
 
 <!-- example: smells lib/app --kind smells -->
 ```console
@@ -548,10 +582,10 @@ The JSON opens with `version`, `packaging`, `targets` and `files`, then
 `findings` (each with its `digest` and `confidence`), `kinds` (count and files
 per kind), `suppressed`, `unused_suppressions`, `accepted`, `packages`, `edges`,
 `folds`, `complexity`, `duplication` and `hotspots`. A package with no edges
-reports `"i": null`. Confidence is `high` for measurements (complexity,
-indirection, the structural kinds, clones differing in a literal, receiver or
-constant), `medium` for smells and looser clones, and `low` where hashira hedges
-(clones whose control flow differs).
+reports `"i": null`. Confidence is `high` for measurements (complexity, the
+structural kinds, clones differing in a literal, receiver or constant), `medium`
+for smells, fragmentation, indirection and looser clones, and `low` where
+hashira hedges (clones whose control flow differs).
 
 ## Design choices
 

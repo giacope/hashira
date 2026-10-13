@@ -1,6 +1,6 @@
 {
   "label": "after",
-  "commit": "cc48d0d",
+  "commit": "e7b3c07",
   "ruby": "3.4.7",
   "suites": {
     "complexity": {
@@ -728,8 +728,8 @@
       ]
     },
     "smells": {
-      "passed": 19,
-      "total": 19,
+      "passed": 23,
+      "total": 23,
       "checks": [
         {
           "name": "envy: feature_envy Shop::Checkout#total",
@@ -766,6 +766,30 @@
           "passed": true,
           "expected": [],
           "actual": []
+        },
+        {
+          "name": "fragmentation: fragmentation App::Report#render",
+          "passed": true,
+          "expected": "present",
+          "actual": "present"
+        },
+        {
+          "name": "fragmentation: fragmentation App::Invoice#total",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "fragmentation: fragmentation App::Pipeline#run",
+          "passed": true,
+          "expected": "absent",
+          "actual": "absent"
+        },
+        {
+          "name": "fragmentation: fragmentation App::Report#render says \"7 same-class helpers averaging 1.0 lines a method, 3 deep\"",
+          "passed": true,
+          "expected": "said",
+          "actual": "said"
         },
         {
           "name": "indirection: indirection App::Exporter#run",
@@ -1110,8 +1134,8 @@
     "rubocop": {
       "status": 0,
       "files": 880,
-      "seconds": 33.0,
-      "megabytes": 497.5,
+      "seconds": 32.93,
+      "megabytes": 451.6,
       "kinds": {
         "assumed_state": {
           "count": 1,
@@ -1140,6 +1164,10 @@
         "feature_envy": {
           "count": 24,
           "per_kloc": 0.29
+        },
+        "fragmentation": {
+          "count": 2,
+          "per_kloc": 0.02
         },
         "indirection": {
           "count": 2,
@@ -1179,8 +1207,8 @@
     "faraday": {
       "status": 0,
       "files": 32,
-      "seconds": 1.36,
-      "megabytes": 41.3,
+      "seconds": 1.24,
+      "megabytes": 39.2,
       "kinds": {
         "complexity": {
           "count": 5,
@@ -1236,8 +1264,8 @@
     "rubygems.org": {
       "status": 0,
       "files": 558,
-      "seconds": 12.2,
-      "megabytes": 165.6,
+      "seconds": 10.73,
+      "megabytes": 173.6,
       "kinds": {
         "complexity": {
           "count": 18,
@@ -1258,6 +1286,10 @@
         "feature_envy": {
           "count": 10,
           "per_kloc": 0.48
+        },
+        "fragmentation": {
+          "count": 2,
+          "per_kloc": 0.1
         },
         "manual_dispatch": {
           "count": 7,

@@ -114,6 +114,34 @@ module ReadmeExamples
     RUBY
   end
 
+  def fragmentation = { "lib/app/report.rb" => scattered }
+
+  def scattered
+    <<~RUBY
+      class Report
+        def initialize(rows) = @rows = rows
+
+        def render = [title, body].join("\\n")
+
+        private
+
+        def title = "\#{label}: \#{count}"
+
+        def label = name.upcase
+
+        def name = "report"
+
+        def count = @rows.size
+
+        def body = lines.join("\\n")
+
+        def lines = @rows.map { line(it) }
+
+        def line(row) = "\#{row.name} \#{row.total}"
+      end
+    RUBY
+  end
+
   def indirection = { "lib/app/importer.rb" => importer }
 
   def importer

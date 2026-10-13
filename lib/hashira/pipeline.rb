@@ -13,7 +13,7 @@ class Hashira::Pipeline
     Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
   ).sort.freeze
 
-  KINDS = (STRUCTURAL + %w[complexity duplication indirection] + SMELLS).sort.freeze
+  KINDS = (STRUCTURAL + %w[complexity duplication fragmentation indirection] + SMELLS).sort.freeze
 
   def initialize(project, enabled: ANALYZERS, packaging: :auto, only: [])
     @project = project
@@ -36,7 +36,7 @@ class Hashira::Pipeline
 
   def graph = coupling.graph
 
-  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules)
+  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules, parsed.comments)
 
   def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 

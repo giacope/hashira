@@ -12,6 +12,7 @@ AllCops:
   Exclude:
     - "eval/cases/**/*"
     - "eval/tmp/**/*"
+    - "eval/results/**/*"
     - "vendor/**/*"
 
 Kata/GoodClassName:

@@ -131,6 +131,7 @@ RSpec/SpecFilePathFormat:
     - 'spec/cli/home_spec.rb'
     - 'spec/cli/options_spec.rb'
     - 'spec/complexity/cognitive_score_spec.rb'
+    - 'spec/complexity/fragmentation_spec.rb'
     - 'spec/complexity/indirection_spec.rb'
     - 'spec/complexity/scores_spec.rb'
     - 'spec/config/rules_spec.rb'

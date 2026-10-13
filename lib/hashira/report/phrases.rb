@@ -98,6 +98,13 @@ module Hashira::Report::Phrases
       "private one-liners called once that only pass a call on (#{detail.site}). Inline them into their callers."
   end
 
+  def on_fragmentation(finding)
+    detail = finding.detail
+    "#{finding.package} spreads its work over #{count(detail.helpers, "same-class helper")} averaging " \
+      "#{format("%.1f", detail.lines)} lines a method, #{detail.depth} deep (#{detail.path.join(" → ")}) " \
+      "(#{detail.site}). Merge the single-use helpers into it until it reads as one unit."
+  end
+
   def score(value) = format("%.2f", value)
 
   def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"
