@@ -246,8 +246,10 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     RUBY
     finding = findings.first
     expect(findings.size).to(eq(1))
-    expect(message(finding)).to(include("holds 5 instance variables"))
-    expect(finding.evidence).to(eq(%w[@cache @path @rows @summary @valid]))
+    expect(message(finding)).to(include("holds 5 instance variables, weighing 5, more than 4"))
+    expect(finding.evidence).to(
+      eq(["@cache", "@path", "@rows", "@summary (read by no method: handed off)", "@valid (parked between calls)"])
+    )
   end
 
   def assigns(base)
@@ -263,12 +265,29 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     RUBY
   end
 
-  it "does not weigh a view's assigns double: a controller, mailer or component action hands them to a template" do
-    expect(%w[ApplicationController ApplicationMailer Admin::BaseComponent].flat_map { assigns(it) }).to(be_empty)
+  it "weighs an assign no method reads as nothing, whatever the class inherits: it is handed on" do
+    expect(%w[ApplicationController Admin::BaseComponent Pipeline::Step].flat_map { assigns(it) }).to(be_empty)
   end
 
-  it "weighs the same actions double on a class that renders no view" do
-    expect(assigns("Pipeline::Step").map(&:package)).to(eq(["Orders"]))
+  it "weighs an assign double once another method, or a reader, takes it up between calls" do
+    findings = crowded(<<~RUBY)
+      class Orders < ApplicationController
+        attr_reader :form
+        attr_reader
+
+        def show
+          @order = Order.find(params[:id])
+          @items = @order.items
+        end
+
+        def edit = @form = OrderForm.new(@order)
+
+        def total = @items.sum(&:price)
+      end
+    RUBY
+    said = "Orders holds 3 instance variables, weighing 6, more than 4 (zone/thing.rb:1). " \
+      "Split the class, or gather related fields into value objects."
+    expect(findings.map { message(it) }).to(eq([said]))
   end
 
   it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do

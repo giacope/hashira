@@ -171,10 +171,11 @@ RSpec.describe(Hashira::Smells::Report) do
 
   it "judges a class's state across every file that reopens it" do
     files = {
-      "lib/app/zone/thing.rb" => "class Thing\n  def fill = [@a = 1, @b = 2, @c = 3]\nend\n",
-      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\nend\n"
+      "lib/app/zone/thing.rb" => "class Thing\n  def initialize = [@a = 1, @b = 2, @c = 3]\nend\n",
+      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\n\n  def sum = @d + @e\nend\n"
     }
     findings = sniffed(files, "state_sprawl")
-    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c @d @e]]))
+    parked = %w[@d @e].map { "#{it} (parked between calls)" }
+    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c] + parked]))
   end
 end

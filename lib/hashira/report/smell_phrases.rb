@@ -9,6 +9,8 @@ module Hashira::Report::Phrases
 
   DATA_CLUMP = "Introduce a parameter object."
 
+  SPRAWL = "Split the class, or gather related fields into value objects."
+
   REPEATED_CALL = "Name the result in a local variable."
 
   MANUAL_DISPATCH = "Trust the duck type, or split the callers into two adapters."
@@ -84,8 +86,11 @@ module Hashira::Report::Phrases
   end
 
   def on_state_sprawl(finding)
-    tally(finding, "holds %d instance variables", "Split the class, or gather related fields into value objects.")
+    detail = finding.detail.to_h
+    "#{finding.package} holds #{detail[:count]} instance variables#{weighed(detail)} (#{detail[:site]}). #{SPRAWL}"
   end
+
+  def weighed(detail) = (", weighing #{detail[:weight]}, more than #{detail[:limit]}" if detail[:weight])
 
   def on_utility_function(finding)
     detail = finding.detail
