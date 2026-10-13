@@ -18,6 +18,8 @@ class Hashira::Duplication::Fragment
 
   SPOKEN = [Prism::CallNode, Prism::ConstantReadNode, Prism::ConstantPathNode].freeze
 
+  WRITTEN = [Prism::StringNode, Prism::SymbolNode].freeze
+
   ROWS = 2
 
   SEEDS = (1..20).to_a.freeze
@@ -73,7 +75,7 @@ class Hashira::Duplication::Fragment
 
   def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
 
-  def vocabulary = @_vocabulary ||= nodes.filter_map { it.name if SPOKEN.include?(it.class) }
+  def vocabulary = @_vocabulary ||= nodes.flat_map { words(it) }
 
   def counts = @_counts ||= types.tally
 
@@ -87,6 +89,11 @@ class Hashira::Duplication::Fragment
   end
 
   private
+
+  def words(node)
+    return [node.name] if SPOKEN.include?(node.class)
+    WRITTEN.include?(node.class) ? node.unescaped.scan(/\w+/) : []
+  end
 
   def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
 

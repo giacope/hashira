@@ -578,12 +578,22 @@ RSpec.describe(Hashira::Duplication::Clusters) do
   end
 
   describe(Hashira::Duplication::NearMiss) do
-    def listed(count) = Array.new(count) { " [x, [x, x], { k: x, j: [x, x] }, x, x]\n" }.join
+    def listed(count) = Array.new(count) { " [x, [x, x], { x => x, x => [x, x] }, x, x]\n" }.join
 
     it "pairs two methods that call nothing on their shape, but never one that names nothing with one that does" do
       silent = { "a.rb" => "def a(x)\n#{listed(3)}end\n", "b.rb" => "def b(x)\n#{listed(3)} [x, x]\nend\n" }
       spoken = silent.merge("b.rb" => "def b(x)\n#{listed(3)} [x, y]\nend\n")
       expect([silent, spoken].map { clusters(it).size }).to(eq([1, 0]))
+    end
+
+    it "takes the words a method's strings and symbols carry as part of what it says" do
+      envy = "refers to \#{names} more than to self, \#{detail[:count]} (\#{detail[:site]}). " \
+        "The behavior may belong on \#{detail[:types]}."
+      trace = "scores cognitive \#{detail[:cognitive]} with its \#{names} read in place (\#{detail[:site]}). " \
+        "Inline the helpers that only move code."
+      head = ->(name, key) { "def #{name}(finding)\n detail = finding.detail.to_h\n names = detail[:#{key}]\n" }
+      said = ->(name, key, words) { "#{head[name, key]} \"\#{finding.package} #{words}\"\nend\n" }
+      expect(clusters("a.rb" => said["a", "names", envy], "b.rb" => said["b", "helpers", trace])).to(be_empty)
     end
 
     def pair(*sources) = Hashira::Duplication::Pair.new(*sources.map { fragments("a.rb" => it).find(&:opened?) })
