@@ -531,7 +531,7 @@ true positive the earlier triage confirmed still fires.
 
 - Recursion detection looks callees up in a set (rubocop's complexity: 4.5s
   to 0.5s), and duplication computes each statement's silent nodes once per
-  file. A full rubocop run takes 36s against main's 40s, with 4% more peak
+  file. A full rubocop run takes 34s against main's 40s, with 5% more peak
   memory for the type and call indexes the smells now use.
 - Duplication walks each statement's subtree once per file instead of once
   per window that holds it; smells read a class name's ancestry once instead
