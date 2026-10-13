@@ -94,7 +94,15 @@ class Hashira::Duplication::Fragment
 
   def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
 
-  def muted = (sinks.flat_map(&:message) + recoveries).uniq
+  def muted = (sinks.flat_map(&:message) + recoveries + stores).uniq
+
+  def stores = nodes.grep(Prism::DefNode).select { storing?(it) }.flat_map { @walks.nodes([it]) }
+
+  def storing?(definition)
+    definition.name == :initialize && Hashira::Analysis::Syntax.statements(definition).all? { stored?(it) }
+  end
+
+  def stored?(node) = (node in Prism::InstanceVariableWriteNode[value: Prism::LocalVariableReadNode])
 
   def recoveries = Hashira::Duplication::Recovery.of(nodes).flat_map { @walks.nodes([it.clause]) }
 

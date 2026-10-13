@@ -434,6 +434,15 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     end
   end
 
+  it "weighs a constructor that only stores its arguments as nothing, and one that computes as code" do
+    stored = ->(name, body) { "class #{name}\n KINDS = [Prism::DefNode, Prism::RescueNode].freeze\n#{body}end\n" }
+    stores = %w[file tree root mode].map { "  @#{it} = #{it}\n" }.join
+    plain = " def initialize(file, tree, root, mode)\n#{stores} end\n"
+    computed = " def initialize(file, tree)\n  @file = file.to_s\n  @tree = tree.freeze\n end\n"
+    sources = [plain, computed].map { |body| { "a.rb" => stored["A", body], "b.rb" => stored["B", body] } }
+    expect(sources.map { clusters(it).size }).to(eq([0, 1]))
+  end
+
   describe(Hashira::Duplication::Index) do
     it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }
