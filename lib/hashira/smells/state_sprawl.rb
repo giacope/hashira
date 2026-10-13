@@ -65,7 +65,15 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def founders = methods.select { founding.include?(it.name) }
 
-  def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name)
+  def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name) + registered
+
+  def registered = hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { it.unescaped.to_sym }
+
+  def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
+
+  def bodies = subject.nodes.flat_map { Hashira::Analysis::Syntax.statements(it) }
+
+  def hook?(call) = !call.receiver && !Hashira::Smells::Visibility::MARKERS.include?(call.name)
 
   def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
 

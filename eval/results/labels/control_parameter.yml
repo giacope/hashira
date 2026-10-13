@@ -1,4 +1,10 @@
 ---
+- key: rubocop|control_parameter|RuboCop::Config.create
+  evidence:
+  - check (line 25)
+  label: tp
+  why: 'check: true is a literal boolean callers flip to skip validation: create and
+    create_unchecked would say it'
 - key: rubocop|control_parameter|RuboCop::Cop::HashSubset#slices_key?
   evidence:
   - method (line 91)
@@ -16,6 +22,12 @@
   label: tp
   why: 'side: :right/:left selects which space_offense call runs, and callers pass
     literals: split it'
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#qualifies_for_compact?
+  evidence:
+  - side (line 181)
+  label: tp
+  why: 'side: :right/:left selects which comparison runs and callers pass literals:
+    split it'
 - key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideHashLiteralBraces#offense?
   evidence:
   - expect_space (line 154)
@@ -51,6 +63,12 @@
   - within_character_class (line 68)
   label: fp
   why: 'within_character_class is parser state computed by the caller: data'
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RegexpLiteral#node_body
+  evidence:
+  - include_begin_nodes (line 149)
+  label: fp
+  why: 'include_begin_nodes only picks which node types to join, a data value: no
+    behavior to split'
 - key: rubocop|control_parameter|RuboCop::Cop::Style::RescueModifier#indentation_and_offset
   evidence:
   - parenthesized (line 91)
@@ -74,14 +92,54 @@
   - config (line 121)
   label: fp
   why: config is the configured style string, compared as data
+- key: rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#side_space_range
+  evidence:
+  - side (lines 22, 26)
+  label: tp
+  why: 'side: :left/:right is a literal callers pass to pick the end to measure: the
+    token side could be passed in'
+- key: rubocop|control_parameter|RuboCop::RSpec::ExpectOffense#parse_annotations
+  evidence:
+  - raise_error (line 206)
+  label: tp
+  why: 'raise_error: is a literal boolean callers flip to turn the assertion off'
+- key: rubocop|control_parameter|RuboCop::Server::CLI#run_command
+  evidence:
+  - server_command (line 91)
+  label: fp
+  why: server_command is the parsed command-line option; dispatching a command name
+    is what the method is for
+- key: rubocop|control_parameter|RuboCop::Version.version
+  evidence:
+  - debug (line 27)
+  label: tp
+  why: 'debug: is a literal boolean that switches the whole output format: two methods'
 - key: rubygems.org|control_parameter|Avo::AuditedChangesRecordDiff::ShowComponent#change_type_icon
   evidence:
   - type (line 81)
   label: fp
   why: type maps to an icon; the method is a lookup table, and type is data
+- key: rubygems.org|control_parameter|GemInfo.ordered_names
+  evidence:
+  - cached (line 40)
+  label: tp
+  why: 'cached: is a literal boolean callers flip to bypass the cache: classic control
+    flag'
 - key: rubygems.org|control_parameter|Gemcutter::UserAgentParser::Set#call
   evidence:
   - exclusive (line 24)
   label: tp
   why: 'exclusive: is a boolean option that switches the whole loop''s semantics;
     callers pass a literal: call vs call_exclusive'
+- key: rubygems.org|control_parameter|OIDC::TrustedPublisher::GitHubAction::FormComponent#field
+  evidence:
+  - optional (line 23)
+  label: tp
+  why: 'optional: is a literal boolean callers pass to add the label suffix: a classic
+    control flag on a view helper'
+- key: rubygems.org|control_parameter|UploadInfoFileJob#upload_info_file
+  evidence:
+  - purge (line 73)
+  label: tp
+  why: 'purge: is a boolean callers pass as a literal to switch the CDN purge step
+    on or off: two methods or a separate purge call'

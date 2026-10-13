@@ -53,6 +53,16 @@
   label: fp
   why: 'the six fields are one entity''s identity and usage lists (name, node, scope,
     assignments, references, capture): a cohesive record'
+- key: rubocop|state_sprawl|RuboCop::DirectiveComment
+  evidence:
+  - "@comment"
+  - "@cop_registry"
+  - "@cops"
+  - "@match_data"
+  - "@mode"
+  label: fp
+  why: the constructor parses a directive into its match, mode and cops; the five
+    fields are one parsed comment, not separate responsibilities
 - key: rubocop|state_sprawl|RuboCop::Formatter::DisabledConfigFormatter
   evidence:
   - "@config_for_pwd"
@@ -82,6 +92,14 @@
   label: tp
   why: 'errors and warnings accumulate beside options, store, abort flag and sources:
     the accumulators are one report'
+- key: rubygems.org|state_sprawl|AvatarsController
+  evidence:
+  - "@size (parked between calls)"
+  - "@theme (parked between calls)"
+  - "@user (parked between calls)"
+  label: fp
+  why: 'a controller whose before_action filters set the user, size and theme its
+    one action reads: the Rails request lifecycle'
 - key: rubygems.org|state_sprawl|Avo::Actions::DeleteUser::ActionHandler
   evidence:
   - "@blocked_user_count"
@@ -176,3 +194,11 @@
   - "@versions"
   label: fp
   why: 'actions assign template variables read only by views: handoff'
+- key: rubygems.org|state_sprawl|WebauthnVerificationsController
+  evidence:
+  - "@message"
+  - "@user (parked between calls)"
+  - "@verification (parked between calls)"
+  label: fp
+  why: 'a controller whose before_action filters set @user and @verification for its
+    actions: the Rails request lifecycle, not state to split'

@@ -269,6 +269,41 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     expect(%w[ApplicationController Admin::BaseComponent Pipeline::Step].flat_map { assigns(it) }).to(be_empty)
   end
 
+  it "takes a method the class registers as a callback for part of setting it up, as a constructor's helper is" do
+    findings = crowded(<<~RUBY)
+      class Avatars < ApplicationController
+        before_action :find_user, :set_size
+        private :theme
+
+        def show = @user.url(@size, @theme)
+
+        def theme = @theme = params[:theme]
+
+        private
+
+        def find_user = @user = User.find(params[:id])
+
+        def set_size = @size = params[:size]
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "does not take a method a visibility marker names for a callback" do
+    findings = crowded(<<~RUBY)
+      class Report
+        private :fill
+
+        def initialize(rows) = @rows = rows
+
+        def fill = [@total = @rows.sum, @count = @rows.size]
+
+        def show = [@total, @count]
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["Report"]))
+  end
+
   it "weighs an assign double once another method, or a reader, takes it up between calls" do
     findings = crowded(<<~RUBY)
       class Orders < ApplicationController

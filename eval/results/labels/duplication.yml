@@ -54,6 +54,13 @@
   label: fp
   why: 'two different column deltas that happen to share the a - b shape: coincidence,
     not a copy'
+- key: rubocop|duplication|rubocop/cop/mixin/min_branches_count.rb:29,rubocop/cop/style/conditional_assignment.rb:66
+  evidence:
+  - rubocop/cop/mixin/min_branches_count.rb:29-37
+  - rubocop/cop/style/conditional_assignment.rb:66-77
+  label: tp
+  why: 'two cops walk an if/elsif chain collecting branches by the same recursion:
+    a shared branch walker'
 - key: rubocop|duplication|rubocop/cop/offense.rb:101,rubocop/cop/offense.rb:122
   evidence:
   - rubocop/cop/offense.rb:101-114
@@ -79,6 +86,14 @@
   - rubocop/cop/style/identical_conditional_branches.rb:130-135
   label: tp
   why: 'on_case/on_case_match differ only in the branch list: classic extract'
+- key: rubocop|duplication|rubocop/cop/style/if_with_semicolon.rb:95,rubocop/cop/style/redundant_condition.rb:233,rubocop/cop/style/sole_nested_conditional.rb:194
+  evidence:
+  - rubocop/cop/style/if_with_semicolon.rb:95-102
+  - rubocop/cop/style/redundant_condition.rb:233-238
+  - rubocop/cop/style/sole_nested_conditional.rb:194-199
+  label: tp
+  why: 'three cops build "method(args)" from the same source ranges: an identical
+    helper in three places'
 - key: rubocop|duplication|rubocop/cop/style/method_call_without_args_parentheses.rb:90,rubocop/cop/style/redundant_self.rb:161
   evidence:
   - rubocop/cop/style/method_call_without_args_parentheses.rb:90-92
@@ -91,6 +106,13 @@
   - rubocop/cop/style/redundant_string_escape.rb:162-164
   label: tp
   why: 'the same delimiter test in two escape cops, byte for byte: one shared helper'
+- key: rubocop|duplication|rubocop/cop/variable_force/scope.rb:79,rubocop/cop/variable_force/scope.rb:90
+  evidence:
+  - rubocop/cop/variable_force/scope.rb:79-88
+  - rubocop/cop/variable_force/scope.rb:90-98
+  label: tp
+  why: 'both look up OUTER_SCOPE_CHILD_INDICES by the parent''s type and test the
+    sibling index: the lookup and test could be one helper'
 - key: rubygems.org|duplication|app/avo/actions/unblock_email_domain.rb:4,app/avo/actions/unblock_user.rb:4
   evidence:
   - app/avo/actions/unblock_email_domain.rb:4-7
@@ -132,6 +154,20 @@
   - app/models/oidc/pending_trusted_publisher.rb:18-19
   label: tp
   why: 'the same unexpired/expired scopes in two models: a shared concern'
+- key: rubygems.org|duplication|app/models/organization_onboarding.rb:81,app/models/rubygem_transfer.rb:94
+  evidence:
+  - app/models/organization_onboarding.rb:81-89
+  - app/models/rubygem_transfer.rb:94-101
+  label: tp
+  why: 'both build the same User.joins(:ownerships) query excluding the creator: a
+    shared scope on User would say it once'
+- key: rubygems.org|duplication|app/models/version.rb:562,app/models/version.rb:574
+  evidence:
+  - app/models/version.rb:562-572
+  - app/models/version.rb:574-584
+  label: tp
+  why: 'two uniqueness validations pick their message by ruby_abi the same way: the
+    message choice is copied'
 - key: rubygems.org|duplication|app/views/components/card_component.rb:21,app/views/components/card_component.rb:27
   evidence:
   - app/views/components/card_component.rb:21-23
