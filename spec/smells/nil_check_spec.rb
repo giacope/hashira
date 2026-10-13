@@ -338,7 +338,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(doubts).to(eq([["mixed", false], ["unbound", true], ["shadowed", false]]))
   end
 
-  it "advises exists? when a predicate fetches a record only to test it for nil" do
+  it "advises exists? when a predicate fetches a record only to test it for nil, and lets one answer its own nil" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -360,11 +360,11 @@ RSpec.describe(Hashira::Smells::NilCheck) do
         end
       end
     RUBY
-    expect(findings.map { it.detail[:origin] }).to(eq([:absence, nil, nil, nil]))
+    expect(findings.map { it.detail[:origin] }).to(eq([:absence, nil, :absence]))
     expect(message(findings.first)).to(include("checks for nil", "exists? instead of fetching a record"))
   end
 
-  it "flags safe navigation on a value the codebase itself leaves nil" do
+  it "flags safe navigation on a value the codebase itself leaves nil, and not on a caller's nil default" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -399,7 +399,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found optional keyword]))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found]))
   end
 
   it "flags blank? on a value the object holds, but not on a public argument or a method's result" do
@@ -509,5 +509,43 @@ RSpec.describe(Hashira::Smells::NilCheck) do
       end
     RUBY
     expect(findings.map(&:evidence)).to(eq([["found (line 7)"], ["self.name (line 11)"]]))
+  end
+
+  it "leaves a check alone whose branch raises: the nil is what the guard asserts against" do
+    findings = checked(<<~RUBY)
+      class Builder
+        def initialize = @adapter = nil
+
+        def ensure! = (raise(ArgumentError, "no adapter") if @adapter.nil?)
+
+        def check!
+          fail("no adapter") unless !@adapter.nil?
+        end
+
+        def warn = (@log.warn("no adapter") if @adapter.nil?)
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["Builder#warn"]))
+  end
+
+  it "lets a one-line predicate answer its own nil test, but not one that branches or does more first" do
+    findings = checked(<<~RUBY)
+      class Box
+        def initialize = @x = nil
+
+        def empty? = @x.nil?
+
+        def full?
+          return false if @x.nil?
+          true
+        end
+
+        def ready?
+          log
+          @x.nil?
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready?]))
   end
 end

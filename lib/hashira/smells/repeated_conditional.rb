@@ -1,13 +1,18 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "mapping"
 require_relative "recheck"
 require_relative "scope"
 
 class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
   LIMIT = 2
 
-  EXEMPT = "block_given?"
+  TYPES = %i[is_a? kind_of? instance_of?].freeze
+
+  COMPARISONS = %i[== != ===].freeze
+
+  FIXED = Hashira::Smells::Mapping::FIXED
 
   LOCALS = [Prism::LocalVariableReadNode, Prism::ItLocalVariableReadNode].freeze
 
@@ -35,6 +40,12 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
       def held = receivers(atom).map(&:slice)
 
+      def dispatch? = atom.is_a?(Prism::CallNode) && (TYPES.include?(atom.name) || fixed?)
+
+      def fixed? = COMPARISONS.include?(atom.name) && sides.any? { FIXED.include?(it.class) }
+
+      def sides = [atom.receiver, *atom.arguments&.arguments]
+
       def queries? = chain.any? { it.is_a?(Prism::CallNode) && QUERIES.include?(it.name) }
 
       def rechecked?(rechecks) = rechecks.any? { it.settled?(atom, held) }
@@ -50,7 +61,13 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def groups = tests.group_by(&:key).values
 
-  def tests = found.reject { exempt?(it) || it.queries? || it.rechecked?(rechecks) }
+  def tests = found.select { it.dispatch? || cased.include?(it.root) }.reject { it.queries? || it.rechecked?(rechecks) }
+
+  def cased = @_cased ||= Set.new.compare_by_identity.merge(subjects)
+
+  def subjects = regions.flat_map { cases(it).filter_map(&:predicate) }
+
+  def cases(region) = Hashira::Smells::Scope.below(region, SCOPES).grep(Prism::CaseNode)
 
   def found = regions.flat_map { |region| predicates(region).flat_map { |root| split(root, region) } }
 
@@ -67,8 +84,6 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
   def parts(node) = Array(node.body)
 
   def negated?(node) = node.is_a?(Prism::CallNode) && node.name == :!
-
-  def exempt?(test) = test.text == EXEMPT
 
   def rechecks = @_rechecks ||= subject.sweep.grep(Prism::DefNode).map { Hashira::Smells::Recheck.new(it) }
 

@@ -24,11 +24,7 @@ class Hashira::Smells::Provenance
 
   def argument?(name) = @subject.parameters.include?(name)
 
-  def handed?(name) = HIDDEN.include?(@subject.section) || defaults.any? { blank?(it, name) }
-
-  def blank?(part, name) = part.name == name && part.value.is_a?(Prism::NilNode)
-
-  def defaults = Hashira::Smells::Parameters.parts(@subject.node).select { it.respond_to?(:value) }
+  def handed?(_name) = HIDDEN.include?(@subject.section)
 
   def answered?(call)
     receiver = call.receiver

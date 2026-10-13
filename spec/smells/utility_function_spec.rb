@@ -81,29 +81,6 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     expect(findings).to(be_empty)
   end
 
-  it "exempts extend self modules like module_function ones, and advises a module function elsewhere" do
-    findings = utility(<<~RUBY)
-      module App
-        module Zone
-          module Tools
-            extend self
-
-            def loud(word) = word.to_s
-          end
-
-          module Kit
-            extend Tools
-            Kit.extend self
-
-            def quiet(word) = word.to_s
-          end
-        end
-      end
-    RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Kit#quiet"]))
-    expect(message(findings.first)).to(end_with("Move it onto the object it serves, or make it a module function."))
-  end
-
   it "reads a method its kin also define as polymorphism, not a utility function" do
     jobs = <<~RUBY
       module App
@@ -204,31 +181,23 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     expect(alike).to(eq([true, false]))
   end
 
-  it "treats what a concern defines for its host class as class-level" do
+  it "leaves a module alone, whether a mixin, a concern or a helper, since its methods are meant to lend behavior" do
     findings = utility(<<~RUBY)
       module App
         module Zone
           module Greets
-            included do
-              private
-
-              def veiled(word) = word.to_s
-            end
-
-            class_methods do
-              def summon(word) = word.to_s
-            end
-
-            module ClassMethods
-              def gather(word) = word.to_s
-            end
-
             def greet(word) = word.to_s
+          end
+
+          module Helpers
+            extend self
+
+            def loud(word) = word.to_s
           end
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Greets#greet"]))
+    expect(findings).to(be_empty)
   end
 
   it "reads classes offered as alternatives at one site as peers, so a fake's shared methods are protocol" do

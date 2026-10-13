@@ -31,7 +31,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
     expect(finding.evidence).to(eq(["@mode == :x × 3 (lines 4, 7, 12)"]))
   end
 
-  it "tolerates two repeats, block_given?, and predicateless cases" do
+  it "tolerates two repeats, plain truth tests, and predicateless cases" do
     findings = branching(<<~RUBY)
       module App
         module Zone
@@ -52,6 +52,8 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
               else 2
               end
             end
+
+            def epsilon = @ready ? (@ready ? 1 : 2) : (@ready ? 3 : 4)
           end
         end
       end
@@ -64,11 +66,11 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
       module App
         module Zone
           module Helper
-            def a = @m ? 1 : 2
+            def a = @m == :on ? 1 : 2
 
-            def b = @m ? 3 : 4
+            def b = @m == :on ? 3 : 4
 
-            def c = @m ? 5 : 6
+            def c = @m == :on ? 5 : 6
           end
         end
       end
@@ -81,22 +83,22 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
       module App
         module Zone
           class Thing
-            def alpha(all) = all.zero? ? 1 : 2
+            def alpha(all) = all == 0 ? 1 : 2
 
-            def beta(all) = all.zero? ? 3 : 4
+            def beta(all) = all == 0 ? 3 : 4
 
-            def gamma(all) = all.zero? ? 5 : 6
+            def gamma(all) = all == 0 ? 5 : 6
 
             def delta(rows)
-              return 1 if rows.empty?
-              rows.map { it.empty? ? 0 : 1 }
-              rows.empty? ? 2 : 3
+              return 1 if rows.size == 0
+              rows.map { it.size == 0 ? 0 : 1 }
+              rows.size == 0 ? 2 : 3
             end
 
             def epsilon(rows)
-              rows.each { tick unless it }
-              rows.each { tock unless it }
-              rows.each { tuck unless it }
+              rows.each { tick unless it == :skip }
+              rows.each { tock unless it == :skip }
+              rows.each { tuck unless it == :skip }
             end
           end
         end
@@ -111,19 +113,19 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
         module Zone
           class Thing
             def alpha(all)
-              return (all ? 1 : 2) if all
-              all ? 3 : 4
+              return (all == 1 ? 1 : 2) if all == 1
+              all == 1 ? 3 : 4
             end
 
             def beta
-              return (@mode ? 1 : 2) if @mode
-              @mode ? 3 : 4
+              return (@mode == 1 ? 1 : 2) if @mode == 1
+              @mode == 1 ? 3 : 4
             end
           end
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["all × 3 (lines 5, 6)", "@mode × 3 (lines 10, 11)"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["all == 1 × 3 (lines 5, 6)", "@mode == 1 × 3 (lines 10, 11)"]))
   end
 
   it "counts a test on the object's own state across blocks too, lines in order" do
@@ -132,28 +134,28 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
         module Zone
           class Thing
             def alpha(rows)
-              rows.map { @mode ? 1 : 2 }
-              return 3 if @mode
-              rows.map { |row| row.size if @mode }
+              rows.map { @mode == :on ? 1 : 2 }
+              return 3 if @mode == :on
+              rows.map { |row| row.size if @mode == :on }
             end
           end
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@mode × 3 (lines 5, 6, 7)"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["@mode == :on × 3 (lines 5, 6, 7)"]))
   end
 
   it "judges a reopened class once, across every file that opens it" do
     findings = sniffed(
       {
-        "lib/app/zone/thing.rb" => "class Thing\n  def a = @m ? 1 : 2\n\n  def b = @m ? 3 : 4\nend\n",
-        "lib/app/zone/thing/more.rb" => "class Thing\n  def c = @m ? 5 : 6\nend\n"
+        "lib/app/zone/thing.rb" => "class Thing\n  def a = @m == 1 ? 1 : 2\n\n  def b = @m == 1 ? 3 : 4\nend\n",
+        "lib/app/zone/thing/more.rb" => "class Thing\n  def c = @m == 1 ? 5 : 6\nend\n"
       },
       "repeated_conditional"
     )
     expect(findings.size).to(eq(1))
     expect(findings.first.detail[:site]).to(eq("thing.rb:1"))
-    expect(findings.first.evidence).to(eq(["@m × 3 (lines 2, 4)"]))
+    expect(findings.first.evidence).to(eq(["@m == 1 × 3 (lines 2, 4)"]))
   end
 
   it "splits compound tests into their parts, so a flag tested alone and inside an || counts each time" do
@@ -161,24 +163,24 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
       module App
         module Zone
           class Stream
-            def read = @closed ? nil : @io.read
+            def read = @state == :closed ? nil : @io.read
 
             def write(text)
-              @io.write(text) unless !@closed
+              @io.write(text) unless !(@state == :closed)
             end
 
             def pump
-              return if @closed || @exited
+              return if @state == :closed || @exited
               @io.pump
             end
           end
 
           class Gate
-            def a = (@open && @ready) ? 1 : 2
+            def a = (@kind == :open && @ready) ? 1 : 2
 
-            def b = (@open && @ready) ? 3 : 4
+            def b = (@kind == :open && @ready) ? 3 : 4
 
-            def c = (@open && @ready) ? 5 : 6
+            def c = (@kind == :open && @ready) ? 5 : 6
 
             def d = (not @shut) ? 7 : 8
 
@@ -187,7 +189,9 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@closed × 3 (lines 4, 7, 11)", "@open × 3 (lines 17, 19, 21)"]))
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@state == :closed × 3 (lines 4, 7, 11)", "@kind == :open × 3 (lines 17, 19, 21)"])
+    )
   end
 
   it "ignores tests that query the database or the file system, whose answer can change between checks" do
@@ -195,29 +199,29 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
       module App
         module Zone
           class Thing
-            def a = Lock.exists?(@key) ? 1 : 2
+            def a = Lock.exists?(@key) == true ? 1 : 2
 
-            def b = Lock.exists?(@key) ? 3 : 4
+            def b = Lock.exists?(@key) == true ? 3 : 4
 
-            def c = Lock.exists?(@key) ? 5 : 6
+            def c = Lock.exists?(@key) == true ? 5 : 6
 
-            def d = Order.where(id: @id).any? ? 1 : 2
+            def d = Order.where(id: @id).count == 0 ? 1 : 2
 
-            def e = Order.where(id: @id).any? ? 3 : 4
+            def e = Order.where(id: @id).count == 0 ? 3 : 4
 
-            def f = Order.where(id: @id).any? ? 5 : 6
+            def f = Order.where(id: @id).count == 0 ? 5 : 6
 
-            def g = File.exist?(@path) ? 1 : 2
+            def g = File.exist?(@path) == true ? 1 : 2
 
-            def h = File.exist?(@path) ? 3 : 4
+            def h = File.exist?(@path) == true ? 3 : 4
 
-            def i = File.exist?(@path) ? 5 : 6
+            def i = File.exist?(@path) == true ? 5 : 6
 
-            def j = User.find_by(id: @id) ? 1 : 2
+            def j = User.find_by(id: @id) == nil ? 1 : 2
 
-            def k = User.find_by(id: @id) ? 3 : 4
+            def k = User.find_by(id: @id) == nil ? 3 : 4
 
-            def l = User.find_by(id: @id) ? 5 : 6
+            def l = User.find_by(id: @id) == nil ? 5 : 6
           end
         end
       end
@@ -231,16 +235,16 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
         module Zone
           class Thing
             def claim
-              return false if @job.claimed?
+              return false if @job.state == :claimed
               @job.lock!
-              return false if @job.claimed?
+              return false if @job.state == :claimed
               @job.claim!
             end
 
             def run
-              return if @job.claimed?
+              return if @job.state == :claimed
               @job.with_lock do
-                return if @job.claimed?
+                return if @job.state == :claimed
                 work
               end
             end
@@ -261,26 +265,26 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
             end
 
             def run
-              return if @job.claimed?
+              return if @job.state == :claimed
               @log.write(1)
               kept = @job.reload
               touched = @job.each(&:touch)
-              return if @job.claimed?
+              return if @job.state == :claimed
               done = @job.with_lock { work }
-              @job.claimed? ? [kept, touched, done] : nil
+              @job.state == :claimed ? [kept, touched, done] : nil
             end
 
             def again
               @job.claim!
-              claimed? ? 1 : 2
+              state == :claimed ? 1 : 2
             end
 
-            def other = claimed? ? 1 : 2
+            def other = state == :claimed ? 1 : 2
 
-            def more = claimed? ? 1 : 2
+            def more = state == :claimed ? 1 : 2
 
             def release
-              return if @job.claimed?
+              return if @job.state == :claimed
               @job.unlock!
               true
             end
@@ -289,7 +293,28 @@ RSpec.describe(Hashira::Smells::RepeatedConditional) do
       end
     RUBY
     expect(findings.flat_map(&:evidence)).to(
-      eq(["@job.claimed? × 4 (lines 9, 13, 15, 28)", "claimed? × 3 (lines 20, 23, 25)"])
+      eq(["@job.state == :claimed × 4 (lines 9, 13, 15, 28)", "state == :claimed × 3 (lines 20, 23, 25)"])
+    )
+  end
+
+  it "counts type tests and the subject a case dispatches on, the tests polymorphism would replace" do
+    findings = branching(<<~RUBY)
+      class Billing
+        def total = @owner.is_a?(Org) ? 1 : 2
+
+        def label = @owner.is_a?(Org) ? "org" : "user"
+
+        def mail = (@owner.is_a?(Org) ? 3 : 4) if @plan != Plan::FREE
+
+        def fee = case @plan when Plan::FREE then 0 else 1 end
+
+        def cap = case @plan when Plan::FREE then 0 else 1 end
+
+        def tax = case @plan when Plan::FREE then 0 else 1 end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@owner.is_a?(Org) × 3 (lines 2, 4, 6)", "@plan × 3 (lines 8, 10, 12)"])
     )
   end
 end

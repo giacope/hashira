@@ -203,9 +203,9 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
         module Zone
           class Stream
             def initialize(socket, log)
-              @socket = socket
+              @socket = socket.to_io
               @reader = Reader.new(socket)
-              @log = log
+              @log = log.tagged(:stream)
               @level = 1
               @closed = false
             end
@@ -228,7 +228,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
         module Zone
           class Import
             def initialize(path)
-              @path = path
+              @path = File.expand_path(path)
             end
 
             def run
@@ -294,7 +294,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
       class Report
         private :fill
 
-        def initialize(rows) = @rows = rows
+        def initialize(rows) = @rows = rows.to_a
 
         def fill = [@total = @rows.sum, @count = @rows.size]
 
@@ -351,7 +351,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
 
           class Parked
             def initialize(rows)
-              @rows = rows
+              @rows = rows.to_a
             end
 
             def find(key) = @by_key[key] || @other
@@ -365,5 +365,42 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
       end
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Parked"]))
+  end
+
+  it "weighs a field the constructor takes straight from its arguments as nothing: an input, like a job's arguments" do
+    findings = crowded(<<~RUBY)
+      class Button
+        def initialize(label, size, color, icon:, href:)
+          @label = label
+          @size = size
+          @color = color
+          @icon = icon
+          @href = href
+        end
+
+        def text = [@label, @size]
+
+        def link = [@icon, @href, @color]
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "notes the given fields of a class whose own state sprawls" do
+    findings = crowded(<<~RUBY)
+      class Pusher
+        def initialize(owner, body)
+          @owner = owner
+          @body = body.read
+        end
+
+        def process = [pull, @spec.name, @gem.save]
+
+        def pull = [@spec = Spec.new(@body), @gem = Gem.new(@owner)]
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@body", "@gem (parked between calls)", "@owner (given to the constructor)", "@spec (parked between calls)"])
+    )
   end
 end

@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::ControlParameter < Hashira::Smells::Check
+  HIDDEN = %i[private protected].freeze
+
   private
 
-  def smelly? = culprits.any?
+  def smelly? = !HIDDEN.include?(subject.section) && culprits.any?
 
   def culprits = @_culprits ||= subject.parameters.filter_map { |name| culprit(name) }
 

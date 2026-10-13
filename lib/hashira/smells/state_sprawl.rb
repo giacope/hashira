@@ -25,6 +25,8 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   NOTES = { 0 => " (read by no method: handed off)", 1 => "", 2 => " (parked between calls)" }.freeze
 
+  GIVEN = " (given to the constructor)"
+
   private
 
   def smelly? = subject.kind == :class && weight > limit && !cohesive?
@@ -34,10 +36,23 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
   def weight = names.sum { heft(it) }
 
   def heft(name)
+    return 0 if given.include?(name)
     return 1 unless stray?(name)
     return 2 if parked.include?(name)
     read?(name) ? 1 : 0
   end
+
+  def given = @_given ||= names.select { |name| writes.select { it.name == name }.all? { handed?(it) } }
+
+  def handed?(write) = setup.include?(write) && passed?(write)
+
+  def passed?(write) = write.is_a?(Prism::InstanceVariableWriteNode) && argument?(write.value)
+
+  def argument?(value) = value.is_a?(Prism::LocalVariableReadNode) && inputs.include?(value.name)
+
+  def setup = @_setup ||= Set.new.compare_by_identity.merge(sweeps(constructors))
+
+  def inputs = @_inputs ||= constructors.flat_map { Hashira::Smells::Parameters.names(it) }
 
   def stray?(name) = written(strays).include?(name) && !written(founders).include?(name)
 
@@ -129,5 +144,5 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def detail = Sprawl.new(site:, count: names.size, weight:, limit:)
 
-  def evidence = names.map { "#{it}#{NOTES[heft(it)]}" }
+  def evidence = names.map { "#{it}#{given.include?(it) ? GIVEN : NOTES[heft(it)]}" }
 end

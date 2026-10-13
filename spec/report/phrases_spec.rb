@@ -23,11 +23,8 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("feature_envy", names: %w[item order line], types: %w[Item Order Line], count: 2, ego: 1) =>
         "Cart#price refers to 'item', 'order', 'line' more than to self, 2 each to 1 (cart.rb:12). " \
         "The behavior may belong on Item, Order or Line.",
-      smell("utility_function", owner: :class) =>
+      smell("utility_function") =>
         "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
-      smell("utility_function", owner: :module) =>
-        "Cart#price touches no instance state (cart.rb:12). " \
-        "Move it onto the object it serves, or make it a module function.",
       smell("assumed_state", installed: [], unassigned: %w[@a]) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Nothing ever assigns '@a', so it reads nil: a typo or a dead hook. " \

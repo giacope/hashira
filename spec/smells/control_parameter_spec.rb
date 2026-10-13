@@ -23,6 +23,13 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     expect(found.map { it.map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
   end
 
+  it "leaves a private or protected helper's flag alone: the explicit public methods in front are the interface" do
+    head = "class Writer\n  def quoted = put(true)\n  def plain = put(false)\n"
+    put = "def put(quoted) = quoted ? @io.puts(1) : @io.puts(2)\nend\n"
+    sources = %w[private protected public].map { "#{head}  #{it}\n  #{put}" }
+    expect(sources.map { flagged("lib/app/w.rb" => it).map(&:package) }).to(eq([[], [], %w[Writer#put]]))
+  end
+
   it "flags a parameter that only decides which path to take" do
     findings = steered(<<~RUBY)
       module App

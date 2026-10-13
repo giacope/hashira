@@ -3,15 +3,17 @@ module App
     def initialize(user, store, clock, log)
       @user = user
       @store = store
-      @clock = clock
-      @log = log
+      @started = clock.now
+      @log = Log.new(log)
     end
 
-    def open = @token = @store.issue(@user, @clock.now)
+    def open = @token = @store.issue(@user, @started)
+
+    def renew = @renewed = @store.renew(@token)
 
     def close
       @store.revoke(@token)
-      @log.write(@user)
+      @log.write(@user, @renewed)
     end
   end
 

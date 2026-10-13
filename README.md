@@ -376,9 +376,11 @@ Findings (2):
   caller passes it as a literal flag (`true`, `false`, a symbol) by position or
   keyword. An argument that callers compute, a configured style, an argument a
   branch only maps to a value (`flag ? "on" : "off"`), and one compared with
-  another value are data.
-- **data_clump** — the same two or more parameters travel together through three
-  or more methods, one handing the group to another.
+  another value are data. Only a method callers outside the class can reach
+  counts: a private or protected helper's flag sits behind the explicit public
+  methods that call it.
+- **data_clump** — the same three or more parameters travel together through
+  three or more methods, one handing the group to another.
 - **repeated_call** — the identical call made twice in one method; name the
   result. Identity is by value: a local counts by its binding, a literal block is
   part of the call, a reassignment between makes two values. Left alone: calls
@@ -391,8 +393,13 @@ Findings (2):
   A chain (`order.customer.address`), a helper method's result, a constant's
   query (`Time.now` twice is two times) or three reads are reported.
 - **repeated_conditional** — one class testing the same condition in three or
-  more places; polymorphism is overdue.
+  more places: a comparison with a fixed value (`@mode == :draft`), a type test
+  (`is_a?`), or the subject of a `case`; polymorphism is overdue. A plain truth
+  test (`signed_in?`, `@closed`) asks about state rather than dispatching on
+  it, and stays quiet.
 - **state_sprawl** — a class whose fields weigh more than four. A field the
+  constructor takes straight from an argument (`@size = size`) is an input, a
+  component's props or a job's arguments, and weighs nothing. Any other field the
   constructor (or a helper it calls, or a callback the class registers such as a
   `before_action`) sets weighs one. One set elsewhere and taken up by another
   method or a reader is parked between calls and weighs two; one set elsewhere
@@ -402,8 +409,9 @@ Findings (2):
 - **assumed_state** — an instance variable read that nothing the class can reach
   ever assigns: a typo, or a fragile base class waiting for subclasses to install
   its state.
-- **utility_function** — a public method that touches no instance state. A
-  method that fills a role its kin define (`perform` on every job, a hook a
+- **utility_function** — a public method of a class that touches no instance
+  state. A module's methods (a mixin, a concern, a view helper) lend behavior
+  and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
   library calls, a fake's side of a protocol) is exempt.
 - **manual_dispatch** — a `respond_to?` probe, or a `case`/`is_a?` ladder over
   two or more of the codebase's own classes or the object's own status. The
@@ -412,14 +420,17 @@ Findings (2):
   `respond_to_missing?` and the `method_missing` it pairs with are exempt.
 - **nil_check** — `nil?`, `== nil`, `when nil`, `blank?`, and, on a value the
   code itself leaves nil, `&.`, `unless x` and `x || default`. Reported only
-  where the nil is the codebase's own: its state, a nil it assigns or defaults
-  to, its own method's result, a private method's argument, a literal it built,
+  where the nil is the codebase's own: its state, a nil it assigns, its own
+  method's result, a private method's argument, a literal it built,
   a record fetched from an owned class, or an attribute an owned class declares.
   A public method's argument, a payload read from outside and a library's
   answer (a node's absent receiver, a URI's missing scheme) are someone else's
   contract. A validator's guard on an attribute a presence validation already
-  reports, and a check replaced by its default, stay quiet; a predicate that
-  fetches a record only to test it for nil is told to ask `exists?`.
+  reports, a check replaced by its default, a check whose branch raises (the
+  guard asserts against the nil), and a one-line predicate that answers a nil
+  test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
+  to nil is the caller's option, not the codebase's nil. A predicate that fetches
+  a record only to test it for nil is told to ask `exists?`.
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing
   adapter. A program that interprets a foreign model on purpose can declare it

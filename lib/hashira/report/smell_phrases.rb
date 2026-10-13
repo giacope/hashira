@@ -5,8 +5,6 @@ module Hashira::Report::Phrases
 
   ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
 
-  UTILITY_ADVICE = { module: "make it a module function", class: "make it private" }.freeze
-
   DATA_CLUMP = "Introduce a parameter object."
 
   SPRAWL = "Split the class, or gather related fields into value objects."
@@ -95,7 +93,7 @@ module Hashira::Report::Phrases
   def on_utility_function(finding)
     detail = finding.detail
     "#{finding.package} touches no instance state (#{detail[:site]}). " \
-      "Move it onto the object it serves, or #{UTILITY_ADVICE.fetch(detail[:owner])}."
+      "Move it onto the object it serves, or make it private."
   end
 
   def tally(finding, event, advice)

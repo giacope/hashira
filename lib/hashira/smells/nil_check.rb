@@ -14,7 +14,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   FINDERS = %i[find_by].freeze
 
-  OPTIONAL = Hashira::Smells::DataClump::DEFAULTED
+  RAISES = %i[raise fail].freeze
+
+  BRANCHES = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode].freeze
 
   private
 
@@ -67,13 +69,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def assignments(node)
     case node
-    when Prism::LocalVariableReadNode then named(body.grep(Prism::LocalVariableWriteNode) + defaults, node.name)
+    when Prism::LocalVariableReadNode then named(body.grep(Prism::LocalVariableWriteNode), node.name)
     when Prism::InstanceVariableReadNode then named(state.grep(Prism::InstanceVariableWriteNode), node.name)
     else []
     end
   end
-
-  def defaults = Hashira::Smells::Parameters.parts(subject.node).select { OPTIONAL.include?(it.class) }
 
   def named(nodes, name) = nodes.select { it.name == name }
 
@@ -91,7 +91,21 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def cases = body.grep(Prism::CaseNode)
 
-  def excused?(check) = guard?(check) || defaulted?(check)
+  def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check)
+
+  def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raise?(it) } }
+
+  def asserted(check) = body.select { asserts?(it, check) }
+
+  def asserts?(node, check) = BRANCHES.first(2).include?(node.class) && within(node.predicate).any? { it.equal?(check) }
+
+  def raise?(node) = node.is_a?(Prism::CallNode) && !node.receiver && RAISES.include?(node.name)
+
+  def answering?(check) = predicate? && body.none? { BRANCHES.include?(it.class) } && !fetching?(check)
+
+  def fetching?(check) = tested(check).all? { finder?(it) }
+
+  def predicate? = subject.node.then { it.name.end_with?("?") && Hashira::Analysis::Syntax.statements(it).one? }
 
   def guard?(check)
     validations.validator?(subject.node.name) && tested(check).all? { required?(it) } && !reporting?(check)
