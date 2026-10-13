@@ -40,7 +40,7 @@ class Hashira::CI::Ratchet
   end
 
   def widened(flag, was, now)
-    return if was == now
+    return if was.sort == now.sort
     phrase(flag, was, now)
   end
 

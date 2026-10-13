@@ -253,6 +253,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["app"]).blocker)
         .to(include("recorded with the directories lib/app, but this run uses app"))
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"]).blocker).to(be_nil)
+      expect(scoped(graph, analyzers: %i[smells coupling], targets: ["lib/app"]).blocker).to(be_nil)
     end
   end
 
