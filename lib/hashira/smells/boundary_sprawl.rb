@@ -30,9 +30,7 @@ class Hashira::Smells::BoundarySprawl
 
   def foreign = reaches.except(*@interpreted).reject { |root, _| builtin?(root) }
 
-  def builtin?(root) = Object.const_defined?(root) && !written?(root)
-
-  def written?(root) = File.file?(Object.const_source_location(root).first.to_s)
+  def builtin?(root) = Hashira::Analysis::CORE.include?(root)
 
   def finding(root, contexts)
     files = contexts.map(&:file).uniq

@@ -1,0 +1,21 @@
+#!/usr/bin/env -S ruby --disable-gems
+# frozen_string_literal: true
+
+shipped = { "ruby" => [RUBY_VERSION] }
+shipped["universal"] = BasicObject.instance_methods + Kernel.instance_methods
+shipped["values"] = [Integer, Float, String, Symbol, Array, Hash, Range].flat_map(&:public_instance_methods)
+shipped["macros"] = Class.new.then { it.methods + it.private_methods }
+shipped["constants"] = Object.constants.select { Object.const_get(it).is_a?(Module) }
+
+require "rbconfig"
+require "rubygems"
+require "bundled_gems"
+require "yaml"
+
+shelves = RbConfig::CONFIG.values_at("rubylibdir", "rubyarchdir")
+filed = shelves.flat_map { |shelf| Dir.children(shelf).map { it.sub(/\.(rb|#{RbConfig::CONFIG["DLEXT"]})\z/o, "") } }
+gems = Gem::Specification.select(&:default_gem?).map(&:name) + Gem::BUNDLED_GEMS::SINCE.keys
+shipped["libraries"] = (filed + gems).grep(/\A[a-z][a-z0-9_]*\z/)
+
+inventory = shipped.transform_values { it.map(&:to_s).uniq.sort }.merge("ruby" => RUBY_VERSION)
+File.write(File.expand_path("../lib/hashira/analysis/inventory.yml", __dir__), YAML.dump(inventory))

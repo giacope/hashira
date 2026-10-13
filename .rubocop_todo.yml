@@ -120,6 +120,7 @@ RSpec/SpecFilePathFormat:
   Exclude:
     - '**/spec/routing/**/*'
     - 'spec/analysis/finding_spec.rb'
+    - 'spec/analysis/inventory_spec.rb'
     - 'spec/analysis/syntax_spec.rb'
     - 'spec/churn_spec.rb'
     - 'spec/ci/accepted_spec.rb'

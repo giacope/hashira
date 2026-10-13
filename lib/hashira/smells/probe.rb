@@ -8,8 +8,6 @@ class Hashira::Smells::Probe
     to_a to_ary to_h to_hash to_i to_int to_io to_json to_model to_param to_path to_proc to_s to_str to_sym to_unsafe_h
   ].freeze
 
-  CORE = [Integer, Float, String, Symbol, Array, Hash, Range].flat_map(&:public_instance_methods).to_set.freeze
-
   REQUESTS = %i[params request].freeze
 
   HELD = [NilClass, Prism::SelfNode, Prism::InstanceVariableReadNode].freeze
@@ -36,7 +34,9 @@ class Hashira::Smells::Probe
 
   def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(message.unescaped.to_sym)
 
-  def disguised? = asked?(CORE) && !@subject.ownership.vocabulary.speaks?(message.unescaped.to_sym)
+  def disguised? = asked?(Hashira::Analysis::VALUES) && !spoken?
+
+  def spoken? = @subject.ownership.vocabulary.speaks?(message.unescaped.to_sym)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 

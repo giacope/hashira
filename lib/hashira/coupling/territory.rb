@@ -19,7 +19,9 @@ class Hashira::Coupling::Territory
 
   def verdicts = @_verdicts ||= {}
 
-  def abroad?(root) = Hashira::Coupling::Builtin.include?(root) || !(homes.include?(root) || founded.include?(root))
+  def abroad?(root) = builtin?(root) || !(homes.include?(root) || founded.include?(root))
+
+  def builtin?(root) = Hashira::Analysis::CORE.include?(root) || Hashira::Analysis::LIBRARIES.include?(root.downcase)
 
   def founded = @_founded ||= @definitions.select { it.klass? && it.created? }.to_set { root(it) }
 

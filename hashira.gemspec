@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
     "bug_tracker_uri" => "#{spec.homepage}/issues",
     "rubygems_mfa_required" => "true"
   }
-  spec.files = Dir["lib/**/*.rb", "exe/*", "README.md", "CHANGELOG.md", "LICENSE*"]
+  spec.files = Dir["lib/**/*.{rb,yml}", "exe/*", "README.md", "CHANGELOG.md", "LICENSE*"]
   spec.bindir = "exe"
   spec.executables = ["hashira"]
   spec.require_paths = ["lib"]

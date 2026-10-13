@@ -152,6 +152,19 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
     end
   end
 
+  def coupled?(name)
+    files = {
+      "app/ext/#{name.downcase}.rb" => "class #{name}\n  def x = 1\nend\n",
+      "app/models/note.rb" => "class Note\n  def s = #{name}\nend\n"
+    }
+    analyze(files, directories: ["app"]) { |_project, _census, graph| return graph.edges.any? }
+  end
+
+  it "leaves core and standard-library names to Ruby, loaded or not, and owns every other name it reopens" do
+    names = %w[Process Set JSON Logger URI Zlib FileUtils Billing Rack]
+    expect(names.select { coupled?(it) }).to(eq(%w[Billing Rack]))
+  end
+
   it "still couples to a constant the project defines under a core namespace" do
     files = {
       "app/ext/file.rb" => "class File\n  class Lock < StandardError\n    def l = 1\n  end\nend\n",
