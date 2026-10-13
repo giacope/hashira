@@ -8,7 +8,7 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 5
+max_ignored: 6
 ignore:
 - file: lib/hashira/coupling/echo.rb
   line: 18
@@ -36,3 +36,9 @@ ignore:
   label: delete `nodes.one?`
   reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
     groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)
+- file: lib/hashira/coupling/cut.rb
+  line: 24
+  label: "> => >="
+  reason: A cut only ever holds edges between two different packages of a knot (an edge map never records a package's
+    reference to itself), and an ordering gives each package its own position, so the two ends of an edge never share a
+    position and >= agrees with >
