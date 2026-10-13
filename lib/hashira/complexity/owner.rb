@@ -28,8 +28,6 @@ module Hashira
         def body = call.block.body
 
         def location = call.location
-
-        def receiver = call.receiver
       end
 
     Owner =
@@ -42,7 +40,9 @@ module Hashira
 
         def nested(name) = Owner.new(segments: segments + [name])
 
-        def subject(node) = "#{segments.join("::")}#{node.receiver ? "." : separator}#{node.name}"
+        def subject(node) = "#{segments.join("::")}#{singleton?(node) ? "." : separator}#{node.name}"
+
+        def singleton?(node) = node.is_a?(Prism::DefNode) && node.receiver
       end
   end
 end
