@@ -95,7 +95,7 @@ class Hashira::Smells::Lineage
   end
 
   def vocabulary
-    @_vocabulary ||= @types.flat_map { Hashira::Smells::Visibility.new(it.node).entries }.to_set { |definition, _| definition.name }
+    @_vocabulary ||= @types.flat_map { Hashira::Analysis::TypeWalk.sections(it.node) }.to_set { |definition, _| definition.name }
   end
 
   def extensions(type) = named(type, EXTENSIONS)

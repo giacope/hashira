@@ -73,7 +73,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def bodies = subject.nodes.flat_map { Hashira::Analysis::Syntax.statements(it) }
 
-  def hook?(call) = !call.receiver && !Hashira::Smells::Visibility::MARKERS.include?(call.name)
+  def hook?(call) = !call.receiver && !Hashira::Analysis::TypeWalk::MARKERS.include?(call.name)
 
   def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
 

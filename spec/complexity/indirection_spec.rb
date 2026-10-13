@@ -2,72 +2,77 @@
 
 RSpec.describe(Hashira::Complexity::Indirection) do
   def traced(source, rules = Fixtures::NONE)
-    files = { "lib/app/walk.rb" => source }
-    within(files) do
+    within("lib/app/walk.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       trees = project.files.to_h { [it, Prism.parse_file(it).value] }
       return Hashira::Complexity::Scores.new(project, trees, rules).findings.select { it.kind == "indirection" }
     end
   end
 
-  def walk(entry = "rows.each { |row| check(row) }", extra = "")
+  def walk(entry = "first(rows)", extra = "")
     <<~RUBY
       class Walk
-        def run(rows)
-          #{entry}
-        end
+        def run(rows) = #{entry}
         #{extra}
         private
 
-        def check(row)
-          if row.a
-            if row.b
-              mark(row)
-            end
-          end
+        def first(rows) = second(rows.compact)
+
+        def second(rows) = third(rows)
+
+        def third(rows)
+          rows.each { |row| puts(row) }
+          tail(rows)
         end
 
-        def mark(row)
-          row.c ? 1 : 2
-          while row.d do end
-          row.f if row.e
-        end
+        def tail(rows) = rows.size
       end
     RUBY
   end
 
-  it "reports a trace once, from its entry, not again from the helpers inside it" do
-    expect(traced(walk).map(&:package)).to(eq(["Walk#run"]))
-  end
+  def chain(source) = traced(source).first.detail.chain
 
-  it "flags a trace from exactly the threshold, and not one point below it" do
-    rules = [17, 18].map { Hashira::Config::Rules.parse({ "indirection" => { "threshold" => it } }, ["indirection"]) }
-    expect(rules.map { traced(walk, it).size }).to(eq([1, 0]))
-  end
+  def first(body) = walk.sub("def first(rows) = second(rows.compact)", "def first(rows)#{body}")
 
-  it "scores a method with its single-use helpers read in place, each at the nesting of its call" do
+  it "counts the hollow helpers on the longest path from an entry, and lets the meaningful ones through for free" do
     finding = traced(walk).first
-    expect([finding.detail.to_h, finding.evidence]).to(
-      eq([{ site: "walk.rb:2", cognitive: 17, own: 0, helpers: 2, depth: 2 }, ["check (line 8)", "mark (line 16)"]])
+    expect([finding.package, finding.detail.to_h, finding.evidence]).to(
+      eq(["Walk#run", { site: "walk.rb:2", chain: 3 }, ["first (line 6)", "second (line 8)", "tail (line 15)"]])
     )
   end
 
-  it "says what the trace scores read in place and by itself, and what to do" do
-    said = "Walk#run scores cognitive 17 with its 2 single-use helpers (2 deep) read in place, 0 by itself " \
-      "(walk.rb:2). Inline the helpers that only move code, and reduce the logic itself."
+  it "says how many hollow helpers stand between the entry and its work, and what to do" do
+    said = "Walk#run reaches its work through 3 hollow helpers, private one-liners called once that only pass a " \
+      "call on (walk.rb:2). Inline them into their callers."
     expect(message(traced(walk).first)).to(eq(said))
   end
 
-  it "takes a helper called twice, by symbol, through a receiver, or from another class for an abstraction" do
-    twice = walk("rows.each { |row| check(row) }\n    check(rows.first)")
-    named = walk("rows.each { |row| check(row) }", "before_action :check\n")
-    received = walk("rows.each { |row| check(row) }", "def other(walk) = walk.check(1)\n")
-    borrowed = "#{walk}class Other\n  include Walk\n  def go = check(1)\nend\n"
-    expect([twice, named, received, borrowed].map { traced(it).map(&:package) }).to(eq([["Walk#check"]] * 4))
+  it "flags a chain from exactly the threshold, and not one hop below it" do
+    rules = [3, 4].map { Hashira::Config::Rules.parse({ "indirection" => { "threshold" => it } }, ["indirection"]) }
+    expect(rules.map { traced(walk, it).size } + [traced(walk("third(rows)")).size]).to(eq([1, 0, 0]))
   end
 
-  it "leaves a method already over the complexity threshold to complexity" do
-    tangled = walk("if rows\n if rows.a\n if rows.b\n if rows.c\n check(rows)\n end\n end\n end\n end")
-    expect(traced(tangled)).to(eq([]))
+  it "takes a body that decides, computes, runs a block or holds two statements for a meaningful helper" do
+    bodies = [" = rows ? second(rows) : []", " = second(rows.compact.uniq)", " = second(rows.map { it })"]
+    bodies += [" = second(rows) || 1", "\n  rows.compact\n  second(rows)\nend"]
+    expect(bodies.map { chain(first(it)) } + [chain(walk.sub("rows.size", "1"))]).to(eq([2] * 6))
+  end
+
+  it "reports a chain once, from its entry, not again from the helpers inside it" do
+    expect(traced(walk).map(&:package)).to(eq(["Walk#run"]))
+  end
+
+  it "takes a public method for an entry, which ends the chain" do
+    second = "def second(rows) = third(rows)\n"
+    open = walk.sub("  #{second}", "").sub("private\n", "#{second}private\n")
+    expect(traced(open)).to(eq([]))
+  end
+
+  it "takes a method called twice, by symbol, through a receiver, or from elsewhere, for an entry" do
+    twice = walk("first(rows) + second(rows)")
+    named = walk("first(rows)", "before_action :second\n")
+    received = walk("first(rows)", "def other(walk) = walk.second(1)\n")
+    borrowed = "#{walk}class Other\n  include Walk\n  def go = second(1)\nend\n"
+    expect([twice, named, received, borrowed].map { traced(it).map(&:package) }).to(eq([[]] * 4))
   end
 end

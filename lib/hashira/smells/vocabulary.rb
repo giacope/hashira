@@ -28,7 +28,7 @@ class Hashira::Smells::Vocabulary
 
   def names(entries) = entries.to_set { |definition, _| stem(definition.name) }
 
-  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Smells::Visibility.new(it).entries } }
+  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Analysis::TypeWalk.sections(it) } }
 
   def types(tree)
     found = []

@@ -2,11 +2,7 @@
 
 require "prism"
 
-class Hashira::Smells::Visibility
-  MARKERS = %i[public private protected module_function].freeze
-
-  CLASS_LEVEL = :ClassMethods
-
+class Hashira::Analysis::Visibility
   LIFTS = %i[class_methods].freeze
 
   def initialize(type)
@@ -38,7 +34,7 @@ class Hashira::Smells::Visibility
     section == :public && @_extended ? :module_function : section
   end
 
-  def class_level? = @node.is_a?(Prism::ModuleNode) && @node.name == CLASS_LEVEL
+  def class_level? = @node.is_a?(Prism::ModuleNode) && @node.name == Hashira::Analysis::TypeWalk::CLASS_LEVEL
 
   def reflexive?(node)
     node in Prism::CallNode[name: :extend, receiver: nil, arguments: Prism::ArgumentsNode[arguments: [Prism::SelfNode]]]
@@ -67,7 +63,7 @@ class Hashira::Smells::Visibility
     bare?(node) ? switch(node.name, node.arguments) : enclose(node)
   end
 
-  def bare?(node) = MARKERS.include?(node.name) && !node.receiver
+  def bare?(node) = Hashira::Analysis::TypeWalk::MARKERS.include?(node.name) && !node.receiver
 
   def lift?(node) = LIFTS.include?(node.name) && !node.receiver && node.block.is_a?(Prism::BlockNode)
 
@@ -91,6 +87,6 @@ class Hashira::Smells::Visibility
   end
 
   def shadow(node)
-    @_found.concat(Hashira::Smells::Visibility.new(node).entries.map { |definition, _| [definition, :singleton] })
+    @_found.concat(Hashira::Analysis::Visibility.new(node).entries.map { |definition, _| [definition, :singleton] })
   end
 end

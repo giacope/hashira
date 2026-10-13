@@ -5,9 +5,11 @@ require "prism"
 class Hashira::Complexity::Indirection
   KIND = "indirection"
 
-  THRESHOLD = 10
+  THRESHOLD = 2
 
-  SELVES = Hashira::Complexity::InlinedScore::SELVES
+  PRIVATE = :private
+
+  SELVES = [NilClass, Prism::SelfNode].freeze
 
   def initialize(sites, trees, rules)
     @sites = sites
@@ -19,13 +21,23 @@ class Hashira::Complexity::Indirection
 
   private
 
-  def trail(file, site) = Hashira::Complexity::Trail.new(file, site, helpers(site.family).transform_values(&:node))
+  def trail(file, site) = Hashira::Complexity::Trail.new(file, site, helpers(site.family))
 
   def limit = @rules.threshold(KIND, THRESHOLD)
 
   def helping = @_helping ||= Set.new.compare_by_identity.merge(families.keys.flat_map { helpers(it).values })
 
-  def helpers(family) = (@_helpers ||= {})[family] ||= defined(family).select { |name, _| single?(family, name) }
+  def helpers(family) = (@_helpers ||= {})[family] ||= chosen(family)
+
+  def chosen(family) = defined(family).select { |name, site| helper?(family, name, site) }
+
+  def helper?(family, name, site) = hidden.include?(site.node) && single?(family, name)
+
+  def hidden = @_hidden ||= Set.new.compare_by_identity.merge(@trees.flat_map { privates(it) })
+
+  def privates(tree) = Hashira::Analysis::TypeWalk.to_enum(:each, tree).flat_map { |type, *| secluded(type) }
+
+  def secluded(type) = Hashira::Analysis::TypeWalk.sections(type).filter_map { |node, part| node if part == PRIVATE }
 
   def defined(family) = families.fetch(family).select { it.node.is_a?(Prism::DefNode) }.to_h { [it.node.name, it] }
 

@@ -121,21 +121,15 @@ module ReadmeExamples
       class Importer
         def initialize(store) = @store = store
 
-        def run(rows) = save(parse(rows))
+        def run(rows) = import(rows)
 
         private
 
-        def parse(rows) = rows.filter_map { |row| clean(row) if row && !row.empty? }
+        def import(rows) = persist(rows.compact)
 
-        def clean(row)
-          if row.key?(:id)
-            row.transform_values { |value| value.is_a?(String) ? value.strip : value }
-          elsif row.key?(:ref)
-            { id: row[:ref] }
-          end
-        end
+        def persist(rows) = write(rows)
 
-        def save(rows)
+        def write(rows)
           rows.each { |row| row[:id] ? @store.put(row) : @store.skip(row) }
         rescue IOError
           @store.rollback

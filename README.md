@@ -96,17 +96,46 @@ skip: duplication
 fail-on: cycles
 package-by: namespace
 checks:
-  utility_function: false          # turn a kind off
-  complexity: { threshold: 12 }    # or move its threshold
-  indirection: { threshold: 15 }
+  duplication: false               # turn a kind off
+  nil_check: true                  # or an opt-in kind on
+  complexity: { threshold: 12 }    # or move a threshold
+  indirection: { threshold: 3 }    # (which turns an opt-in kind on too)
 ```
 
-Kinds with a threshold, and what reaches it: `complexity` and `indirection`
-(a score of 10 or more), `boundary_sprawl` (12 or more methods), `wide_edge` (5
-or more constants), `state_sprawl` (a weight of more than 4) and
-`repeated_conditional` (more than 2 tests). A flag on the command line wins over
+`checks: all` turns every kind on. Kinds with a threshold, and what reaches it:
+`complexity` (a score of 10 or more), `indirection` (2 or more hollow helpers),
+`boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
+`state_sprawl` (a weight of more than 4) and `repeated_conditional` (more than 2
+tests). A flag on the command line wins over
 the file, and a key the command line rules out sits that run out (`fail-on` under
 `--json`). `--config PATH` reads another file; `--no-config` ignores it.
+
+### Which kinds are on by default
+
+A kind is on by default when it reports a measurement (`complexity` and the
+coupling kinds), or when it is a heuristic whose precision, measured
+independently, clears one in three. Two raters labelled a fixed sample of the
+findings on rubocop, faraday and rubygems.org without knowing which version of
+hashira had reported them (they agreed on 92%, κ 0.65; see
+[eval/results](eval/results/README.md)). Pooled over both raters:
+
+| kind | precision | default |
+| --- | --- | --- |
+| duplication | 20/50 (40%) | on |
+| manual_dispatch | 8/22 (36%) | on |
+| feature_envy | 7/20 (35%) | on |
+| control_parameter | 2/8 (25%) | opt-in |
+| repeated_conditional | 5/24 (21%) | opt-in |
+| repeated_call | 10/50 (20%) | opt-in |
+| state_sprawl | 3/22 (14%) | opt-in |
+| utility_function | 3/30 (10%) | opt-in |
+| nil_check | 2/50 (4%) | opt-in |
+| data_clump | 1/4 | opt-in |
+| indirection | 0/40 | opt-in |
+
+`assumed_state`, `boundary_sprawl` and `module_initialize` are too rare in the
+corpus to measure, so they are opt-in too. `--kind` and `--fail-on` turn on the
+kinds they name, and a `checks:` setting for a kind turns it on.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
 nearest folder at or above the analyzed directory holding a `.hashira.yml` or a
@@ -247,25 +276,26 @@ Findings (1):
       · boolean +2 (line 14)
 ```
 
-Splitting a method into helpers lowers its score without making it simpler
-to read: the reader still follows every hop. **indirection** prices that. A
-helper called exactly once, from its own class, never by name (`:helper`,
-`send`) and never through a receiver, is part of its caller; hashira scores the
-caller with every such helper read in place at the nesting of its call, and
-reports it when that trace reaches the threshold while the caller alone does
-not:
+Splitting a method into helpers is how it gets readable, until a helper adds
+nothing: a private one-liner, called once, that only passes a call on. The
+reader still makes the hop. **indirection** counts those hollow hops. A helper
+is hollow when it is private, called exactly once from its own class (never by
+name, `send`, or through a receiver), and its body is one call with no decision
+and no block, wrapping at most one more call (`def import(rows) =
+persist(rows.compact)`). hashira follows each method's single-use helpers and
+reports the path holding the most hollow ones once it holds two:
 
 <!-- example: indirection lib/app --kind indirection -->
 ```console
 Findings (1):
-  indirection: Importer#run scores cognitive 15 with its 3 single-use helpers (2 deep) read in place, 0 by itself (importer.rb:4). Inline the helpers that only move code, and reduce the logic itself.
-      · parse (line 8)
-      · clean (line 10)
-      · save (line 18)
+  indirection: Importer#run reaches its work through 2 hollow helpers, private one-liners called once that only pass a call on (importer.rb:4). Inline them into their callers.
+      · import (line 8)
+      · persist (line 10)
 ```
 
-A helper two methods share is an abstraction, not a fragment, and stops the
-trace.
+A helper that decides, computes or runs several statements is the decomposition
+you want: it costs nothing and the path runs on through it. A helper two
+methods share, or a public one, is an abstraction and ends the path.
 
 ## Duplication
 
@@ -318,7 +348,9 @@ other drifts.
 ## Design smells
 
 RuboCop measures one method at a time; these are about how objects treat each
-other. Each is reported only where its advice applies to code the project owns.
+other. Each is reported only where its advice applies to code the project owns. Only
+`feature_envy` and `manual_dispatch` are on by default; the rest are opt-in (see
+[which kinds are on by default](#which-kinds-are-on-by-default)).
 
 <!-- example: smells lib/app --kind smells -->
 ```console

@@ -6,10 +6,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
   end
 
   def finding(kind, package, digest: nil)
-    Hashira::Analysis::Finding.new(
-      kind:, package:, digest:, evidence: ["a.rb:1"],
-      detail: Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
-    )
+    Hashira::Analysis::Finding.new(kind:, package:, digest:, evidence: ["a.rb:1"], detail: detail(kind))
+  end
+
+  def detail(kind)
+    return Hashira::Complexity::Trail::Trace.new(site: "a.rb:1", chain: 2) if kind == "indirection"
+    Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
   end
 
   def ratchet(graph, findings = [], path = "baseline.json", io: StringIO.new)

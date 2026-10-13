@@ -36,6 +36,25 @@ module App
     end
   end
 
+  class Exporter
+    def initialize(sink) = @sink = sink
+
+    def run(rows) = export(rows)
+
+    private
+
+    def export(rows) = deliver(rows.compact)
+
+    def deliver(rows) = transmit(rows)
+
+    def transmit(rows)
+      rows.each { |row| row[:id] ? @sink.put(row) : @sink.skip(row) }
+      flush
+    end
+
+    def flush = @sink.flush
+  end
+
   class Pricing
     def initialize(rates) = @rates = rates
 

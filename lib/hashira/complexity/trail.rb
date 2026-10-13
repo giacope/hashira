@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Trail
-  Trace = Data.define(:site, :cognitive, :own, :helpers, :depth)
+  Trace = Data.define(:site, :chain)
 
   def initialize(file, site, helpers)
     @file = file
@@ -9,25 +9,20 @@ class Hashira::Complexity::Trail
     @helpers = helpers
   end
 
-  def finding(limit) = (build if hidden?(limit))
+  def finding(limit) = (build if path.size >= limit)
 
   private
 
-  def hidden?(limit) = score.inlined.any? && score.total >= limit && own < limit
+  def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@site.node)
 
-  def score = @_score ||= Hashira::Complexity::InlinedScore.new(@site.node, @helpers)
-
-  def own = @_own ||= Hashira::Complexity::CognitiveScore.new(@site.node).total
+  def line(node) = node.location.start_line
 
   def spot = "#{@file}:#{@site.node.location.start_line}"
 
   def build
     Hashira::Analysis::Finding.new(
-      kind: Hashira::Complexity::Indirection::KIND, package: @site.subject, detail: trace, evidence:, anchors: [spot]
+      kind: Hashira::Complexity::Indirection::KIND, package: @site.subject, anchors: [spot],
+      detail: Trace.new(site: spot, chain: path.size), evidence: path.map { "#{it.name} (line #{line(it)})" }
     )
   end
-
-  def trace = Trace.new(site: spot, cognitive: score.total, own:, helpers: score.inlined.size, depth: score.depth)
-
-  def evidence = score.inlined.map { "#{it.name} (line #{it.location.start_line})" }
 end

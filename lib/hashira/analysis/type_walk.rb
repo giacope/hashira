@@ -5,7 +5,13 @@ require "prism"
 module Hashira
   module Analysis
     module TypeWalk
+      MARKERS = %i[public private protected module_function].freeze
+
+      CLASS_LEVEL = :ClassMethods
+
       module_function
+
+      def sections(type) = Visibility.new(type).entries
 
       def roots(trees)
         trees.each_value.with_object(Set.new) { |tree, set| each(tree) { |_node, full| set << full } }

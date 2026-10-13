@@ -93,11 +93,9 @@ module Hashira::Report::Phrases
   end
 
   def on_indirection(finding)
-    detail = finding.detail.to_h
-    helpers = count(detail[:helpers], "single-use helper")
-    "#{finding.package} scores cognitive #{detail[:cognitive]} with its #{helpers} " \
-      "(#{detail[:depth]} deep) read in place, #{detail[:own]} by itself (#{detail[:site]}). " \
-      "Inline the helpers that only move code, and reduce the logic itself."
+    detail = finding.detail
+    "#{finding.package} reaches its work through #{count(detail.chain, "hollow helper")}, " \
+      "private one-liners called once that only pass a call on (#{detail.site}). Inline them into their callers."
   end
 
   def score(value) = format("%.2f", value)
