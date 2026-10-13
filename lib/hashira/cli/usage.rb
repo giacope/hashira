@@ -27,11 +27,15 @@ module Hashira::CLI::Usage
     Clones are named by "digest" instead of "package", so an acceptance
     survives the lines above it moving. Read digests from --json.
 
-    A .hashira.yml where hashira runs sets default options, each key a
+    A .hashira.yml in the project's root sets default options, each key a
     flag without its dashes (fail-on, skip, kind, top, package-by,
-    baseline) plus directories. A flag typed on the command line wins,
-    and a setting the command line rules out (fail-on under --json)
-    sits that run out.
+    baseline) plus directories, and checks: turns a kind off or sets its
+    threshold. A flag typed on the command line wins, and a setting the
+    command line rules out (fail-on under --json) sits that run out.
+
+    A "# hashira:disable KIND -- REASON" comment silences a finding on
+    its line (disable-next-line: the line below); the reason is required,
+    and every suppression is listed in the report.
   TEXT
 
   module_function
