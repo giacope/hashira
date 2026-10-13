@@ -311,11 +311,12 @@ RSpec.describe(Hashira::CLI::Session) do
       end
     end
 
-    it "reads a config's baseline setting from the config's own folder" do
-      files = { "proj/.hashira.yml" => "baseline: ci/base.json\n", "proj/lib/app/cart.rb" => cart }
+    it "reads a config's baseline setting from the config's own folder, and its other settings as given" do
+      yaml = "baseline: ci/base.json\npackage-by: namespace\n"
+      files = { "proj/.hashira.yml" => yaml, "proj/lib/app/cart.rb" => cart }
       within(files.merge("proj/ci/README" => "", "here/README" => "")) do
         Dir.chdir("here") { run(%w[../proj/lib/app --update-baseline]) }
-        expect(File.exist?("proj/ci/base.json")).to(be(true))
+        expect(JSON.parse(File.read("proj/ci/base.json"))["packaging"]).to(eq("namespace"))
       end
     end
   end
@@ -354,8 +355,8 @@ RSpec.describe(Hashira::CLI::Session) do
         gated = capture { described_class.new(%w[lib/app --fail-on complexity]).status }
         expect(gated).to(include("Gate OK"))
         expect(capture { described_class.new(%w[lib/app]).status }).to(
-          include("~ complexity/Table#step — generated table (table.rb:2)", "Unused suppressions (1)"),
-          include("? complexity at table.rb:12")
+          include("Suppressed (1):\n  ~ complexity/Table#step — generated table (table.rb:2)")
+            .and(include("Unused suppressions (1)", "? complexity at table.rb:12"))
         )
         json = JSON.parse(capture { described_class.new(%w[lib/app --json]).status })
         expect(json["suppressed"].first.slice("kind", "site", "reason")).to(
@@ -365,9 +366,11 @@ RSpec.describe(Hashira::CLI::Session) do
       end
     end
 
-    it "refuses a suppression without a reason as misuse" do
+    it "refuses a suppression without a reason as misuse, even when only the graph is drawn" do
       within("lib/app/table.rb" => table("# hashira:disable-next-line complexity")) do
         expect { expect(described_class.new(%w[lib/app]).status).to(eq(2)) }.to(output(/needs a reason/).to_stderr)
+        expect { expect(described_class.new(%w[lib/app --format dot]).status).to(eq(2)) }
+          .to(output(/needs a reason/).to_stderr)
       end
     end
   end

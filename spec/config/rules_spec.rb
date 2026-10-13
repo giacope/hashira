@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Config::Rules) do
       { "envy" => false } => 'unknown kind "envy"',
       { "complexity" => "off" } => "complexity takes true, false or { threshold: N }",
       { "complexity" => { "limit" => 3 } } => 'complexity has no setting "limit"',
-      { "feature_envy" => { "threshold" => 3 } } => "feature_envy has no threshold",
+      { "feature_envy" => { "threshold" => 3 } } => "no threshold (thresholds: boundary_sprawl, complexity,",
       { "complexity" => { "threshold" => 0 } } => "threshold must be a positive whole number",
       { "complexity" => { "threshold" => "3" } } => "threshold must be a positive whole number"
     }.each { |raw, message| expect { parse(raw) }.to(raise_error(Hashira::Error, /#{Regexp.escape(message)}/)) }
