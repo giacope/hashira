@@ -1,11 +1,7 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
-  NIL_ADVICE = {
-    nil => "Prefer a default, a null object, or polymorphism.",
-    outside: "The value comes from outside; translate the missing value where it enters, at the boundary.",
-    both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
-  }.freeze
+  NIL_ADVICE = "Prefer a default, a null object, or polymorphism."
 
   ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
 
@@ -81,7 +77,7 @@ module Hashira::Report::Phrases
     "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}"
   end
 
-  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE.fetch(origin)
+  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")

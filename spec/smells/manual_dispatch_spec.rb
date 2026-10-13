@@ -6,6 +6,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
           module Zone
+            class Duck; end
+
             class Thing
               def poke(duck)
                 duck.honk if duck.respond_to?(:honk)
@@ -21,7 +23,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = sniffed(files, "manual_dispatch")
     expect(findings.size).to(eq(1))
     expect(findings.first.package).to(eq("App::Zone::Thing#poke"))
-    expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:5, 6"))
+    expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:7, 8"))
+    expect(findings.first.evidence).to(eq(["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]))
   end
 
   it "flags a bare capability check, but not a proxy's method_missing and respond_to_missing? pair" do
@@ -36,6 +39,10 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
 
               def probe(duck) = duck.respond_to?(:honk)
             end
+
+            class Duck; end
+
+            class Target; end
 
             class Half
               def method_missing(name, *) = @target.respond_to?(name) ? @target.public_send(name, *) : super
@@ -55,6 +62,12 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
+          class Body; end
+
+          class Value; end
+
+          class Duck; end
+
           class Thing
             def release(body)
               body.close if body.respond_to?(:close)
@@ -125,6 +138,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
+          class Value; end
+
           class Thing
             def limit(value) = value.respond_to?(:positive?) && value.positive?
 
@@ -140,55 +155,36 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#size]))
   end
 
-  it "doubts a probe on what the request carries, and trusts one on self, an ivar or an injected collaborator" do
+  it "trusts a probe on self or its own state, and leaves one on an object of no class it can name to its owner" do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Thing
-            def upload = params[:file].respond_to?(:honk)
+          class Duck; end
 
-            def body
-              raw = request.body
-              copy = raw
-              copy.respond_to?(:honk)
+          class Thing
+            def initialize(duck)
+              @duck = duck
             end
 
             def mine = respond_to?(:honk) && self.respond_to?(:moo)
 
             def held = @duck.respond_to?(:honk)
 
-            def initialize(store)
-              @store = store
-              store.respond_to?(:honk)
-            end
-
             def handed(duck) = duck.respond_to?(:honk)
-
-            def looped
-              node = node.parent
-              node.respond_to?(:honk)
-            end
-
-            def helped = helper.respond_to?(:honk)
-
-            def built
-              raw = params[:file]
-              duck = @factory.build(raw)
-              duck.respond_to?(:honk)
-            end
 
             def mixed(duck) = respond_to?(:honk) && duck.respond_to?(:honk)
 
-            def partly(duck) = params.respond_to?(:honk) && duck.respond_to?(:honk)
+            def upload = params[:file].respond_to?(:honk)
+
+            def helped = helper.respond_to?(:honk)
+
+            def plugged = @manager.respond_to?(:honk)
           end
         end
       end
     RUBY
     expect(findings.to_h { [it.package.split("#").last, it.confidence] }).to(
-      eq(
-        "upload" => :low, "body" => :low, "mine" => :high, "held" => :high, "initialize" => :high,
-        "handed" => nil, "looped" => nil, "helped" => nil, "built" => nil, "mixed" => nil, "partly" => nil
-      )
+      eq("mine" => :high, "held" => :high, "handed" => nil, "mixed" => nil)
     )
   end
 

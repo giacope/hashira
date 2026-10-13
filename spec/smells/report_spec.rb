@@ -54,6 +54,8 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
           module Zone
+            class Duck; end
+
             class Thing
               def self.probe(duck)
                 duck.honk if duck.respond_to?(:honk)
@@ -121,6 +123,8 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/greets.rb" => <<~RUBY
         module App
           module Zone
+            class Duck; end
+
             module Greets
               class_methods do
                 def summon(duck) = (duck.honk if duck.respond_to?(:honk))

@@ -52,6 +52,10 @@ class Hashira::Smells::Foreign
 
   def kinds(local) = known(local).reject { it.last == own }
 
+  def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
+
+  def writes(name) = among(Prism::LocalVariableWriteNode, name)
+
   private
 
   def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
@@ -76,8 +80,6 @@ class Hashira::Smells::Foreign
     calls = body.grep(Prism::CallNode).select { |call| local?(call.receiver) { it == name } }
     calls.any? && calls.all? { keyed?(it) } && reassignments(name).none?
   end
-
-  def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
 
   def stock?(name) = writes(name).any? { staple?(it.value) }
 
@@ -119,8 +121,6 @@ class Hashira::Smells::Foreign
   def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
   def keyed?(call) = KEYED_READS.include?(call.name) && KEYS.include?(key(call).class)
-
-  def writes(name) = among(Prism::LocalVariableWriteNode, name)
 
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 

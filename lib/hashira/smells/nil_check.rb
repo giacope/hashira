@@ -20,7 +20,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def smelly? = checks.any?
 
-  def checks = @_checks ||= body.select { check?(it) && !excused?(it) }
+  def checks = @_checks ||= body.select { check?(it) && made?(it) && !excused?(it) }
+
+  def made?(check) = tested(check).any? { provenance.made?(it) }
+
+  def provenance = @_provenance ||= Hashira::Smells::Provenance.new(subject, foreign)
 
   def body = @_body ||= Hashira::Smells::Scope.inside(subject.node)
 
@@ -120,16 +124,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def returned(node) = node.is_a?(Prism::ReturnNode) ? Array(node.arguments&.arguments).first : node
 
-  def inbound?(node) = tested(node).any? { foreign.entering?(it) }
-
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def origin
-    return :absence if absent?
-    arriving = checks.count { inbound?(it) }
-    return if arriving.zero?
-    arriving == checks.size ? :outside : :both
-  end
+  def origin = (:absence if absent?)
 
   def absent? = subject.node.name.end_with?("?") && checks.all? { tested(it).all? { finder?(it) } }
 
@@ -137,12 +134,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def rating = checks.all? { tested(it).all? { external?(it) } } ? { confidence: :low } : {}
 
-  def external?(node)
-    found = root(node)
-    found.is_a?(Prism::LocalVariableReadNode) && foreign.external?(found.name)
-  end
-
-  def root(node) = node.is_a?(Prism::CallNode) ? root(node.receiver) : node
+  def external?(node) = node.is_a?(Prism::LocalVariableReadNode) && foreign.external?(node.name)
 
   def detail = { site: spots(checks), origin: }.compact
+
+  def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
+
+  def shown(node) = node.slice.lines.first.strip
 end

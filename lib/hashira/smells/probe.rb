@@ -8,9 +8,9 @@ class Hashira::Smells::Probe
     to_a to_ary to_h to_hash to_i to_int to_io to_json to_model to_param to_path to_proc to_s to_str to_sym to_unsafe_h
   ].freeze
 
-  REQUESTS = %i[params request].freeze
-
   HELD = [NilClass, Prism::SelfNode, Prism::InstanceVariableReadNode].freeze
+
+  SELVES = [NilClass, Prism::SelfNode].freeze
 
   def initialize(call, subject, foreign)
     @call = call
@@ -20,9 +20,9 @@ class Hashira::Smells::Probe
 
   def line = @call.location.start_line
 
-  def excused? = asked?(PROTOCOLS) || disguised? || foreign?
+  def excused? = asked?(PROTOCOLS) || disguised? || foreign? || unknown?
 
-  def doubted? = requested?(receiver, [])
+  def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
 
   def trusted? = HELD.include?(receiver.class) || injected?
 
@@ -40,17 +40,9 @@ class Hashira::Smells::Probe
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
-  def requested?(node, seen)
-    case node
-    when Prism::CallNode then (node.variable_call? && REQUESTS.include?(node.name)) || requested?(node.receiver, seen)
-    when Prism::LocalVariableReadNode then traced?(node.name, seen)
-    else false
-    end
-  end
+  def unknown? = !SELVES.include?(receiver.class) && @foreign.kinds(holder).none? { @subject.ownership.owned?(it) }
 
-  def traced?(name, seen) = !seen.include?(name) && writes(name).any? { requested?(it.value, seen + [name]) }
-
-  def writes(name) = body.grep(Prism::LocalVariableWriteNode).select { it.name == name }
+  def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, @subject.node)
 
   def injected? = receiver.is_a?(Prism::LocalVariableReadNode) && stored.include?(receiver.name)
 
