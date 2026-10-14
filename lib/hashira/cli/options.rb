@@ -19,10 +19,14 @@ module Hashira::CLI
       end
 
       def pipeline
-        named = rules.naming(kinds + fail_on)
-        chosen = Hashira::Project.new(directories, boundaries: decisions.boundaries, home: home.path, rules: named)
+        chosen = project
         Hashira::Report::Notices.new.scanning(chosen.files.size, chosen.label)
         Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:).verify
+      end
+
+      def project
+        named = rules.naming(kinds + fail_on)
+        Hashira::Project.new(directories, boundaries: decisions.boundaries, home: home.path, rules: named)
       end
 
       def analyzers = Hashira::Pipeline::ANALYZERS - skip

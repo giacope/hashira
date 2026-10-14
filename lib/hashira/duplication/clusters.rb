@@ -11,11 +11,7 @@ class Hashira::Duplication::Clusters
     @all = all
   end
 
-  def sorted
-    fragments.group_by(&:types).each_value { |group| chain(group) }
-    Hashira::Duplication::NearMiss.new(fragments).pairs.each { |left, right| sets.union(left, right) }
-    Hashira::Duplication::Maximal.new(sized).reduced.reject { excused?(it) }.sort_by { -it.mass }
-  end
+  def sorted = Hashira::Duplication::Maximal.new(sized).reduced.reject { excused?(it) }.sort_by { -it.mass }
 
   private
 
@@ -29,9 +25,13 @@ class Hashira::Duplication::Clusters
 
   def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
 
-  def sets = @_sets ||= Hashira::Duplication::UnionFind.new
-
-  def chain(group) = group.each_cons(2) { |left, right| sets.union(left, right) }
+  def sets
+    @_sets ||=
+      Hashira::Duplication::UnionFind.new.tap do |found|
+        fragments.group_by(&:types).each_value { |group| group.each_cons(2) { |left, right| found.union(left, right) } }
+        Hashira::Duplication::NearMiss.new(fragments).pairs.each { |left, right| found.union(left, right) }
+      end
+  end
 
   def sized = sets.clusters.flat_map { admitted(it) }
 

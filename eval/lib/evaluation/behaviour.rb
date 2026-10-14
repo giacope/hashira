@@ -39,10 +39,9 @@ class Evaluation::Behaviour
   end
 
   def written(item, root)
-    item.fetch("writes", {}).map do
-      |path, wanted|
-  check(item, "writes #{path}", wanted, File.exist?(File.join(root, path)))
-end
+    item.fetch("writes", {}).map do |path, wanted|
+      check(item, "writes #{path}", wanted, File.exist?(File.join(root, path)))
+    end
   end
 
   def dig(outcome, path)

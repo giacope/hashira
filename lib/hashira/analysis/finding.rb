@@ -11,7 +11,9 @@ module Hashira
 
     Finding =
       Data.define(:kind, :package, :detail, :evidence, :cycle, :digest, :shape, :confidence, :anchors) do
-        def initialize(cycle: nil, digest: nil, detail: nil, shape: nil, confidence: nil, anchors: [], **rest) = super
+        def initialize(**fields)
+          super(cycle: nil, digest: nil, detail: nil, shape: nil, confidence: nil, anchors: [], **fields)
+        end
 
         def signature = "#{kind}:#{identity}"
 

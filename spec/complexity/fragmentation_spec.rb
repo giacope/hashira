@@ -5,10 +5,11 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
     within(files) do
       project = Hashira::Project.new(["lib/app"])
       parsed = Hashira::Trees.new(project)
-      return Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed.comments)
-        .findings.select { it.kind == "fragmentation" }
+      return fragments(Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed.comments))
     end
   end
+
+  def fragments(scores) = scores.findings.select { it.kind == "fragmentation" }
 
   def walk(entry = "def run(rows) = first(rows)", extra = "")
     <<~RUBY

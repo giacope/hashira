@@ -7,8 +7,8 @@ RSpec.describe(Hashira::CLI::Session) do
 
   def examples = readme.scan(/<!-- example: (\S+) (.*?) -->\n```console\n(.*?)^```/m)
 
-  def printed(name, args)
-    within(ReadmeExamples.files(name)) { capture { described_class.new(args.split).status } }.lines(chomp: true)
+  def printed(name, arguments)
+    within(ReadmeExamples.files(name)) { capture { described_class.new(arguments.split).status } }.lines(chomp: true)
   end
 
   def shown(block) = block.lines(chomp: true).reject { it.empty? || it == "..." || it.start_with?("$ ") }
@@ -22,13 +22,13 @@ RSpec.describe(Hashira::CLI::Session) do
   end
 
   it "prints every line each console example shows, in the order shown" do
-    gaps = examples.map { |name, args, block| [name, args, missing(shown(block), printed(name, args))] }
+    gaps = examples.map { |name, arguments, block| [name, arguments, missing(shown(block), printed(name, arguments))] }
     expect(gaps.select(&:last)).to(be_empty)
   end
 
   it "runs each example as the command it shows" do
     commands = examples.select { |_, _, block| block.start_with?("$ ") }
-    expect(commands.reject { |_, args, block| block.lines.first.chomp == "$ hashira #{args}" }).to(be_empty)
+    expect(commands.reject { |_, arguments, block| block.lines.first.chomp == "$ hashira #{arguments}" }).to(be_empty)
   end
 
   it "backs every console block with an example" do
