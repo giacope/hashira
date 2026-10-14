@@ -42,9 +42,10 @@ default.
 Each kind's sample is the 25 (or 15, or 20 for indirection) findings with the
 smallest SHA-256 of their key, so the sample is stable across runs and a
 finding that survives a change keeps its label. `--seed SALT` salts the hash
-and leaves out every key any dev label file holds, which draws a fresh sample
-disjoint from everything labelled so far. The interval is a 95% Wilson
-interval.
+and leaves out every key any dev label file holds or any earlier draw in
+`holdout/` or `human/` handed out, which draws a fresh sample disjoint from
+everything labelled so far. `--samples kind=N,...` replaces the sizes in
+`eval/corpus.yml`. The interval is a 95% Wilson interval.
 
 Rubric: a finding is **tp** when its claim is true, its remedy applies to code
 the project owns, and a strict reviewer on a team aiming for clean code would
@@ -68,6 +69,10 @@ reason:
   was handed to the raters, with no labels.
 - `blind/sample.json` and `blind/holdout1.json` — both raters' raw labels for
   the sample and for `holdout1`, side by side.
+- `human/<salt>/` — a seeded sample of the default kinds for a person to
+  label, with the verdicts left blank ([human/README.md](human/README.md)).
+  `eval/run --agree DIR` prints its precision and its agreement with the two
+  raters.
 
 ### Blind precision
 

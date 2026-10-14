@@ -14,8 +14,8 @@ class Evaluation::Command
   end
 
   def status
-    compared = option("--compare")
-    return report(compared.split(",").map { JSON.parse(File.read(it)) }) if compared
+    return compare if option("--compare")
+    return agree if option("--agree")
     board = recorded
     report([board])
     board["suites"].values.all? { it["passed"] == it["total"] } ? 0 : 1
@@ -29,8 +29,14 @@ class Evaluation::Command
     board
   end
 
-  def report(boards)
-    $stdout.puts(Evaluation::Comparison.new(boards).markdown)
+  def compare = report(option("--compare").split(",").map { JSON.parse(File.read(it)) })
+
+  def report(boards) = show(Evaluation::Comparison.new(boards).markdown)
+
+  def agree = show(Evaluation::Agreement.build(option("--agree"), option("--raters")&.split(",")).markdown)
+
+  def show(text)
+    $stdout.puts(text)
     0
   end
 
@@ -47,8 +53,10 @@ class Evaluation::Command
 
   def corpus
     return unless chosen.include?(Evaluation::Corpus::SUITE)
-    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw)
+    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw, sizes)
   end
+
+  def sizes = option("--samples")&.split(",")&.to_h { it.split("=") }&.transform_values { Integer(it) }
 
   def queue
     return unless corpus
