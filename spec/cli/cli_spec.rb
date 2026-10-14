@@ -67,8 +67,8 @@ RSpec.describe(Hashira::CLI::Session) do
 
   it "treats a verified interpreted model as compliant architecture" do
     within(interpretation) do
-      args = %w[lib/app --json --skip duplication,complexity,coupling]
-      report = JSON.parse(capture { expect(described_class.new(args).status).to(eq(0)) })
+      arguments = %w[lib/app --json --skip duplication,complexity,coupling]
+      report = JSON.parse(capture { expect(described_class.new(arguments).status).to(eq(0)) })
       expect(report.values_at("findings", "accepted")).to(eq([[], []]))
     end
   end

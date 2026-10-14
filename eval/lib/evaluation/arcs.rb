@@ -32,11 +32,13 @@ class Evaluation::Arcs
   end
 
   def ordered?(edges)
-    degree = edges.each_with_object(Hash.new(0)) { |(_from, to), counts| counts[to] += 1 }
+    degree = in_degree(edges)
     ready = nodes.reject { degree[it].positive? }
     ready.each { |node| edges.each { |from, to| ready << to if from == node && (degree[to] -= 1).zero? } }
     ready.size == nodes.size
   end
+
+  def in_degree(edges) = edges.each_with_object(Hash.new(0)) { |(_from, to), counts| counts[to] += 1 }
 
   def orderings
     table = { 0 => 0 }

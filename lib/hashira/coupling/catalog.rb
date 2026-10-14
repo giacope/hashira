@@ -27,7 +27,7 @@ class Hashira::Coupling::Catalog
 
   def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)
 
-  def entries = @_entries ||= @definitions.map { |node, full, *placing| entry(node, naming.strip(full), *placing) }
+  def entries = @_entries ||= @definitions.map { |node, full, *placing| entry(node, naming.strip(full), placing) }
 
-  def entry(node, path, folder, scope, file) = Hashira::Coupling::Definition.new(node:, path:, folder:, scope:, file:)
+  def entry(node, path, (folder, scope, file)) = Hashira::Coupling::Definition.new(node:, path:, folder:, scope:, file:)
 end
