@@ -1,0 +1,653 @@
+# Cognitive complexity conformance: SonarSource's rules (G. Ann Campbell,
+# "Cognitive Complexity: A new way of measuring understandability", v1.7),
+# translated to Ruby. `rule` names the whitepaper rule a case pins; `expected`
+# is the score those rules give the Ruby code (or a map of method => score).
+#
+# Increments (+1): if, else if (elsif), else, ternary, switch (case), loops
+# (for, while, until, do-while), catch (rescue), each sequence of like binary
+# logical operators, each method in a recursion cycle.
+# Nesting penalty (+nesting level): if, ternary, switch, loops, catch.
+# Nesting level rises inside: if, elsif, else, ternary, switch, loops, catch,
+# nested methods and lambdas (Ruby blocks, procs and lambdas are closures).
+# Ignored: method calls, try (begin), finally (ensure), early return, plain
+# break/next, null-coalescing (&., ||=).
+
+- name: whitepaper getWords (switch)
+  rule: "switch: +1 for the whole switch, whatever its arms"
+  source: |
+    def get_words(number)
+      case number
+      when 1 then "one"
+      when 2 then "a couple"
+      when 3 then "a few"
+      else "lots"
+      end
+    end
+  expected: 1
+
+- name: whitepaper overriddenSymbolFrom
+  rule: "nesting compounds; else-if and else are flat; && sequence +1"
+  source: |
+    def overridden_symbol_from(class_type)
+      if class_type.unknown?
+        return Symbols.unknown_method_symbol
+      end
+      unknown_found = false
+      symbols = class_type.symbol.members.lookup(name)
+      for override_symbol in symbols
+        if override_symbol.kind?(:mth) && !override_symbol.static?
+          method_symbol = override_symbol
+          if can_override?(method_symbol)
+            overriding = check_overriding_parameters(method_symbol, class_type)
+            if overriding.nil?
+              if !unknown_found
+                unknown_found = true
+              end
+            elsif overriding
+              return method_symbol
+            end
+          end
+        end
+      end
+      if unknown_found
+        return Symbols.unknown_method_symbol
+      end
+      nil
+    end
+  expected: 19
+
+- name: whitepaper try/catch nesting
+  rule: "try adds no nesting; catch +1 and nests its body"
+  source: |
+    def my_method
+      begin
+        if condition1
+          for i in 0...10
+            while condition2
+              step
+            end
+          end
+        end
+      rescue ExcepType1, ExcepType2 => e
+        if condition2
+          recover(e)
+        end
+      end
+    end
+  expected: 9
+
+- name: whitepaper lambda nesting
+  rule: "a lambda adds no increment but raises nesting for what it holds"
+  source: |
+    def my_method2
+      r = -> do
+        if condition1
+          act
+        end
+      end
+      r
+    end
+  expected: 2
+
+- name: sumOfPrimes translated
+  rule: "loops nest (+1, +2); if in two loops +3; plain break is free; trailing if +2"
+  source: |
+    def sum_of_primes(max)
+      total = 0
+      for i in 1..max
+        prime = true
+        for j in 2...i
+          if i % j == 0
+            prime = false
+            break
+          end
+        end
+        total += i if prime
+      end
+      total
+    end
+  expected: 8
+
+- name: if
+  rule: "if: +1"
+  source: |
+    def run(a)
+      x if a
+    end
+  expected: 1
+
+- name: if else
+  rule: "else: +1"
+  source: |
+    def run(a)
+      if a
+        1
+      else
+        2
+      end
+    end
+  expected: 2
+
+- name: if elsif else
+  rule: "else if and else are flat +1 each"
+  source: |
+    def run(a, b)
+      if a
+        1
+      elsif b
+        2
+      else
+        3
+      end
+    end
+  expected: 3
+
+- name: nested if
+  rule: "if at nesting 1: +2"
+  source: |
+    def run(a, b)
+      if a
+        if b
+          1
+        end
+      end
+    end
+  expected: 3
+
+- name: if nested in elsif
+  rule: "elsif raises nesting for its body"
+  source: |
+    def run(a, b, c)
+      if a
+        1
+      elsif b
+        if c
+          2
+        end
+      end
+    end
+  expected: 4
+
+- name: if nested in else
+  rule: "else raises nesting for its body"
+  source: |
+    def run(a, b)
+      if a
+        1
+      else
+        if b
+          2
+        end
+      end
+    end
+  expected: 4
+
+- name: unless
+  rule: "unless is an if: +1"
+  source: |
+    def run(a)
+      x unless a
+    end
+  expected: 1
+
+- name: unless else
+  rule: "else of an unless: +1"
+  source: |
+    def run(a)
+      unless a
+        1
+      else
+        2
+      end
+    end
+  expected: 2
+
+- name: modifier if under modifier unless
+  rule: "the inner if sits inside the unless: +2"
+  source: |
+    def run(a, b)
+      x if a unless b
+    end
+  expected: 3
+
+- name: guard clause
+  rule: "an early return is free, the if guarding it is +1"
+  source: |
+    def run(a)
+      return if a
+      work
+    end
+  expected: 1
+
+- name: ternary
+  rule: "ternary: +1"
+  source: |
+    def run(a) = a ? 1 : 2
+  expected: 1
+
+- name: nested ternary
+  rule: "ternary at nesting 1: +2"
+  source: |
+    def run(a, b) = a ? (b ? 1 : 2) : 3
+  expected: 3
+
+- name: ternary in an if
+  rule: "ternary takes the nesting penalty"
+  source: |
+    def run(a, b)
+      if a
+        b ? 1 : 2
+      end
+    end
+  expected: 3
+
+- name: ternary in interpolation
+  rule: "structure inside a string still counts"
+  source: |
+    def run(a) = "#{a ? "yes" : "no"}"
+  expected: 1
+
+- name: case with subject
+  rule: "switch: +1"
+  source: |
+    def run(a)
+      case a
+      when 1 then :one
+      when 2 then :two
+      end
+    end
+  expected: 1
+
+- name: case without subject
+  rule: "switch: +1"
+  source: |
+    def run(a, b)
+      case
+      when a then 1
+      when b then 2
+      end
+    end
+  expected: 1
+
+- name: pattern match
+  rule: "case/in is a switch: +1"
+  source: |
+    def run(a)
+      case a
+      in Integer then 1
+      in [x, *] then x
+      in { key: } then key
+      end
+    end
+  expected: 1
+
+- name: case in a loop
+  rule: "switch at nesting 1: +2"
+  source: |
+    def run(a, b)
+      while a
+        case b
+        when 1 then step
+        end
+      end
+    end
+  expected: 3
+
+- name: while
+  rule: "loop: +1"
+  source: |
+    def run(a)
+      while a
+        step
+      end
+    end
+  expected: 1
+
+- name: until
+  rule: "loop: +1"
+  source: |
+    def run(a)
+      until a
+        step
+      end
+    end
+  expected: 1
+
+- name: for
+  rule: "loop: +1"
+  source: |
+    def run(list)
+      for item in list
+        use(item)
+      end
+    end
+  expected: 1
+
+- name: modifier while
+  rule: "loop: +1"
+  source: |
+    def run(a)
+      step while a
+    end
+  expected: 1
+
+- name: do while
+  rule: "do-while: +1"
+  source: |
+    def run(a)
+      begin
+        step
+      end while a
+    end
+  expected: 1
+
+- name: nested loops
+  rule: "loop at nesting 1: +2"
+  source: |
+    def run(rows)
+      for row in rows
+        for cell in row
+          use(cell)
+        end
+      end
+    end
+  expected: 3
+
+- name: while in an if
+  rule: "loop takes the nesting penalty"
+  source: |
+    def run(a, b)
+      if a
+        while b
+          step
+        end
+      end
+    end
+  expected: 3
+
+- name: plain break and next
+  rule: "plain break/continue are free"
+  source: |
+    def run(list)
+      for item in list
+        next
+        break
+      end
+    end
+  expected: 1
+
+- name: rescue
+  rule: "catch: +1"
+  source: |
+    def run
+      risky
+    rescue StandardError
+      nil
+    end
+  expected: 1
+
+- name: two rescue clauses
+  rule: "each catch: +1"
+  source: |
+    def run
+      risky
+    rescue ArgumentError
+      1
+    rescue StandardError
+      2
+    end
+  expected: 2
+
+- name: if in rescue
+  rule: "catch raises nesting: +2"
+  source: |
+    def run(a)
+      risky
+    rescue StandardError
+      retry if a
+    end
+  expected: 3
+
+- name: if in begin
+  rule: "try adds no nesting: +1"
+  source: |
+    def run(a)
+      begin
+        step if a
+      end
+    end
+  expected: 1
+
+- name: if in ensure
+  rule: "finally is ignored and adds no nesting: +1"
+  source: |
+    def run(a)
+      step
+    ensure
+      close if a
+    end
+  expected: 1
+
+- name: rescue in a block
+  rule: "catch at nesting 1: +2"
+  source: |
+    def run(list)
+      list.each do |item|
+        begin
+          use(item)
+        rescue StandardError
+          skip(item)
+        end
+      end
+    end
+  expected: 2
+
+- name: rescue modifier
+  rule: "catch: +1"
+  source: |
+    def run = risky rescue nil
+  expected: 1
+
+- name: and sequence
+  rule: "one sequence of like operators: +1"
+  source: |
+    def run(a, b, c) = a && b && c
+  expected: 1
+
+- name: or sequence
+  rule: "one sequence of like operators: +1"
+  source: |
+    def run(a, b, c) = a || b || c
+  expected: 1
+
+- name: mixed and/or
+  rule: "each change of operator starts a sequence"
+  source: |
+    def run(a, b, c) = a && b || c
+  expected: 2
+
+- name: or then and
+  rule: "each change of operator starts a sequence"
+  source: |
+    def run(a, b, c) = a || b && c
+  expected: 2
+
+- name: and or and
+  rule: "&&, ||, && is three sequences"
+  source: |
+    def run(a, b, c, d) = a && b || c && d
+  expected: 3
+
+- name: whitepaper boolean example
+  rule: "a && b && c || d || e && f: +3"
+  source: |
+    def run(a, b, c, d, e, f)
+      if a && b && c || d || e && f
+        act
+      end
+    end
+  expected: 4
+
+- name: keyword operators
+  rule: "and/or are logical operators"
+  source: |
+    def run(a, b, c) = (a and b or c)
+  expected: 2
+
+- name: parenthesized like operators
+  rule: "grouping does not break a sequence of like operators"
+  source: |
+    def run(a, b, c) = a && (b && c)
+  expected: 1
+
+- name: parenthesized or
+  rule: "grouping does not break a sequence of like operators"
+  source: |
+    def run(a, b, c) = (a || b) || c
+  expected: 1
+
+- name: negation inside a sequence
+  rule: "a negated operand does not break a sequence"
+  source: |
+    def run(a, b, c) = !a && b && !c
+  expected: 1
+
+- name: condition of an if
+  rule: "if +1, its && sequence +1"
+  source: |
+    def run(a, b)
+      act if a && b
+    end
+  expected: 2
+
+- name: condition of a loop
+  rule: "loop +1, its || sequence +1"
+  source: |
+    def run(a, b)
+      step until a || b
+    end
+  expected: 2
+
+- name: safe navigation
+  rule: "null-coalescing is free"
+  source: |
+    def run(a) = a&.b&.c
+  expected: 0
+
+- name: or-assign
+  rule: "null-coalescing assignment is free"
+  source: |
+    def run
+      @x ||= compute
+      @y &&= @y.strip
+    end
+  expected: 0
+
+- name: flat sequence of calls
+  rule: "method calls are free"
+  source: |
+    def run
+      a
+      b.c
+      d.e.f(g)
+    end
+  expected: 0
+
+- name: lambda literal
+  rule: "lambda raises nesting"
+  source: |
+    def run(a)
+      -> { act if a }
+    end
+  expected: 2
+
+- name: lambda keyword
+  rule: "lambda raises nesting"
+  source: |
+    def run(a)
+      lambda { act if a }
+    end
+  expected: 2
+
+- name: proc
+  rule: "a proc is a lambda: nesting"
+  source: |
+    def run(a)
+      proc { act if a }
+    end
+  expected: 2
+
+- name: block
+  rule: "a block is a closure: nesting, no increment"
+  source: |
+    def run(list, a)
+      list.each { act if a }
+    end
+  expected: 2
+
+- name: lambda in an if
+  rule: "lambda nesting stacks on if nesting"
+  source: |
+    def run(a, b)
+      if a
+        -> { act if b }
+      end
+    end
+  expected: 4
+
+- name: loop block
+  rule: "Kernel#loop is a call with a block: nesting only"
+  source: |
+    def run(a)
+      loop do
+        break if a
+      end
+    end
+  expected: 2
+
+- name: direct recursion
+  rule: "each method in a recursion cycle: +1"
+  source: |
+    def fact(n) = n <= 1 ? 1 : n * fact(n - 1)
+  expected: 2
+
+- name: recursion through self
+  rule: "each method in a recursion cycle: +1"
+  source: |
+    def walk(node)
+      node.children.each { self.walk(it) }
+    end
+  expected: 1
+
+- name: singleton recursion
+  rule: "each method in a recursion cycle: +1"
+  source: |
+    def self.count(n) = n.zero? ? 0 : 1 + count(n - 1)
+  expected: 2
+
+- name: indirect recursion
+  rule: "each method in a recursion cycle, direct or indirect: +1"
+  source: |
+    def even?(n) = n.zero? ? true : odd?(n - 1)
+
+    def odd?(n) = n.zero? ? false : even?(n - 1)
+  expected:
+    even?: 2
+    odd?: 2
+
+- name: same name on another receiver
+  rule: "a call on another object is not recursion"
+  source: |
+    def name(user) = user.name
+  expected: 0
+
+- name: define_method
+  rule: "a method defined with define_method is a method"
+  source: |
+    define_method(:run) do |a|
+      if a
+        1
+      end
+    end
+  expected:
+    run: 1

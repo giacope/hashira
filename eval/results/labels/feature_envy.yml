@@ -1,0 +1,304 @@
+---
+- key: rubocop|feature_envy|CopsDocumentationGenerator#cop_header
+  evidence:
+  - cop (lines 166, 167)
+  - self (line 166)
+  label: fp
+  why: 'cop supplies its name twice to a documentation heading: formatting is the
+    generator''s'
+- key: rubocop|feature_envy|RuboCop::CLI::Command::SuggestExtensions#loaded_extensions
+  evidence:
+  - rubocop_config (lines 102, 106)
+  - self (line 100)
+  label: fp
+  why: 'rubocop_config supplies two lists the command joins for its own suggestion:
+    weak, a strict reviewer would not ask for the move'
+- key: rubocop|feature_envy|RuboCop::ConfigValidator#each_invalid_parameter
+  evidence:
+  - default_config (lines 209, 211)
+  - self (line 208)
+  label: fp
+  why: 'default_config is a hash-like configuration read with key? and keys: lookups,
+    not behavior to move'
+- key: rubocop|feature_envy|RuboCop::Cop::HashAlignmentStyles::TableAlignment#hash_rocket_delta
+  evidence:
+  - first_pair (line 99)
+  - self (line 99)
+  label: fp
+  why: 'first_pair is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::InternalAffairs::NodePatternGroups#apply_range_offsets
+  evidence:
+  - node_group (lines 180, 182, 183, 184, 187)
+  - self (lines 176, 178, 180, 184)
+  label: tp
+  why: 'node_group is the cop''s own NodeGroup struct and the method writes and reads
+    five of its fields: the offset arithmetic could live on NodeGroup'
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::HashAlignment#adjust
+  evidence:
+  - range (line 377)
+  - self (line 377)
+  label: fp
+  why: 'range is a Parser::Source::Range (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#subsequent_closing_parentheses_in_same_line?
+  evidence:
+  - outermost_send (lines 170, 174)
+  - last_arg_of_outer_send (lines 171, 172)
+  - self (line 176)
+  label: fp
+  why: 'outermost_send is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Layout::RescueEnsureAlignment#aligned_with_line_break_method?
+  evidence:
+  - selector (line 146)
+  - self (line 142)
+  label: fp
+  why: 'selector is a Parser::Source::Map/Range (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::FormatParameterMismatch#expected_fields_count
+  evidence:
+  - format_string (lines 147, 149, 152)
+  - self (line 144)
+  label: tp
+  why: 'format_string is rubocop''s own FormatString and the method derives the expected
+    field count from three of its queries: FormatString could answer that count'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::SafeNavigationConsistency#receiver_name_as_key
+  evidence:
+  - method (lines 75, 76)
+  - self (line 76)
+  label: fp
+  why: 'method is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::ShadowedArgument#assignment_without_argument_usage
+  evidence:
+  - assignment (lines 122, 136)
+  - self (lines 129, 131)
+  label: fp
+  why: 'assignment is VariableForce::Assignment, but the method is the cop''s own
+    reduction over an argument''s assignments: at most a one-line node helper, not
+    a move'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::Syntax#add_offense_from_diagnostic
+  evidence:
+  - diagnostic (lines 24, 26, 29)
+  - self (line 29)
+  label: fp
+  why: 'diagnostic is a Parser::Diagnostic (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UnderscorePrefixedVariableName#allowed_keyword_block_argument?
+  evidence:
+  - variable (lines 73, 74)
+  - self (line 75)
+  label: tp
+  why: 'variable is VariableForce::Variable and the method combines two of its predicates:
+    Variable could answer keyword_block_argument? (the config check stays)'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#collect_variable_like_names
+  evidence:
+  - scope (lines 152, 156)
+  - self (line 153)
+  label: fp
+  why: 'scope supplies nodes and variables to the cop''s name collection: the collection
+    is the cop''s'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#remove_exception_assignment_part
+  evidence:
+  - node (lines 187, 188)
+  - self (line 186)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#sequential_assignment?
+  evidence:
+  - node (lines 97, 101, 103)
+  - self (line 103)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#similar_name_message
+  evidence:
+  - variable (lines 135, 136)
+  - self (line 135)
+  label: fp
+  why: 'variable supplies scope and name to a message the cop formats: message text
+    is the cop''s'
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::Void#autocorrect_void_op
+  evidence:
+  - node (lines 225, 227)
+  - self (line 227)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Registry#resolve_badge
+  evidence:
+  - given_badge (lines 300, 305)
+  - self (line 304)
+  label: fp
+  why: 'given_badge is rubocop''s Badge, but the method warns about a misplaced badge
+    in the registry: the warning is the registry''s'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::ConditionalAssignment#move_assignment_inside_condition
+  evidence:
+  - node (line 340)
+  - self (line 342)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::ConditionalCorrectorHelper#remove_whitespace_in_branches
+  evidence:
+  - condition (lines 450, 451, 454, 456)
+  - self (lines 446, 450, 454)
+  label: fp
+  why: 'condition is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::EmptyCaseCondition#keep_first_when_comment
+  evidence:
+  - case_range (lines 98, 100, 103)
+  - self (line 99)
+  label: fp
+  why: 'case_range is a Parser::Source::Range (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::IfInsideElse#find_end_range
+  evidence:
+  - node (lines 132, 135)
+  - self (line 135)
+  label: fp
+  why: 'node is a rubocop-ast node, a library type: there is no class in rubocop to
+    move this onto'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RaiseArgs#correction_compact_to_exploded
+  evidence:
+  - node (lines 73, 77)
+  - self (line 77)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantFormat#all_fields_literal?
+  evidence:
+  - sequences (lines 140, 142, 152)
+  - self (lines 146, 147)
+  label: fp
+  why: 'sequences is an Array of format sequences; any?/each/size are Array''s: envy
+    of a core collection is not actionable'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantHeredocDelimiterQuotes#need_heredoc_delimiter_quotes?
+  evidence:
+  - node (lines 49, 52, 53)
+  - self (line 49)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::RedundantInterpolation#embedded_in_percent_array?
+  evidence:
+  - node (line 96)
+  - self (line 96)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::SoleNestedConditional#correct_for_comment
+  evidence:
+  - comments (lines 155, 157)
+  - self (line 152)
+  label: fp
+  why: 'comments is an Array of parser comments (library types): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::UnlessElse#range_between_else_and_end
+  evidence:
+  - node (line 50)
+  - self (line 50)
+  label: fp
+  why: 'node is a rubocop-ast node (library type): no owned destination'
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce#process_zero_arity_super
+  evidence:
+  - variable (lines 266, 268)
+  - self (line 265)
+  label: fp
+  why: variable is iterated from the table the method walks; the loop guards and commands
+    each element, nothing computed belongs on Variable
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce::Variable#reference!
+  evidence:
+  - assignment (lines 57, 59, 68, 70, 71)
+  - self (lines 52, 53, 56, 66)
+  label: tp
+  why: 'assignment is rubocop''s own VariableForce::Assignment and five reads of it
+    decide each step: Assignment could answer the exclusivity/branch question itself
+    (borderline)'
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce::VariableTable#accessible_variables
+  evidence:
+  - scope (lines 115, 116)
+  - self (line 114)
+  label: fp
+  why: the variable table walks its own scope stack; scope supplies variables and
+    node to that traversal
+- key: rubocop|feature_envy|RuboCop::Runner#considered_failure?
+  evidence:
+  - offense (lines 434, 437, 439)
+  - self (lines 437, 439)
+  label: tp
+  why: 'offense is rubocop''s own Offense and four of its predicates decide the verdict:
+    Offense could answer whether it fails at a given level (borderline, the threshold
+    is the runner''s)'
+- key: rubocop|feature_envy|RuboCop::Runner#supports_safe_autocorrect?
+  evidence:
+  - offense (lines 459, 460, 462)
+  - self (lines 460, 463)
+  label: fp
+  why: 'the method asks the cop registry and the default config; offense supplies
+    only its cop name and correctable?: nothing to move onto Offense'
+- key: rubocop|feature_envy|RuboCop::TargetFinder#to_inspect?
+  evidence:
+  - base_dir_config (lines 78, 83)
+  - self (line 81)
+  label: tp
+  why: 'base_dir_config is a RuboCop::Config, which rubocop owns and which already
+    answers file_to_exclude?/file_to_include?: the include/exclude decision could
+    live there (weak, 2 to 1)'
+- key: rubygems.org|feature_envy|Api::V1::OwnersController#owners_payload
+  evidence:
+  - ownership (line 93)
+  - self (line 90)
+  label: tp
+  why: ownership is the app's Ownership; building its payload from user and role is
+    the model's (or its serializer's) to answer
+- key: rubygems.org|feature_envy|Api::V1::WebauthnVerificationsController#authenticated_user
+  evidence:
+  - api_key (lines 48, 50)
+  - self (line 55)
+  label: fp
+  why: 'api_key is the app''s ApiKey, yet the method is controller authentication
+    setting Current: that flow belongs in the controller'
+- key: rubygems.org|feature_envy|ApiKeysHelper#gem_scope
+  evidence:
+  - api_key (lines 5, 7)
+  - self (lines 5, 7)
+  label: tp
+  why: api_key is the app's ApiKey model; the label it derives (gem name or all gems)
+    is the model's (or its decorator's) to answer
+- key: rubygems.org|feature_envy|DependenciesController#dep_resolver
+  evidence:
+  - dependency (lines 53, 56)
+  - self (line 57)
+  label: tp
+  why: 'dependency is the app''s Dependency and the method resolves its requirements
+    against its rubygem''s versions: Dependency could answer its matching version'
+- key: rubygems.org|feature_envy|OIDC::ApiKeyRolesController#add_default_params
+  evidence:
+  - condition (lines 141, 142, 143)
+  - self (lines 146, 147)
+  label: tp
+  why: 'condition is the app''s own Condition model and the method sets three of its
+    fields to fixed defaults: Condition could build its default audience itself'
+- key: rubygems.org|feature_envy|Rubygem#bulk_reorder_versions
+  evidence:
+  - version_numbers (lines 450, 455)
+  - self (line 449)
+  label: fp
+  why: 'version_numbers is an Array of plucked tuples: envy of a core collection is
+    not actionable'
+- key: rubygems.org|feature_envy|RubygemContents#store
+  evidence:
+  - entry (lines 33, 35, 36, 37, 38, 39, 42)
+  - self (lines 34, 35)
+  label: fp
+  why: 'the storage adapter maps an entry''s fields onto its store call: that mapping
+    is the adapter''s, not the entry''s'
+- key: rubygems.org|feature_envy|RubygemsHelper#link_to_github
+  evidence:
+  - rubygem (line 193)
+  - self (line 195)
+  label: tp
+  why: 'rubygem is the app''s Rubygem and the helper digs its links for a GitHub URI:
+    the model (or its links) could answer github_uri'
+- key: rubygems.org|feature_envy|SyncDisposableEmailDomainsJob#fetch_lines
+  evidence:
+  - response (lines 115, 117, 118, 121)
+  - self (lines 115, 118)
+  label: fp
+  why: 'response is a Faraday::Response (library type): no owned destination'
+- key: rubygems.org|feature_envy|VersionManifest#store_entries
+  evidence:
+  - entry (line 89)
+  - self (lines 90, 92)
+  label: fp
+  why: 'entry is rubygems'' own Entry, but the method only gathers path => sha256
+    pairs while storing each entry: moving one line of a loop onto Entry is not what
+    a reviewer would ask for'

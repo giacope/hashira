@@ -1,0 +1,12 @@
+# Exporter#run reaches its work through private one-liners called once that
+# only pass a call on (export, deliver, and flush past the real work in
+# transmit): hollow hops. Importer#run is split into helpers that each decide
+# or loop, which is decomposition, not indirection. Pricing's helpers are
+# shared by two callers, so they are abstractions.
+present:
+  - {kind: indirection, package: "App::Exporter#run"}
+absent:
+  - {kind: indirection, package: "App::Importer#run"}
+  - {kind: indirection, package: "App::Pricing#quote"}
+  - {kind: indirection, package: "App::Pricing#invoice"}
+  - {kind: complexity}

@@ -1,14 +1,18 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Check
-  def initialize(subject)
+  def initialize(subject, rules)
     @subject = subject
+    @rules = rules
   end
 
   def finding
     return unless smelly?
     found = evidence
-    Hashira::Analysis::Finding.new(kind:, package: label, detail:, evidence: found, **marks(found))
+    told = detail
+    Hashira::Analysis::Finding.new(
+      kind:, package: label, detail: told, evidence: found, anchors: anchors(told), **marks(found)
+    )
   end
 
   private
@@ -16,6 +20,8 @@ class Hashira::Smells::Check
   attr_reader :subject
 
   def kind = Hashira::Smells::Kind.new(self.class).to_s
+
+  def threshold(default) = @rules.threshold(kind, default)
 
   def label = subject.subject
 
@@ -28,6 +34,13 @@ class Hashira::Smells::Check
   def evidence = []
 
   def rating = {}
+
+  def anchors(told) = [site, *spread(told.to_h[:site].to_s)].uniq
+
+  def spread(spot)
+    file, lines = spot.split(":", 2)
+    lines.to_s.split(", ").map { "#{file}:#{it}" }
+  end
 
   def marks(found) = rating.merge(shape: (shape if found.empty?))
 

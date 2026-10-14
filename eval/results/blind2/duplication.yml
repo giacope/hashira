@@ -1,0 +1,210 @@
+---
+- key: faraday|duplication|request.rb:45,request.rb:57
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Two explicit documented setters; dedup gains little
+- key: rubocop|duplication|rubocop/cop/bundler/gem_filename.rb:57,rubocop/cop/bundler/gem_filename.rb:68
+  versions:
+  - main
+  label: tp
+  why: Two parallel case-to-message methods; one basename-to-message table would do
+- key: rubocop|duplication|rubocop/cop/bundler/ordered_gems.rb:48,rubocop/cop/gemspec/ordered_dependencies.rb:74
+  versions:
+  - main
+  label: tp
+  why: Same each_cons ordering loop duplicated across two cops sharing a mixin; hoist
+    into OrderedGemNode
+- key: rubocop|duplication|rubocop/cop/internal_affairs/on_send_without_on_csend.rb:69,rubocop/cop/internal_affairs/on_send_without_on_csend.rb:84
+  versions:
+  - main
+  label: tp
+  why: Same on_send/on_csend recording repeated in three handlers; extract one recorder
+- key: rubocop|duplication|rubocop/cop/internal_affairs/style_detected_api_use.rb:138,rubocop/cop/lint/literal_assignment_in_condition.rb:56
+  versions:
+  - main
+  label: tp
+  why: Both hand-roll recursive traversal that each_node/each_descendant already provides
+- key: rubocop|duplication|rubocop/cop/layout/empty_lines_around_arguments.rb:51,rubocop/cop/layout/space_inside_percent_literal_delimiters.rb:72
+  versions:
+  - main
+  label: fp
+  why: Tiny add_offense/remove idiom
+- key: rubocop|duplication|rubocop/cop/lint/numeric_operation_with_constant_result.rb:60,rubocop/cop/lint/numeric_operation_with_constant_result.rb:70
+  versions:
+  - main
+  label: fp
+  why: Two-line guard pattern; extraction gains little
+- key: rubocop|duplication|rubocop/cop/mixin/hash_alignment_styles.rb:36,rubocop/cop/mixin/hash_alignment_styles.rb:48
+  versions:
+  - main
+  label: fp
+  why: Different computations; similarity superficial
+- key: rubocop|duplication|rubocop/cop/offense.rb:101,rubocop/cop/offense.rb:122
+  versions:
+  - main
+  label: fp
+  why: Distinct status predicates
+- key: rubocop|duplication|rubocop/cop/style/command_literal.rb:118,rubocop/cop/style/regexp_literal.rb:172
+  versions:
+  - main
+  label: fp
+  why: Two corrector lines; extraction gains little
+- key: rubocop|duplication|rubocop/cop/style/exponential_notation.rb:74,rubocop/cop/style/exponential_notation.rb:90
+  versions:
+  - main
+  label: fp
+  why: Different regexes; sharing gains little
+- key: rubocop|duplication|rubocop/cop/style/identical_conditional_branches.rb:123,rubocop/cop/style/identical_conditional_branches.rb:130
+  versions:
+  - main
+  label: tp
+  why: on_case/on_case_match near-identical; unify via node.branches or alias
+- key: rubocop|duplication|rubocop/cop/style/method_call_without_args_parentheses.rb:90,rubocop/cop/style/redundant_self.rb:161
+  versions:
+  - main
+  label: tp
+  why: Identical implicit-it block detection in two cops; share helper
+- key: rubocop|duplication|rubocop/cop/style/redundant_regexp_escape.rb:93,rubocop/cop/style/redundant_string_escape.rb:162
+  versions:
+  - main
+  label: tp
+  why: Identical delimiter check in two escape cops; share it
+- key: rubygems.org|duplication|app/avo/actions/unblock_email_domain.rb:4,app/avo/actions/unblock_user.rb:4
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Avo DSL declarations differing in predicate
+- key: rubygems.org|duplication|app/avo/actions/validate_attestation.rb:56,app/models/pusher.rb:187
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Same Sigstore verification input setup in two places; share it
+- key: rubygems.org|duplication|app/avo/resources/blocked_email_domain.rb:24,app/avo/resources/email_domain_allowlist.rb:18,app/avo/resources/gem_typo_exception.rb:12
+  versions:
+  - branch
+  label: fp
+  why: Avo DSL field declarations
+- key: rubygems.org|duplication|app/controllers/api/base_controller.rb:57,app/controllers/dashboards_controller.rb:34
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Two short lines with differing tags; extraction gains little
+- key: rubygems.org|duplication|app/controllers/api/v1/oidc/rubygem_trusted_publishers_controller.rb:48,app/controllers/oidc/concerns/trusted_publisher_creation.rb:16
+  versions:
+  - branch
+  label: tp
+  why: Publisher-type lookup duplicated in two controllers; put a finder on OIDC::TrustedPublisher
+- key: rubygems.org|duplication|app/controllers/oidc/pending_trusted_publishers_controller.rb:31,app/controllers/oidc/rubygem_trusted_publishers_controller.rb:31
+  versions:
+  - branch
+  label: fp
+  why: Standard Rails create actions with different scopes/views
+- key: rubygems.org|duplication|app/controllers/organizations/gem_name_reservations_controller.rb:25,app/controllers/organizations/members_controller.rb:49
+  versions:
+  - branch
+  label: fp
+  why: Standard Rails save/redirect/render pattern
+- key: rubygems.org|duplication|app/controllers/pages_controller.rb:18,app/controllers/policies_controller.rb:24
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Two tiny lookups against different lists
+- key: rubygems.org|duplication|app/jobs/indexer.rb:7,app/jobs/upload_names_file_job.rb:4,app/jobs/upload_versions_file_job.rb:4
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Identical GoodJob concurrency block in three jobs; extract concern
+- key: rubygems.org|duplication|app/models/api_key.rb:38,app/models/oidc/pending_trusted_publisher.rb:18
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Identical expiry scopes in two models; extract shared concern
+- key: rubygems.org|duplication|app/models/gem_download.rb:114,app/models/gem_download.rb:124
+  versions:
+  - branch
+  label: fp
+  why: Two distinct SQL statements; parameterizing would obscure
+- key: rubygems.org|duplication|app/models/oidc/api_key_role.rb:24,app/models/ownership.rb:24,app/models/web_hook.rb:20
+  versions:
+  - branch
+  label: fp
+  why: Different columns; scopes are idiomatic one-liners
+- key: rubygems.org|duplication|app/models/organization_onboarding.rb:133,app/models/rubygem_transfer.rb:86
+  versions:
+  - branch
+  label: tp
+  why: Identical demotion method in two models; extract shared concern
+- key: rubygems.org|duplication|app/models/organization_onboarding.rb:81,app/models/rubygem_transfer.rb:94
+  versions:
+  - branch
+  label: tp
+  why: Owners-of-gems-excluding-user query appears in both models; a User scope would
+    serve both
+- key: rubygems.org|duplication|app/models/version.rb:562,app/models/version.rb:574
+  versions:
+  - branch
+  label: fp
+  why: Two distinct validations with different queries/messages
+- key: rubygems.org|duplication|app/tasks/maintenance/notify_cache_exposed_inactive_users_task.rb:4,app/tasks/maintenance/notify_cache_exposed_users_task.rb:4
+  versions:
+  - branch
+  label: tp
+  why: Two maintenance tasks share id-range/notify skeleton; extract a base task
+- key: rubygems.org|duplication|app/views/components/card_component.rb:21,app/views/components/card_component.rb:27
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Two one-line wrappers already share title_content
+- key: rubygems.org|duplication|app/views/components/events/rubygem_event/owner/added_component.rb:4,app/views/components/events/rubygem_event/owner/confirmed_component.rb:4,app/views/components/events/rubygem_event/owner/removed_component.rb:4
+  versions:
+  - branch
+  label: fp
+  why: Event components differ in keys/markup; low-value extraction
+- key: rubygems.org|duplication|app/views/components/rubygem/tab_nav_component.rb:24,app/views/components/subject/nav_component.rb:25
+  versions:
+  - main
+  - branch
+  label: fp
+  why: CSS constant strings differ in content
+- key: rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/index_view.rb:26,app/views/oidc/rubygem_trusted_publishers/index_view.rb:22
+  versions:
+  - main
+  label: tp
+  why: Paginated publisher card duplicated across two index views; extract component
+- key: rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/new_view.rb:29,app/views/oidc/rubygem_trusted_publishers/new_view.rb:21
+  versions:
+  - branch
+  label: tp
+  why: 15-line identical form block in two views; extract shared component
+- key: rubygems.org|duplication|lib/compact_index/dependency.rb:6,lib/compact_index/gem_version.rb:8
+  versions:
+  - branch
+  label: tp
+  why: number-platform formatting duplicated (also in VersionManifest); one shared
+    helper
+- key: rubygems.org|duplication|lib/compact_index/gem_version.rb:28,lib/compact_index/gem_version.rb:29
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Two similar guard lines; trivial
+- key: rubygems.org|duplication|lib/fastly.rb:29,lib/fastly.rb:43
+  versions:
+  - branch
+  label: fp
+  why: One log line repeated; trivial
+- key: rubygems.org|duplication|lib/gem_validator/package.rb:108,lib/gem_validator/package.rb:312
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Different error types/messages; tiny

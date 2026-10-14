@@ -3,8 +3,6 @@
 require "prism"
 
 class Hashira::Smells::Vocabulary
-  UNIVERSAL = (BasicObject.instance_methods + Kernel.instance_methods).to_set.freeze
-
   HIDDEN = %i[private module_function].freeze
 
   WORD = /\A[[:alpha:]_]/
@@ -13,9 +11,11 @@ class Hashira::Smells::Vocabulary
     @trees = trees
   end
 
-  def speaks?(message) = WORD.match?(message) && !UNIVERSAL.include?(message) && words.include?(stem(message))
+  def speaks?(message) = WORD.match?(message) && !Hashira::Analysis::UNIVERSAL.include?(message) && spoken?(message)
 
   private
+
+  def spoken?(message) = words.include?(stem(message))
 
   def words = @_words ||= spoken - concealed
 
@@ -28,7 +28,7 @@ class Hashira::Smells::Vocabulary
 
   def names(entries) = entries.to_set { |definition, _| stem(definition.name) }
 
-  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Smells::Visibility.new(it).entries } }
+  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Analysis::TypeWalk.sections(it) } }
 
   def types(tree)
     found = []

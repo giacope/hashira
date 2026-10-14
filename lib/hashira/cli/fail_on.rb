@@ -9,6 +9,7 @@ module Hashira::CLI::FailOn
   KINDS = { "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication" }
     .merge(Hashira::Pipeline::STRUCTURAL.to_h { [it, it] })
     .merge(MEASURES.to_h { [it, it] })
+    .merge(%w[fragmentation indirection].to_h { [it, it] })
     .merge("smells" => Hashira::Pipeline::SMELLS)
     .merge(Hashira::Pipeline::SMELLS.to_h { [it, it] })
     .freeze
@@ -16,6 +17,7 @@ module Hashira::CLI::FailOn
   OWNERS = {
     **Hashira::Pipeline::STRUCTURAL.to_h { [it, :coupling] },
     **MEASURES.to_h { [it, it.to_sym] },
+    **%w[fragmentation indirection].to_h { [it, :complexity] },
     **Hashira::Pipeline::SMELLS.to_h { [it, :smells] }
   }.freeze
 

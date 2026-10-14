@@ -1,17 +1,13 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
-  NIL_ADVICE = {
-    nil => "Prefer a default, a null object, or polymorphism.",
-    outside: "The value comes from outside; translate the missing value where it enters, at the boundary.",
-    both: "Translate a value missing from outside where it enters; elsewhere prefer a null object or polymorphism."
-  }.freeze
+  NIL_ADVICE = "Prefer a default, a null object, or polymorphism."
 
   ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
 
-  UTILITY_ADVICE = { module: "make it a module function", class: "make it private" }.freeze
-
   DATA_CLUMP = "Introduce a parameter object."
+
+  SPRAWL = "Split the class, or gather related fields into value objects."
 
   REPEATED_CALL = "Name the result in a local variable."
 
@@ -53,7 +49,7 @@ module Hashira::Report::Phrases
     detail = finding.detail.to_h
     names = detail[:names]
     "#{finding.package} refers to #{quoted(names)} more than to self, #{balance(names, detail)} " \
-      "(#{detail[:site]}). The behavior may belong on #{names.one? ? names.first : "whichever of them it serves"}."
+      "(#{detail[:site]}). The behavior may belong on #{alternatives(detail.fetch(:types, names))}."
   end
 
   def balance(names, detail) = "#{detail[:count]}#{" each" unless names.one?} to #{detail[:ego]}"
@@ -81,20 +77,23 @@ module Hashira::Report::Phrases
     "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}"
   end
 
-  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE.fetch(origin)
+  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")
   end
 
   def on_state_sprawl(finding)
-    tally(finding, "holds %d instance variables", "Split the class, or gather related fields into value objects.")
+    detail = finding.detail.to_h
+    "#{finding.package} holds #{detail[:count]} instance variables#{weighed(detail)} (#{detail[:site]}). #{SPRAWL}"
   end
+
+  def weighed(detail) = (", weighing #{detail[:weight]}, more than #{detail[:limit]}" if detail[:weight])
 
   def on_utility_function(finding)
     detail = finding.detail
     "#{finding.package} touches no instance state (#{detail[:site]}). " \
-      "Move it onto the object it serves, or #{UTILITY_ADVICE.fetch(detail[:owner])}."
+      "Move it onto the object it serves, or make it private."
   end
 
   def tally(finding, event, advice)
@@ -103,4 +102,6 @@ module Hashira::Report::Phrases
   end
 
   def quoted(names) = names.map { "'#{it}'" }.join(", ")
+
+  def alternatives(names) = [names[0..-2].join(", "), names.last].reject(&:empty?).join(" or ")
 end

@@ -1,0 +1,101 @@
+---
+- key: faraday|indirection|Faraday::Connection#initialize
+  versions:
+  - branch
+  label: fp
+  why: helpers are public setters, not fragmentation
+- key: faraday|indirection|Faraday::Connection#options
+  versions:
+  - branch
+  label: fp
+  why: shared request helpers, not fragmentation
+- key: faraday|indirection|Faraday::DecodeMethods#decode
+  versions:
+  - branch
+  label: fp
+  why: helpers are the core logic; inlining worsens
+- key: faraday|indirection|Faraday::EncodeMethods#encode_pair
+  versions:
+  - branch
+  label: fp
+  why: helpers are meaningful recursive branches, not pass-throughs
+- key: faraday|indirection|Faraday::Response::Json#on_complete
+  versions:
+  - branch
+  label: fp
+  why: helpers have meaningful names and roles
+- key: rubygems.org|indirection|Advisory::OSV::Fetcher#fetch
+  versions:
+  - branch
+  label: fp
+  why: helpers are meaningful steps
+- key: rubygems.org|indirection|Advisory::OSV::Mapper#records
+  versions:
+  - branch
+  label: fp
+  why: helpers are meaningful named abstractions
+- key: rubygems.org|indirection|AttestationBundleRepair#repair!
+  versions:
+  - branch
+  label: fp
+  why: helpers are meaningful repair steps; inlining would hurt
+- key: rubygems.org|indirection|Avo::Actions::DeleteUser::ActionHandler#handle
+  versions:
+  - branch
+  label: fp
+  why: well-named helpers; the decomposition is fine
+- key: rubygems.org|indirection|Avo::Actions::ValidateAttestation::ActionHandler#handle_record
+  versions:
+  - branch
+  label: fp
+  why: helper split is reasonable
+- key: rubygems.org|indirection|ButtonComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: color/size helpers are sensible extractions
+- key: rubygems.org|indirection|DependenciesController#show
+  versions:
+  - branch
+  label: fp
+  why: helpers are meaningful
+- key: rubygems.org|indirection|OIDC::ApiKeyRoles::GitHubActionsWorkflowView#view_template
+  versions:
+  - branch
+  label: fp
+  why: Phlex view split into section-rendering methods; good structure
+- key: rubygems.org|indirection|OIDC::TrustedPublisher::GitHubAction#to_access_policy
+  versions:
+  - branch
+  label: fp
+  why: named condition helpers aid readability
+- key: rubygems.org|indirection|Onboarding::StepsComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: Phlex component helpers are reasonable
+- key: rubygems.org|indirection|Pusher#process
+  versions:
+  - branch
+  label: fp
+  why: pipeline of meaningful steps; not fragmentation
+- key: rubygems.org|indirection|Pusher#validate
+  versions:
+  - branch
+  label: fp
+  why: validation helpers are meaningful
+- key: rubygems.org|indirection|Rubygem::AdvisoriesComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: component helpers reasonable
+- key: rubygems.org|indirection|SearchQuerySanitizer#sanitize
+  versions:
+  - branch
+  label: fp
+  why: clear pipeline of named steps
+- key: rubygems.org|indirection|SyncDisposableEmailDomainsJob#perform
+  versions:
+  - branch
+  label: fp
+  why: helpers are cohesive, well-named validation steps

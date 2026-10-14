@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
-  Envy = Data.define(:site, :names, :count, :ego)
+  Envy = Data.define(:site, :names, :types, :count, :ego)
 
   private
 
@@ -13,7 +13,15 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def refs = @_refs ||= Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 
-  def envied = @_envied ||= refs.envious.reject { foreign.dismiss?(it) || paired?(it) || transit.passing?(it) }
+  def envied = @_envied ||= refs.envious.select { type(it) }.reject { excused?(it) }
+
+  def excused?(holder) = foreign.dismiss?(holder) || paired?(holder) || transit.passing?(holder)
+
+  def type(holder) = foreign.kinds(holder).find { serves?(it, holder) }&.last
+
+  def serves?(type, holder) = asked(holder).subset?(subject.ownership.repertoire.of(type))
+
+  def asked(holder) = refs.reads(holder).to_set { it.name.to_s.delete_suffix("=") }
 
   def transit = @_transit ||= Hashira::Smells::Transit.new(subject.node, refs)
 
@@ -23,7 +31,11 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def detail = Envy.new(site:, names: envied.map(&:name).uniq, count: refs.lines(envied.first).size, ego: refs.ego)
+  def detail = Envy.new(site:, names: envied.map(&:name).uniq, types:, count:, ego: refs.ego)
+
+  def count = refs.lines(envied.first).size
+
+  def types = envied.map { type(it) }.uniq
 
   def evidence = (envied + [Hashira::Smells::Refs::SELF]).map { tally(it.name, refs.lines(it).uniq) }
 end

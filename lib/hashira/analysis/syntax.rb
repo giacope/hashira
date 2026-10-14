@@ -51,6 +51,14 @@ module Hashira
 
       def direct(type) = statements(type).grep(Prism::DefNode)
 
+      def options(call) = keywords(call).flat_map(&:elements).grep(Prism::AssocNode)
+
+      def keywords(call) = Array(call.arguments&.arguments).grep(Prism::KeywordHashNode)
+
+      def option(call, key) = options(call).find { named?(it.key, key) }&.value
+
+      def named?(node, key) = node.is_a?(Prism::SymbolNode) && node.unescaped == key.to_s
+
       def constants(type) = statements(type).grep(Prism::ConstantWriteNode)
 
       def statements(type)

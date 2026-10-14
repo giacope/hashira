@@ -75,15 +75,20 @@ module Hashira::CLI
     ),
     Flag.new(name: "--update-baseline", mode: :update, text: ["record the current edges and findings"]),
     Flag.new(
-      name: "--baseline", arg: "PATH", field: :baseline, default: "hashira_baseline.json",
-      text: ["baseline file (default: hashira_baseline.json)"]
+      name: "--baseline", arg: "PATH", field: :baseline,
+      text: [
+        "baseline file (default: hashira_baseline.json in",
+        "the analyzed project's root: the nearest folder",
+        "above the first directory holding .hashira.yml",
+        "or a baseline, else where hashira runs)"
+      ]
     ),
     Flag.new(
       name: "--config", arg: "PATH",
       text: [
         "read default options from PATH (default:",
-        ".hashira.yml, when there is one); a flag on",
-        "the command line wins over its setting"
+        ".hashira.yml in the project's root, when there",
+        "is one); a flag on the command line wins"
       ]
     ),
     Flag.new(name: "--no-config", text: ["ignore .hashira.yml"]),

@@ -63,7 +63,7 @@ class Hashira::Report::Text
     all = @view.findings.all
     @io.puts("Findings (#{all.size}):")
     list(all)
-    accepted
+    decided
     @io.puts("\n  Full evidence + machine format: hashira --json") unless all.empty?
   end
 
@@ -72,10 +72,10 @@ class Hashira::Report::Text
     table(Hashira::Report::FindingList, all)
   end
 
-  def accepted
-    accepted = @view.findings.accepted
-    return if accepted.empty?
-    @io.puts("\nAccepted (#{accepted.size}):")
-    accepted.each { |finding, reason| @io.puts("  ~ #{finding.kind}/#{finding.package} — #{reason}") }
+  def decided
+    accepted
+    Hashira::Report::Silenced.new(@view.screened, io: @io).print
   end
+
+  def accepted = Hashira::Report::Listing.new(@io).waived("Accepted", @view.findings.accepted)
 end

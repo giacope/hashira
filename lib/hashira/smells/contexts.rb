@@ -53,21 +53,21 @@ module Hashira
 
         def content = [node.parameters, node.body].compact
 
-        def neighbors = Visibility.new(home).entries.map { |definition, _| definition.name }
+        def neighbors = Hashira::Analysis::TypeWalk.sections(home).map { |definition, _| definition.name }
       end
 
     Sketch =
       Data.define(:name, :node, :kind, :file) do
         def superclass = kind == :class ? Hashira::Analysis::Syntax.segments(node.superclass) : []
 
-        def owner = kind == :module ? name.delete_suffix("::#{Visibility::CLASS_LEVEL}") : name
+        def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name
 
         def settle(assigned:, heirs:, protocol:, ownership:)
           TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), assigned:, heirs:)
         end
 
         def defs(protocol, ownership)
-          Visibility.new(node).entries.map do |definition, section|
+          Hashira::Analysis::TypeWalk.sections(node).map do |definition, section|
             MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, home: node)
           end
         end

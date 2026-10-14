@@ -1,0 +1,108 @@
+---
+- key: faraday|repeated_conditional|Faraday::Connection
+  versions:
+  - branch
+  label: fp
+  why: simple boolean state; polymorphism overkill
+- key: faraday|repeated_conditional|Faraday::Error
+  versions:
+  - branch
+  label: tp
+  why: repeated is_a? Response vs hash checks; normalize once
+- key: faraday|repeated_conditional|Faraday::Response
+  versions:
+  - main
+  - branch
+  label: fp
+  why: simple pending/finished ternaries; a state object would be overkill
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier
+  versions:
+  - main
+  label: fp
+  why: enforced-style checks are idiomatic
+- key: rubocop|repeated_conditional|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault
+  versions:
+  - main
+  label: fp
+  why: ConfigurableEnforcedStyle checks are idiomatic; polymorphism overkill
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessModifierDeclarations
+  versions:
+  - main
+  label: fp
+  why: configurable style checks in cop; polymorphism overkill
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::AccessorGrouping
+  versions:
+  - main
+  label: fp
+  why: standard ConfigurableEnforcedStyle pattern in RuboCop
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::ConditionalAssignment
+  versions:
+  - main
+  label: fp
+  why: standard enforced-style check
+- key: rubocop|repeated_conditional|RuboCop::Cop::Style::SignalException
+  versions:
+  - main
+  label: fp
+  why: standard enforced-style checks
+- key: rubocop|repeated_conditional|RuboCop::LSP::Runtime
+  versions:
+  - main
+  label: fp
+  why: simple boolean config flags; polymorphism unwarranted
+- key: rubocop|repeated_conditional|RuboCop::Runner
+  versions:
+  - main
+  label: fp
+  why: debug option checks in a runner; fine
+- key: rubygems.org|repeated_conditional|Avo::Actions::DeleteUser
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Avo DSL lambdas; framework context
+- key: rubygems.org|repeated_conditional|Dependency
+  versions:
+  - branch
+  label: fp
+  why: before_validation guards on an optional association; fine
+- key: rubygems.org|repeated_conditional|EmailConfirmationsController
+  versions:
+  - main
+  - branch
+  label: fp
+  why: signed_in? is session state; polymorphism not applicable
+- key: rubygems.org|repeated_conditional|MembershipPolicy
+  versions:
+  - branch
+  label: fp
+  why: policy rules naturally check the role
+- key: rubygems.org|repeated_conditional|OrganizationOnboarding
+  versions:
+  - branch
+  label: fp
+  why: blank guards on an association before validation; polymorphism is not appropriate
+- key: rubygems.org|repeated_conditional|Pusher
+  versions:
+  - main
+  - branch
+  label: fp
+  why: checks express different policies in different contexts
+- key: rubygems.org|repeated_conditional|Rubygem::TabNavComponent
+  versions:
+  - main
+  - branch
+  label: fp
+  why: a local boolean reused inside one method; not a scattered conditional
+- key: rubygems.org|repeated_conditional|RubygemTransfer
+  versions:
+  - main
+  - branch
+  label: fp
+  why: validation guards; polymorphism unwarranted
+- key: rubygems.org|repeated_conditional|Version
+  versions:
+  - main
+  - branch
+  label: fp
+  why: AR model predicates; polymorphism infeasible

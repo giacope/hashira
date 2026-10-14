@@ -1,0 +1,56 @@
+---
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelfAssignmentBranch#register_offense
+  message: RuboCop::Cop::Style::RedundantSelfAssignmentBranch#register_offense dispatches
+    manually via respond_to? (rubocop/cop/style/redundant_self_assignment_branch.rb:78).
+    Trust the duck type, or split the callers into two adapters.
+  evidence:
+  - opposite_branch.respond_to?(:heredoc?) (line 78)
+  code:
+  - "# rubocop/cop/style/redundant_self_assignment_branch.rb:78"
+  - '78:             if opposite_branch.respond_to?(:heredoc?) && opposite_branch.heredoc?'
+  - '79:               replacement += opposite_branch.loc.heredoc_end.with('
+  - '80:                 begin_pos: opposite_branch.source_range.end_pos'
+  - '81:               ).source'
+  - '82:             end'
+  - '83: '
+  - '84:             corrector.replace(if_node, replacement)'
+  - '85:           end'
+  - '86:         end'
+  - '87:       end'
+  - '88:     end'
+  - '89:   end'
+  - '90: end'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector#source
+  message: RuboCop::Cop::Style::ParallelAssignment::GenericCorrector#source dispatches
+    manually via respond_to? (rubocop/cop/style/parallel_assignment.rb:212). Trust
+    the duck type, or split the callers into two adapters.
+  evidence:
+  - loc.respond_to?(:begin) (line 212)
+  code:
+  - "# rubocop/cop/style/parallel_assignment.rb:212"
+  - '212:             if node.str_type? && loc.respond_to?(:begin) && loc.begin.nil?'
+  - '213:               "''#{node.source}''"'
+  - '214:             elsif node.sym_type? && loc.begin.nil?'
+  - '215:               ":#{node.source}"'
+  - '216:             else'
+  - '217:               node.source'
+  - '218:             end'
+  - '219:           end'
+  - '220: '
+  - '221:           def extract_sources(node)'
+  - '222:             node.children.map(&:source)'
+  - '223:           end'
+  - '224: '
+  - '225:           def cop_config'
+  - '226:             @config.for_cop(''Style/ParallelAssignment'')'
+  - '227:           end'
+  - '228:         end'
+  - '229: '
+  - '230:         # An internal class for correcting parallel assignment'
+  - '231:         # protected by rescue'
+  - '232:         class RescueCorrector < GenericCorrector'
+  - '233:           def correction'
+  - '234:             # If the parallel assignment uses a rescue modifier and it is
+    the'
+  - '235:             # only contents of a method, then we want to make use of the'
+  - '236:             # implicit begin'

@@ -3,9 +3,13 @@
 class Hashira::Complexity::Scores
   THRESHOLD = 10
 
-  def initialize(project, trees)
+  KIND = Hashira::Complexity::MethodFinding::KIND
+
+  def initialize(project, trees, rules, comments = {})
     @project = project
     @trees = trees
+    @rules = rules
+    @comments = comments
   end
 
   def ranked = scores.sort_by { -it.cognitive }
@@ -14,26 +18,33 @@ class Hashira::Complexity::Scores
 
   def lists = { methods: ranked, classes: }
 
-  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding }
+  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } + derived
+
+  def derived = indirection.findings + fragmentation.findings
+
+  def indirection = Hashira::Complexity::Indirection.new(sites, @trees.values, @rules)
+
+  def fragmentation = Hashira::Complexity::Fragmentation.new(sites, notes, @trees.values, @rules)
+
+  def notes = @trees.keys.to_h { [@project.relative(it), Hashira::Complexity::Notes.new(it, @comments.fetch(it, []))] }
+
+  def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 
   private
 
-  def scores = @_scores ||= @trees.flat_map { |path, tree| harvest(path, tree) }
+  def scores = @_scores ||= sites.map { |relative, site| score(relative, site) }
 
-  def flagged = ranked.select { it.cognitive >= THRESHOLD }
+  def flagged = ranked.select { it.cognitive >= @rules.threshold(KIND, THRESHOLD) }
 
-  def harvest(path, tree)
-    relative = @project.relative(path)
-    Hashira::Complexity::Sites.new(tree).to_enum(:each).map { score(relative, it) }
-  end
+  def harvest(relative, tree) = Hashira::Complexity::Sites.new(tree).to_enum(:each).map { [relative, it] }
+
+  def recursion = @_recursion ||= Hashira::Complexity::Recursion.new(sites.map(&:last))
 
   def score(relative, site)
     node = site.node
     Hashira::Complexity::MethodScore.new(
       subject: site.subject, file: relative, line: node.location.start_line,
-      **tallies(Hashira::Complexity::CognitiveScore.new(node))
+      **Hashira::Complexity::CognitiveScore.new(node).tallies(recursion.increments(site))
     )
   end
-
-  def tallies(score) = { cognitive: score.total, calls: score.calls, increments: score.increments }
 end

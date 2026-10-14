@@ -1,0 +1,4898 @@
+[
+  {
+    "key": "rubygems.org|utility_function|EmailResettable#email_reset",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "Controller concern dispatching mailers is normal Rails placement"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Mail-sending decision about user email state belongs on User/mailer, not a controller concern"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::Utils::Headers#initialize",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil-tolerant constructor arg at public boundary is fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Nil-tolerant constructor default for public API; harmless"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInsideReferenceBrackets#previous_token",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "two reads of memoized accessor; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Memoized accessor called twice; no gain"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Advisory::OSV::Mapper#records",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are meaningful named abstractions"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers are meaningful named steps, not mere code motion"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/controllers/api/base_controller.rb:57,app/controllers/dashboards_controller.rb:34",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "authenticate_with_api_key duplicated across controllers with drift in tags"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two short lines with differing tags; extraction gains little"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Avo::Resources::User::CreatedAtFilter#apply",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "Time.zone is a cheap accessor; no gain"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Time.zone is a cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Advisory::OSV::Mapper#packages",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "hash lookup repeated; idiomatic and cheap"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Hash lookup repetition is trivial idiom"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|TraceTagger#trace",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "module helper wrapping tracer; fine as is"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Mixin helper meant to be included; fine as is"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#rename_variable_with_underscore",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "small private corrector helper in cop; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small private corrector helper in a cop; idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Onboarding::StepsComponent#view_template",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "Phlex component helpers are reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small view helpers aid readability"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Auditable#in_audited_transaction",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "record.attributes builds a new hash each call; name it once per record"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Different derived expressions of attributes; caching adds little"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|GemPackageEnumerator#initialize",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "argument validation guard in constructor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Constructor argument validation guard, not dispatch"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelf#on_argument",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST node shape check; rubocop idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node shape check; idiomatic in RuboCop"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Cop#on_new_investigation",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "deliberate legacy-API compatibility hook"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Legacy API compatibility hook; respond_to? is intentional"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/bundler/ordered_gems.rb:48,rubocop/cop/gemspec/ordered_dependencies.rb:74",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "near-identical on_new_investigation loop could live in OrderedGemNode"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Same each_cons ordering loop duplicated across two cops sharing a mixin; hoist into OrderedGemNode"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|RubygemContents#fs",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "accessor to storage backend; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Accessor seam for storage dependency"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Cop#on_investigation_end",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "deliberate legacy-API compatibility hook"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Legacy API compatibility hook; respond_to? is intentional"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|EmailConfirmationsController",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "signed_in? is session state; polymorphism not applicable"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Repeated signed_in? ternary for redirect path; extract one decision point"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|RubygemContents#store",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "storage layer mapping entry fields is its job"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Storage object storing an entry is the right home"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInLambdaLiteral#range_of_offense",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "node.parent cheap; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "node.parent is a cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|ReverseDependenciesController#index",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "params read twice; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "params lookup twice on one guard line; trivial"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#variable?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST node capability check; rubocop idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check; idiomatic"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "token pair param object adds nothing"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Token pair in tiny private helpers; parameter object is overkill"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::RangeHelp#move_pos",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "option-driven private helper used in pipeline; fine"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Boolean condition flag gates the loop; callers should decide whether to call"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::MultilineMethodCallIndentation#semantic_alignment_base",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "node.loc chain cheap; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "node.loc cheap accessor chain"
+    }
+  },
+  {
+    "key": "faraday|data_clump|Faraday::DecodeMethods",
+    "versions": [
+      "branch"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "hot parsing code; param object not worthwhile"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "subkey+is_array form a parsed key-segment value object"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Style::SoleNestedConditional",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "corrector/node passing is cop convention"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Standard autocorrect parameter passing in RuboCop cops"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|VersionManifest#store_entries",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "weak envy; orchestration belongs in manifest"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Envy ratio marginal; method orchestrates own storage"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|UsersHelper#obfuscate_email",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "input guard in helper is appropriate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Defensive helper guard at view boundary is fine"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|RubygemsHelper#github_params",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "split path once and destructure user/repo"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Split path once and destructure user/repo"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Metrics::PerceivedComplexity#complexity_score_for",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "case without condition is AST semantics"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "nil condition is AST semantics (case without subject)"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Cop::AnnotationComment",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "parsed comment components; cohesive value class"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Ivars are parsed parts of one comment; cohesive"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Cop::VariableForce::Variable",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "cohesive variable model"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Variable model fields are cohesive"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "line lookup may be nil; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "nil guard needed since blank? not defined on nil in RuboCop core ext"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|TooltipComponent",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "component props; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Component keyword options; cohesive"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Style::InverseMethods",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "corrector/node passing is cop convention"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Standard autocorrect parameter passing"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|GemInfo.ordered_names",
+    "versions": [
+      "branch"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "simple cache-bypass option; acceptable"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "cached: flag used by one job to force refresh; split into read and refresh methods"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/new_view.rb:29,app/views/oidc/rubygem_trusted_publishers/new_view.rb:21",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "15 identical form lines in two views; extract component"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "15-line identical form block in two views; extract shared component"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::StringLiteralCorrector.correct",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "style is config value; natural parameter"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Style enum from config is natural input"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|OIDC::TrustedPublisher::GitHubAction#to_access_policy",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "named condition helpers aid readability"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Condition helpers are meaningful named policy parts"
+    }
+  },
+  {
+    "key": "faraday|utility_function|Faraday::RackBuilder#build_env",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "builder building env is cohesive public API"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Public builder API; moving would break callers"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Layout::EmptyLinesAroundBody",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "line pair param object marginal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Line pair small and local"
+    }
+  },
+  {
+    "key": "faraday|repeated_call|Faraday::Request::Authorization#header_from",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "params.size trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "params.size is trivial"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::Response::Json#initialize",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "optional option dup; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional parameter dup; fine"
+    }
+  },
+  {
+    "key": "faraday|indirection|Faraday::Connection#initialize",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are public setters, not fragmentation"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers are public setters reused elsewhere, not code motion"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Rubygem#public_versions_with_extra_version",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "scope chain repeated; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Relation builder repeated twice; trivial"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|VersionManifest#unique_checksums",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "defaulting optional arg; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Default argument fallback; fine"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST node capability guard; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability guard; idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/gem_download.rb:114,app/models/gem_download.rb:124",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "SQL clearer kept literal; parameterizing hurts"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two distinct SQL statements; parameterizing would obscure"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Runner",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "6 ivars reasonable for Runner"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Runner state is cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Fastly.purge",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "ENV read twice; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "ENV read twice; trivial"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#remove_exception_assignment_part",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "corrector helper on node is cop convention"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST range computation in cop; nodes are not the place"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|ElasticSearcher#search_definition",
+    "versions": [
+      "branch"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "flag only selects source list; splitting duplicates DSL"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Flag only picks source fields; rest is shared DSL"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|RubygemFs::Local#dir_for",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "blank prefix guard reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Blank prefix guard is legitimate input handling"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|VersionManifest#store_path",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "storage mapping belongs in manifest"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Storage concern, not entry's"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::UnlessElse#range_between_else_and_end",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "range helper in cop; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Single-line range helper; fine"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::HashAlignmentStyles::TableAlignment#hash_rocket_delta",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "alignment math in style class; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Alignment computation belongs in the alignment mixin"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#constructor?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "small node predicate; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Tiny predicate helper; fine"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/bundler/gem_filename.rb:57,rubocop/cop/bundler/gem_filename.rb:68",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "two case methods collapse into one lookup table"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Two parallel case-to-message methods; one basename-to-message table would do"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::RSpec::ExpectOffense",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "test helper keyword args; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Test helper keyword passthrough"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/internal_affairs/on_send_without_on_csend.rb:69,rubocop/cop/internal_affairs/on_send_without_on_csend.rb:84",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny two-line similarity"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Same on_send/on_csend recording repeated in three handlers; extract one recorder"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::IdenticalConditionalBranches#on_case",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial accessor repeat"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|RubygemsController",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "controller ivars for views across actions"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Controller ivars feed views per action"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Rubygem::AdvisoriesComponent#view_template",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "component helpers reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers are meaningful view pieces"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::AccessModifierDeclarations#autocorrect_inline_style",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial accessor repeat"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|SearchQuerySanitizer#sanitize",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "clear pipeline of named steps"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Named pipeline steps make sanitize readable"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Avo::Actions::ValidateAttestation::ActionHandler#handle_record",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helper split is reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers hold substantive logic"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#assignment?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST node capability check; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check; idiomatic"
+    }
+  },
+  {
+    "key": "faraday|indirection|Faraday::DecodeMethods#decode",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are the core logic; inlining worsens"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers name decode stages; inlining would worsen"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::IfInsideElse#find_end_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "recursive node helper; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Recursive node walk in cop is fine"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::MapIntoArray#return_value_used?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST node capability check; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|Avo::Actions::ValidateAttestation::ActionHandler#validate_attestation",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "verification orchestration, not Attestation behavior per se"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Attestation verification logic belongs on Attestation (also duplicated in Pusher)"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Config",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "config with caches; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Caches plus config data; cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|RubygemTransfer#rubygems_owned_by_transferrer",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "ownerships[it.id]&.owner? simplifies"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "ownerships[it.id]&.owner? removes the doubled lookup"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::TargetFinder#to_inspect?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "weak envy; finder logic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Envy ratio marginal; finder logic fine"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#else_branch?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "node predicate in calculator; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small predicate on calculator; fine"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#on_class",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial accessor repeats"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessors"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Naming::ConstantName#allowed_method_call_on_rhs?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "receiver nil is AST semantics"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil receiver semantics"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/organization_onboarding.rb:133,app/models/rubygem_transfer.rb:86",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "identical method in two invitable models; extract concern"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Identical demotion method in two models; extract shared concern"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|BlockedEmailDomain.blocks?",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "not a design nil check"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Trivial nil predicate"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|Avo::AuditedChangesRecordDiff::ShowComponent",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "component derived state; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View component state derived from inputs; acceptable"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/avo/actions/validate_attestation.rb:56,app/models/pusher.rb:187",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "Sigstore input building duplicated; extract helper"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Same Sigstore verification input setup in two places; share it"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Lint::NumberConversion#handle_conversion_method",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "receiver nil is AST semantics"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil receiver semantics"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Style::AccessModifierDeclarations",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "configurable style checks in cop; polymorphism overkill"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks in a cop; polymorphism overkill"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Team#process_errors",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "exception-type handling; standard"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Exception class dispatch is idiomatic error handling"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|SyncDisposableEmailDomainsJob#last_attempt?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "retry policy by exception class; standard"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Exception class retry policy via case is idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|OIDC::ApiKeyRolesController#add_default_params",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "tp",
+      "why": "default aud condition setup belongs on Condition (also duplicated in GitHubAction)"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Default aud condition setup duplicates GitHubAction#audience_condition; a Condition factory would serve both"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|Version",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "AR model predicates; polymorphism infeasible"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Scattered predicates in large AR model; polymorphism not feasible"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|SyncDisposableEmailDomainsJob#fetch_lines",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "cannot move to Faraday response"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Response handling in fetch method is natural"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::VariableForce::Variable#reference!",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "variable reference logic over its assignments; cohesive"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Algorithm over assignments; fine in Variable"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|Gemcutter::UserAgentParser::Set#call",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "tp",
+      "why": "flag flips semantics (first vs unique match); split methods"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "exclusive flag switches between two different algorithms; split methods"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|Avo::Actions::ApplicationAction::Avo::Actions::ActionHandler",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "action context fields; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Framework handler context; cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|ApplicationController#disable_cache",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "header assignments idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Header assignments idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/views/components/card_component.rb:21,app/views/components/card_component.rb:27",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "already shares title_content"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two one-line wrappers already share title_content"
+    }
+  },
+  {
+    "key": "faraday|repeated_conditional|Faraday::Error",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "tp",
+      "why": "repeated is_a? Response vs hash checks; normalize once"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Response type check repeated in three accessors; normalize once"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::LSP::Routes#for",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "dynamic route lookup; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Dynamic route lookup; respond_to? is the mechanism"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|OIDC::TrustedPublisher::GitHubAction#audience_condition",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "part of cohesive condition builder set"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Condition builder is part of this policy; fine"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#correct_branches",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "helper module function; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helper module method used by singleton correctors; fine"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/controllers/api/v1/oidc/rubygem_trusted_publishers_controller.rb:48,app/controllers/oidc/concerns/trusted_publisher_creation.rb:16",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "type lookup duplicated; extract class method on TrustedPublisher"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Publisher-type lookup duplicated in two controllers; put a finder on OIDC::TrustedPublisher"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Attestation#display_data",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor in a block"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Api::V1::RubygemsController#create",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "tp",
+      "why": "attestations is guaranteed Array; &. is dead"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional param conversion"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::Logging::Formatter#dump_headers",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil headers guard in formatter fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Defensive nil guard on optional headers"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::EmptyCaseCondition#keep_first_when_comment",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "range manipulation in cop; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Range math in cop is fine"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|ButtonComponent#view_template",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap size call"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|AvoAuditable#unscope_users",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial wrapper; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Tiny intentional wrapper"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Style::RedundantRegexpEscape#allowed_escape?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "context boolean; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Flag reflects real context; split would duplicate guards"
+    }
+  },
+  {
+    "key": "faraday|state_sprawl|Faraday::Connection",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "connection is config hub; splitting impractical"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Core facade; fields already grouped into option objects"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|ClearanceBackdoor#sign_in_through_the_back_door",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "check at boundary already (middleware query param)"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Test-only backdoor; nil param is the boundary"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|ApiKeysHelper#gem_scope",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "presentational helper using i18n/tooltip; belongs in view layer"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View presentation with i18n belongs in helper"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#find_most_bottom_of_heredoc_end",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "respond_to?(:heredoc_end) on loc is the standard parser API idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location map shape check"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#compact_offense",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "tp",
+      "why": "flag only inverts side; callers could call space_offense directly"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Tiny side flip; not worth restructuring"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::RequireOrder#on_send",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor repeated twice; no gain"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Cop::Metrics::Utils::CodeLengthCalculator",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "5 cohesive fields for a calculator"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Calculator state cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|RubygemsHelper#link_to_github",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "tp",
+      "why": "GitHub-link detection over links is domain logic that fits Links/Rubygem"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "GitHub link discovery is Rubygem/links domain logic (controller even calls the helper)"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#same_line?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "intentional thin delegator in mixin"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Delegator for readability"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/mixin/hash_alignment_styles.rb:36,rubocop/cop/mixin/hash_alignment_styles.rb:48",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different computations (separator vs value) with similar shape"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Different computations; similarity superficial"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Layout::SpaceAroundKeyword#check_end",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "parameter is data used in one guard, not a mode flag"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Parameter used in a single guard"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Metrics::Utils::IteratingBlock#iterating_method?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny predicate in a module mixin using a constant"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Tiny predicate"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::RedundantFormat#all_fields_literal?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "sequences is a local variable; no owning object to move to"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Local computation over its own data"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|GitHubSecretScanning#valid_github_signature?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "key may legitimately be absent from remote; boundary check"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Guard on optional key; fine"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|GemValidator::Package#verify_checksums!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil means no checksums file was seen; meaningful state"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional reported checksums from external data"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/style/method_call_without_args_parentheses.rb:90,rubocop/cop/style/redundant_self.rb:161",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "identical implicit-it detection in two cops; share via helper/mixin"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Identical implicit-it block detection in two cops; share helper"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|Advisory#to_gem_version",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "small coercion accepting Version or string; acceptable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Conversion function accepting version or string is idiomatic"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#process_assignment_node",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Lint::FloatComparison#check_numeric_returning_method",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|UsersHelper#twitter_url",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "view helper building URL is fine in helper"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View helper building a URL is fine"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Style::RedundantCondition#if_source",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "boolean is part of a multi-branch formatting choice; splitting not clearer"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Shared flag between paired source builders; acceptable"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Lint::BigDecimalNew#on_send",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "node.loc is a cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Layout::SpaceAroundEqualsInParameterDefault",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "ConfigurableEnforcedStyle checks are idiomatic; polymorphism overkill"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks; idiomatic"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::ConditionalCorrectorHelper#remove_whitespace_in_branches",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "corrector helper operating on AST nodes; no better home"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Corrector logic on AST; fine"
+    }
+  },
+  {
+    "key": "faraday|duplication|request.rb:45,request.rb:57",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "identical replace-or-set setters could share one private helper"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two explicit documented setters; dedup gains little"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/controllers/organizations/gem_name_reservations_controller.rb:25,app/controllers/organizations/members_controller.rb:49",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "standard Rails save/redirect/render idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Standard Rails save/redirect/render pattern"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|TotpsController#create",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor repeated twice"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::LSP::Runtime",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "simple boolean config flags; polymorphism unwarranted"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two-flag check is small and clear; polymorphism overkill"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Pusher#find",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap attribute reads; negligible gain"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Long method recomputes platform/ruby-version strings; name them once"
+    }
+  },
+  {
+    "key": "faraday|data_clump|Faraday::EncodeMethods",
+    "versions": [
+      "branch"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "recursive encoder args, not a clump"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Recursive encoder arguments, not a clump"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Style::Sample#offensive?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "case on method name data, not a control flag"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Classifying a method name is the method's purpose, not a flag"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|lib/fastly.rb:29,lib/fastly.rb:43",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "single log line in two methods; extraction marginal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "One log line repeated; trivial"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Layout::EmptyLineBetweenDefs",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "pair of nodes passed naturally; object adds nothing"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Def pair arguments in small helpers"
+    }
+  },
+  {
+    "key": "faraday|indirection|Faraday::EncodeMethods#encode_pair",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are meaningful recursive branches, not pass-throughs"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Type split into helpers aids recursion clarity"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Layout::HashAlignment#adjust",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "range is a parameter; nothing to move"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Corrector helper; fine"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|Pusher",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "checks express different policies in different contexts"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Owner-type branching (user vs trusted publisher) scattered through Pusher; push onto owner types"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/style/identical_conditional_branches.rb:123,rubocop/cop/style/identical_conditional_branches.rb:130",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "already delegates to check_branches; differences inherent"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "on_case/on_case_match near-identical; unify via node.branches or alias"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::LSP::Diagnostic#ensure_uri_scheme",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "normalizing URI at boundary; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Default scheme assignment is fine"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::ConfigLoaderResolver#merge",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil carries unset semantics in config merge"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config merge option semantics"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "enforced-style checks are idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks; idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Pusher#process",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "pipeline of meaningful steps; not fragmentation"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Readable step pipeline"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|Auditable#merge_changes!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "small private helper in concern; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Pure helper in concern; fine"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::IndentationWidth#leftmost_modifier_of",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor in recursion"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/internal_affairs/style_detected_api_use.rb:138,rubocop/cop/lint/literal_assignment_in_condition.rb:56",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny traversals with different predicates; sharing not worthwhile"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Both hand-roll recursive traversal that each_node/each_descendant already provides"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/offense.rb:101,rubocop/cop/offense.rb:122",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "distinct status predicates"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Distinct status predicates"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|RubygemsHelper#nice_date_for",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "formatting helper belongs in helpers"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View formatting helper"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::VariableForce::Scope#belong_to_inner_scope?",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "target_node.parent repeated 4x; a local clarifies"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "target_node.parent repeated four times; name it"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|GemValidator::Package",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "validator accumulating parse state; cohesive"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Size limit settings could be grouped into a limits value object apart from parse state"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|DependenciesController#show",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "domain check on dependency resolution"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Resolved-ness test belongs on Dependency as a predicate"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Middleware#call",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "tp",
+      "why": "no-op default hooks in base class would replace respond_to? checks"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Optional hooks probed with respond_to?; define no-op defaults in base class"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Avo::Resources::User::ApiKeyNameFilter#apply",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "blank filter input guard at boundary"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Blank filter value guard is boundary handling"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|RubygemContents::Entry",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "value object of entry metadata; fields are attributes"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Data record of file metadata; cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|Rubygem#bulk_reorder_versions",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "local variable; nowhere to move"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Local data manipulation; envy spurious"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Api::CompactIndexController#info",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::RedundantHeredocDelimiterQuotes#need_heredoc_delimiter_quotes?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "cop helper on node; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST predicate in cop"
+    }
+  },
+  {
+    "key": "faraday|repeated_conditional|Faraday::Connection",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "simple boolean state; polymorphism overkill"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Proxy mode flag checks are few and clear"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/index_view.rb:26,app/views/oidc/rubygem_trusted_publishers/index_view.rb:22",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "same paginated card list in two views; extract a component"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Paginated publisher card duplicated across two index views; extract component"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::ConditionalAssignment#move_assignment_inside_condition",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "dispatching to correctors; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Dispatcher to corrector classes; fine"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::ConfigLoaderResolver",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "parameters are naturally passed in config resolution helpers"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Resolver param passing; parameter object would not help"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::HashSubset#slices_key?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "tp",
+      "why": "symbol selects node; pass the node itself instead"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Symbol selects which node to compare; pass the node instead"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::MultilineElementIndentation",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "tokens passed between private helpers; object adds little"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Indentation helper args; parameter object would not clarify"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Lint::RaiseException#check",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "AST nil cbase is semantic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil cbase semantics"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|MfaExpiryMethods#mfa_session_active?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "session value changes between calls; caching would be wrong"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Session value changes between reads (deletion); not a pure repeat"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|VersionManifest#initialize",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "default platform handling; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Nil platform means default ruby; boundary normalization"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|RubygemsController#show",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "faraday|indirection|Faraday::Response::Json#on_complete",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers have meaningful names and roles"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small named helpers; fine"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#extra_space?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "side is a general param of a mixin API"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Symmetric side selector in a mixin; idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/organization_onboarding.rb:81,app/models/rubygem_transfer.rb:94",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "similar co-owner user queries could share a User scope"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Owners-of-gems-excluding-user query appears in both models; a User scope would serve both"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|ProfilesController",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "controller ivars across actions are view assigns"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Controller ivars feed views"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::SoleNestedConditional#correct_for_comment",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "local variable; nothing to move"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Local comment handling in corrector"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|UploadInfoFileJob#upload_info_file",
+    "versions": [
+      "branch"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "flag gates one trailing side effect; acceptable"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "purge flag only toggles a trailing side effect; let the caller enqueue the purge"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|SessionVerifiable#verify_session_redirect_path",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "respond_to? on AST node is pragmatic here"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability guard"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|SessionVerifiable#verified_session_active?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial repeated hash read"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap session read"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|FastlyLogProcessor#perform",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil from queue/db lookup is legitimate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Missing ticket is a legitimate runtime case"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Naming::AsciiIdentifiers#first_offense_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Badge#qualified?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "department legitimately optional"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Simple predicate"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Lint::UselessRescue#only_reraising?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "AST body may be nil"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil body semantics"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/version.rb:562,app/models/version.rb:574",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different queries and messages"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two distinct validations with different queries/messages"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Advisory#affects?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil from failed parse is legitimate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Guard on optional conversion result"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_local_variable_assignment_part",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "corrector helper in cop; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small corrector helper"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::RaiseArgs#correction_compact_to_exploded",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "cop helper on node"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST source building in cop"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::ConfigObsoletion#load_rules",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "self.class is trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Trivial self.class"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|Avo::Actions::DeleteUser",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "Avo DSL lambdas; framework context"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Avo DSL lambda; record presence check is framework contract"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Utils#URI",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "boundary coercion of URI-or-string"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Conversion function accepting URI or string is idiomatic"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/lint/numeric_operation_with_constant_result.rb:60,rubocop/cop/lint/numeric_operation_with_constant_result.rb:70",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two lines differing in matcher; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two-line guard pattern; extraction gains little"
+    }
+  },
+  {
+    "key": "faraday|indirection|Faraday::Connection#options",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "shared request helpers, not fragmentation"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "run_request is shared by all verbs; not code motion"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::RackBuilder#ensure_adapter!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "guard raising helpful error"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Adapter presence assertion is the point"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#white_space_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "range computation helper; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helper module function in corrector mixin"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|RubygemTransfer",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "validation guards; polymorphism unwarranted"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Defensive guards in independent validators"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "respond_to? on AST arguments; pragmatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST argument shape check"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Lint::SafeNavigationConsistency#receiver_name_as_key",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "cop helper on node"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST walking in cop"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|NotifyWebHookJob",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "job args unpacked; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Job arguments unpacked into readers; cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|Mailer",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "mailer ivars are per-action template assigns"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Mailer ivars per action are the Rails template contract"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::SingleLineBlockChain#selector_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#find_offense_message",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "respond_to? on heterogeneous AST nodes; pragmatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Connection#support_parallel?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "defensive check for third-party adapters"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Third-party adapters may not subclass Faraday::Adapter; defensive probe justified"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Style::SelfAssignment",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "node+rhs passed naturally"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Node/rhs args in small cop helpers"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|OrganizationOnboarding#created_by_gem_ownerships",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "ownerships[it.id]&.owner? avoids duplicate lookup"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "ownerships[it.id]&.owner? removes doubled lookup (and duplicates RubygemTransfer)"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Response::RaiseError#on_complete",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "case on status ranges is clear"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Status-range mapping to error classes is idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|CompactIndex::GemVersionMethods#content_address?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "simple emptiness check"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Simple presence predicate"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::RackBuilder#adapter_set?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "predicate for optional adapter"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Simple predicate on optional adapter"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Advisory::OSV::Fetcher#fetch",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are meaningful steps"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers name zip parsing steps"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|lib/compact_index/dependency.rb:6,lib/compact_index/gem_version.rb:8",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "same version-platform string logic in multiple places; share it"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "number-platform formatting duplicated (also in VersionManifest); one shared helper"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/avo/actions/unblock_email_domain.rb:4,app/avo/actions/unblock_user.rb:4",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny Avo DSL config; extraction marginal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Avo DSL declarations differing in predicate"
+    }
+  },
+  {
+    "key": "faraday|repeated_call|Faraday::Utils#deep_merge!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "target[key] read 3x in condition; local clarifies"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Hash lookup repetition minor"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "5 fields for a corrector; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Corrector state cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|OIDC::Providers::ShowView#view_template",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "skip blank values in view; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Skipping blank config values in a view is fine"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|SqsWorker#perform",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "trivial hash read"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Trivial hash access"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|OIDC::TrustedPublisher::GitHubAction::FormComponent#field",
+    "versions": [
+      "branch"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "optional flag adds label suffix; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional label suffix is a natural option"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Rubygem#public_versions_with_extra_version",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "optional extra_version param; &. plus compact is idiomatic and clear"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional extra version parameter"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|OrganizationOnboarding",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "blank guards on an association before validation; polymorphism is not appropriate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Defensive guards in independent validators"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|Pusher",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "tp",
+      "why": "Pusher accumulates 13 ivars across a multi-step pipeline; splitting stages/value objects is a real improvement"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Pusher accumulates parse/auth/persist state across many steps; split responsibilities"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|SearchesHelper#es_suggestions",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "tp",
+      "why": "helper digs into the Elasticsearch response structure (respond_to?(:response)); extracting suggestions belongs on the search result"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Digging into ES response structure belongs on the search result object, not a helper"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Connection#in_parallel",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "intentional backward-compat shim with a deprecation TODO"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Deprecated compatibility path for old parallel managers"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Avo::Actions::DeleteUser::ActionHandler#handle",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "well-named helpers; the decomposition is fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers hold substantive per-user logic"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|AttestationBundleRepair#repair!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are meaningful repair steps; inlining would hurt"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Repair steps named clearly"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Layout::ArgumentAlignment#target_method_lineno",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap AST accessor; caching it in a local adds nothing"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|GemDownload.bulk_update",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap attribute reader"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|Api::BaseController#render_forbidden",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "accepts a string or an exception for convenience; fine as is"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Accepts error or message; small"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|GemValidator::Package#validate_required_files!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "validation of a required file; the nil check is the point"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Required-file validation is the point"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|MultifactorAuthsController#recovery",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "session-derived value may be absent; legitimate guard"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Session-derived absence is legitimate"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::FlatParamsEncoder.encode",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil params/values carry encoding semantics at the API boundary"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "nil params input is public API contract"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/views/components/rubygem/tab_nav_component.rb:24,app/views/components/subject/nav_component.rb:25",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different Tailwind class strings; not real duplication"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "CSS constant strings differ in content"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|lib/gem_validator/package.rb:108,lib/gem_validator/package.rb:312",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two one-line rescues that raise different error classes; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Different error types/messages; tiny"
+    }
+  },
+  {
+    "key": "faraday|repeated_call|Faraday::Request::Authorization#on_request",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor read twice"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::RackBuilder#build",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "lazy default adapter; idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Lazy default adapter"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|SyncDisposableEmailDomainsJob#perform",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are cohesive, well-named validation steps"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Readable job steps"
+    }
+  },
+  {
+    "key": "faraday|repeated_conditional|Faraday::Response",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "simple pending/finished ternaries; a state object would be overkill"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Nine accessors guard on finished?; a pending/null env state would remove the scattered checks"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_trailing_character_from_operator",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "tp",
+      "why": "cop's helper methods are all public (no private section); making them private is the right, easy fix"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small corrector helper"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::TargetFinder",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "recursive directory traversal params; a parameter object adds little"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Traversal arguments; parameter object overkill"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Style::CaseLikeIf",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "target is a context value passed to matchers; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Recursive condition collection args"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::OrderedGemNode#get_source_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "optional comment; the nil check is natural"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST comment presence check"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|ButtonComponent#view_template",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "color/size helpers are sensible extractions"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Style lookup helpers are meaningful"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Style::AccessorGrouping",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "standard ConfigurableEnforcedStyle pattern in RuboCop"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks; idiomatic"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|SyncDisposableEmailDomainsJob#fetch_lines",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor read in an error path"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Response body accessor reads are cheap"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/controllers/pages_controller.rb:18,app/controllers/policies_controller.rb:24",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "small controller finders with different params/constants; not worth sharing"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two tiny lookups against different lists"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|Dependency",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "before_validation guards on an optional association; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Association presence checks in AR callbacks"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/style/exponential_notation.rb:74,rubocop/cop/style/exponential_notation.rb:90",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two-line methods with different regexes; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Different regexes; sharing gains little"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|PasswordResettable#valid_compromised_password_reset_reason?",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny verifier method on the model, called through a user instance; acceptable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Token verification helper sits fine in its concern"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|ApplicationPolicy#organization_member_with_role?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "tp",
+      "why": "base policy sniffs subclasses with respond_to?(:organization); a default organization returning nil removes the check"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Base policy probes subclass for organization; define a nil default and override"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Organizations::MembersController#create",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "tp",
+      "why": "membership_params[:membership] (a permit call plus index) is repeated; naming it in a local is clearer"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Strong params read twice; trivial"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/avo/resources/blocked_email_domain.rb:24,app/avo/resources/email_domain_allowlist.rb:18,app/avo/resources/gem_typo_exception.rb:12",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "declarative Avo field DSL with different fields"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Avo DSL field declarations"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|ShasumFormat.generate",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "skips blank entries while formatting; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Skipping blank entries in formatter"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Style::SignalException",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "standard enforced-style checks"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#variable_like_method_invocation?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "tp",
+      "why": "stateless node predicate exposed publicly in the cop; should be private (or a node helper)"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small AST predicate"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Layout::SpaceInsideBlockBraces",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "brace tokens passed between small helpers; a parameter object is overkill"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Brace token args in small helpers"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Style::RescueModifier#indentation_and_offset",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "small flag adjusting two values; splitting would duplicate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small adjustment flag in private helper"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/style/redundant_regexp_escape.rb:93,rubocop/cop/style/redundant_string_escape.rb:162",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two-line fragment inside different, larger methods"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Identical delimiter check in two escape cops; share it"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/jobs/indexer.rb:7,app/jobs/upload_names_file_job.rb:4,app/jobs/upload_versions_file_job.rb:4",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "identical GoodJob single-concurrency config, comment included, copied across 3 jobs; a shared concern fits"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Identical GoodJob concurrency block in three jobs; extract concern"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|ApiKeysHelper.api_key_params",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "optional existing key; &. with a default is idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional existing key fallback"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/style/command_literal.rb:118,rubocop/cop/style/regexp_literal.rb:172",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two corrector calls; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two corrector lines; extraction gains little"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|DependenciesController#show",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "helpers are meaningful"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Helpers are meaningful"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::VariableForce#process_zero_arity_super",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "simple iteration; nothing to move"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Iterating variables; envy spurious"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Team#validate_config",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "tp",
+      "why": "respond_to?(:validate_config) hook check; a no-op default on Cop::Base would remove the sniffing"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Optional validate_config hook probed with respond_to?; define no-op on Base"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|Api::V1::OwnersController#owners_payload",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "one-line API serialization in the controller; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Payload assembly in controller is fine"
+    }
+  },
+  {
+    "key": "faraday|repeated_call|Faraday::Request::UrlEncoded#match_content_type",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#on_casgn",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "AST semantics require the nil check"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil expression semantics"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::TrailingComma#heredoc?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "respond_to? on location maps is the standard rubocop-ast idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location map shape check"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/controllers/oidc/pending_trusted_publishers_controller.rb:31,app/controllers/oidc/rubygem_trusted_publishers_controller.rb:31",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different flows and models; the shared core is thin"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Standard Rails create actions with different scopes/views"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#sequential_assignment?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "cop helper over AST nodes; normal RuboCop style"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Recursive AST walk in cop"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/tasks/maintenance/notify_cache_exposed_inactive_users_task.rb:4,app/tasks/maintenance/notify_cache_exposed_users_task.rb:4",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "two maintenance tasks share ~24 lines of identical shell (id-range attributes, validation, collection, process)"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Two maintenance tasks share id-range/notify skeleton; extract a base task"
+    }
+  },
+  {
+    "key": "rubocop|duplication|rubocop/cop/layout/empty_lines_around_arguments.rb:51,rubocop/cop/layout/space_inside_percent_literal_delimiters.rb:72",
+    "versions": [
+      "main"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny idiomatic add_offense/remove pattern"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Tiny add_offense/remove idiom"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|ButtonComponent",
+    "versions": [
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "component props; 6 ivars are reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Component options; cohesive"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Lint::Syntax#add_offense_from_diagnostic",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "just formats an offense from the diagnostic; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Offense creation from diagnostic belongs in cop"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::Next#cond_range",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Style::RedundantInterpolation#embedded_in_percent_array?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "one-line node predicate in a cop; normal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST predicate in cop"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Layout::LineLength#string_delimiter",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "rubocop-ast location respond_to? idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location map shape check"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Lint::UnmodifiedReduceAccumulator",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "matcher arguments passed to small helpers; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Small analysis args"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|lib/compact_index/gem_version.rb:28,lib/compact_index/gem_version.rb:29",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "two short lines; extraction adds little"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Two similar guard lines; trivial"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#requires_parentheses?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "AST check that dot is absent; legitimate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST nil dot semantics"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_call|Maintenance::BackfillSpecSha256Task#process",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap string method used in logs"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap attribute reads in log lines"
+    }
+  },
+  {
+    "key": "rubygems.org|control_parameter|Avo::AuditedChangesRecordDiff::ShowComponent#change_type_icon",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "case over a display enum symbol is data mapping, not a flag"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Parallel case statements on change type; a single type-to-style table would do"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::MutableConstant#on_casgn",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Runner",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "debug option checks in a runner; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Debug option checks; trivial"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|DependenciesController#dep_resolver",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "tp",
+      "why": "version-resolution logic works entirely on the dependency and its rubygem; belongs on Dependency"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Matching-version resolution for a dependency belongs on Dependency, not the controller"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Formatter::DisabledConfigFormatter",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "5 formatter fields are reasonable"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Formatter state cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|OrganizationsController",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "controller ivars for views across actions"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Controller ivars feed views"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#offending_empty_no_space?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny predicate comparing a config value"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config string check in mixin"
+    }
+  },
+  {
+    "key": "rubygems.org|feature_envy|Api::V1::WebauthnVerificationsController#authenticated_user",
+    "versions": [
+      "branch"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "auth flow branching on an optional key; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Auth flow in controller is appropriate"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Version#gem_full_nameify!",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "callback guard for an unset association"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Callback guard before validation"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|UsersHelper#show_policies_acknowledge_banner?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "view helper taking a nullable user; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View decision helper"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::Cop::Layout::SpaceBeforeBlockBraces",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "brace ranges passed between small helpers; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Brace token args in small helpers"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/oidc/api_key_role.rb:24,app/models/ownership.rb:24,app/models/web_hook.rb:20",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different one-line AR scopes"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Different columns; scopes are idiomatic one-liners"
+    }
+  },
+  {
+    "key": "rubocop|utility_function|RuboCop::Cop::SymbolHelp#hash_key?",
+    "versions": [
+      "main"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny AST helper in a cop mixin; normal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST predicate in mixin"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|CompactIndex::GemVersionMethods#deps_line",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "guard on a struct field; trivial"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Struct field may be nil from data"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Lint::Void#autocorrect_void_op",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "autocorrect helper working on AST nodes; normal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Corrector logic on node in cop"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Lint::DuplicateMethods#found_attr",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "keyword flags combine (accessor sets both); fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Flags map directly to attr_reader/writer/accessor semantics"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Style::SwapValues#simple_assignment?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "guards against non-node values in AST traversal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node shape check"
+    }
+  },
+  {
+    "key": "rubocop|repeated_call|RuboCop::Cop::Style::EndlessMethod#arguments",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_call",
+    "rater1": {
+      "label": "fp",
+      "why": "cheap accessor"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Cheap accessor"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "AST traversal over different node kinds; the respond_to? is needed"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node shape check"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Metrics::ClassLength#on_casgn",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "node may be of another type; acceptable guard"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|OIDC::ApiKeyRoles::GitHubActionsWorkflowView#view_template",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "Phlex view split into section-rendering methods; good structure"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View sections as helpers aid readability"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|Rubygem::TabNavComponent",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "a local boolean reused inside one method; not a scattered conditional"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Local styling condition in one method"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|ApplicationMultifactorMethods#mfa_required_weak_level_enabled?",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "nil current_user is a legitimate signed-out state"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Signed-out guard is legitimate"
+    }
+  },
+  {
+    "key": "rubygems.org|state_sprawl|Avo::Actions::DeleteUser::ActionHandler",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "per-run counters in an action handler; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Counters for one action run; cohesive"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Cop::Style::NegatedIfElseCondition#corrected_ancestor?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "lazily initialized ivar; minor and idiomatic"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Lazy-initialized set guard"
+    }
+  },
+  {
+    "key": "faraday|utility_function|Faraday::Connection#support_parallel?",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "small private predicate; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Private predicate; fine"
+    }
+  },
+  {
+    "key": "rubygems.org|indirection|Pusher#validate",
+    "versions": [
+      "branch"
+    ],
+    "kind": "indirection",
+    "rater1": {
+      "label": "fp",
+      "why": "validation helpers are meaningful"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Validation steps named clearly"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "tp",
+      "why": "respond_to?(:version) tells search-hit objects apart from models; a uniform presenter interface would be better"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Helper probes object type to get version; give each type a uniform method"
+    }
+  },
+  {
+    "key": "faraday|nil_check|Faraday::Adapter#save_response",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "normalizes adapter input at the boundary; correct place"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Adapter boundary normalization of optional values"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Layout::RescueEnsureAlignment#aligned_with_line_break_method?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "AST location handling; normal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location math in cop"
+    }
+  },
+  {
+    "key": "faraday|utility_function|Faraday::Connection#find_default_proxy",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "small private ENV lookup; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Private env lookup; fine"
+    }
+  },
+  {
+    "key": "rubocop|feature_envy|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#subsequent_closing_parentheses_in_same_line?",
+    "versions": [
+      "main"
+    ],
+    "kind": "feature_envy",
+    "rater1": {
+      "label": "fp",
+      "why": "AST location comparison; normal"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location math in cop"
+    }
+  },
+  {
+    "key": "rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideHashLiteralBraces#offense?",
+    "versions": [
+      "main"
+    ],
+    "kind": "control_parameter",
+    "rater1": {
+      "label": "fp",
+      "why": "tiny boolean predicate"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Boolean expectation is the natural input"
+    }
+  },
+  {
+    "key": "rubygems.org|nil_check|Gemcutter::UserAgentParser.rubygems_user_agent",
+    "versions": [
+      "branch"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "parsing optional user-agent parts at the boundary"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Optional parsed field default"
+    }
+  },
+  {
+    "key": "rubygems.org|repeated_conditional|MembershipPolicy",
+    "versions": [
+      "branch"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "policy rules naturally check the role"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Distinct policy rules referencing role"
+    }
+  },
+  {
+    "key": "faraday|manual_dispatch|Faraday::Response::Logger#on_error",
+    "versions": [
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "compat guard for custom formatters that do not inherit the base"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Third-party formatters may lack the hook; probe is deliberate"
+    }
+  },
+  {
+    "key": "rubocop|state_sprawl|RuboCop::Formatter::SimpleTextFormatter",
+    "versions": [
+      "main"
+    ],
+    "kind": "state_sprawl",
+    "rater1": {
+      "label": "fp",
+      "why": "3 counters; not sprawl"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Three counters; cohesive"
+    }
+  },
+  {
+    "key": "rubygems.org|manual_dispatch|ApplicationHelper#gem_info",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "tp",
+      "why": "respond_to?(:description) branches between two object kinds; a common interface or presenter would remove it"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Helper probes model vs search-result shape; polymorphic info method would remove it"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/models/api_key.rb:38,app/models/oidc/pending_trusted_publisher.rb:18",
+    "versions": [
+      "main",
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "tp",
+      "why": "identical expired/unexpired arel scopes in two models; extract an Expirable concern"
+    },
+    "rater2": {
+      "label": "tp",
+      "why": "Identical expiry scopes in two models; extract shared concern"
+    }
+  },
+  {
+    "key": "rubygems.org|utility_function|RubygemsHelper#latest_version_number",
+    "versions": [
+      "branch"
+    ],
+    "kind": "utility_function",
+    "rater1": {
+      "label": "fp",
+      "why": "view helper; any problem is the respond_to? sniffing, not missing state"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "View helper; placement fine"
+    }
+  },
+  {
+    "key": "rubocop|nil_check|RuboCop::Runner#mark_as_safe_by_config?",
+    "versions": [
+      "main"
+    ],
+    "kind": "nil_check",
+    "rater1": {
+      "label": "fp",
+      "why": "a nil config means default-safe; fine"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Missing config means default safe"
+    }
+  },
+  {
+    "key": "rubocop|data_clump|RuboCop::FileFinder",
+    "versions": [
+      "main"
+    ],
+    "kind": "data_clump",
+    "rater1": {
+      "label": "fp",
+      "why": "FileFinder API params; a parameter object is overkill"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Finder args; parameter object overkill"
+    }
+  },
+  {
+    "key": "rubygems.org|duplication|app/views/components/events/rubygem_event/owner/added_component.rb:4,app/views/components/events/rubygem_event/owner/confirmed_component.rb:4,app/views/components/events/rubygem_event/owner/removed_component.rb:4",
+    "versions": [
+      "branch"
+    ],
+    "kind": "duplication",
+    "rater1": {
+      "label": "fp",
+      "why": "different templates and keys; little shared core"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Event components differ in keys/markup; low-value extraction"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::CheckLineBreakable#first_argument_is_heredoc?",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "elements may not be heredoc-capable nodes; needed"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST node capability check"
+    }
+  },
+  {
+    "key": "rubocop|manual_dispatch|RuboCop::Cop::Layout::LineContinuationSpacing#ignored_literal_ranges",
+    "versions": [
+      "main"
+    ],
+    "kind": "manual_dispatch",
+    "rater1": {
+      "label": "fp",
+      "why": "rubocop-ast location idiom"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "AST location map shape check"
+    }
+  },
+  {
+    "key": "rubocop|repeated_conditional|RuboCop::Cop::Style::ConditionalAssignment",
+    "versions": [
+      "main"
+    ],
+    "kind": "repeated_conditional",
+    "rater1": {
+      "label": "fp",
+      "why": "standard enforced-style check"
+    },
+    "rater2": {
+      "label": "fp",
+      "why": "Config style checks"
+    }
+  }
+]

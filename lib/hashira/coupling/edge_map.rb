@@ -12,7 +12,8 @@ class Hashira::Coupling::EdgeMap
   def usage = @_usage ||= sets
 
   def record(source, file, tree)
-    Hashira::Coupling::References.new(@census.roots).sightings(tree).each do |segments, line, nesting, home|
+    references = Hashira::Coupling::References.new(@census.roots, @census.associations)
+    references.sightings(tree).each do |segments, line, nesting, home|
       note(@census.charge(file, home), locate(segments, nesting), segments, "#{source}:#{line}")
     end
   end

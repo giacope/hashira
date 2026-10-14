@@ -1,0 +1,101 @@
+---
+- key: faraday|indirection|Faraday::Connection#initialize
+  versions:
+  - branch
+  label: fp
+  why: Helpers are public setters reused elsewhere, not code motion
+- key: faraday|indirection|Faraday::Connection#options
+  versions:
+  - branch
+  label: fp
+  why: run_request is shared by all verbs; not code motion
+- key: faraday|indirection|Faraday::DecodeMethods#decode
+  versions:
+  - branch
+  label: fp
+  why: Helpers name decode stages; inlining would worsen
+- key: faraday|indirection|Faraday::EncodeMethods#encode_pair
+  versions:
+  - branch
+  label: fp
+  why: Type split into helpers aids recursion clarity
+- key: faraday|indirection|Faraday::Response::Json#on_complete
+  versions:
+  - branch
+  label: fp
+  why: Small named helpers; fine
+- key: rubygems.org|indirection|Advisory::OSV::Fetcher#fetch
+  versions:
+  - branch
+  label: fp
+  why: Helpers name zip parsing steps
+- key: rubygems.org|indirection|Advisory::OSV::Mapper#records
+  versions:
+  - branch
+  label: fp
+  why: Helpers are meaningful named steps, not mere code motion
+- key: rubygems.org|indirection|AttestationBundleRepair#repair!
+  versions:
+  - branch
+  label: fp
+  why: Repair steps named clearly
+- key: rubygems.org|indirection|Avo::Actions::DeleteUser::ActionHandler#handle
+  versions:
+  - branch
+  label: fp
+  why: Helpers hold substantive per-user logic
+- key: rubygems.org|indirection|Avo::Actions::ValidateAttestation::ActionHandler#handle_record
+  versions:
+  - branch
+  label: fp
+  why: Helpers hold substantive logic
+- key: rubygems.org|indirection|ButtonComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: Style lookup helpers are meaningful
+- key: rubygems.org|indirection|DependenciesController#show
+  versions:
+  - branch
+  label: fp
+  why: Helpers are meaningful
+- key: rubygems.org|indirection|OIDC::ApiKeyRoles::GitHubActionsWorkflowView#view_template
+  versions:
+  - branch
+  label: fp
+  why: View sections as helpers aid readability
+- key: rubygems.org|indirection|OIDC::TrustedPublisher::GitHubAction#to_access_policy
+  versions:
+  - branch
+  label: fp
+  why: Condition helpers are meaningful named policy parts
+- key: rubygems.org|indirection|Onboarding::StepsComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: Small view helpers aid readability
+- key: rubygems.org|indirection|Pusher#process
+  versions:
+  - branch
+  label: fp
+  why: Readable step pipeline
+- key: rubygems.org|indirection|Pusher#validate
+  versions:
+  - branch
+  label: fp
+  why: Validation steps named clearly
+- key: rubygems.org|indirection|Rubygem::AdvisoriesComponent#view_template
+  versions:
+  - branch
+  label: fp
+  why: Helpers are meaningful view pieces
+- key: rubygems.org|indirection|SearchQuerySanitizer#sanitize
+  versions:
+  - branch
+  label: fp
+  why: Named pipeline steps make sanitize readable
+- key: rubygems.org|indirection|SyncDisposableEmailDomainsJob#perform
+  versions:
+  - branch
+  label: fp
+  why: Readable job steps

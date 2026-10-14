@@ -14,7 +14,7 @@ class Hashira::Coupling::Cycles
 
   def tied?(from, to) = knots.any? { it.include?(from) && it.include?(to) }
 
-  def cut(members) = Hashira::Coupling::Cut.new(members, inside(members)).edges
+  def cut(members) = Hashira::Coupling::Cut.new(members, inside(members))
 
   private
 

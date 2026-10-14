@@ -1,10 +1,19 @@
 inherit_from: .rubocop_todo.yml
 
+inherit_mode:
+  merge:
+    - Exclude
+
 plugins:
   - rubocop-kata
 
 AllCops:
   TargetRubyVersion: 3.4
+  Exclude:
+    - "eval/cases/**/*"
+    - "eval/tmp/**/*"
+    - "eval/results/**/*"
+    - "vendor/**/*"
 
 Kata/GoodClassName:
   AllowedNames:
@@ -38,3 +47,11 @@ Kata/ProsePlacement:
     - "lib/hashira/ci/**/*"
     - "lib/hashira/cli/flags.rb"
     - "lib/hashira/cli/usage.rb"
+
+Kata/ClockDiscipline:
+  Exclude:
+    - "eval/probe/**/*"
+
+Kata/EnvDiscipline:
+  Exclude:
+    - "eval/probe/**/*"

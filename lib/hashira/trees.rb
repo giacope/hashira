@@ -3,23 +3,26 @@
 require "prism"
 
 class Hashira::Trees
+  def self.parse(path) = Prism.parse_file(path).value
+
   def initialize(project)
     @project = project
   end
 
-  def all = @_all ||= @project.files.to_h { [it, parse(it)] }
+  def all = @_all ||= results.transform_values(&:value)
 
-  def unparsed
-    all
-    @_unparsed ||= []
-  end
+  def comments = results.transform_values(&:comments)
+
+  def lines(path) = results.fetch(path).source.source.lines
+
+  def unparsed = results.select { |_path, result| result.failure? }.keys
 
   private
 
+  def results = @_results ||= @project.files.to_h { [it, parse(it)] }
+
   def parse(path)
-    result = Prism.parse_file(path)
-    (@_unparsed ||= []) << path if result.failure?
-    result.value
+    Prism.parse_file(path)
   rescue SystemCallError => error
     raise(Hashira::Error, "cannot read #{path} (#{error.message})")
   end

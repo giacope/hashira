@@ -10,14 +10,16 @@ class Hashira::Complexity::MethodFinding
   end
 
   def to_finding
-    Hashira::Analysis::Finding.new(kind: KIND, package: @score.subject, detail:, evidence:)
+    Hashira::Analysis::Finding.new(kind: KIND, package: @score.subject, detail:, evidence:, anchors: [site])
   end
 
   private
 
   def detail
-    Effort.new(cognitive: @score.cognitive, calls: @score.calls, site: "#{@score.file}:#{@score.line}", dominant:)
+    Effort.new(cognitive: @score.cognitive, calls: @score.calls, site:, dominant:)
   end
+
+  def site = "#{@score.file}:#{@score.line}"
 
   def evidence
     @score.increments.group_by(&:label).map { |label, increments| lines(label, increments) }

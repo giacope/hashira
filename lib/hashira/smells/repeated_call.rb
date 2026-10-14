@@ -71,7 +71,15 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
   end
 
-  def repeats = @_repeats ||= outermost(together(alike(usual).merge(alike(whole))))
+  def repeats = @_repeats ||= outermost(together(found)).reject { |_, nodes| excused?(nodes) }
+
+  def found = alike(usual).merge(alike(whole))
+
+  def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
+
+  def glance?(nodes) = nodes.size == 2 && Hashira::Smells::Lookup.cheap?(nodes.first)
+
+  def sampling = @_sampling ||= Hashira::Smells::Sampling.new(subject.node, every)
 
   def outermost(groups) = groups.reject { |_handle, nodes| echoed?(nodes, groups) }
 

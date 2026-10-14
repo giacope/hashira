@@ -119,17 +119,22 @@ RSpec.describe(Hashira::Coupling::Census) do
   end
 
   describe "#resolve" do
-    it "resolves with and without the leading root namespace" do
+    it "resolves a top-level path only under the shared namespace, as Ruby would" do
       analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
         expect(census.resolve(%w[App Alpha One])).to(eq("alpha"))
-        expect(census.resolve(%w[Alpha One])).to(eq("alpha"))
+        expect(census.resolve(%w[Alpha One])).to(be_nil)
+        expect(census.resolve(%w[Alpha One], [%w[App]])).to(eq("alpha"))
+        expect(census.resolve(%w[App])).to(be_nil)
       end
     end
 
     it "resolves references under a deep namespace prefix at any depth" do
       analyze(Fixtures::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
-        expect(census.resolve(%w[Walk Stepper])).to(eq("walk"))
-        expect(census.resolve(%w[Core Walk Stepper])).to(eq("walk"))
+        expect(census.resolve(%w[Walk Stepper])).to(be_nil)
+        expect(census.resolve(%w[Core Walk Stepper])).to(be_nil)
+        expect(census.resolve(%w[Walk Stepper], [%w[App], %w[App Core], %w[App Core Search]])).to(eq("walk"))
+        expect(census.resolve(%w[Walk Stepper], [%w[App Core Search]])).to(be_nil)
+        expect(census.resolve(%w[Core Walk Stepper], [%w[App]])).to(eq("walk"))
         expect(census.resolve(%w[App Core Walk Stepper])).to(eq("walk"))
         expect(census.resolve(%w[App Core])).to(be_nil)
       end
@@ -144,7 +149,7 @@ RSpec.describe(Hashira::Coupling::Census) do
 
     it "falls back to the namespace's package for an unknown member" do
       analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
-        expect(census.resolve(%w[Alpha Unknown])).to(eq("alpha"))
+        expect(census.resolve(%w[App Alpha Unknown])).to(eq("alpha"))
       end
     end
 

@@ -1,0 +1,362 @@
+{
+ "Q01": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Renders a nested trusted-publisher form with six labeled text fields (three optional), each with error styling and help text."
+ },
+ "Q02": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "For URL-encoded or untyped requests, defaults the Content-Type header and yields the body unless it is already a string or IO."
+ },
+ "Q03": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 4,
+  "summary": "For keyword-style `or`/`and` nodes, flags and autocorrects missing spaces before/after the operator keyword."
+ },
+ "Q04": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Builds a diff of added, removed (accounting for renames matched by trace) and worsened-magnitude entries between recorded and current snapshots."
+ },
+ "Q05": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Converts settings loaded from the chosen config file (via --config/--no-config/default) into CLI flag pairs, validating keys and value types."
+ },
+ "Q06": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Returns the statements inside the single opened root node's body, or the roots themselves otherwise."
+ },
+ "Q07": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Builds an OIDC access policy with one allow statement per extracted workflow ref, each combining common repository/environment/owner/audience conditions with a job_workflow_ref condition."
+ },
+ "Q08": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Builds the middleware stack by yielding to a block or adding url_encoded by default, then sets the default adapter if none was set, raising if locked."
+ },
+ "Q09": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns this version's checksums (or content keys) that do not appear in any other version's checksum file for the gem."
+ },
+ "Q10": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Runs the survivors CLI: loads a report and either shows a single mutant by id or lists mutants of a status filtered by file, returning an exit code."
+ },
+ "Q11": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Finds the RuboCop config path by checking project dotfile, project .config, user dotfile, XDG config, then falling back to the default."
+ },
+ "Q12": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Walks a method's nodes tallying calls by receiver (self vs. local variables) and returns the most-referenced local holders unless self ties for most (feature envy)."
+ },
+ "Q13": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Returns provenance metadata saying whether the selected test files are a strict subset of the configured tests, including the configured tests if so."
+ },
+ "Q14": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Deduplicates mutation variants by comparing the normalized AST each produces when applied at the location, keeping only the first of each distinct result."
+ },
+ "Q15": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Marks the mutation point schema-unsafe with a reason if it is still safe and falls inside any given unsafe range, returning self."
+ },
+ "Q16": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Hash-like fetch for an options struct: returns the set value, or sets it from a default argument or block, or raises if absent."
+ },
+ "Q17": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Decodes a query string with the given or default encoder and merges the params into this hash with string keys."
+ },
+ "Q18": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Computes a minimal set of top-ranked edges whose removal splits the graph so no strongly connected component exceeds half the members, via binary search then trimming."
+ },
+ "Q19": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns a URL's path with a leading slash plus its query parameters sorted alphabetically."
+ },
+ "Q20": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns true when MFA is recommended for the user's gems (and not already strong or required) but the user has MFA disabled."
+ },
+ "Q21": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns a new Local storage rooted at a subdirectory, raising if the path escapes the base directory."
+ },
+ "Q22": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Logs the request method and filtered URL, then optionally the filtered headers and body depending on options."
+ },
+ "Q23": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Fetches a task from the API by id and returns its state, raising on an unsuccessful response."
+ },
+ "Q24": {
+  "readability": 2,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Temporarily restricts RSpec example groups (and their children) to only the wanted examples while yielding, restoring them afterwards."
+ },
+ "Q25": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Parses a raw header string, taking only the last response's headers and adding each key/value (merging duplicates with commas)."
+ },
+ "Q26": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Collects the set of string/symbol words from array elements and hash keys in a syntax tree that match PATTERN."
+ },
+ "Q27": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Returns whether the node is of a literal type and all its child nodes are recursively literal."
+ },
+ "Q28": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Returns whether constant usage across clients divides into at least two significant parts (a majority-shared core plus clusters of clients linked by remaining constants)."
+ },
+ "Q29": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Renders the password reset form, requiring MFA first when needed and otherwise marking the reset verified and setting the compromised flag."
+ },
+ "Q30": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Records the WebAuthn MFA login duration and completes login, tracking success/failure events and redirecting or re-rendering the login form."
+ },
+ "Q31": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags if/unless/ternary/elsif whose branches are boolean literals and autocorrects to the (possibly negated) condition."
+ },
+ "Q32": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags ternaries nested in a ternary and autocorrects the outer ternary into an if/else block."
+ },
+ "Q33": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Adds test root dirs to the load path, requires the test files, and indexes all Minitest runnable methods by name."
+ },
+ "Q34": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Creates a request of the given method pre-populated with copies of the connection's params, headers and options, yielding it for customization."
+ },
+ "Q35": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Recursively collects the condition nodes that steer control flow, not descending into scope fences and skipping and/or nodes used as carried values."
+ },
+ "Q36": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Returns the coupling graph built from parsed project trees, resolving auto packaging to namespace for Rails or folder otherwise."
+ },
+ "Q37": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Loads ignore rules from a baseline YAML relative to the config file, symbolizing keys and requiring each to have a file and a non-blank reason."
+ },
+ "Q38": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Builds a Folding over catalog entries excluding Rails presentation files, with Rails-specific suffixes."
+ },
+ "Q39": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Encodes params (hash or array of pairs) into a nested query string, recursively handling hashes and arrays with bracket notation."
+ },
+ "Q40": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Delegates to a lazily built placement to decide whether a package is a web package."
+ },
+ "Q41": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Builds a timeout MutantResult for the mutant id with its file, duration, and a detail including optional stack dumps."
+ },
+ "Q42": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Expands CLI-or-configured globs into a sorted, unique list of .rb files, removing excluded ones."
+ },
+ "Q43": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags an initialize method that is empty or only calls super with the same arguments, and autocorrects by removing it."
+ },
+ "Q44": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Recursively collects [start, end] offset spans of the bodies of hole-type nodes in a syntax tree."
+ },
+ "Q45": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Runs the worker pool event loop: assigns mutant ids to workers, reads and dispatches their messages, handles requeues and timeouts, until all workers finish."
+ },
+ "Q46": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Signals a process to dump its stack, waits up to a grace period for the dump file, and returns its contents (deleting it), or nil if the process is gone."
+ },
+ "Q47": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags single-line `in` pattern branches that use a semicolon instead of `then` and autocorrects to `then`."
+ },
+ "Q48": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Runs the given mutant ids serially or concurrently with progress reporting and returns a RunReport."
+ },
+ "Q49": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Checks `end` alignment of a case node, using assignment-aware alignment targets when the case is an assigned value."
+ },
+ "Q50": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Verifies and saves a new WebAuthn credential, rendering a JSON redirect (to recovery codes for first device) or error, and clears registration session data."
+ },
+ "Q51": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags a for loop iterating the same collection as its preceding sibling for loop and autocorrects by merging them."
+ },
+ "Q52": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Returns findings for methods whose cognitive complexity meets the threshold, ordered by descending score."
+ },
+ "Q53": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Forks a coverage worker child process connected by request/response pipes and returns its pid, parent pipe ends and stack dumper."
+ },
+ "Q54": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Rack middleware that signs in the user given by the `as` query param before calling the app."
+ },
+ "Q55": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Flags multiline ternaries and autocorrects them to a single-line ternary or an if/else, preserving condition comments."
+ },
+ "Q56": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Categorizes how two node sequences differ: structure mismatch, or the unique kinds of field/value/safe-navigation differences between paired nodes."
+ },
+ "Q57": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns a hash of status, body, headers and url for marshalling if the response is finished, else nil."
+ },
+ "Q58": {
+  "readability": 1,
+  "fragmented": true,
+  "names": 1,
+  "summary": "Collects class/module sketches from all trees and settles each through lineage and kinship analysis with ownership data, memoized."
+ },
+ "Q59": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Flags `when` conditions in a case that are float expressions, except literal zero or nil."
+ },
+ "Q60": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Runs the test suite as a baseline check and, if green with multiple jobs, also runs sharded parallel runs, returning status/message rows with failure advice."
+ }
+}

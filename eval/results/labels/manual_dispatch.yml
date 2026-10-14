@@ -1,0 +1,232 @@
+---
+- key: faraday|manual_dispatch|Faraday::Connection#in_parallel
+  evidence: []
+  label: fp
+  why: 'compatibility with third-party parallel managers that predate execute: a plugin
+    boundary'
+- key: faraday|manual_dispatch|Faraday::Connection#support_parallel?
+  evidence:
+  - adapter.respond_to?(:supports_parallel?) (line 564)
+  label: fp
+  why: 'adapter may be a third-party adapter registered by a user: a plugin boundary'
+- key: faraday|manual_dispatch|Faraday::Response::Logger#on_error
+  evidence:
+  - "@formatter.respond_to?(:exception) (line 33)"
+  label: fp
+  why: "@formatter is a user-supplied logging formatter: a plugin boundary"
+- key: faraday|manual_dispatch|Faraday::Response::RaiseError#on_complete
+  evidence:
+  - 'env[:status]: ClientErrorStatuses, ServerErrorStatuses (lines 35, 37)'
+  label: fp
+  why: 'switching an HTTP status code (outside data) between client and server error
+    ranges: the mapping is the middleware''s purpose'
+- key: faraday|manual_dispatch|Faraday::Utils#URI
+  evidence: []
+  label: fp
+  why: 'the conversion protocol of a public API argument (URI or string): Ruby''s
+    own coercion idiom'
+- key: rubocop|manual_dispatch|CopsDocumentationGenerator#required_ruby_version
+  evidence:
+  - cop.respond_to?(:required_minimum_ruby_version) (line 126)
+  label: tp
+  why: cop is one of rubocop's own cop classes; only those extending TargetRubyVersion
+    answer the probe, so a default on the cop base would let polymorphism decide
+- key: rubocop|manual_dispatch|RuboCop::CommentConfig#cop_enabled_at_line?
+  evidence:
+  - cop.respond_to?(:cop_name) (line 40)
+  label: fp
+  why: 'cop arrives as a cop or a cop name: coercion of a public argument'
+- key: rubocop|manual_dispatch|RuboCop::Config#initialize
+  evidence:
+  - cop.respond_to?(:cop_name) (line 34)
+  label: fp
+  why: 'the constructor accepts a cop class or a cop name: Ruby''s coercion idiom
+    for a public argument'
+- key: rubocop|manual_dispatch|RuboCop::ConfigObsoletion.deprecated_names_for
+  evidence:
+  - rule.respond_to?(:new_name) (line 55)
+  label: tp
+  why: rule is one of ConfigObsoletion's own rule classes; only renames answer new_name,
+    so the base rule could
+- key: rubocop|manual_dispatch|RuboCop::Cop::AlignmentCorrector.delimited_string_literal?
+  evidence:
+  - loc.respond_to?(:begin) (line 78)
+  - loc.respond_to?(:end) (line 78)
+  label: fp
+  why: loc is a Parser source map (library type); begin and end are optional on some
+    maps
+- key: rubocop|manual_dispatch|RuboCop::Cop::CheckLineBreakable#first_argument_is_heredoc?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_investigation_end
+  evidence: []
+  label: tp
+  why: 'rubocop''s own legacy Cop base asks itself whether a subclass defined a hook:
+    a no-op default method is the polymorphic fix'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Cop#on_new_investigation
+  evidence: []
+  label: tp
+  why: same hook probe as on_investigation_end, on investigate
+- key: rubocop|manual_dispatch|RuboCop::Cop::Force#run_hook
+  evidence:
+  - cop.respond_to?(method_name) (line 42)
+  label: tp
+  why: 'force hooks are dispatched to rubocop''s own cops by asking each whether it
+    defines the hook: no-op defaults on the cop base would remove the probe'
+- key: rubocop|manual_dispatch|RuboCop::Cop::IgnoredNode#part_of_ignored_node?
+  evidence:
+  - ignored_loc.respond_to?(:heredoc_body) (line 15)
+  label: fp
+  why: ignored_loc is a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::EmptyLineAfterGuardClause#last_heredoc_argument
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::HeredocArgumentClosingParenthesis#find_most_bottom_of_heredoc_end
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::IndentationStyle#string_literal_ranges
+  evidence:
+  - loc.respond_to?(:begin) (line 102)
+  label: fp
+  why: loc is a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineContinuationSpacing#ignored_literal_ranges
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::LineLength#string_delimiter
+  evidence: []
+  label: fp
+  why: probes a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#aligned_with_line_break_method?
+  evidence:
+  - send_node_loc.respond_to?(:selector) (line 140)
+  label: fp
+  why: send_node_loc is a Parser source map (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Layout::RescueEnsureAlignment#alignment_node
+  evidence: []
+  label: fp
+  why: 'probes a rubocop-ast node (library type): no owned polymorphism to use'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Lint::UselessAccessModifier#any_context_creating_methods?
+  evidence:
+  - self.respond_to?(matcher_name) (line 284)
+  label: fp
+  why: 'the cop defines node matchers lazily and asks itself whether it already did:
+    memoized metaprogramming, not dispatch over types'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Lint::UselessAccessModifier#any_method_definition?
+  evidence:
+  - self.respond_to?(matcher_name) (line 261)
+  label: fp
+  why: the same lazy node-matcher definition as any_context_creating_methods?
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::ClassLength#on_casgn
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#assignment?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Naming::RescuedExceptionsVariableName#variable_name
+  evidence:
+  - node.exception_variable.respond_to?(:name) (line 157)
+  label: fp
+  why: node.exception_variable is a rubocop-ast child (library type); the probe guards
+    a library data model
+- key: rubocop|manual_dispatch|RuboCop::Cop::RescueNode#rescue_modifier?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::StringHelp#on_str
+  evidence:
+  - self.respond_to?(:autocorrect) (line 19)
+  label: tp
+  why: 'the mixin asks itself whether the including cop defines autocorrect: a no-op
+    default on the mixin would let polymorphism decide'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::AccessModifierDeclarations#find_corresponding_def_nodes
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::MapIntoArray#return_value_used?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::PercentLiteralDelimiters#string_source
+  evidence:
+  - node.respond_to?(:type) (line 102)
+  label: fp
+  why: 'node may be an AST child that is not a node: rubocop-ast''s data model'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#find_offense_message
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantParentheses#variable?
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::RedundantSelf#on_argument
+  evidence: []
+  label: fp
+  why: probes a rubocop-ast node (library type)
+- key: rubocop|manual_dispatch|RuboCop::Cop::Style::SwapValues#simple_assignment?
+  evidence: []
+  label: fp
+  why: 'children of a rubocop-ast node may be non-nodes (symbols, nil): the library''s
+    data model'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#process_errors
+  evidence:
+  - 'cause: Warning, Force::HookError (lines 259, 261)'
+  label: fp
+  why: 'dispatches on exception classes inside an error reporter: Ruby''s rescue model
+    dispatches the same way, and moving reporting onto the errors would couple them
+    to the team'
+- key: rubocop|manual_dispatch|RuboCop::Cop::Team#validate_config
+  evidence: []
+  label: tp
+  why: 'asks each of rubocop''s own cops whether it defines validate_config: a no-op
+    default on the cop base class would let polymorphism decide'
+- key: rubocop|manual_dispatch|RuboCop::Cop::TrailingComma#heredoc?
+  evidence: []
+  label: fp
+  why: 'probes a Parser source map (library type) for an optional field: no owned
+    polymorphism to use'
+- key: rubocop|manual_dispatch|RuboCop::LSP::Routes#for
+  evidence: []
+  label: fp
+  why: 'a router asking whether a handler exists for a request name: the check is
+    the routing, not a type test'
+- key: rubygems.org|manual_dispatch|Api::BaseController#render_forbidden
+  evidence:
+  - error.respond_to?(:message) (line 86)
+  label: fp
+  why: error arrives as either a String or an exception (core types); the probe coerces
+    it
+- key: rubygems.org|manual_dispatch|ApplicationHelper#gem_info
+  evidence: []
+  label: tp
+  why: 'same helper pattern as latest_version_number: the app''s own gem objects of
+    two kinds, told apart by probing'
+- key: rubygems.org|manual_dispatch|ApplicationPolicy#organization_member_with_role?
+  evidence:
+  - self.respond_to?(:organization) (line 51)
+  label: tp
+  why: 'the base policy asks itself whether a subclass defines organization: a nil-returning
+    default on ApplicationPolicy is the polymorphic fix'
+- key: rubygems.org|manual_dispatch|GemPackageEnumerator#initialize
+  evidence:
+  - "@package.respond_to?(:verify) (line 9)"
+  label: fp
+  why: 'the constructor checks that an injected package quacks like Gem::Package (a
+    library type): validating an interface it does not own'
+- key: rubygems.org|manual_dispatch|RubygemsHelper#latest_version_number
+  evidence: []
+  label: tp
+  why: 'the helper is handed two kinds of the app''s own gem objects and asks which
+    one it got: two adapters (or one interface) would remove the probe'
+- key: rubygems.org|manual_dispatch|SyncDisposableEmailDomainsJob#last_attempt?
+  evidence:
+  - 'error: PoisonedUpstreamError, UpstreamHttpError (line 63)'
+  label: fp
+  why: 'a retry policy switching on the app''s own error classes, the way rescue dispatches:
+    moving retry limits onto the errors would couple them to the job'

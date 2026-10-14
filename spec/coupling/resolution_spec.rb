@@ -152,6 +152,19 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
     end
   end
 
+  def coupled?(name)
+    files = {
+      "app/ext/#{name.downcase}.rb" => "class #{name}\n  def x = 1\nend\n",
+      "app/models/note.rb" => "class Note\n  def s = #{name}\nend\n"
+    }
+    analyze(files, directories: ["app"]) { |_project, _census, graph| return graph.edges.any? }
+  end
+
+  it "leaves core and standard-library names to Ruby, loaded or not, and owns every other name it reopens" do
+    names = %w[Process Set JSON Logger URI Zlib FileUtils Billing Rack]
+    expect(names.select { coupled?(it) }).to(eq(%w[Billing Rack]))
+  end
+
   it "still couples to a constant the project defines under a core namespace" do
     files = {
       "app/ext/file.rb" => "class File\n  class Lock < StandardError\n    def l = 1\n  end\nend\n",
@@ -459,6 +472,41 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
       ].each do |body|
         associated(body) { |graph| expect(graph.outgoing("User")).to(be_empty) }
       end
+    end
+  end
+
+  it "resolves a reference in a compactly named class from that class alone, as Ruby's lexical scope does" do
+    files = {
+      "lib/shop/shipping/rate.rb" => "class Shop::Shipping::Rate\n  def bill = Billing::Invoice.new\nend\n",
+      "lib/shop/billing/invoice.rb" => "module Shop; module Billing; class I; def q = Shipping::Rate; end; end; end",
+      "lib/shop/shipping.rb" => "module Shop\n  module Shipping\n    def self.zones = 3\n  end\nend\n"
+    }
+    analyze(files, directories: ["lib/shop"]) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(eq(["billing -> shipping"]))
+    end
+  end
+
+  it "infers an association's class from its name, as Active Record does" do
+    model = ->(name, *body) { "class #{name} < ApplicationRecord\n#{body.join("\n")}\nend\n" }
+    many = "has_many"
+    lab = model.call("Lab", "#{many} :cacti", "belongs_to :owner, polymorphic: false", "has_one :media")
+    author = model.call("Author", "#{many} :posts", "has_one :profile", "#{many} :tags, through: :y")
+    names = %w[Profile Category Tag Commentable Label Cactus Owner Media]
+    plain = names.to_h { ["app/models/#{it.downcase}.rb", "class #{it}\nend"] }
+    files = Fixtures::RAILS_FILES.merge(
+      "app/models/author.rb" => author,
+      "app/models/post.rb" => model.call("Post", "belongs_to :author", "has_and_belongs_to_many :categories"),
+      "app/models/remark.rb" => model.call("Remark", "belongs_to :commentable, polymorphic: true", "#{many} 'labels'"),
+      "app/models/feed.rb" => model.call("Feed", "#{many} :entries, through: :p, source: :remark", "#{many} name"),
+      "app/models/lab.rb" => lab,
+      "config/initializers/inflections.rb" => "Inflector.inflections { |i| i.irregular 'cactus', 'cacti' }\n"
+    ).merge(plain)
+    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      expect(graph.edges.map(&:to_s)).to(
+        include("Author -> Post", "Author -> Profile", "Author -> Tag", "Post -> Author", "Post -> Category")
+          .and(include("Remark -> Label", "Feed -> Remark", "Lab -> Cactus", "Lab -> Owner", "Lab -> Media"))
+      )
+      expect(graph.edges.map(&:to_s)).not_to(include("Remark -> Commentable"))
     end
   end
 end

@@ -1,0 +1,7 @@
+# Inside `class Shop::Shipping::Rate` Ruby's lexical scope is that class alone,
+# so `Billing::Invoice` means ::Billing::Invoice, which this code does not
+# define. Only Shop::Billing reaches Shipping; there is no cycle.
+args: [lib/shop]
+edges: ["billing -> shipping"]
+absent: ["shipping -> billing"]
+cycles: []

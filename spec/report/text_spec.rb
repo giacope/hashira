@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Report::Text) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:)
+    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR)
   end
 
   it "caps the findings list at --top and counts what it withheld" do

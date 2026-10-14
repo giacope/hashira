@@ -1,0 +1,99 @@
+---
+- key: rubocop|control_parameter|RuboCop::Cop::HashSubset#slices_key?
+  versions:
+  - main
+  label: tp
+  why: Symbol selects which node to compare; pass the node instead
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceAroundKeyword#check_end
+  versions:
+  - main
+  label: fp
+  why: Parameter used in a single guard
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#compact_offense
+  versions:
+  - main
+  label: fp
+  why: Tiny side flip; not worth restructuring
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideHashLiteralBraces#offense?
+  versions:
+  - main
+  label: fp
+  why: Boolean expectation is the natural input
+- key: rubocop|control_parameter|RuboCop::Cop::Lint::DuplicateMethods#found_attr
+  versions:
+  - main
+  label: fp
+  why: Flags map directly to attr_reader/writer/accessor semantics
+- key: rubocop|control_parameter|RuboCop::Cop::RangeHelp#move_pos
+  versions:
+  - main
+  label: tp
+  why: Boolean condition flag gates the loop; callers should decide whether to call
+- key: rubocop|control_parameter|RuboCop::Cop::StringLiteralCorrector.correct
+  versions:
+  - main
+  label: fp
+  why: Style enum from config is natural input
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RedundantCondition#if_source
+  versions:
+  - main
+  label: fp
+  why: Shared flag between paired source builders; acceptable
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RedundantRegexpEscape#allowed_escape?
+  versions:
+  - main
+  label: fp
+  why: Flag reflects real context; split would duplicate guards
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RescueModifier#indentation_and_offset
+  versions:
+  - main
+  label: fp
+  why: Small adjustment flag in private helper
+- key: rubocop|control_parameter|RuboCop::Cop::Style::Sample#offensive?
+  versions:
+  - main
+  label: fp
+  why: Classifying a method name is the method's purpose, not a flag
+- key: rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#extra_space?
+  versions:
+  - main
+  label: fp
+  why: Symmetric side selector in a mixin; idiomatic
+- key: rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#offending_empty_no_space?
+  versions:
+  - main
+  label: fp
+  why: Config string check in mixin
+- key: rubygems.org|control_parameter|Avo::AuditedChangesRecordDiff::ShowComponent#change_type_icon
+  versions:
+  - main
+  label: tp
+  why: Parallel case statements on change type; a single type-to-style table would
+    do
+- key: rubygems.org|control_parameter|ElasticSearcher#search_definition
+  versions:
+  - branch
+  label: fp
+  why: Flag only picks source fields; rest is shared DSL
+- key: rubygems.org|control_parameter|GemInfo.ordered_names
+  versions:
+  - branch
+  label: tp
+  why: 'cached: flag used by one job to force refresh; split into read and refresh
+    methods'
+- key: rubygems.org|control_parameter|Gemcutter::UserAgentParser::Set#call
+  versions:
+  - main
+  label: tp
+  why: exclusive flag switches between two different algorithms; split methods
+- key: rubygems.org|control_parameter|OIDC::TrustedPublisher::GitHubAction::FormComponent#field
+  versions:
+  - branch
+  label: fp
+  why: Optional label suffix is a natural option
+- key: rubygems.org|control_parameter|UploadInfoFileJob#upload_info_file
+  versions:
+  - branch
+  label: tp
+  why: purge flag only toggles a trailing side effect; let the caller enqueue the
+    purge

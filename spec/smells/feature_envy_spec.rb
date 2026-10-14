@@ -8,16 +8,25 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
           class Lexicon
             attr_accessor :net, :tax, :fee, :load, :store, :sync, :name, :receiver, :arguments, :predicate,
                           :unescaped, :id, :size, :kind, :message, :backtrace, :cause, :trim, :sort, :pack,
-                          :warm, :serve, :chomp, :strip, :merge, :delete, :fetch, :push
+                          :warm, :serve, :chomp, :strip, :merge, :delete, :fetch, :push,
+                          :values_at, :dig
           end
         end
       end
     RUBY
   end
 
-  def envy(source) = sniffed({ "lib/app/zone/thing.rb" => source, "lib/app/zone/words.rb" => lexicon }, "feature_envy")
+  def kinds
+    "module App\n  module Zone\n#{defined(%w[Bag Entry Error Form Item Job Left List Log Node] + more)}  end\nend\n"
+  end
 
-  def said = "more than to self, 2 to 1 (zone/thing.rb:4). The behavior may belong on order."
+  def more = %w[Msg Options Order Other Pair Part Plan Right Row Rule Table Tally Value]
+
+  def defined(types) = types.map { "    class #{it} < Lexicon\n    end\n" }.join
+
+  def envy(source) = untyped(source, "lib/app/zone/kinds.rb" => kinds)
+
+  def said = "more than to self, 2 to 1 (zone/thing.rb:4). The behavior may belong on Order."
 
   it "flags a method that talks to a parameter more than to self" do
     findings = envy(<<~RUBY)
@@ -36,6 +45,59 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     expect(finding.package).to(eq("App::Zone::Thing#total"))
     expect(message(finding)).to(eq("#{finding.package} refers to 'order' #{said}"))
     expect(finding.evidence).to(eq(["order (line 5)", "self (line 5)"]))
+  end
+
+  def untyped(source, more = {})
+    sniffed({ "lib/app/zone/thing.rb" => source, "lib/app/zone/words.rb" => lexicon, **more }, "feature_envy")
+  end
+
+  it "stays quiet where it cannot name an owned class to move the method onto: a library's object, a collection" do
+    findings = untyped(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def on_send(node)
+              @seen = true
+              node.receiver && node.arguments && node.predicate
+            end
+
+            def print(items)
+              @seen = true
+              items.size && items.fetch(0) && items.merge
+            end
+
+            def span(range) = @seen && range.size && range.fetch
+          end
+
+          module Range
+            def size = 1
+            def fetch = 1
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "names the class by the variable's last words, and never the method's own class" do
+    findings = untyped(<<~RUBY)
+      module App
+        module Zone
+          Config = Data.define(:fetch, :store)
+
+          class Order
+            attr_reader :net, :tax
+
+            def merge(order) = @seen && order.net && order.tax
+
+            def check(base_dir_config) = @seen && base_dir_config.fetch && base_dir_config.store
+          end
+        end
+      end
+    RUBY
+    said = "App::Zone::Order#check refers to 'base_dir_config' more than to self, 2 to 1 (zone/thing.rb:10). " \
+      "The behavior may belong on Config."
+    expect(findings.map { message(it) }).to(eq([said]))
   end
 
   it "does not read compound assignments as envy of the assigned name" do
@@ -72,7 +134,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
       end
     RUBY
     expect(message(findings.first)).to(
-      include("'left', 'right' more than to self, 2 each to 1", "may belong on whichever of them it serves")
+      include("'left', 'right' more than to self, 2 each to 1", "may belong on Left or Right.")
     )
     expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)", "self (line 5)"]))
   end
@@ -184,7 +246,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         "lib/app/zone/widget.rb" => <<~RUBY,
           module App
             module Zone
-              class Widget
+              class Widget < Lexicon
               end
             end
           end
@@ -298,14 +360,18 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     findings = envy(<<~RUBY)
       module App
         module Zone
-          Boom = Class.new(StandardError)
+          class Failure < StandardError
+            attr_reader :code, :detail
+          end
+
+          Boom = Class.new(Failure)
 
           class Thing
             def guard
               @tries += 1
               risky
             rescue Zone::Boom => e
-              e.message && e.backtrace && e.cause
+              e.code && e.detail && e.code
             end
           end
         end
@@ -441,7 +507,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         "lib/app/zone/widget.rb" => <<~RUBY,
           module App
             module Zone
-              class Widget
+              class Widget < Lexicon
               end
             end
           end
@@ -485,6 +551,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
       module App
         module Zone
           class Boom < StandardError
+            attr_reader :code, :detail
           end
 
           class Thing
@@ -492,7 +559,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
               @tries += 1
               risky
             rescue Zone::Boom => e
-              e.message && e.backtrace && e.cause
+              e.code && e.detail && e.code
             end
           end
         end
@@ -658,7 +725,9 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         end
       end
     RUBY
-    findings = sniffed({ "lib/app/zone/thing.rb" => thing, "lib/app/zone/parcel.rb" => parcel }, "feature_envy")
+    order = "module App\n  module Zone\n    class Order < Parcel\n      attr_reader :left\n    end\n  end\nend\n"
+    sources = { "lib/app/zone/thing.rb" => thing, "lib/app/zone/parcel.rb" => parcel, "lib/app/zone/order.rb" => order }
+    findings = sniffed(sources, "feature_envy")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
     expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
   end
@@ -726,7 +795,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     findings = envy(<<~RUBY)
       module App
         module Zone
-          class Widget
+          class Widget < Lexicon
           end
 
           class Thing
@@ -763,7 +832,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
         module Zone
           class Thing
             def ranked
-              @items.sort { |a, b| a.load <=> b.load && a.store <=> b.store }
+              @items.sort { |order, other| order.load <=> other.load && order.store <=> other.store }
             end
 
             def ranks(left, right)

@@ -100,6 +100,18 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
   end
 
   describe "Rails awareness" do
+    it "takes a top-level class for a framework adapter only if it extends an outside class the app's classes extend" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/billing/base.rb" => "module Billing\n  class Base < ActiveRecord::Base\n  end\nend\n",
+        "app/models/billing/charge.rb" => "module Billing\n  class Charge < Base\n  end\nend\n",
+        "app/models/solo.rb" => "class Solo < ActiveRecord::Base\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Billing::Charge, Solo, ApplicationRecord]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Billing", "Report -> Solo"))
+      end
+    end
+
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do
       within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).rails?).to(be(true)) }
       within(Fixtures::CYCLIC_FILES) { expect(Hashira::Project.new(["lib/app"]).rails?).to(be(false)) }
@@ -127,7 +139,9 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     it "ignores references into Application* namespaces in a Rails app" do
       files = Fixtures::RAILS_FILES.merge(
         "app/channels/application_cable/connection.rb" =>
-          "module ApplicationCable\n  class Connection\n    def id = 1\n  end\nend\n",
+          "module ApplicationCable\n  class Connection < ActionCable::Connection::Base\n    def id = 1\n  end\nend\n",
+        "app/channels/application_cable/channel.rb" =>
+          "module ApplicationCable\n  class Channel < ActionCable::Channel::Base\n  end\nend\n",
         "app/channels/exec_channel.rb" => "class ExecChannel < ApplicationCable::Channel\n  def sub = 1\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
@@ -324,7 +338,8 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     it "folds decorators into their domain, not an app-defined ApplicationDecorator" do
       decorator = ->(name) { "class #{name}Decorator < ApplicationDecorator\n  def x = 1\nend\n" }
       files = Fixtures::RAILS_FILES.merge(
-        "app/decorators/application_decorator.rb" => "class ApplicationDecorator\n  def s = 1\nend\n",
+        "app/decorators/application_decorator.rb" =>
+          "class ApplicationDecorator < Draper::Decorator\n  def s = 1\nend\n",
         "app/decorators/billing_decorator.rb" => decorator.call("Billing"),
         "app/decorators/user_decorator.rb" => decorator.call("User")
       )

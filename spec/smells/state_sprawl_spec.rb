@@ -203,9 +203,9 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
         module Zone
           class Stream
             def initialize(socket, log)
-              @socket = socket
+              @socket = socket.to_io
               @reader = Reader.new(socket)
-              @log = log
+              @log = log.tagged(:stream)
               @level = 1
               @closed = false
             end
@@ -228,7 +228,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
         module Zone
           class Import
             def initialize(path)
-              @path = path
+              @path = File.expand_path(path)
             end
 
             def run
@@ -246,8 +246,10 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     RUBY
     finding = findings.first
     expect(findings.size).to(eq(1))
-    expect(message(finding)).to(include("holds 5 instance variables"))
-    expect(finding.evidence).to(eq(%w[@cache @path @rows @summary @valid]))
+    expect(message(finding)).to(include("holds 5 instance variables, weighing 5, more than 4"))
+    expect(finding.evidence).to(
+      eq(["@cache", "@path", "@rows", "@summary (read by no method: handed off)", "@valid (parked between calls)"])
+    )
   end
 
   def assigns(base)
@@ -263,12 +265,64 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
     RUBY
   end
 
-  it "does not weigh a view's assigns double: a controller, mailer or component action hands them to a template" do
-    expect(%w[ApplicationController ApplicationMailer Admin::BaseComponent].flat_map { assigns(it) }).to(be_empty)
+  it "weighs an assign no method reads as nothing, whatever the class inherits: it is handed on" do
+    expect(%w[ApplicationController Admin::BaseComponent Pipeline::Step].flat_map { assigns(it) }).to(be_empty)
   end
 
-  it "weighs the same actions double on a class that renders no view" do
-    expect(assigns("Pipeline::Step").map(&:package)).to(eq(["Orders"]))
+  it "takes a method the class registers as a callback for part of setting it up, as a constructor's helper is" do
+    findings = crowded(<<~RUBY)
+      class Avatars < ApplicationController
+        before_action :find_user, :set_size
+        private :theme
+
+        def show = @user.url(@size, @theme)
+
+        def theme = @theme = params[:theme]
+
+        private
+
+        def find_user = @user = User.find(params[:id])
+
+        def set_size = @size = params[:size]
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "does not take a method a visibility marker names for a callback" do
+    findings = crowded(<<~RUBY)
+      class Report
+        private :fill
+
+        def initialize(rows) = @rows = rows.to_a
+
+        def fill = [@total = @rows.sum, @count = @rows.size]
+
+        def show = [@total, @count]
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["Report"]))
+  end
+
+  it "weighs an assign double once another method, or a reader, takes it up between calls" do
+    findings = crowded(<<~RUBY)
+      class Orders < ApplicationController
+        attr_reader :form
+        attr_reader
+
+        def show
+          @order = Order.find(params[:id])
+          @items = @order.items
+        end
+
+        def edit = @form = OrderForm.new(@order)
+
+        def total = @items.sum(&:price)
+      end
+    RUBY
+    said = "Orders holds 3 instance variables, weighing 6, more than 4 (zone/thing.rb:1). " \
+      "Split the class, or gather related fields into value objects."
+    expect(findings.map { message(it) }).to(eq([said]))
   end
 
   it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do
@@ -297,7 +351,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
 
           class Parked
             def initialize(rows)
-              @rows = rows
+              @rows = rows.to_a
             end
 
             def find(key) = @by_key[key] || @other
@@ -311,5 +365,42 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
       end
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::Parked"]))
+  end
+
+  it "weighs a field the constructor takes straight from its arguments as nothing: an input, like a job's arguments" do
+    findings = crowded(<<~RUBY)
+      class Button
+        def initialize(label, size, color, icon:, href:)
+          @label = label
+          @size = size
+          @color = color
+          @icon = icon
+          @href = href
+        end
+
+        def text = [@label, @size]
+
+        def link = [@icon, @href, @color]
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "notes the given fields of a class whose own state sprawls" do
+    findings = crowded(<<~RUBY)
+      class Pusher
+        def initialize(owner, body)
+          @owner = owner
+          @body = body.read
+        end
+
+        def process = [pull, @spec.name, @gem.save]
+
+        def pull = [@spec = Spec.new(@body), @gem = Gem.new(@owner)]
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["@body", "@gem (parked between calls)", "@owner (given to the constructor)", "@spec (parked between calls)"])
+    )
   end
 end

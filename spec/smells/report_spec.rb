@@ -3,10 +3,12 @@
 RSpec.describe(Hashira::Smells::Report) do
   it "runs inside the pipeline by default and steps aside when skipped" do
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      every = Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL)
+      pipeline = Hashira::Pipeline.new(every)
       expect(pipeline.smells).to(be_a(described_class))
       expect(pipeline.findings.map(&:kind)).to(include("utility_function"))
-      trimmed = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled: %i[coupling])
+      expect(Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])).findings.map(&:kind)).to(eq(%w[cycle]))
+      trimmed = Hashira::Pipeline.new(every, enabled: %i[coupling])
       expect(trimmed.smells).to(be_nil)
       expect(trimmed.findings.map(&:kind)).not_to(include("utility_function"))
     end
@@ -54,6 +56,8 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
           module Zone
+            class Duck; def honk = 1; def moo = 1; end
+
             class Thing
               def self.probe(duck)
                 duck.honk if duck.respond_to?(:honk)
@@ -73,7 +77,7 @@ RSpec.describe(Hashira::Smells::Report) do
 
   it "handles every parameter shape when hunting control parameters" do
     files = {
-      "lib/app/zone/thing.rb" => <<~RUBY
+      "lib/app/zone/thing.rb" => <<~RUBY,
         module App
           module Zone
             class Thing
@@ -94,6 +98,7 @@ RSpec.describe(Hashira::Smells::Report) do
           end
         end
       RUBY
+      "lib/app/zone/caller.rb" => "class Caller\n def run = [mixed, mixed(1, true, 2, delta: :d), sneaky(:x)]\nend\n"
     }
     findings = sniffed(files, "control_parameter")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))
@@ -121,6 +126,8 @@ RSpec.describe(Hashira::Smells::Report) do
       "lib/app/zone/greets.rb" => <<~RUBY
         module App
           module Zone
+            class Duck; def honk = 1; def moo = 1; end
+
             module Greets
               class_methods do
                 def summon(duck) = (duck.honk if duck.respond_to?(:honk))
@@ -167,10 +174,11 @@ RSpec.describe(Hashira::Smells::Report) do
 
   it "judges a class's state across every file that reopens it" do
     files = {
-      "lib/app/zone/thing.rb" => "class Thing\n  def fill = [@a = 1, @b = 2, @c = 3]\nend\n",
-      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\nend\n"
+      "lib/app/zone/thing.rb" => "class Thing\n  def initialize = [@a = 1, @b = 2, @c = 3]\nend\n",
+      "lib/app/zone/thing/more.rb" => "class Thing\n  def more = [@d = 4, @e = 5]\n\n  def sum = @d + @e\nend\n"
     }
     findings = sniffed(files, "state_sprawl")
-    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c @d @e]]))
+    parked = %w[@d @e].map { "#{it} (parked between calls)" }
+    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c] + parked]))
   end
 end

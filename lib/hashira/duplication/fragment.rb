@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "digest"
+require "zlib"
 require "prism"
 
 class Hashira::Duplication::Fragment
@@ -14,6 +15,14 @@ class Hashira::Duplication::Fragment
   ].freeze
 
   OPENED = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze
+
+  SPOKEN = [Prism::CallNode, Prism::ConstantReadNode, Prism::ConstantPathNode].freeze
+
+  WRITTEN = [Prism::StringNode, Prism::SymbolNode].freeze
+
+  ROWS = 2
+
+  SEEDS = (1..20).to_a.freeze
 
   HEREDOCS = [Prism::StringNode, Prism::InterpolatedStringNode, Prism::XStringNode, Prism::InterpolatedXStringNode].freeze
 
@@ -60,23 +69,39 @@ class Hashira::Duplication::Fragment
 
   def nodes = @_nodes ||= @walks.nodes(@roots)
 
+  def opened? = @roots.one? && OPENED.include?(@roots.first.class)
+
   def recurring = @setting.recurring
 
   def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
 
+  def vocabulary = @_vocabulary ||= nodes.flat_map { words(it) }
+
+  def counts = @_counts ||= types.tally
+
+  def spoken = @_spoken ||= vocabulary.tally
+
+  def bands
+    words = vocabulary.uniq.map(&:to_s)
+    return [] if words.empty?
+    signature = SEEDS.map { |seed| words.min_by { Zlib.crc32(it, seed) } }
+    signature.each_slice(ROWS).with_index.map { |rows, band| [band, *rows] }
+  end
+
   private
 
-  def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
+  def words(node)
+    return [node.name] if SPOKEN.include?(node.class)
+    WRITTEN.include?(node.class) ? node.unescaped.scan(/\w+/) : []
+  end
 
-  def opened? = @roots.one? && OPENED.include?(@roots.first.class)
+  def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
 
   def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
 
   def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
 
-  def muted = sinks.flat_map(&:message).uniq
-
-  def sinks = nodes.grep(Prism::CallNode).map { Hashira::Duplication::Sink.new(it) }.select(&:sink?)
+  def muted = @walks.muted(@roots).uniq
 
   def covers?(other) = file == other.file && other.line <= line && finish <= other.finish
 
@@ -91,7 +116,12 @@ class Hashira::Duplication::Fragment
 
   def bare?(node) = node.is_a?(Prism::CallNode) && [node.receiver, node.arguments, node.block].none?
 
-  def constant?(call) = !call.arguments && !call.block && Hashira::Duplication::Literal.new(call.receiver).literal?
+  def constant?(call) = !call.arguments && !call.block && fixed?(call)
+
+  def fixed?(call)
+    held = Hashira::Duplication::Literal.new(call.receiver)
+    call.name == :freeze ? held.declarative? : held.literal?
+  end
 
   def literals?(arguments) = Hashira::Duplication::Literal.new(arguments, pardoned).literals?
 end

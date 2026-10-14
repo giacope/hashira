@@ -200,28 +200,51 @@ RSpec.describe(Hashira::Coupling::Graph) do
     def cut(uses)
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
         members = graph.cycles.knots.first
-        yield(graph.cycles.cut(members))
+        yield(graph.cycles.cut(members).edges)
       end
     end
 
-    it "cuts the thin link between two heavy clusters" do
+    it "removes the lightest set of edges that leaves no loop at all" do
       uses = { "a" => %w[b b], "b" => %w[a a c], "c" => %w[d d], "d" => %w[c c a] }
-      cut(uses) { expect(it).to(eq([["b", "c", 1]])) }
+      cut(uses) { expect(it).to(eq([["a", "b", 2], ["c", "d", 2]])) }
     end
 
-    it "gives back an edge the cut turned out not to need" do
-      uses = { "a" => %w[b c c c], "b" => %w[c c c], "c" => %w[a a] }
-      cut(uses) { expect(it).to(eq([["c", "a", 2]])) }
+    it "takes one heavier edge every loop shares over two lighter ones" do
+      uses = { "o" => %w[p p p], "p" => %w[r r t t], "r" => %w[o o], "t" => %w[o o] }
+      cut(uses) { expect(it).to(eq([["o", "p", 3]])) }
     end
 
     it "breaks a small knot outright, leaving no loop behind" do
       uses = { "a" => %w[b b c], "b" => %w[c c], "c" => %w[a a] }
-      cut(uses) { expect(it).to(eq([["a", "c", 1], ["a", "b", 2]])) }
+      cut(uses) { expect(it).to(eq([["c", "a", 2]])) }
     end
 
-    it "does not count detaching one leaf as a cut" do
-      uses = { "a" => %w[b b], "b" => %w[a a c c], "c" => %w[b b d], "d" => %w[a] }
-      cut(uses) { expect(it).to(eq([["a", "b", 2]])) }
+    it "finds a cut for a knot too large to search exhaustively, giving back what it need not take" do
+      names = ("a".."n").to_a
+      uses = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 14], names[(index + 2) % 14]]] }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        found = graph.cycles.cut(graph.cycles.knots.first)
+        expect(found.exact?).to(be(false))
+        expect(found.edges.sum(&:last)).to(eq(3))
+      end
+    end
+
+    it "moves nodes along the order until no single move makes the cut lighter" do
+      names = ("a".."m").to_a
+      ring = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 13]]] }
+      chords = { "l" => %w[i i f k], "a" => %w[c], "h" => %w[g g], "c" => %w[f f f], "f" => %w[c] }
+      uses = ring.merge(chords) { |_name, successor, more| successor + more }
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.cut(graph.cycles.knots.first).edges.sum(&:last)).to(eq(3))
+      end
+    end
+
+    it "peels the nodes a large knot leaves without a way out" do
+      names = ("a".."m").to_a
+      uses = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 13]]] }.merge("c" => %w[d a])
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        expect(graph.cycles.cut(graph.cycles.knots.first).edges.map(&:last)).to(eq([1]))
+      end
     end
   end
 

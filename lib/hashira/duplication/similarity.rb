@@ -8,38 +8,23 @@ class Hashira::Duplication::Similarity
 
   def ratio = normalized(subsequence)
 
-  def meets?(threshold) = ceiling >= threshold && ratio >= threshold
-
   private
-
-  def ceiling = normalized(overlap)
 
   def normalized(length) = length.zero? ? 0.0 : (2.0 * length) / (@left.size + @right.size)
 
-  def overlap
-    counts = @right.tally
-    @left.count { taken?(counts, it) }
+  def subsequence
+    full = (1 << @right.size) - 1
+    ones(full) - ones(@left.reduce(full) { |state, token| step(state, masks.fetch(token, 0), full) })
   end
 
-  def taken?(counts, token)
-    return false unless counts.fetch(token, 0).positive?
-    counts[token] -= 1
-    true
+  def step(state, mask, full)
+    taken = state & mask
+    ((state + taken) | (state - taken)) & full
   end
 
-  def subsequence = @left.reduce(blank) { |prev, token| advance(prev, token) }.last
+  def ones(bits) = bits.to_s(2).count("1")
 
-  def blank = Array.new(@right.size + 1, 0)
-
-  def advance(prev, token)
-    @right.each_index.reduce([0]) { |row, index| row << cell(prev, row, token, index) }
+  def masks
+    @_masks ||= @right.each_with_index.with_object(Hash.new(0)) { |(token, index), found| found[token] |= 1 << index }
   end
-
-  def cell(prev, row, token, index)
-    match?(token, index) ? prev[index] + 1 : carry(prev, row, index)
-  end
-
-  def match?(token, index) = @right[index] == token
-
-  def carry(prev, row, index) = [prev[index + 1], row[index]].max
 end

@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::CI::Ratchet
+  NEWER = "Not ratcheted: %s — kinds this baseline predates. Record them with --update-baseline."
+
   def initialize(graph, findings, baseline, io: $stdout)
     @graph = graph
     @findings = findings
@@ -9,12 +11,13 @@ class Hashira::CI::Ratchet
   end
 
   def update
-    @baseline.write(edges, scored, packaging:)
+    @baseline.write(edges, scored(@findings), packaging:)
     @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
     Hashira::CI::Status::CLEAN
   end
 
   def check(focus)
+    newer
     compared = focus.narrowing? ? Hashira::CI::Slice.new(@baseline) : Hashira::CI::Sweep.new(@baseline)
     Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
       .print(compared.edges(drift), delta(compared), tally(compared))
@@ -37,7 +40,7 @@ class Hashira::CI::Ratchet
   end
 
   def widened(flag, was, now)
-    return if was == now
+    return if was.sort == now.sort
     phrase(flag, was, now)
   end
 
@@ -48,7 +51,14 @@ class Hashira::CI::Ratchet
 
   def packaging = @graph.packaging.to_s
 
-  def recorded = collapsed(@findings.size, scored.size)
+  def recorded = collapsed(@findings.size, scored(@findings).size)
+
+  def judged = @_judged ||= @findings.reject { @baseline.predates?(it.kind) }
+
+  def newer
+    unseen = (@findings - judged).map(&:kind).tally
+    @io.puts(NEWER % unseen.map { |kind, count| "#{count} #{kind}" }.join(", ")) unless unseen.empty?
+  end
 
   def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
 
@@ -62,9 +72,7 @@ class Hashira::CI::Ratchet
 
   def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
 
-  def scored
-    @_scored ||= @findings.group_by(&:signature).sort.to_h { |key, group| [key, mark(group)] }
-  end
+  def scored(findings) = findings.group_by(&:signature).sort.to_h { |key, group| [key, mark(group)] }
 
   def mark(group) = Hashira::CI::Mark.new(magnitude: group.filter_map(&:magnitude).max, trace: group.first.trace)
 
@@ -73,6 +81,6 @@ class Hashira::CI::Ratchet
   def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
 
   def delta(compared)
-    compared.findings(scored) if @baseline.findings?
+    compared.findings(scored(judged)) if @baseline.findings?
   end
 end

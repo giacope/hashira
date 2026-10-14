@@ -5,9 +5,9 @@ require "prism"
 class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
   private
 
-  def smelly? = subject.public? && !subject.polymorphic? && calls? && refs.ego.zero?
+  def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && calls? && refs.ego.zero?
 
-  def detail = { site:, owner: subject.host }
+  def detail = { site: }
 
   def refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 

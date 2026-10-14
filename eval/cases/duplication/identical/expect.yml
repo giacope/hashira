@@ -1,0 +1,4 @@
+# The same three statements in two packages: one cluster.
+args: [lib/app]
+clusters:
+  - ["orders/checkout.rb:4", "billing/refund.rb:4"]

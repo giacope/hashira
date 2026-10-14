@@ -15,7 +15,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
 
   def verdicts(files, directories: ["lib/app"])
     within(files) do
-      yield(Hashira::Pipeline.new(Hashira::Project.new(directories)).findings)
+      yield(Hashira::Pipeline.new(Hashira::Project.new(directories, rules: Hashira::Config::Rules::ALL)).findings)
     end
   end
   it "reports cycles with members, a sample path, the cheapest cut, and its evidence" do
@@ -76,7 +76,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
-  it "pluralizes a multi-ref weakest edge" do
+  it "plurals a multi-ref weakest edge" do
     files = {
       "lib/app/a/x.rb" => "module App; module A; class X; def c = [B::X, B::Y]; end; end; end\n",
       "lib/app/b/x.rb" => "module App; module B; class X; def c = [A::X, A::Y]; end; end; end\n"

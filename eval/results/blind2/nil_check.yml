@@ -1,0 +1,235 @@
+---
+- key: faraday|nil_check|Faraday::Adapter#save_response
+  versions:
+  - branch
+  label: fp
+  why: Adapter boundary normalization of optional values
+- key: faraday|nil_check|Faraday::FlatParamsEncoder.encode
+  versions:
+  - main
+  label: fp
+  why: nil params input is public API contract
+- key: faraday|nil_check|Faraday::Logging::Formatter#dump_headers
+  versions:
+  - branch
+  label: fp
+  why: Defensive nil guard on optional headers
+- key: faraday|nil_check|Faraday::RackBuilder#adapter_set?
+  versions:
+  - branch
+  label: fp
+  why: Simple predicate on optional adapter
+- key: faraday|nil_check|Faraday::RackBuilder#build
+  versions:
+  - branch
+  label: fp
+  why: Lazy default adapter
+- key: faraday|nil_check|Faraday::RackBuilder#ensure_adapter!
+  versions:
+  - branch
+  label: fp
+  why: Adapter presence assertion is the point
+- key: faraday|nil_check|Faraday::Response::Json#initialize
+  versions:
+  - branch
+  label: fp
+  why: Optional parameter dup; fine
+- key: faraday|nil_check|Faraday::Utils::Headers#initialize
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Nil-tolerant constructor default for public API; harmless
+- key: rubocop|nil_check|RuboCop::ConfigLoaderResolver#merge
+  versions:
+  - main
+  label: fp
+  why: Config merge option semantics
+- key: rubocop|nil_check|RuboCop::Cop::Badge#qualified?
+  versions:
+  - main
+  label: fp
+  why: Simple predicate
+- key: rubocop|nil_check|RuboCop::Cop::Layout::EmptyLinesAroundAttributeAccessor#next_line_empty?
+  versions:
+  - main
+  label: fp
+  why: nil guard needed since blank? not defined on nil in RuboCop core ext
+- key: rubocop|nil_check|RuboCop::Cop::Lint::NumberConversion#handle_conversion_method
+  versions:
+  - main
+  label: fp
+  why: AST nil receiver semantics
+- key: rubocop|nil_check|RuboCop::Cop::Lint::RaiseException#check
+  versions:
+  - main
+  label: fp
+  why: AST nil cbase semantics
+- key: rubocop|nil_check|RuboCop::Cop::Lint::UselessRescue#only_reraising?
+  versions:
+  - main
+  label: fp
+  why: AST nil body semantics
+- key: rubocop|nil_check|RuboCop::Cop::Metrics::PerceivedComplexity#complexity_score_for
+  versions:
+  - main
+  label: fp
+  why: nil condition is AST semantics (case without subject)
+- key: rubocop|nil_check|RuboCop::Cop::Naming::ConstantName#allowed_method_call_on_rhs?
+  versions:
+  - main
+  label: fp
+  why: AST nil receiver semantics
+- key: rubocop|nil_check|RuboCop::Cop::OrderedGemNode#get_source_range
+  versions:
+  - main
+  label: fp
+  why: AST comment presence check
+- key: rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#on_casgn
+  versions:
+  - main
+  label: fp
+  why: AST nil expression semantics
+- key: rubocop|nil_check|RuboCop::Cop::Style::MutableConstant#requires_parentheses?
+  versions:
+  - main
+  label: fp
+  why: AST nil dot semantics
+- key: rubocop|nil_check|RuboCop::Cop::Style::NegatedIfElseCondition#corrected_ancestor?
+  versions:
+  - main
+  label: fp
+  why: Lazy-initialized set guard
+- key: rubocop|nil_check|RuboCop::LSP::Diagnostic#ensure_uri_scheme
+  versions:
+  - main
+  label: fp
+  why: Default scheme assignment is fine
+- key: rubocop|nil_check|RuboCop::Runner#mark_as_safe_by_config?
+  versions:
+  - main
+  label: fp
+  why: Missing config means default safe
+- key: rubygems.org|nil_check|Advisory#affects?
+  versions:
+  - branch
+  label: fp
+  why: Guard on optional conversion result
+- key: rubygems.org|nil_check|Api::V1::RubygemsController#create
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Optional param conversion
+- key: rubygems.org|nil_check|ApiKeysHelper.api_key_params
+  versions:
+  - branch
+  label: fp
+  why: Optional existing key fallback
+- key: rubygems.org|nil_check|ApplicationMultifactorMethods#mfa_required_weak_level_enabled?
+  versions:
+  - branch
+  label: fp
+  why: Signed-out guard is legitimate
+- key: rubygems.org|nil_check|Avo::Resources::User::ApiKeyNameFilter#apply
+  versions:
+  - main
+  label: fp
+  why: Blank filter value guard is boundary handling
+- key: rubygems.org|nil_check|BlockedEmailDomain.blocks?
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Trivial nil predicate
+- key: rubygems.org|nil_check|ClearanceBackdoor#sign_in_through_the_back_door
+  versions:
+  - main
+  label: fp
+  why: Test-only backdoor; nil param is the boundary
+- key: rubygems.org|nil_check|CompactIndex::GemVersionMethods#content_address?
+  versions:
+  - branch
+  label: fp
+  why: Simple presence predicate
+- key: rubygems.org|nil_check|CompactIndex::GemVersionMethods#deps_line
+  versions:
+  - branch
+  label: fp
+  why: Struct field may be nil from data
+- key: rubygems.org|nil_check|DependenciesController#show
+  versions:
+  - main
+  - branch
+  label: tp
+  why: Resolved-ness test belongs on Dependency as a predicate
+- key: rubygems.org|nil_check|FastlyLogProcessor#perform
+  versions:
+  - branch
+  label: fp
+  why: Missing ticket is a legitimate runtime case
+- key: rubygems.org|nil_check|GemValidator::Package#validate_required_files!
+  versions:
+  - branch
+  label: fp
+  why: Required-file validation is the point
+- key: rubygems.org|nil_check|GemValidator::Package#verify_checksums!
+  versions:
+  - branch
+  label: fp
+  why: Optional reported checksums from external data
+- key: rubygems.org|nil_check|Gemcutter::UserAgentParser.rubygems_user_agent
+  versions:
+  - branch
+  label: fp
+  why: Optional parsed field default
+- key: rubygems.org|nil_check|GitHubSecretScanning#valid_github_signature?
+  versions:
+  - branch
+  label: fp
+  why: Guard on optional key; fine
+- key: rubygems.org|nil_check|MultifactorAuthsController#recovery
+  versions:
+  - branch
+  label: fp
+  why: Session-derived absence is legitimate
+- key: rubygems.org|nil_check|OIDC::Providers::ShowView#view_template
+  versions:
+  - main
+  label: fp
+  why: Skipping blank config values in a view is fine
+- key: rubygems.org|nil_check|Rubygem#public_versions_with_extra_version
+  versions:
+  - branch
+  label: fp
+  why: Optional extra version parameter
+- key: rubygems.org|nil_check|RubygemFs::Local#dir_for
+  versions:
+  - branch
+  label: fp
+  why: Blank prefix guard is legitimate input handling
+- key: rubygems.org|nil_check|ShasumFormat.generate
+  versions:
+  - main
+  label: fp
+  why: Skipping blank entries in formatter
+- key: rubygems.org|nil_check|UsersHelper#obfuscate_email
+  versions:
+  - main
+  label: fp
+  why: Defensive helper guard at view boundary is fine
+- key: rubygems.org|nil_check|Version#gem_full_nameify!
+  versions:
+  - branch
+  label: fp
+  why: Callback guard before validation
+- key: rubygems.org|nil_check|VersionManifest#initialize
+  versions:
+  - branch
+  label: fp
+  why: Nil platform means default ruby; boundary normalization
+- key: rubygems.org|nil_check|VersionManifest#unique_checksums
+  versions:
+  - main
+  label: fp
+  why: Default argument fallback; fine

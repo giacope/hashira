@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::StateSprawl < Hashira::Smells::Check
+  Sprawl = Data.define(:site, :count, :weight, :limit)
+
   LIMIT = 4
 
   COUNTED = [
@@ -12,19 +14,65 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   TOUCHED = (COUNTED + [Prism::InstanceVariableReadNode, Prism::InstanceVariableOrWriteNode]).freeze
 
+  READS = [
+    Prism::InstanceVariableReadNode, Prism::InstanceVariableOperatorWriteNode,
+    Prism::InstanceVariableAndWriteNode, Prism::InstanceVariableOrWriteNode
+  ].freeze
+
+  READERS = %i[attr_reader attr_accessor].freeze
+
   CONSTRUCTOR = :initialize
 
-  RENDERERS = /(?:Controller|Mailer|Component)\z/
+  NOTES = { 0 => " (read by no method: handed off)", 1 => "", 2 => " (parked between calls)" }.freeze
+
+  GIVEN = " (given to the constructor)"
 
   private
 
-  def smelly? = subject.kind == :class && weight > LIMIT && !cohesive?
+  def smelly? = subject.kind == :class && weight > limit && !cohesive?
 
-  def weight = names.size + (rendering? ? 0 : parked.size)
+  def limit = threshold(LIMIT)
 
-  def rendering? = subject.nodes.any? { RENDERERS.match?(Hashira::Analysis::Syntax.segments(it.superclass).last.to_s) }
+  def weight = names.sum { heft(it) }
 
-  def parked = @_parked ||= names.intersection(written(strays)) - written(founders)
+  def heft(name)
+    return 0 if given.include?(name)
+    return 1 unless stray?(name)
+    return 2 if parked.include?(name)
+    read?(name) ? 1 : 0
+  end
+
+  def given = @_given ||= names.select { |name| writes.select { it.name == name }.all? { handed?(it) } }
+
+  def handed?(write) = setup.include?(write) && passed?(write)
+
+  def passed?(write) = write.is_a?(Prism::InstanceVariableWriteNode) && argument?(write.value)
+
+  def argument?(value) = value.is_a?(Prism::LocalVariableReadNode) && inputs.include?(value.name)
+
+  def setup = @_setup ||= Set.new.compare_by_identity.merge(sweeps(constructors))
+
+  def inputs = @_inputs ||= constructors.flat_map { Hashira::Smells::Parameters.names(it) }
+
+  def stray?(name) = written(strays).include?(name) && !written(founders).include?(name)
+
+  def parked = @_parked ||= names.select { stray?(it) && carried?(it) }
+
+  def carried?(name) = exposed.include?(name) || methods.any? { taken?(it, name) }
+
+  def taken?(method, name) = reads(within(method)).include?(name) && !written([method]).include?(name)
+
+  def read?(name) = exposed.include?(name) || reads(nodes).include?(name)
+
+  def reads(found) = found.select { READS.include?(it.class) }.map(&:name)
+
+  def exposed = @_exposed ||= exposing.grep(Prism::SymbolNode).map { field(it) }
+
+  def field(symbol) = :"@#{symbol.unescaped}"
+
+  def exposing = readers.flat_map { Array(it.arguments&.arguments) }
+
+  def readers = nodes.grep(Prism::CallNode).select { READERS.include?(it.name) }
 
   def strays = methods.reject(&:receiver) - founders
 
@@ -32,13 +80,21 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def founders = methods.select { founding.include?(it.name) }
 
-  def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name)
+  def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name) + registered
+
+  def registered = hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { it.unescaped.to_sym }
+
+  def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
+
+  def bodies = subject.nodes.flat_map { Hashira::Analysis::Syntax.statements(it) }
+
+  def hook?(call) = !call.receiver && !Hashira::Analysis::TypeWalk::MARKERS.include?(call.name)
 
   def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
 
   def sweeps(methods) = methods.flat_map { within(it) }
 
-  def within(method) = nodes.select { Hashira::Smells::Scope.covers?(method, it) }
+  def within(method) = (@_within ||= {}.compare_by_identity)[method] ||= Hashira::Analysis::NodeWalk.collect(method)
 
   def constructors = methods.select { it.name == CONSTRUCTOR }
 
@@ -86,7 +142,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def probes(body) = body.grep(Prism::DefinedNode).map(&:value).grep(Prism::InstanceVariableReadNode).map(&:name)
 
-  def detail = { site:, count: names.size }
+  def detail = Sprawl.new(site:, count: names.size, weight:, limit:)
 
-  def evidence = names.map(&:to_s)
+  def evidence = names.map { "#{it}#{given.include?(it) ? GIVEN : NOTES[heft(it)]}" }
 end

@@ -20,14 +20,11 @@ RSpec.describe(Hashira::Report::Phrases) do
       smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
       smell("feature_envy", names: %w[item], count: 3, ego: 1) =>
         "Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.",
-      smell("feature_envy", names: %w[item order], count: 2, ego: 1) =>
-        "Cart#price refers to 'item', 'order' more than to self, 2 each to 1 (cart.rb:12). " \
-        "The behavior may belong on whichever of them it serves.",
-      smell("utility_function", owner: :class) =>
+      smell("feature_envy", names: %w[item order line], types: %w[Item Order Line], count: 2, ego: 1) =>
+        "Cart#price refers to 'item', 'order', 'line' more than to self, 2 each to 1 (cart.rb:12). " \
+        "The behavior may belong on Item, Order or Line.",
+      smell("utility_function") =>
         "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
-      smell("utility_function", owner: :module) =>
-        "Cart#price touches no instance state (cart.rb:12). " \
-        "Move it onto the object it serves, or make it a module function.",
       smell("assumed_state", installed: [], unassigned: %w[@a]) =>
         "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
         "Nothing ever assigns '@a', so it reads nil: a typo or a dead hook. " \
@@ -108,5 +105,12 @@ RSpec.describe(Hashira::Report::Phrases) do
     expect(message(clone(:identical, hot: true))).to(
       end_with("call it from each site. Both sites change often — fix one, miss the other.")
     )
+  end
+
+  it "names a long cut in part, with its total, and says when it is a best effort" do
+    cut = ("a".."h").map { { from: it, to: "z", weight: 2 } }
+    detail = { members: %w[a z], folded: [], cut:, exact: false }
+    said = message(Hashira::Analysis::Finding.new(kind: "cycle", package: "a", evidence: [], detail:))
+    expect(said).to(include("The cheapest cut found is a -> z (2 refs)", "f -> z (2 refs) and 2 more (16 refs in all)"))
   end
 end

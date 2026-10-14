@@ -1,0 +1,70 @@
+---
+- key: rubocop|indirection|RuboCop::Cop::Style::MissingElse#on_normal_if_unless
+  message: RuboCop::Cop::Style::MissingElse#on_normal_if_unless reaches its work through
+    2 hollow helpers, private one-liners called once that only pass a call on (rubocop/cop/style/missing_else.rb:108).
+    Inline them into their callers.
+  evidence:
+  - unless_else_cop_enabled? (line 165)
+  - unless_else_config (line 169)
+  code:
+  - "# rubocop/cop/style/missing_else.rb:108"
+  - '108:         def on_normal_if_unless(node)'
+  - '109:           return if case_style?'
+  - '110:           return if unless_else_cop_enabled? && node.unless?'
+  - '111: '
+  - '112:           check(node)'
+  - '113:         end'
+  - '114: '
+  - '115:         def on_case(node)'
+  - '116:           return if if_style?'
+  - '117: '
+  - '118:           check(node)'
+  - '119:         end'
+  - '120: '
+  - '121:         def on_case_match(node)'
+  - '122:           # do nothing.'
+  - '123:         end'
+  - '124: '
+  - '125:         private'
+  - '126: '
+  - '127:         def check(node)'
+  - '128:           return if node.else?'
+  - '129: '
+  - '130:           add_offense(node, message: format(message_template, type: node.type))
+    do |corrector|'
+  - '131:             autocorrect(corrector, node)'
+  - '132:           end'
+- key: rubocop|indirection|RuboCop::Cop::Style::RedundantConstantBase#on_cbase
+  message: RuboCop::Cop::Style::RedundantConstantBase#on_cbase reaches its work through
+    2 hollow helpers, private one-liners called once that only pass a call on (rubocop/cop/style/redundant_constant_base.rb:48).
+    Inline them into their callers.
+  evidence:
+  - lint_constant_resolution_cop_enabled? (line 59)
+  - lint_constant_resolution_config (line 63)
+  code:
+  - "# rubocop/cop/style/redundant_constant_base.rb:48"
+  - '48:         def on_cbase(node)'
+  - '49:           return if lint_constant_resolution_cop_enabled?'
+  - '50:           return unless bad?(node)'
+  - '51: '
+  - '52:           add_offense(node) do |corrector|'
+  - '53:             corrector.remove(node)'
+  - '54:           end'
+  - '55:         end'
+  - '56: '
+  - '57:         private'
+  - '58: '
+  - '59:         def lint_constant_resolution_cop_enabled?'
+  - '60:           lint_constant_resolution_config.fetch(''Enabled'', false)'
+  - '61:         end'
+  - '62: '
+  - '63:         def lint_constant_resolution_config'
+  - '64:           config.for_cop(''Lint/ConstantResolution'')'
+  - '65:         end'
+  - '66: '
+  - '67:         def bad?(node)'
+  - '68:           module_nesting_ancestors_of(node).none?'
+  - '69:         end'
+  - '70: '
+  - '71:         def module_nesting_ancestors_of(node)'
+  - '72:           node.each_ancestor(:class, :module).reject do |ancestor|'

@@ -290,7 +290,7 @@ RSpec.describe(Hashira::CLI::Options) do
 
     it "names the file in every complaint about it" do
       {
-        "skipp: x\n" => 'unknown setting "skipp" (use: directories, fail-on, skip, kind, top, package-by, baseline)',
+        "skipp: x\n" => "unknown setting \"skipp\" (use: #{Hashira::CLI::ConfigFile::KEYS.join(", ")})",
         "- top\n" => 'expected key: value settings, not ["top"]',
         "top: {n: 3}\n" => 'top takes a value or a list of values, not {"n" => 3}',
         "directories: [app, [lib]]\n" => 'directories takes a value or a list of values, not ["app", ["lib"]]',

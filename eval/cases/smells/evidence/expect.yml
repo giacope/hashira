@@ -1,0 +1,5 @@
+# A finding names what it found, so the reader can check it.
+present:
+  - {kind: nil_check, package: "App::Renderer#render"}
+  - {kind: manual_dispatch, package: "App::Renderer#render"}
+evidence: [nil_check, manual_dispatch]

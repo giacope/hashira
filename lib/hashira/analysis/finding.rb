@@ -2,15 +2,20 @@
 
 module Hashira
   module Analysis
-    MAGNITUDES = { "complexity" => :cognitive, "duplication" => :mass, "boundary_sprawl" => :count }.freeze
+    CLONES = "duplication"
+
+    MAGNITUDES = { "duplication" => :mass, "boundary_sprawl" => :count }
+      .merge("complexity" => :cognitive, "indirection" => :chain, "fragmentation" => :helpers).freeze
 
     TRACKS = [/ \(lines? [\d, ]+\)/, /:[\d, -]+\z/, /:\d+(?=:)/].freeze
 
     Finding =
-      Data.define(:kind, :package, :detail, :evidence, :cycle, :digest, :shape, :confidence) do
-        def initialize(cycle: nil, digest: nil, detail: nil, shape: nil, confidence: nil, **rest) = super
+      Data.define(:kind, :package, :detail, :evidence, :cycle, :digest, :shape, :confidence, :anchors) do
+        def initialize(cycle: nil, digest: nil, detail: nil, shape: nil, confidence: nil, anchors: [], **rest) = super
 
         def signature = "#{kind}:#{identity}"
+
+        def heading = "#{kind}/#{package}"
 
         def magnitude = detail.to_h[MAGNITUDES[kind]]
 
@@ -28,7 +33,7 @@ module Hashira
 
         def doubted? = confidence == :low
 
-        def to_h = super.except(:shape, :confidence).merge(detail: detail&.to_h).compact
+        def to_h = super.except(:shape, :confidence, :anchors).merge(detail: detail&.to_h).compact
       end
   end
 end

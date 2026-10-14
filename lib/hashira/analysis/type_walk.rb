@@ -5,7 +5,19 @@ require "prism"
 module Hashira
   module Analysis
     module TypeWalk
+      MARKERS = %i[public private protected module_function].freeze
+
+      CLASS_LEVEL = :ClassMethods
+
       module_function
+
+      def sections(type) = Visibility.new(type).entries
+
+      def parted(trees, parts) = Set.new.compare_by_identity.merge(trees.flat_map { members(it, parts) })
+
+      def members(tree, parts) = to_enum(:each, tree).flat_map { |type, *| chosen(type, parts) }
+
+      def chosen(type, parts) = sections(type).filter_map { |node, part| node if parts.include?(part) }
 
       def roots(trees)
         trees.each_value.with_object(Set.new) { |tree, set| each(tree) { |_node, full| set << full } }

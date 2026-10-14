@@ -1,0 +1,137 @@
+---
+- key: faraday|utility_function|Faraday::Connection#find_default_proxy
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Private env lookup; fine
+- key: faraday|utility_function|Faraday::Connection#support_parallel?
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Private predicate; fine
+- key: faraday|utility_function|Faraday::RackBuilder#build_env
+  versions:
+  - branch
+  label: fp
+  why: Public builder API; moving would break callers
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_local_variable_assignment_part
+  versions:
+  - main
+  label: fp
+  why: Small corrector helper
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#remove_trailing_character_from_operator
+  versions:
+  - main
+  label: fp
+  why: Small corrector helper
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#rename_variable_with_underscore
+  versions:
+  - main
+  label: fp
+  why: Small private corrector helper in a cop; idiomatic
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#variable_like_method_invocation?
+  versions:
+  - main
+  label: fp
+  why: Small AST predicate
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#constructor?
+  versions:
+  - main
+  label: fp
+  why: Tiny predicate helper; fine
+- key: rubocop|utility_function|RuboCop::Cop::Metrics::Utils::AbcSizeCalculator#else_branch?
+  versions:
+  - main
+  label: fp
+  why: Small predicate on calculator; fine
+- key: rubocop|utility_function|RuboCop::Cop::Metrics::Utils::IteratingBlock#iterating_method?
+  versions:
+  - main
+  label: fp
+  why: Tiny predicate
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#correct_branches
+  versions:
+  - main
+  label: fp
+  why: Helper module method used by singleton correctors; fine
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#same_line?
+  versions:
+  - main
+  label: fp
+  why: Delegator for readability
+- key: rubocop|utility_function|RuboCop::Cop::Style::ConditionalCorrectorHelper#white_space_range
+  versions:
+  - main
+  label: fp
+  why: Helper module function in corrector mixin
+- key: rubocop|utility_function|RuboCop::Cop::SymbolHelp#hash_key?
+  versions:
+  - main
+  label: fp
+  why: AST predicate in mixin
+- key: rubygems.org|utility_function|Auditable#merge_changes!
+  versions:
+  - branch
+  label: fp
+  why: Pure helper in concern; fine
+- key: rubygems.org|utility_function|AvoAuditable#unscope_users
+  versions:
+  - branch
+  label: fp
+  why: Tiny intentional wrapper
+- key: rubygems.org|utility_function|EmailResettable#email_reset
+  versions:
+  - branch
+  label: tp
+  why: Mail-sending decision about user email state belongs on User/mailer, not a
+    controller concern
+- key: rubygems.org|utility_function|OIDC::TrustedPublisher::GitHubAction#audience_condition
+  versions:
+  - branch
+  label: fp
+  why: Condition builder is part of this policy; fine
+- key: rubygems.org|utility_function|PasswordResettable#valid_compromised_password_reset_reason?
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Token verification helper sits fine in its concern
+- key: rubygems.org|utility_function|RubygemContents#fs
+  versions:
+  - branch
+  label: fp
+  why: Accessor seam for storage dependency
+- key: rubygems.org|utility_function|RubygemsHelper#latest_version_number
+  versions:
+  - branch
+  label: fp
+  why: View helper; placement fine
+- key: rubygems.org|utility_function|RubygemsHelper#nice_date_for
+  versions:
+  - branch
+  label: fp
+  why: View formatting helper
+- key: rubygems.org|utility_function|SearchesHelper#es_suggestions
+  versions:
+  - branch
+  label: tp
+  why: Digging into ES response structure belongs on the search result object, not
+    a helper
+- key: rubygems.org|utility_function|TraceTagger#trace
+  versions:
+  - main
+  - branch
+  label: fp
+  why: Mixin helper meant to be included; fine as is
+- key: rubygems.org|utility_function|UsersHelper#show_policies_acknowledge_banner?
+  versions:
+  - branch
+  label: fp
+  why: View decision helper
+- key: rubygems.org|utility_function|UsersHelper#twitter_url
+  versions:
+  - branch
+  label: fp
+  why: View helper building a URL is fine

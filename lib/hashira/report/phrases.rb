@@ -16,7 +16,8 @@ module Hashira::Report::Phrases
     "while" => LOOP_BODY, "until" => LOOP_BODY, "for" => LOOP_BODY
   ).merge(
     "unless" => "invert to a guard clause or a named predicate.",
-    "ternary" => "extract the nested ternary into a named method."
+    "ternary" => "extract the nested ternary into a named method.",
+    "recursion" => "a recursion is a loop the reader unwinds by hand; name the traversal or make it iterative."
   ).freeze
 
   ROSTER = 6
@@ -28,8 +29,14 @@ module Hashira::Report::Phrases
   def on_cycle(finding)
     detail = finding.detail
     "#{roster(detail[:members])} depend on each other in a cycle#{joined(detail[:folded])} — " \
-      "any change may ripple back around. " \
-      "The cheapest cut is #{detail[:cut].map { link(it) }.join(", ")}."
+      "any change may ripple back around. #{cut(detail[:cut], detail[:exact])}"
+  end
+
+  def cut(edges, exact)
+    shown = edges.first(ROSTER).map { link(it) }.join(", ")
+    rest = edges.size - ROSTER
+    tail = rest.positive? ? " and #{rest} more (#{edges.sum { it[:weight] }} refs in all)" : ""
+    "The cheapest cut#{" found" if exact == false} is #{shown}#{tail}."
   end
 
   def roster(members)
@@ -83,6 +90,19 @@ module Hashira::Report::Phrases
     detail = finding.detail
     "#{finding.package} — cognitive #{detail.cognitive}, #{detail.calls} calls " \
       "(#{detail.site}). #{COMPLEXITY_ADVICE.fetch(detail.dominant)}"
+  end
+
+  def on_indirection(finding)
+    detail = finding.detail
+    "#{finding.package} reaches its work through #{count(detail.chain, "hollow helper")}, " \
+      "private one-liners called once that only pass a call on (#{detail.site}). Inline them into their callers."
+  end
+
+  def on_fragmentation(finding)
+    detail = finding.detail
+    "#{finding.package} spreads its work over #{count(detail.helpers, "same-class helper")} averaging " \
+      "#{format("%.1f", detail.lines)} lines a method, #{detail.depth} deep (#{detail.path.join(" → ")}) " \
+      "(#{detail.site}). Merge the helpers that only move data into the entry; keep named predicates."
   end
 
   def score(value) = format("%.2f", value)

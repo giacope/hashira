@@ -7,10 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Found by running hashira against fifteen MIT-licensed Rails apps and gems
-(rails, rubocop, chatwoot, feedbin, rubygems.org, huginn, …).
+The second half of this release was driven by `eval/`, a verification suite
+that scores a hashira checkout: SonarSource conformance, coupling fixtures
+whose cheapest cut is checked by brute force, clusters and non-clusters,
+smell true and false positives, CLI behaviour, and three pinned corpora
+(rubocop, faraday, rubygems.org) with findings per kLOC, runtime, peak memory
+and precision on a fixed labelled sample. Two independent raters then
+labelled a mixed sample of main and branch findings blind (they agree on 92%,
+κ 0.65): rater 1 found 19 of 200 main findings and 28 of 160 branch findings
+true, rater 2 23 of 200 and 33 of 160. A fresh holdout of 117 findings, drawn
+after the rules changed and labelled the same way (κ 0.66), settled which kinds
+are on by default (below). A separate blind readability study of 120 entry
+methods calibrated and validated `fragmentation`. The raters in both were
+independent AI reviewers: separate model instances that saw only the shuffled,
+version-blind items and the corpus source, not hashira's code or labels. No
+human has relabelled them yet. `eval/results/README.md` has every number. Every suite
+passes; main passes between 31% (cli) and 83% of each.
+
+The first half was found by running hashira against fifteen MIT-licensed
+Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
+…).
 
 ### Upgrading
+
+- **Every design smell is now opt-in.** A heuristic kind is on by default only
+  when its blind precision, over the sample and the holdout together, clears
+  one in three: duplication (42 of 100) does, and fragmentation, measured by its
+  own study, joins it beside the measurements (complexity and the coupling
+  kinds). feature_envy (7 of 34), manual_dispatch (8 of 26), data_clump,
+  repeated_call, control_parameter, utility_function, repeated_conditional,
+  state_sprawl, nil_check, assumed_state, boundary_sprawl, module_initialize and
+  indirection need `checks: all`, a `checks:` setting of their own, `--kind` or
+  `--fail-on`. Add `checks: all` to
+  `.hashira.yml` to keep every kind; a baseline recorded without it sees the
+  opt-in kinds' findings resolved.
+- Baselines are schema 7 and record the kinds the recording hashira knew.
+  Findings of a newer kind (`indirection` here) are listed as not ratcheted
+  instead of failing the build until `--update-baseline`. Baselines from
+  earlier versions read as before, and findings or accepted entries recorded
+  under `duplicate_method_call`, `too_many_instance_variables` and
+  `instance_variable_assumption` are read under their current names.
+- Smell precision work (below) retires most `feature_envy`, `nil_check`,
+  `manual_dispatch` and `control_parameter` findings and many
+  `repeated_call` ones; `--update-baseline` records the smaller set.
+- The baseline and `.hashira.yml` are read from the analyzed project's root,
+  not from where hashira runs. A CI step that ran `hashira other/lib` from a
+  parent directory now uses `other`'s files.
 
 Three changes move what a recorded baseline expects; run `--update-baseline`
 once after upgrading, after reading what the ratchet reports:
@@ -31,6 +73,47 @@ Across the fifteen field repos, findings fell from 15,557 to 12,711. Every
 true positive the earlier triage confirmed still fires.
 
 ### Added
+
+- `fragmentation`, a complexity kind, on by default: a public method that
+  reaches four or more methods of its own class, named predicates aside (calls
+  with no receiver or on `self`, `send(:name)`, `method(:name)`; instance to
+  instance, class to class, across reopened classes) along a path at least two
+  deep, when the entry and every method it reaches average 3.5 lines or fewer
+  without blank and comment lines. The finding names the helper count, the
+  mean, the depth and the deepest path, and lists the helpers, predicates marked
+  as not counted; its advice is to merge the helpers that only move data and
+  keep named predicates. `checks: fragmentation: { helpers: N, lines: M }`
+  moves both limits; the ratchet holds it by helper count. A blind readability
+  study set it on 60 entry methods and validated it on 60 more: of the 10 it
+  flagged in the second sample, a rater judged 9 over-fragmented and both
+  raters 8 (independent AI reviewers; no human has rated them yet). Predicates
+  are left out because, when rubocop-kata merged its findings away, the
+  raters preferred the original wherever the merge removed a named predicate.
+- `indirection`, an opt-in complexity kind that counts hollow hops: helpers
+  that are private, called once from their own class, and whose body is one
+  call with no decision and no block, wrapping at most one more call. It
+  reports the path through an entry's single-use helpers that holds the most
+  hollow ones once it holds two (the threshold is configurable); helpers that
+  decide, loop or hold several statements cost nothing. The finding lists the
+  hollow helpers and the ratchet holds it by their count.
+- Inline suppression: `# hashira:disable KIND[,KIND] -- REASON` (this line) or
+  `# hashira:disable-next-line ...`. The reason is required; suppressed
+  findings and directives that no longer silence anything are listed in the
+  text and JSON reports, and a malformed directive stops the run.
+- `checks:` in `.hashira.yml` turns a kind on (`nil_check: true`) or off
+  (`duplication: false`), or sets its threshold (`complexity: { threshold: 12
+  }`) for complexity, indirection, state_sprawl, repeated_conditional,
+  boundary_sprawl and wide_edge. `checks: all` turns on every kind.
+- Rails associations are references: `belongs_to :user`, `has_many
+  :line_items` and `has_one` name their class through ActiveSupport's
+  inflection rules, including the app's `config/initializers/inflections.rb`;
+  `class_name:` wins and `polymorphic: true` names nothing.
+- `eval/`: the verification suite described above, with `eval/run`.
+  `--seed SALT` draws a fresh precision sample disjoint from every labelled
+  key, for a holdout.
+- `bin/inventory` regenerates `lib/hashira/analysis/inventory.yml`, what a bare
+  Ruby ships (core constants, standard and bundled libraries, Kernel and
+  BasicObject methods, core value methods, class macros).
 
 - A precision audit of 643 findings on a production Rails app judged 57%
   of them sound. The fixes below target the causes of the false positives
@@ -77,6 +160,71 @@ true positive the earlier triage confirmed still fires.
   kind once — `nil_check  113 in 92 files` — withheld findings included.
 
 ### Changed
+
+- **Smells report only where their advice applies to owned code.**
+  `feature_envy` needs a destination class it can name (from a constructor,
+  a rescue, a type test, or the variable's name or last words), that the
+  codebase owns, that is not a core class or the method's own, and that
+  declares every message sent; the advice names the class. `nil_check` needs
+  the nil to be the codebase's own (its state, a nil it assigns, its own
+  methods, a private method's argument, a literal it built, an owned class's
+  records or declared attributes); the boundary advice is gone with the
+  boundary findings. A nil-defaulted parameter is the caller's option, and a
+  check whose branch raises, or a one-line predicate that answers a nil test,
+  is left alone. `manual_dispatch` probes must be on self or a
+  variable of a nameable owned class, and ask for a message the codebase
+  defines. `control_parameter` needs a caller that passes the flag as a
+  literal, to a method outside callers can reach (a private or protected
+  helper sits behind explicit public methods). Each lists every check, probe or
+  flag as evidence.
+- `utility_function` judges classes only; a module's methods (a mixin, a
+  concern, a view helper) lend behavior. Its advice is to move the method or
+  make it private.
+- `data_clump` needs three or more parameters travelling together.
+- `repeated_conditional` counts comparisons with a fixed value, type tests and
+  `case` subjects; a plain truth test asks about state and stays quiet.
+- `repeated_call` leaves a plain read of self, a local or an instance
+  variable (no arguments, or literal keys) made exactly twice alone as style,
+  and a reading measured by distance or order against a stored copy of its
+  own earlier result as a second sample. The clock and calendar name lists
+  are gone; `Time.now` twice is still reported (a constant's query), and so
+  is `clock.now` through a helper method.
+- `state_sprawl` weighs each field: nothing if the constructor takes it
+  straight from an argument (an input, like a component's props), one if the
+  constructor, a helper it calls or a registered callback (`before_action
+  :set_user`) sets it otherwise, two if it is set elsewhere and another method
+  or a reader takes it up, nothing if no method reads it. That replaces the `*Controller`, `*Mailer` and
+  `*Component` exemption. The message says what was weighed against what:
+  `holds 5 instance variables, weighing 6, more than 4`.
+- A call made by symbol (`send(:name)`, `public_send`, `__send__`,
+  `method(:name)`) is a call to that method, for recursion and the helper kinds.
+- Cognitive complexity follows the SonarSource specification on lambdas
+  (they nest), recursion (+1), `a && (b && c)` (one run), and `define_method`
+  bodies (scored as methods).
+- The cheapest cut of a cycle is a minimum feedback arc set: exact for knots
+  of up to twelve packages, a peeling heuristic with insertion moves beyond,
+  and the message says "the cheapest cut found" when it is not exact.
+- A top-level constant written as a compact path (`class Alpha::One`) is
+  looked up at top level, not under the inferred namespace, so it no longer
+  adds a phantom edge.
+- Namespace packaging recognises a Rails app's framework adapters by shape (a
+  top-level class extending an outside class that the app's classes extend)
+  instead of a list of ten `Application*` names.
+- Near-miss clones must share their names (calls, constants, and the words
+  in their strings and symbols) as well as their shape, and are compared only
+  between whole methods, rescue clauses and when arms. A crowded bucket of
+  more than sixty candidates is split by MinHash bands instead of dropped.
+- A log line is a Logger severity sent to something named `log` or
+  `logger`, and an error report is a call that hands on the rescued error;
+  the vendor list (`Sentry`, `Honeybadger`, …) is gone. A rescue clause that
+  only reports its error weighs nothing wherever it sits.
+- Duplication weighs a constructor that only stores its arguments, and a
+  frozen list of constants, as declarations.
+- Builtin detection reads the generated inventory instead of
+  `Gem::BUNDLED_GEMS`, `Object.const_defined?` and the running process's
+  method tables, so two runs on the same code agree whatever is loaded.
+- The README is rewritten and every console example in it is run by the
+  test suite.
 
 - Namespace packaging knows Rails layers. Everything under `app/controllers`
   (concerns included), `app/serializers` and `app/resources` is the `(web)`
@@ -193,6 +341,15 @@ true positive the earlier triage confirmed still fires.
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+- The analyzed project's root is the nearest folder holding a project marker
+  (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
+  checked out inside another (a corpus under `eval/tmp`, a vendored gem) no
+  longer reads the enclosing project's baseline and config.
+- A baseline whose analyzers or directories are listed in another order no
+  longer blocks the ratchet.
+- `state_sprawl` no longer mixes up nodes by offset in a class reopened
+  across files.
 
 - `feature_envy` no longer envies core values (locals built from literals,
   constants, `params.permit`, `.to_h` or `.map`), `fetch(:k, default)`, a
@@ -424,6 +581,10 @@ true positive the earlier triage confirmed still fires.
 
 ### Performance
 
+- Recursion detection looks callees up in a set (rubocop's complexity: 4.5s
+  to 0.5s), and duplication computes each statement's silent nodes once per
+  file. A full rubocop run takes 34s against main's 40s, with 5% more peak
+  memory for the type and call indexes the smells now use.
 - Duplication walks each statement's subtree once per file instead of once
   per window that holds it; smells read a class name's ancestry once instead
   of once per file that reopens it; churn lookups are exact instead of a

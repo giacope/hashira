@@ -1,0 +1,96 @@
+---
+- key: rubocop|control_parameter|RuboCop::Cop::HashSubset#slices_key?
+  versions:
+  - main
+  label: tp
+  why: symbol selects node; pass the node itself instead
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceAroundKeyword#check_end
+  versions:
+  - main
+  label: fp
+  why: parameter is data used in one guard, not a mode flag
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#compact_offense
+  versions:
+  - main
+  label: tp
+  why: flag only inverts side; callers could call space_offense directly
+- key: rubocop|control_parameter|RuboCop::Cop::Layout::SpaceInsideHashLiteralBraces#offense?
+  versions:
+  - main
+  label: fp
+  why: tiny boolean predicate
+- key: rubocop|control_parameter|RuboCop::Cop::Lint::DuplicateMethods#found_attr
+  versions:
+  - main
+  label: fp
+  why: keyword flags combine (accessor sets both); fine
+- key: rubocop|control_parameter|RuboCop::Cop::RangeHelp#move_pos
+  versions:
+  - main
+  label: fp
+  why: option-driven private helper used in pipeline; fine
+- key: rubocop|control_parameter|RuboCop::Cop::StringLiteralCorrector.correct
+  versions:
+  - main
+  label: fp
+  why: style is config value; natural parameter
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RedundantCondition#if_source
+  versions:
+  - main
+  label: fp
+  why: boolean is part of a multi-branch formatting choice; splitting not clearer
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RedundantRegexpEscape#allowed_escape?
+  versions:
+  - main
+  label: fp
+  why: context boolean; fine
+- key: rubocop|control_parameter|RuboCop::Cop::Style::RescueModifier#indentation_and_offset
+  versions:
+  - main
+  label: fp
+  why: small flag adjusting two values; splitting would duplicate
+- key: rubocop|control_parameter|RuboCop::Cop::Style::Sample#offensive?
+  versions:
+  - main
+  label: fp
+  why: case on method name data, not a control flag
+- key: rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#extra_space?
+  versions:
+  - main
+  label: fp
+  why: side is a general param of a mixin API
+- key: rubocop|control_parameter|RuboCop::Cop::SurroundingSpace#offending_empty_no_space?
+  versions:
+  - main
+  label: fp
+  why: tiny predicate comparing a config value
+- key: rubygems.org|control_parameter|Avo::AuditedChangesRecordDiff::ShowComponent#change_type_icon
+  versions:
+  - main
+  label: fp
+  why: case over a display enum symbol is data mapping, not a flag
+- key: rubygems.org|control_parameter|ElasticSearcher#search_definition
+  versions:
+  - branch
+  label: fp
+  why: flag only selects source list; splitting duplicates DSL
+- key: rubygems.org|control_parameter|GemInfo.ordered_names
+  versions:
+  - branch
+  label: fp
+  why: simple cache-bypass option; acceptable
+- key: rubygems.org|control_parameter|Gemcutter::UserAgentParser::Set#call
+  versions:
+  - main
+  label: tp
+  why: flag flips semantics (first vs unique match); split methods
+- key: rubygems.org|control_parameter|OIDC::TrustedPublisher::GitHubAction::FormComponent#field
+  versions:
+  - branch
+  label: fp
+  why: optional flag adds label suffix; fine
+- key: rubygems.org|control_parameter|UploadInfoFileJob#upload_info_file
+  versions:
+  - branch
+  label: fp
+  why: flag gates one trailing side effect; acceptable

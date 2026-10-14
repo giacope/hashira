@@ -1,0 +1,11 @@
+# The rule is "more than four". A field the constructor takes straight from an
+# argument weighs nothing, one it sets otherwise weighs one, and one parked
+# between calls weighs two.
+# The message must say what was weighed against what.
+present:
+  - {kind: state_sprawl, package: "App::Session"}
+absent:
+  - {kind: state_sprawl, package: "App::Point"}
+messages:
+  - {kind: state_sprawl, package: "App::Session", includes: "weighing 6"}
+  - {kind: state_sprawl, package: "App::Session", includes: "more than 4"}

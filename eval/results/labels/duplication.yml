@@ -1,0 +1,203 @@
+---
+- key: faraday|duplication|request.rb:45,request.rb:57
+  evidence:
+  - request.rb:45-55
+  - request.rb:57-67
+  label: tp
+  why: 'params=/headers= differ only in the member: one writer generated for both'
+- key: rubocop|duplication|rubocop/cop/bundler/gem_filename.rb:57,rubocop/cop/bundler/gem_filename.rb:68
+  evidence:
+  - rubocop/cop/bundler/gem_filename.rb:57-66
+  - rubocop/cop/bundler/gem_filename.rb:68-77
+  label: tp
+  why: 'two offense registrations that map a basename to a message: one table-driven
+    method'
+- key: rubocop|duplication|rubocop/cop/bundler/ordered_gems.rb:48,rubocop/cop/gemspec/ordered_dependencies.rb:74
+  evidence:
+  - rubocop/cop/bundler/ordered_gems.rb:48-49
+  - rubocop/cop/gemspec/ordered_dependencies.rb:74-75
+  label: tp
+  why: 'the same two ordering guards in the gem and gemspec ordering cops: belongs
+    in their shared mixin'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/on_send_without_on_csend.rb:69,rubocop/cop/internal_affairs/on_send_without_on_csend.rb:84
+  evidence:
+  - rubocop/cop/internal_affairs/on_send_without_on_csend.rb:69-70
+  - rubocop/cop/internal_affairs/on_send_without_on_csend.rb:84-85
+  label: fp
+  why: 'two pairs of assignments under different conditions (method? vs ==): coincidental
+    shape'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/style_detected_api_use.rb:138,rubocop/cop/lint/literal_assignment_in_condition.rb:56
+  evidence:
+  - rubocop/cop/internal_affairs/style_detected_api_use.rb:138-142
+  - rubocop/cop/lint/literal_assignment_in_condition.rb:56-60
+  label: tp
+  why: 'two recursive descents that yield matching nodes: one generic walk (or the
+    library''s each_descendant)'
+- key: rubocop|duplication|rubocop/cop/layout/empty_lines_around_arguments.rb:51,rubocop/cop/layout/space_inside_percent_literal_delimiters.rb:72
+  evidence:
+  - rubocop/cop/layout/empty_lines_around_arguments.rb:51-55
+  - rubocop/cop/layout/space_inside_percent_literal_delimiters.rb:72-76
+  label: fp
+  why: 'add_offense/remove(range) is rubocop''s three-line correction idiom: framework
+    usage, not a copy'
+- key: rubocop|duplication|rubocop/cop/lint/numeric_operation_with_constant_result.rb:60,rubocop/cop/lint/numeric_operation_with_constant_result.rb:70
+  evidence:
+  - rubocop/cop/lint/numeric_operation_with_constant_result.rb:60-61
+  - rubocop/cop/lint/numeric_operation_with_constant_result.rb:70-71
+  label: tp
+  why: 'the same two guards in two callbacks, differing only in which matcher runs
+    first: one shared method'
+- key: rubocop|duplication|rubocop/cop/mixin/hash_alignment_styles.rb:36,rubocop/cop/mixin/hash_alignment_styles.rb:48
+  evidence:
+  - rubocop/cop/mixin/hash_alignment_styles.rb:36-39
+  - rubocop/cop/mixin/hash_alignment_styles.rb:48-51
+  label: fp
+  why: 'two different column deltas that happen to share the a - b shape: coincidence,
+    not a copy'
+- key: rubocop|duplication|rubocop/cop/mixin/min_branches_count.rb:29,rubocop/cop/style/conditional_assignment.rb:66
+  evidence:
+  - rubocop/cop/mixin/min_branches_count.rb:29-37
+  - rubocop/cop/style/conditional_assignment.rb:66-77
+  label: tp
+  why: 'two cops walk an if/elsif chain collecting branches by the same recursion:
+    a shared branch walker'
+- key: rubocop|duplication|rubocop/cop/offense.rb:101,rubocop/cop/offense.rb:122
+  evidence:
+  - rubocop/cop/offense.rb:101-114
+  - rubocop/cop/offense.rb:122-135
+  label: fp
+  why: 'a family of status predicates comparing @status with different values: not
+    a copy'
+- key: rubocop|duplication|rubocop/cop/style/command_literal.rb:118,rubocop/cop/style/regexp_literal.rb:172
+  evidence:
+  - rubocop/cop/style/command_literal.rb:118-119
+  - rubocop/cop/style/regexp_literal.rb:172-173
+  label: fp
+  why: 'two corrector.replace calls on begin/end: a two-line framework idiom'
+- key: rubocop|duplication|rubocop/cop/style/exponential_notation.rb:74,rubocop/cop/style/exponential_notation.rb:90
+  evidence:
+  - rubocop/cop/style/exponential_notation.rb:74-77
+  - rubocop/cop/style/exponential_notation.rb:90-93
+  label: tp
+  why: 'scientific?/integral are one mantissa test with two patterns: pass the pattern'
+- key: rubocop|duplication|rubocop/cop/style/identical_conditional_branches.rb:123,rubocop/cop/style/identical_conditional_branches.rb:130
+  evidence:
+  - rubocop/cop/style/identical_conditional_branches.rb:123-128
+  - rubocop/cop/style/identical_conditional_branches.rb:130-135
+  label: tp
+  why: 'on_case/on_case_match differ only in the branch list: classic extract'
+- key: rubocop|duplication|rubocop/cop/style/if_with_semicolon.rb:95,rubocop/cop/style/redundant_condition.rb:233,rubocop/cop/style/sole_nested_conditional.rb:194
+  evidence:
+  - rubocop/cop/style/if_with_semicolon.rb:95-102
+  - rubocop/cop/style/redundant_condition.rb:233-238
+  - rubocop/cop/style/sole_nested_conditional.rb:194-199
+  label: tp
+  why: 'three cops build "method(args)" from the same source ranges: an identical
+    helper in three places'
+- key: rubocop|duplication|rubocop/cop/style/method_call_without_args_parentheses.rb:90,rubocop/cop/style/redundant_self.rb:161
+  evidence:
+  - rubocop/cop/style/method_call_without_args_parentheses.rb:90-92
+  - rubocop/cop/style/redundant_self.rb:161-163
+  label: tp
+  why: 'the same three guard clauses in two cops, byte for byte: one shared predicate'
+- key: rubocop|duplication|rubocop/cop/style/redundant_regexp_escape.rb:93,rubocop/cop/style/redundant_string_escape.rb:162
+  evidence:
+  - rubocop/cop/style/redundant_regexp_escape.rb:93-95
+  - rubocop/cop/style/redundant_string_escape.rb:162-164
+  label: tp
+  why: 'the same delimiter test in two escape cops, byte for byte: one shared helper'
+- key: rubocop|duplication|rubocop/cop/variable_force/scope.rb:79,rubocop/cop/variable_force/scope.rb:90
+  evidence:
+  - rubocop/cop/variable_force/scope.rb:79-88
+  - rubocop/cop/variable_force/scope.rb:90-98
+  label: tp
+  why: 'both look up OUTER_SCOPE_CHILD_INDICES by the parent''s type and test the
+    sibling index: the lookup and test could be one helper'
+- key: rubygems.org|duplication|app/avo/actions/unblock_email_domain.rb:4,app/avo/actions/unblock_user.rb:4
+  evidence:
+  - app/avo/actions/unblock_email_domain.rb:4-7
+  - app/avo/actions/unblock_user.rb:4-7
+  label: tp
+  why: 'the same admin visibility lambda in two actions, differing in the record predicate:
+    a shared base'
+- key: rubygems.org|duplication|app/avo/actions/validate_attestation.rb:56,app/models/pusher.rb:187
+  evidence:
+  - app/avo/actions/validate_attestation.rb:56-59
+  - app/models/pusher.rb:187-190
+  label: tp
+  why: 'the same Sigstore verification input built in two places: one factory'
+- key: rubygems.org|duplication|app/controllers/api/base_controller.rb:57,app/controllers/dashboards_controller.rb:34
+  evidence:
+  - app/controllers/api/base_controller.rb:57-58
+  - app/controllers/dashboards_controller.rb:34-35
+  label: fp
+  why: 'two lines that set Current.api_key and then tag different keys: the shared
+    part is one assignment'
+- key: rubygems.org|duplication|app/controllers/pages_controller.rb:18,app/controllers/policies_controller.rb:24
+  evidence:
+  - app/controllers/pages_controller.rb:18-22
+  - app/controllers/policies_controller.rb:24-28
+  label: tp
+  why: 'find_page/find_policy differ only in param key, allow-list and message: one
+    method'
+- key: rubygems.org|duplication|app/jobs/indexer.rb:7,app/jobs/upload_names_file_job.rb:4,app/jobs/upload_versions_file_job.rb:4
+  evidence:
+  - app/jobs/indexer.rb:7-20
+  - app/jobs/upload_names_file_job.rb:4-17
+  - app/jobs/upload_versions_file_job.rb:4-17
+  label: tp
+  why: 'the same queue priority and concurrency configuration in three jobs: a shared
+    base job or concern'
+- key: rubygems.org|duplication|app/models/api_key.rb:38,app/models/oidc/pending_trusted_publisher.rb:18
+  evidence:
+  - app/models/api_key.rb:38-39
+  - app/models/oidc/pending_trusted_publisher.rb:18-19
+  label: tp
+  why: 'the same unexpired/expired scopes in two models: a shared concern'
+- key: rubygems.org|duplication|app/models/organization_onboarding.rb:81,app/models/rubygem_transfer.rb:94
+  evidence:
+  - app/models/organization_onboarding.rb:81-89
+  - app/models/rubygem_transfer.rb:94-101
+  label: tp
+  why: 'both build the same User.joins(:ownerships) query excluding the creator: a
+    shared scope on User would say it once'
+- key: rubygems.org|duplication|app/models/version.rb:562,app/models/version.rb:574
+  evidence:
+  - app/models/version.rb:562-572
+  - app/models/version.rb:574-584
+  label: tp
+  why: 'two uniqueness validations pick their message by ruby_abi the same way: the
+    message choice is copied'
+- key: rubygems.org|duplication|app/views/components/card_component.rb:21,app/views/components/card_component.rb:27
+  evidence:
+  - app/views/components/card_component.rb:21-23
+  - app/views/components/card_component.rb:27-29
+  label: fp
+  why: two one-line wrappers that already delegate to title_content and differ only
+    in the heading tag
+- key: rubygems.org|duplication|app/views/components/rubygem/tab_nav_component.rb:24,app/views/components/subject/nav_component.rb:25
+  evidence:
+  - app/views/components/rubygem/tab_nav_component.rb:24-26
+  - app/views/components/subject/nav_component.rb:25-27
+  label: fp
+  why: 'CSS class constants with different strings: declarations, not logic'
+- key: rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/index_view.rb:26,app/views/oidc/rubygem_trusted_publishers/index_view.rb:22
+  evidence:
+  - app/views/oidc/pending_trusted_publishers/index_view.rb:26-34
+  - app/views/oidc/rubygem_trusted_publishers/index_view.rb:22-32
+  label: tp
+  why: 'the same paginated card list in two index views: a shared component'
+- key: rubygems.org|duplication|lib/compact_index/gem_version.rb:28,lib/compact_index/gem_version.rb:29
+  evidence:
+  - lib/compact_index/gem_version.rb:28-28
+  - lib/compact_index/gem_version.rb:29-29
+  label: tp
+  why: 'two lines appending a requirement unless it is the default: one helper taking
+    label and value'
+- key: rubygems.org|duplication|lib/gem_validator/package.rb:108,lib/gem_validator/package.rb:312
+  evidence:
+  - lib/gem_validator/package.rb:108-109
+  - lib/gem_validator/package.rb:312-313
+  label: fp
+  why: two rescue clauses translating a YAML error into different domain errors with
+    different messages

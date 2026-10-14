@@ -1,0 +1,410 @@
+---
+- key: rubocop|utility_function|RubyLsp::RuboCop::Addon#register_additional_file_watchers
+  message: RubyLsp::RuboCop::Addon#register_additional_file_watchers touches no instance
+    state (ruby_lsp/rubocop/addon.rb:38). Move it onto the object it serves, or make
+    it private.
+  evidence: []
+  code:
+  - "# ruby_lsp/rubocop/addon.rb:38"
+  - '38:       def register_additional_file_watchers(global_state, message_queue)'
+  - '39:         return unless global_state.supports_watching_files'
+  - '40: '
+  - '41:         message_queue << Request.new('
+  - '42:           id: ''rubocop-file-watcher'','
+  - '43:           method: ''client/registerCapability'','
+  - '44:           params: Interface::RegistrationParams.new('
+  - '45:             registrations: ['
+  - '46:               Interface::Registration.new('
+  - '47:                 id: ''workspace/didChangeWatchedFilesRuboCop'','
+  - '48:                 method: ''workspace/didChangeWatchedFiles'','
+  - '49:                 register_options: Interface::DidChangeWatchedFilesRegistrationOptions.new('
+  - '50:                   watchers: ['
+  - '51:                     Interface::FileSystemWatcher.new('
+  - '52:                       glob_pattern: ''**/.rubocop{,_todo}.yml'','
+  - '53:                       kind: Constant::WatchKind::CREATE | Constant::WatchKind::CHANGE
+    | Constant::WatchKind::DELETE'
+  - '54:                     )'
+  - '55:                   ]'
+  - '56:                 )'
+  - '57:               )'
+  - '58:             ]'
+  - '59:           )'
+  - '60:         )'
+  - '61:       end'
+  - '62:       # rubocop:enable Layout/LineLength, Metrics/MethodLength'
+- key: rubocop|utility_function|RuboCop::Cop::Style::SymbolProc#destructuring_block_argument?
+  message: RuboCop::Cop::Style::SymbolProc#destructuring_block_argument? touches no
+    instance state (rubocop/cop/style/symbol_proc.rb:191). Move it onto the object
+    it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/style/symbol_proc.rb:191"
+  - '191:         def destructuring_block_argument?(argument_node)'
+  - '192:           argument_node.one? && argument_node.source.include?('','')'
+  - '193:         end'
+  - '194: '
+  - '195:         private'
+  - '196: '
+  - '197:         # See: https://github.com/rubocop/rubocop/issues/10864'
+  - '198:         def unsafe_hash_usage?(node)'
+  - '199:           node.receiver&.hash_type? && %i[reject select].include?(node.method_name)'
+  - '200:         end'
+  - '201: '
+  - '202:         def unsafe_array_usage?(node)'
+  - '203:           node.receiver&.array_type? && %i[min max].include?(node.method_name)'
+  - '204:         end'
+  - '205: '
+  - '206:         def allowed_method_name?(name)'
+  - '207:           allowed_method?(name) || matches_allowed_pattern?(name)'
+  - '208:         end'
+  - '209: '
+  - '210:         def register_offense(node, method_name, block_method_name)'
+  - '211:           block_start = node.loc.begin.begin_pos'
+  - '212:           block_end = node.loc.end.end_pos'
+  - '213:           range = range_between(block_start, block_end)'
+  - '214:           message = format(MSG, method: method_name, block_method: block_method_name)'
+  - '215: '
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#replace_named_capture_group_with_non_capturing_group
+  message: RuboCop::Cop::Lint::UselessAssignment#replace_named_capture_group_with_non_capturing_group
+    touches no instance state (rubocop/cop/lint/useless_assignment.rb:201). Move it
+    onto the object it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/lint/useless_assignment.rb:201"
+  - '201:         def replace_named_capture_group_with_non_capturing_group(corrector,
+    node, variable_name)'
+  - '202:           corrector.replace('
+  - '203:             node.children.first,'
+  - '204:             node.children.first.source.sub(/\(\?<#{variable_name}>/, ''(?:'')'
+  - '205:           )'
+  - '206:         end'
+  - '207: '
+  - '208:         def remove_local_variable_assignment_part(corrector, node)'
+  - '209:           corrector.replace(node, node.expression.source)'
+  - '210:         end'
+  - '211:       end'
+  - '212:     end'
+  - '213:   end'
+  - '214: end'
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#return_value_node_of_scope
+  message: RuboCop::Cop::Lint::UselessAssignment#return_value_node_of_scope touches
+    no instance state (rubocop/cop/lint/useless_assignment.rb:141). Move it onto the
+    object it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/lint/useless_assignment.rb:141"
+  - '141:         def return_value_node_of_scope(scope)'
+  - '142:           body_node = scope.body_node'
+  - '143: '
+  - '144:           if body_node.begin_type?'
+  - '145:             body_node.children.last'
+  - '146:           else'
+  - '147:             body_node'
+  - '148:           end'
+  - '149:         end'
+  - '150: '
+  - '151:         def collect_variable_like_names(scope)'
+  - '152:           names = scope.each_node.with_object(Set.new) do |node, set|'
+  - '153:             set << node.method_name if variable_like_method_invocation?(node)'
+  - '154:           end'
+  - '155: '
+  - '156:           variable_names = scope.variables.each_value.map(&:name)'
+  - '157:           names.merge(variable_names)'
+  - '158:         end'
+  - '159: '
+  - '160:         def variable_like_method_invocation?(node)'
+  - '161:           return false unless node.send_type?'
+  - '162: '
+  - '163:           node.receiver.nil? && !node.arguments?'
+  - '164:         end'
+  - '165: '
+- key: rubocop|utility_function|RuboCop::Formatter::HTMLFormatter::ERBContext#possible_ellipses
+  message: RuboCop::Formatter::HTMLFormatter::ERBContext#possible_ellipses touches
+    no instance state (rubocop/formatter/html_formatter.rb:110). Move it onto the
+    object it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/html_formatter.rb:110"
+  - '110:         def possible_ellipses(location)'
+  - '111:           location.single_line? ? '''' : " #{ELLIPSES}"'
+  - '112:         end'
+  - '113: '
+  - '114:         def escape(string)'
+  - '115:           CGI.escapeHTML(string)'
+  - '116:         end'
+  - '117: '
+  - '118:         def base64_encoded_logo_image'
+  - '119:           image = File.read(LOGO_IMAGE_PATH, binmode: true)'
+  - '120: '
+  - '121:           # `Base64.encode64` compatible:'
+  - '122:           # https://github.com/ruby/base64/blob/v0.1.1/lib/base64.rb#L27-L40'
+  - '123:           [image].pack(''m'')'
+  - '124:         end'
+  - '125: '
+  - '126:         def render_css'
+  - '127:           context = CSSContext.new'
+  - '128:           template = File.read(CSS_PATH, encoding: Encoding::UTF_8)'
+  - '129:           erb = ERB.new(template, trim_mode: ''-'')'
+  - '130:           erb.result(context.binding).lines.map do |line|'
+  - '131:             line == "\n" ? line : "      #{line}"'
+  - '132:           end.join'
+  - '133:         end'
+  - '134:       end'
+- key: rubocop|utility_function|RuboCop::Formatter::HTMLFormatter::ERBContext#escape
+  message: RuboCop::Formatter::HTMLFormatter::ERBContext#escape touches no instance
+    state (rubocop/formatter/html_formatter.rb:114). Move it onto the object it serves,
+    or make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/html_formatter.rb:114"
+  - '114:         def escape(string)'
+  - '115:           CGI.escapeHTML(string)'
+  - '116:         end'
+  - '117: '
+  - '118:         def base64_encoded_logo_image'
+  - '119:           image = File.read(LOGO_IMAGE_PATH, binmode: true)'
+  - '120: '
+  - '121:           # `Base64.encode64` compatible:'
+  - '122:           # https://github.com/ruby/base64/blob/v0.1.1/lib/base64.rb#L27-L40'
+  - '123:           [image].pack(''m'')'
+  - '124:         end'
+  - '125: '
+  - '126:         def render_css'
+  - '127:           context = CSSContext.new'
+  - '128:           template = File.read(CSS_PATH, encoding: Encoding::UTF_8)'
+  - '129:           erb = ERB.new(template, trim_mode: ''-'')'
+  - '130:           erb.result(context.binding).lines.map do |line|'
+  - '131:             line == "\n" ? line : "      #{line}"'
+  - '132:           end.join'
+  - '133:         end'
+  - '134:       end'
+  - '135: '
+  - '136:       # This class provides helper methods used in the ERB CSS template.'
+  - '137:       class CSSContext'
+  - '138:         SEVERITY_COLORS = {'
+- key: rubocop|utility_function|RuboCop::Formatter::JSONFormatter#metadata_hash
+  message: RuboCop::Formatter::JSONFormatter#metadata_hash touches no instance state
+    (rubocop/formatter/json_formatter.rb:32). Move it onto the object it serves, or
+    make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/json_formatter.rb:32"
+  - '32:       def metadata_hash'
+  - '33:         {'
+  - '34:           rubocop_version: RuboCop::Version::STRING,'
+  - '35:           ruby_engine:     RUBY_ENGINE,'
+  - '36:           ruby_version:    RUBY_VERSION,'
+  - '37:           ruby_patchlevel: RUBY_PATCHLEVEL.to_s,'
+  - '38:           ruby_platform:   RUBY_PLATFORM'
+  - '39:         }'
+  - '40:       end'
+  - '41: '
+  - '42:       def hash_for_file(file, offenses)'
+  - '43:         {'
+  - '44:           path:     smart_path(file),'
+  - '45:           offenses: offenses.map { |o| hash_for_offense(o) }'
+  - '46:         }'
+  - '47:       end'
+  - '48: '
+  - '49:       def hash_for_offense(offense)'
+  - '50:         {'
+  - '51:           severity:    offense.severity.name,'
+  - '52:           message:     offense.message,'
+  - '53:           cop_name:    offense.cop_name,'
+  - '54:           corrected:   offense.corrected?,'
+  - '55:           correctable: offense.correctable?,'
+  - '56:           location:    hash_for_location(offense)'
+- key: rubocop|utility_function|RuboCop::Cop::Lint::RescueException#targets_exception?
+  message: RuboCop::Cop::Lint::RescueException#targets_exception? touches no instance
+    state (rubocop/cop/lint/rescue_exception.rb:35). Move it onto the object it serves,
+    or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/lint/rescue_exception.rb:35"
+  - '35:         def targets_exception?(rescue_arg_node)'
+  - '36:           rescue_arg_node.const_name == ''Exception'''
+  - '37:         end'
+  - '38:       end'
+  - '39:     end'
+  - '40:   end'
+  - '41: end'
+- key: rubocop|utility_function|RuboCop::Formatter::JSONFormatter#hash_for_location
+  message: RuboCop::Formatter::JSONFormatter#hash_for_location touches no instance
+    state (rubocop/formatter/json_formatter.rb:64). Move it onto the object it serves,
+    or make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/json_formatter.rb:64"
+  - '64:       def hash_for_location(offense)'
+  - '65:         {'
+  - '66:           start_line:   offense.line,'
+  - '67:           start_column: offense.real_column,'
+  - '68:           last_line:    offense.last_line,'
+  - '69:           last_column:  offense.last_column.zero? ? 1 : offense.last_column,'
+  - '70:           length:       offense.location.length,'
+  - '71:           # `line` and `column` exist for compatibility.'
+  - '72:           # Use `start_line` and `start_column` instead.'
+  - '73:           line:         offense.line,'
+  - '74:           column:       offense.real_column'
+  - '75:         }'
+  - '76:       end'
+  - '77:     end'
+  - '78:   end'
+  - '79: end'
+- key: rubocop|utility_function|RuboCop::Formatter::HTMLFormatter::ERBContext#render_css
+  message: RuboCop::Formatter::HTMLFormatter::ERBContext#render_css touches no instance
+    state (rubocop/formatter/html_formatter.rb:126). Move it onto the object it serves,
+    or make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/html_formatter.rb:126"
+  - '126:         def render_css'
+  - '127:           context = CSSContext.new'
+  - '128:           template = File.read(CSS_PATH, encoding: Encoding::UTF_8)'
+  - '129:           erb = ERB.new(template, trim_mode: ''-'')'
+  - '130:           erb.result(context.binding).lines.map do |line|'
+  - '131:             line == "\n" ? line : "      #{line}"'
+  - '132:           end.join'
+  - '133:         end'
+  - '134:       end'
+  - '135: '
+  - '136:       # This class provides helper methods used in the ERB CSS template.'
+  - '137:       class CSSContext'
+  - '138:         SEVERITY_COLORS = {'
+  - '139:           refactor:   Color.new(0xED, 0x9C, 0x28, 1.0),'
+  - '140:           convention: Color.new(0xED, 0x9C, 0x28, 1.0),'
+  - '141:           warning:    Color.new(0x96, 0x28, 0xEF, 1.0),'
+  - '142:           error:      Color.new(0xD2, 0x32, 0x2D, 1.0),'
+  - '143:           fatal:      Color.new(0xD2, 0x32, 0x2D, 1.0)'
+  - '144:         }.freeze'
+  - '145: '
+  - '146:         # Make Kernel#binding public.'
+  - '147:         # rubocop:disable Lint/UselessMethodDefinition'
+  - '148:         def binding'
+  - '149:           super'
+  - '150:         end'
+- key: rubygems.org|utility_function|Types::Duration#serialize
+  message: Types::Duration#serialize touches no instance state (lib/types/duration.rb:23).
+    Move it onto the object it serves, or make it private.
+  evidence: []
+  code:
+  - "# lib/types/duration.rb:23"
+  - '23:   def serialize(duration)'
+  - '24:     duration.presence&.iso8601'
+  - '25:   end'
+  - '26: '
+  - '27:   def type_cast_for_schema(value)'
+  - '28:     serialize(value).inspect'
+  - '29:   end'
+  - '30: end'
+- key: rubocop|utility_function|RuboCop::Formatter::HTMLFormatter::ERBContext#base64_encoded_logo_image
+  message: RuboCop::Formatter::HTMLFormatter::ERBContext#base64_encoded_logo_image
+    touches no instance state (rubocop/formatter/html_formatter.rb:118). Move it onto
+    the object it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/formatter/html_formatter.rb:118"
+  - '118:         def base64_encoded_logo_image'
+  - '119:           image = File.read(LOGO_IMAGE_PATH, binmode: true)'
+  - '120: '
+  - '121:           # `Base64.encode64` compatible:'
+  - '122:           # https://github.com/ruby/base64/blob/v0.1.1/lib/base64.rb#L27-L40'
+  - '123:           [image].pack(''m'')'
+  - '124:         end'
+  - '125: '
+  - '126:         def render_css'
+  - '127:           context = CSSContext.new'
+  - '128:           template = File.read(CSS_PATH, encoding: Encoding::UTF_8)'
+  - '129:           erb = ERB.new(template, trim_mode: ''-'')'
+  - '130:           erb.result(context.binding).lines.map do |line|'
+  - '131:             line == "\n" ? line : "      #{line}"'
+  - '132:           end.join'
+  - '133:         end'
+  - '134:       end'
+  - '135: '
+  - '136:       # This class provides helper methods used in the ERB CSS template.'
+  - '137:       class CSSContext'
+  - '138:         SEVERITY_COLORS = {'
+  - '139:           refactor:   Color.new(0xED, 0x9C, 0x28, 1.0),'
+  - '140:           convention: Color.new(0xED, 0x9C, 0x28, 1.0),'
+  - '141:           warning:    Color.new(0x96, 0x28, 0xEF, 1.0),'
+  - '142:           error:      Color.new(0xD2, 0x32, 0x2D, 1.0),'
+- key: faraday|utility_function|Faraday::Response::RaiseError#query_params
+  message: Faraday::Response::RaiseError#query_params touches no instance state (response/raise_error.rb:75).
+    Move it onto the object it serves, or make it private.
+  evidence: []
+  code:
+  - "# response/raise_error.rb:75"
+  - '75:       def query_params(env)'
+  - '76:         env.request.params_encoder ||= Faraday::Utils.default_params_encoder'
+  - '77:         env.params_encoder.decode(env.url.query)'
+  - '78:       end'
+  - '79:     end'
+  - '80:   end'
+  - '81: end'
+  - '82: '
+  - '83: Faraday::Response.register_middleware(raise_error: Faraday::Response::RaiseError)'
+- key: rubocop|utility_function|RuboCop::Cop::Cop#find_location
+  message: RuboCop::Cop::Cop#find_location touches no instance state (rubocop/cop/cop.rb:90).
+    Move it onto the object it serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/cop.rb:90"
+  - '90:       def find_location(node, loc)'
+  - '91:         # Location can be provided as a symbol, e.g.: `:keyword`'
+  - '92:         loc.is_a?(Symbol) ? node.loc.public_send(loc) : loc'
+  - '93:       end'
+  - '94: '
+  - '95:       # @deprecated Use class method'
+  - '96:       def support_autocorrect?'
+  - '97:         warn Rainbow(<<~WARNING).yellow, uplevel: 1'
+  - '98:           `support_autocorrect?` is deprecated. Use `cop.class.support_autocorrect?`.'
+  - '99:         WARNING'
+  - '100: '
+  - '101:         self.class.support_autocorrect?'
+  - '102:       end'
+  - '103: '
+  - '104:       # @deprecated'
+  - '105:       def corrections'
+  - '106:         warn Rainbow(<<~WARNING).yellow, uplevel: 1'
+  - '107:           `Cop#corrections` is deprecated.'
+  - '108:         WARNING'
+  - '109: '
+  - '110:         return [] unless @last_corrector'
+  - '111: '
+  - '112:         Legacy::CorrectionsProxy.new(@last_corrector)'
+  - '113:       end'
+  - '114: '
+- key: rubocop|utility_function|RuboCop::Cop::Lint::UselessAssignment#chained_assignment?
+  message: RuboCop::Cop::Lint::UselessAssignment#chained_assignment? touches no instance
+    state (rubocop/cop/lint/useless_assignment.rb:106). Move it onto the object it
+    serves, or make it private.
+  evidence: []
+  code:
+  - "# rubocop/cop/lint/useless_assignment.rb:106"
+  - '106:         def chained_assignment?(node)'
+  - '107:           return true if node.lvasgn_type? && node.expression&.send_type?'
+  - '108: '
+  - '109:           node.respond_to?(:expression) && node.expression&.lvasgn_type?'
+  - '110:         end'
+  - '111: '
+  - '112:         def message_specification(assignment, variable)'
+  - '113:           if assignment.multiple_assignment?'
+  - '114:             multiple_assignment_message(variable.name)'
+  - '115:           elsif assignment.operator_assignment?'
+  - '116:             operator_assignment_message(variable.scope, assignment)'
+  - '117:           else'
+  - '118:             similar_name_message(variable)'
+  - '119:           end'
+  - '120:         end'
+  - '121: '
+  - '122:         def multiple_assignment_message(variable_name)'
+  - '123:           " Use `_` or `_#{variable_name}` as a variable name to indicate
+    " \'
+  - '124:             "that it won''t be used."'
+  - '125:         end'
+  - '126: '
+  - '127:         def operator_assignment_message(scope, assignment)'
+  - '128:           return_value_node = return_value_node_of_scope(scope)'
+  - '129:           return unless assignment.meta_assignment_node.equal?(return_value_node)'
+  - '130: '

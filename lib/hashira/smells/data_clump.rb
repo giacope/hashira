@@ -5,7 +5,7 @@ require "prism"
 class Hashira::Smells::DataClump < Hashira::Smells::Check
   MAX_COPIES = 2
 
-  MIN_SIZE = 2
+  MIN_SIZE = 3
 
   DEFAULTED = [Prism::OptionalParameterNode, Prism::OptionalKeywordParameterNode].freeze
 

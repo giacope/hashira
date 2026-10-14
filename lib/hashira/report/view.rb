@@ -3,8 +3,10 @@
 module Hashira
   module Report
     View =
-      Data.define(:project, :graph, :complexity, :duplication, :hotspots, :findings, :top, :compact) do
+      Data.define(:project, :graph, :complexity, :duplication, :hotspots, :findings, :top, :compact, :screened) do
         def initialize(top: nil, compact: nil, **) = super
+
+        def suppressed = screened.suppressed
       end
   end
 end

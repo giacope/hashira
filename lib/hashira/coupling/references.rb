@@ -10,8 +10,9 @@ class Hashira::Coupling::References
 
   DECLARATIONS = %i[private_constant public_constant include extend prepend].freeze
 
-  def initialize(roots = nil)
+  def initialize(roots = nil, associations = Hashira::Coupling::Associations::NONE)
     @roots = roots
+    @associations = associations
   end
 
   def list(tree) = sightings(tree).map(&:first)
@@ -43,14 +44,14 @@ class Hashira::Coupling::References
   end
 
   def spread(node, scope)
-    Hashira::Coupling::Associations.names(node).each { found << named(it, scope) }
+    @associations.targets(node).each { found << named(it, scope) }
     node.compact_child_nodes.each { collect(it, scope) }
   end
 
-  def named(string, scope)
-    name = string.unescaped
+  def named(target, scope)
+    name = target.name
     rooted = name.start_with?("::")
-    [name.delete_prefix("::").split("::"), string.location.start_line, (nesting unless rooted), scope]
+    [name.delete_prefix("::").split("::"), target.line, (nesting unless rooted), scope]
   end
 
   def written(node)

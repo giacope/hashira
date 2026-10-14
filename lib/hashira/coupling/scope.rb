@@ -19,11 +19,16 @@ class Hashira::Coupling::Scope
 
   def bind(link, reach)
     segments, nesting = link.deconstruct
-    [*nesting.reverse, *ancestors(nesting.last), []].lazy.filter_map { descend(it, segments, reach) }.first
+    [*nesting.reverse, *ancestors(nesting.last)].lazy.filter_map { descend(it, segments, reach) }.first ||
+      top(segments, reach)
   end
 
   def descend(entry, segments, reach)
     segments.length.downto(reach).lazy.map { @catalog.strip(entry + segments.first(it)) }.find { known?(it) }
+  end
+
+  def top(segments, reach)
+    segments.length.downto(reach).lazy.filter_map { @catalog.rooted(segments.first(it)) }.find { known?(it) }
   end
 
   def known?(path) = @registry.exact(path) && @catalog.territory.owned?(path)

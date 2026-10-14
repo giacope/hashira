@@ -41,6 +41,12 @@ class Hashira::Coupling::Census
 
   def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
 
+  def inflection
+    @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
+  end
+
+  def associations = @_associations ||= Hashira::Coupling::Associations.new(inflection)
+
   private
 
   def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))

@@ -1,0 +1,362 @@
+{
+ "Q01": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Lists files under base_dir by recursively collecting non-excluded subdirectory glob patterns (skipping excluded or looping symlinks) and globbing their direct children, falling back to base_dir/**/*."
+ },
+ "Q02": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Refreshes the mark when the watched file has grown (resetting the deadline to now+limit) and reports whether the clock has passed the current deadline."
+ },
+ "Q03": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Prints a count header for ledger entries, lists them per group with statuses and reasons, then advises rerunning for unevaluated entries and pruning prunable ones; returns 0."
+ },
+ "Q04": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Unless the status is allowed, raises the Faraday error class matching the response status (custom 4xx, 407 proxy, generic client/server, nil) with response (and optionally request) details."
+ },
+ "Q05": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Raises if the handler stack is frozen, resolves the index (integer or existing handler), and inserts a new Handler built from the remaining args at that position."
+ },
+ "Q06": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Returns whether some other fragment in the same file spans this fragment's start line through its end line (including heredoc closing lines)."
+ },
+ "Q07": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 5,
+  "summary": "In a transaction creates the organization with invited/owner memberships, moves the selected gems to it, marks onboarding completed, removes member ownerships, demotes outside contributors and emails members; on AR error records failure and re-raises."
+ },
+ "Q08": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "For a newly created https link due for verification enqueues a verify job and returns self; otherwise, for https links with failures newer than the last verification, resets the failure counter."
+ },
+ "Q09": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Maps a token to a mutant id: ordinal strings become integers, else the key's id, else the unique id whose key matches ignoring the line number, else the text itself."
+ },
+ "Q10": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Builds per-scope dependency lists with resolved best-matching versions, renders JSON partials or HTML with reverse dependencies and breadcrumbs, and sets surrogate key and cache headers."
+ },
+ "Q11": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Computes a truncated SHA256 fingerprint of the node types and non-node field values of all nodes walked under the given nodes."
+ },
+ "Q12": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Walks the syntax tree collecting constant references (segments, line, nesting, enclosing scope), tracking class/module nesting and association-name strings, and returns the collected list."
+ },
+ "Q13": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Returns an identity set of the seed nodes plus everything recursively reachable via slot children and the last statement of statement lists."
+ },
+ "Q14": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Returns \"name-version\" by looking up the name and nested version.version scalars in the YAML gemspec tree."
+ },
+ "Q15": {
+  "readability": 1,
+  "fragmented": true,
+  "names": 1,
+  "summary": "Builds a list of from->to package folding links (via superclass, mixin modules, suffix-stripped names, plurals), resolving chains to a canonical target and labeling each with the kind that produced it."
+ },
+ "Q16": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Scores an unless node at nesting-adjusted cost, visits its predicate and body deeper, then scores any elsif/else chain."
+ },
+ "Q17": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Flags File.open(name, read-mode) followed by read (block-pass, chained, or block) and autocorrects to File.read/File.binread(name)."
+ },
+ "Q18": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Clears the hash and copies all pairs from other with keys stringified."
+ },
+ "Q19": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Checks if/else/then/end keywords of an if node for missing surrounding spaces and registers autocorrectable offenses."
+ },
+ "Q20": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Parses options, runs a list of environment checks (config, framework, sources, tests, git, rails, coverage floor, suite loading/baselines), prints them, and returns 1 if any failed (or on usage error)."
+ },
+ "Q21": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Parses source, normalizes numbered params, applies the handler named by the directive's type, and unparses back to source, returning nil on any error."
+ },
+ "Q22": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Sets surrogate key and cache headers and, if stale, renders the gem's compact index info with ETag/digest headers and byte-range support."
+ },
+ "Q23": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Returns the parsed metadata hash for a key whose file exists under the base dir (path validated), or a default empty metadata on missing/invalid JSON."
+ },
+ "Q24": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Creates a new registry for the operators and relative root, and fills it with mutation points found in the given source file."
+ },
+ "Q25": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Returns a hash of status, body, headers and url, using nil/empty defaults when the response has not finished."
+ },
+ "Q26": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Logs the response status at the configured level and optionally filtered headers and body."
+ },
+ "Q27": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Parses a string response body as JSON (optionally preserving raw) when the content type matches, wrapping errors in ParsingError."
+ },
+ "Q28": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Returns the registered middleware for key, lazily resolving constant names or procs under a mutex, or raises if unregistered."
+ },
+ "Q29": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Rewrites the last kwargs/hash argument of a call by replacing pairs with the given key via the block (dropping nils), removing the hash if empty."
+ },
+ "Q30": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Prints per-cop offense counts sorted descending with correctability info, then the total and offending file count."
+ },
+ "Q31": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Forks a worker that overlays the mutant source and runs tests until one fails, then reads its JSON result over a pipe with a deadline and converts it to a verdict (timeout/unjudged/parsed)."
+ },
+ "Q32": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Expands source path patterns (warning on unused excludes, erroring on no matches) and, if changed files given, keeps only those changed."
+ },
+ "Q33": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Removes the size characters immediately before the given node/range after validating it belongs to the current buffer."
+ },
+ "Q34": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Forces parsing of all project files and returns the list of paths that failed to parse."
+ },
+ "Q35": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "For JSON-eligible requests with a body, sets the default content type and encodes non-string bodies with the configured encoder."
+ },
+ "Q36": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Classifies a statement node: adds it to the removable list unless it overlaps live locations or must be kept, records defined method names, and recurses into declaration bodies."
+ },
+ "Q37": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Copies each registry file, synthesized with mutant overlays, into outdir, recording each in a manifest which it returns."
+ },
+ "Q38": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Prints the top method and class complexity tables (non-zero cognitive scores) with a note about withheld rows."
+ },
+ "Q39": {
+  "readability": 4,
+  "fragmented": true,
+  "names": 5,
+  "summary": "Requires MFA when needed, otherwise marks the reset session verified if not active, sets the compromised flag and renders the edit form."
+ },
+ "Q40": {
+  "readability": 1,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Resolves constant segments to a unique registered path by searching the lexical nesting and (memoized) ancestor lineage for the longest known prefix, returning nil if skipped or ambiguous."
+ },
+ "Q41": {
+  "readability": 5,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Returns whether any of the user's GitHub organization teams has the given slug."
+ },
+ "Q42": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Clears the progress display if the tally is incomplete, otherwise commits it."
+ },
+ "Q43": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Loads config from --config file (erroring if missing) or the default path, normalizing scalar/list keys, validating ignore rules, and merging baseline ignore rules."
+ },
+ "Q44": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Sets the user and confirmation token (issuing one if needed) and sends the confirmation mail, or logs a skip when no token."
+ },
+ "Q45": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Yields source ranges of duplicate elements (grouping escaped octal sequences, skipping interpolations) within each regexp character class."
+ },
+ "Q46": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 5,
+  "summary": "Recursively finds returns in tail position of a method body and flags them, autocorrecting by removing the keyword (bracketing/bracing values) or replacing with nil."
+ },
+ "Q47": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Encodes a non-string, non-IO request body as URL-encoded form params when the content type matches, then calls the next app."
+ },
+ "Q48": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Runs git diff against the base ref, raising a DiffError (with shallow-clone hint) on failure, and returns the changed file names."
+ },
+ "Q49": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Checks that an if's else keyword is aligned with its base keyword (registering autocorrectable offenses) and recurses into elsif chains."
+ },
+ "Q50": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Keeps only findings whose referenced site paths are among the requested paths within project directories, or all when no paths given."
+ },
+ "Q51": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 2,
+  "summary": "Returns whether a call is cheap: no block, is a reader or literal-keyed lookup, not a chained receiver call, and not a clock call."
+ },
+ "Q52": {
+  "readability": 2,
+  "fragmented": true,
+  "names": 1,
+  "summary": "Groups files by shared word lists into roll-call groups and turns each into a finding with package, digest, evidence files and details."
+ },
+ "Q53": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Runs the block with a parallel manager (given, current or adapter default, warning if none), executing or running it, and restores the previous manager."
+ },
+ "Q54": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 3,
+  "summary": "Verifies the WebAuthn credential and, unless the user is blocked, signs them in with tracking, flash and redirect; otherwise renders the login page with an error."
+ },
+ "Q55": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Returns whether the call's receiver is (or traces via local-variable writes to) a request-like variable call."
+ },
+ "Q56": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Resolves patterns plus includes into .rb files, removes excluded ones (by resolution or fnmatch), and returns them sorted unique."
+ },
+ "Q57": {
+  "readability": 3,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flags and autocorrects unnecessary backslash escapes in a regexp, considering character-class context, delimiters and allowed escapes."
+ },
+ "Q58": {
+  "readability": 3,
+  "fragmented": true,
+  "names": 3,
+  "summary": "Returns sorted dependency edges between packages as [from, to, evidence count] triples."
+ },
+ "Q59": {
+  "readability": 4,
+  "fragmented": false,
+  "names": 4,
+  "summary": "Flushes queued cops into the registry/department indexes and returns whether the name is a known department."
+ },
+ "Q60": {
+  "readability": 2,
+  "fragmented": false,
+  "names": 2,
+  "summary": "Parses argv; for non-page modes layers config-file flags (and directories when none given), keeping each flag only if the combined argv still parses."
+ }
+}

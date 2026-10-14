@@ -112,4 +112,62 @@ RSpec.describe(Hashira::Complexity::Scores) do
       expect(scores.findings).to(be_empty)
     end
   end
+
+  it "charges each method of a recursion cycle one point, direct or through a sibling" do
+    files = {
+      "lib/app/walk.rb" => <<~RUBY
+        class Walk
+          def fact(n) = n <= 1 ? 1 : n * fact(n - 1)
+          def even?(n) = n.zero? || odd?(n - 1)
+          def odd?(n) = !n.zero? && even?(n - 1)
+          def tree(node) = node.children.each { self.tree(it) }
+          def self.count(n) = n.zero? ? 0 : count(n - 1)
+          def name(user) = user.name
+          def plain = helper
+          def helper
+            def inner = plain
+            1
+          end
+          def empty; end
+        end
+      RUBY
+    }
+    complexity(files) do |scores|
+      scored = scores.ranked.to_h { [it.subject, it.cognitive] }
+      expect(scored).to(include("Walk#fact" => 2, "Walk#even?" => 2, "Walk#odd?" => 2, "Walk#tree" => 1))
+      expect(scored).to(include("Walk.count" => 2, "Walk#name" => 0, "Walk#plain" => 0, "Walk#empty" => 0))
+      labels = scores.ranked.find { it.subject == "Walk#fact" }.increments.map(&:label)
+      expect(labels).to(contain_exactly("ternary", "recursion"))
+    end
+  end
+
+  it "advises on a recursion when it is what costs the most" do
+    files = { "lib/app/walk.rb" => "class Walk\n  def go(n) = go(n - 1)\nend\n" }
+    complexity(files) do |scores|
+      score = scores.ranked.first
+      finding = Hashira::Complexity::MethodFinding.new(score.with(cognitive: 10)).to_finding
+      expect(message(finding)).to(include("name the traversal"))
+    end
+  end
+
+  it "scores a method defined with define_method under its own name" do
+    files = {
+      "lib/app/dyn.rb" => <<~RUBY
+        class Dyn
+          define_method(:run) { |a| a ? 1 : 2 }
+          define_method("walk") do |a|
+            if a then 1 end
+          end
+          %i[x y].each { |name| define_method(name) { name if name } }
+          define_method { 1 }
+          self.define_method(:ignored) { 1 }
+          define_method(:lazy, instance_method(:run))
+        end
+      RUBY
+    }
+    complexity(files) do |scores|
+      scored = scores.ranked.to_h { [it.subject, it.cognitive] }
+      expect(scored).to(eq("Dyn#run" => 1, "Dyn#walk" => 1, "Dyn#define_method(name)" => 1))
+    end
+  end
 end

@@ -1,0 +1,257 @@
+---
+- key: faraday|repeated_call|Faraday::Request::Authorization#on_request
+  evidence:
+  - env.request_headers × 2 (lines 24, 26)
+  label: fp
+  why: 'one-hop reader read twice (test, then assign through it): optional style'
+- key: faraday|repeated_call|Faraday::Request::UrlEncoded#match_content_type
+  evidence:
+  - env.body × 3 (lines 34, 36)
+  label: tp
+  why: 'env.body read three times: name it once'
+- key: rubocop|repeated_call|RuboCop::Config#target_rails_version
+  evidence:
+  - for_all_cops.[]('TargetRailsVersion') × 2 (lines 299, 300)
+  label: tp
+  why: 'for_all_cops[''TargetRailsVersion''] looked up twice through a helper method:
+    name the setting'
+- key: rubocop|repeated_call|RuboCop::ConfigLoaderResolver#merge
+  evidence:
+  - derived_hash.[](key) × 3 (lines 122, 125, 127)
+  label: tp
+  why: 'derived_hash[key] looked up three times with a computed key: name the value'
+- key: rubocop|repeated_call|RuboCop::ConfigLoaderResolver#override_department_setting_for_cops
+  evidence:
+  - derived_hash.[](key) × 2 (line 149)
+  label: tp
+  why: 'derived_hash[key] looked up twice with a computed key: name the value'
+- key: rubocop|repeated_call|RuboCop::ConfigObsoletion#load_rules
+  evidence:
+  - self.class × 2 (lines 93, 94)
+  label: fp
+  why: 'self.class read twice: an identity read, naming it adds a variable for nothing'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::ArgumentAlignment#target_method_lineno
+  evidence:
+  - node.loc.selector × 2 (lines 135, 136)
+  - node.loc × 3 (lines 135, 136, 139)
+  label: tp
+  why: 'node.loc.selector reached twice through a chain and node.loc three times:
+    naming selector reads better'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::CaseIndentation#end_and_last_conditional_same_line?
+  evidence:
+  - node.loc × 3 (lines 137, 138, 139)
+  - node.loc.else × 2 (lines 138, 139)
+  label: tp
+  why: 'node.loc read three times and node.loc.else twice through a chain: name loc'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLineBetweenDefs#def_location
+  evidence:
+  - correction_node.loc × 2 (line 162)
+  label: fp
+  why: 'correction_node.loc read twice in one expression: one-hop reader read twice,
+    optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::EmptyLinesAroundAccessModifier#on_class
+  evidence:
+  - node.parent_class × 2 (lines 63, 64)
+  - node.source_range × 2 (lines 66, 68)
+  label: fp
+  why: 'two separate one-hop readers each read twice (guard, then use): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::IndentationWidth#leftmost_modifier_of
+  evidence:
+  - node.parent × 2 (lines 382, 384)
+  label: fp
+  why: 'one-hop reader read twice (guard, then use): naming node.parent is a style
+    choice, not a fix'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::MultilineMethodCallIndentation#right_hand_side
+  evidence:
+  - send_node.loc × 3 (lines 76, 77, 83)
+  label: tp
+  why: 'send_node.loc read three times for its fields: name loc once'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::MultilineMethodCallIndentation#semantic_alignment_base
+  evidence:
+  - node.loc.dot × 2 (lines 185, 187)
+  - node.loc × 3 (lines 185, 187)
+  label: tp
+  why: 'node.loc read three times and node.loc.dot twice: name loc once'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SingleLineBlockChain#selector_range
+  evidence:
+  - node.loc × 2 (line 64)
+  label: fp
+  why: 'one-hop reader read twice in a fallback (a || b): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInLambdaLiteral#range_of_offense
+  evidence:
+  - node.parent × 2 (lines 67, 68)
+  label: fp
+  why: 'one-hop reader read twice: optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::SpaceInsideReferenceBrackets#previous_token
+  evidence:
+  - processed_source.tokens × 2 (lines 133, 134)
+  label: tp
+  why: 'processed_source.tokens fetched twice, the second time to index into it: name
+    the token list once'
+- key: rubocop|repeated_call|RuboCop::Cop::Layout::TrailingEmptyLines#on_new_investigation
+  evidence:
+  - buffer.source × 2 (lines 47, 56)
+  label: fp
+  why: 'buffer.source read twice, a guard and then a later use: one-hop reader read
+    twice, optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::BigDecimalNew#on_send
+  evidence:
+  - node.loc × 2 (lines 32, 33)
+  label: fp
+  why: 'one-hop reader read twice (two removals): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::DeprecatedConstants#constant_name
+  evidence:
+  - node.namespace × 3 (lines 67, 69)
+  label: tp
+  why: 'node.namespace read three times: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::FloatComparison#check_numeric_returning_method
+  evidence:
+  - node.receiver × 2 (lines 123, 127)
+  label: fp
+  why: 'one-hop reader read twice (guard, then use in one arm): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::UselessSetterCall::MethodVariableTracker#process_assignment_node
+  evidence:
+  - node.rhs × 2 (line 105)
+  label: fp
+  why: 'one-hop reader read twice (guard, then pass): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Lint::Void#on_block
+  evidence:
+  - node.body × 5 (lines 82, 83, 85, 86)
+  label: tp
+  why: 'node.body read five times: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::MethodComplexity#on_def
+  evidence:
+  - node.method_name × 3 (lines 18, 20)
+  label: tp
+  why: 'node.method_name read three times: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::Naming::AsciiIdentifiers#first_offense_range
+  evidence:
+  - identifier.text × 2 (lines 76, 78)
+  label: fp
+  why: 'one-hop reader read twice: optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Naming::InclusiveLanguage#preprocess_check_config
+  evidence:
+  - cop_config.[]('CheckVariables') × 3 (lines 134, 135, 136)
+  - cop_config.[]('CheckStrings') × 2 (lines 138, 139)
+  label: tp
+  why: 'cop_config[''CheckVariables''] looked up three times through a helper (and
+    CheckStrings twice): name each setting once'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::AccessModifierDeclarations#autocorrect_inline_style
+  evidence:
+  - node.parent × 2 (lines 212, 213)
+  label: fp
+  why: 'one-hop reader read twice (guard, then pass): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::EndlessMethod#arguments
+  evidence:
+  - node.arguments × 2 (line 218)
+  label: fp
+  why: 'one-hop reader read twice in a ternary: optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::FetchEnvVar#used_as_flag?
+  evidence:
+  - node.parent × 3 (line 58)
+  label: tp
+  why: 'node.parent read three times in one expression: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::HashSyntax#argument_without_space?
+  evidence:
+  - node.parent.loc.selector × 2 (lines 279, 281)
+  label: tp
+  why: 'node.parent.loc.selector reached twice through a two-hop chain: name the selector'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::IdenticalConditionalBranches#on_case
+  evidence:
+  - node.else_branch × 2 (lines 124, 126)
+  label: fp
+  why: 'one-hop reader read twice (guard, then use): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MapToHash#autocorrect
+  evidence:
+  - to_h.loc.dot × 2 (lines 74, 78)
+  - to_h.loc × 3 (lines 74, 78)
+  label: tp
+  why: 'to_h.loc read three times and to_h.loc.dot twice: name loc (or the dot)'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MethodCallWithArgsParentheses::OmitParentheses#call_in_literals?
+  evidence:
+  - node.parent × 3 (line 111)
+  label: tp
+  why: 'node.parent read three times in one line: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MethodCallWithArgsParentheses::OmitParentheses#last_expression?
+  evidence:
+  - node.parent × 2 (line 65)
+  label: fp
+  why: 'node.parent read twice in a ternary, guard then use: optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::ModuleFunction#on_module
+  evidence:
+  - node.body × 2 (lines 113, 115)
+  label: fp
+  why: 'node.body read twice, a guard and then its children: one-hop reader read twice,
+    optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::MutableConstant#on_casgn
+  evidence:
+  - node.expression × 2 (lines 128, 134)
+  label: fp
+  why: 'one-hop reader read twice (nil test, then use in the else arm): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::Next#cond_range
+  evidence:
+  - node.loc.begin × 2 (lines 207, 208)
+  label: tp
+  why: 'node.loc.begin reached twice through a chain (test, then use): name it'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::RedundantArgument#redundant_argument?
+  evidence:
+  - node.first_argument × 3 (lines 84, 85, 87)
+  label: tp
+  why: 'node.first_argument read three times: name it once'
+- key: rubocop|repeated_call|RuboCop::Cop::Style::RequireOrder#on_send
+  evidence:
+  - node.parent × 2 (lines 84, 85)
+  label: fp
+  why: 'one-hop reader read twice (guard, then pass): optional style'
+- key: rubocop|repeated_call|RuboCop::Cop::VariableForce::Scope#belong_to_inner_scope?
+  evidence:
+  - target_node.parent × 4 (lines 91, 92, 94)
+  - target_node.parent.type × 2 (lines 92, 94)
+  label: tp
+  why: 'target_node.parent read four times and .type twice: one value named would
+    remove three reads'
+- key: rubygems.org|repeated_call|Attestation#display_data
+  evidence:
+  - ext.oid × 2 (line 34)
+  label: fp
+  why: 'one-hop reader read twice in one array literal: optional style'
+- key: rubygems.org|repeated_call|CompactIndex::VersionsFile#created_at_header
+  evidence:
+  - match.[](1) × 2 (line 69)
+  label: fp
+  why: 'match[1] read twice, a guard and then a parse: a one-hop keyed read twice,
+    optional style'
+- key: rubygems.org|repeated_call|GemDownload.bulk_update
+  evidence:
+  - version.rubygem_id × 3 (lines 72, 73, 77)
+  label: tp
+  why: 'version.rubygem_id read three times in one loop body: name it once'
+- key: rubygems.org|repeated_call|Rubygem#public_versions_with_extra_version
+  evidence:
+  - versions.published × 2 (lines 184, 185)
+  label: tp
+  why: 'versions.published (a scope built off an association) rebuilt twice: naming
+    it states the shared base query'
+- key: rubygems.org|repeated_call|RubygemTransfer#rubygems_owned_by_transferrer
+  evidence:
+  - ownerships.[](it.id) × 2 (line 119)
+  label: tp
+  why: 'ownerships[it.id] looked up twice with a computed key in one predicate: name
+    the ownership (or use &.)'
+- key: rubygems.org|repeated_call|RubygemsHelper#github_params
+  evidence:
+  - link.path.split("/") × 2 (lines 207, 208)
+  label: tp
+  why: 'link.path.split("/") computed twice to take two segments: split once'
+- key: rubygems.org|repeated_call|SqsWorker#perform
+  evidence:
+  - record.[]("s3") × 2 (lines 14, 15)
+  label: tp
+  why: 'record["s3"] looked up twice to dig two paths: naming the sub-hash removes
+    a repeated lookup'
+- key: rubygems.org|repeated_call|TotpsController#create
+  evidence:
+  - current_user.errors × 2 (lines 25, 26)
+  label: tp
+  why: 'current_user.errors reached twice through a helper call (test, then index):
+    name the errors once'

@@ -6,10 +6,12 @@ RSpec.describe(Hashira::CI::Ratchet) do
   end
 
   def finding(kind, package, digest: nil)
-    Hashira::Analysis::Finding.new(
-      kind:, package:, digest:, evidence: ["a.rb:1"],
-      detail: Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
-    )
+    Hashira::Analysis::Finding.new(kind:, package:, digest:, evidence: ["a.rb:1"], detail: detail(kind))
+  end
+
+  def detail(kind)
+    return Hashira::Complexity::Trail::Trace.new(site: "a.rb:1", chain: 2) if kind == "indirection"
+    Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
   end
 
   def ratchet(graph, findings = [], path = "baseline.json", io: StringIO.new)
@@ -33,7 +35,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       saved = JSON.parse(File.read("baseline.json"))
       expect(saved).to(
         eq(
-          "version" => 6, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
+          "version" => 7, "packaging" => "folder", "findings" => { "cycle:alpha" => nil },
           "analyzers" => [], "targets" => [], "traces" => { "cycle:alpha" => "cycle||a.rb" },
           "edges" => ["alpha -> beta", "alpha -> core", "beta -> alpha"]
         )
@@ -42,6 +44,31 @@ RSpec.describe(Hashira::CI::Ratchet) do
       io.truncate(io.pos = 0)
       expect(ratchet(graph, [finding("cycle", "alpha")], io:).check(sweeping)).to(eq(0))
       expect(io.string).to(eq("Ratchet OK: 3 edges, 1 findings, unchanged.\n"))
+    end
+  end
+
+  it "records the kinds it knew, and lets pass, with a note, findings of a kind a baseline predates" do
+    with_graph do |graph|
+      known = Hashira::CI::Baseline.new("baseline.json", kinds: %w[cycle nil_check])
+      described_class.new(graph, [finding("cycle", "alpha")], known, io: StringIO.new).update
+      expect(JSON.parse(File.read("baseline.json"))["kinds"]).to(eq(%w[cycle nil_check]))
+      io = StringIO.new
+      newer = [finding("cycle", "alpha"), finding("indirection", "A#run"), finding("indirection", "B#run")]
+      expect(ratchet(graph, newer, io:).check(sweeping)).to(eq(0))
+      expect(io.string).to(start_with("Not ratcheted: 2 indirection — kinds this baseline predates."))
+    end
+  end
+
+  it "reads a baseline older than the kinds list by the version each kind arrived in, and by the kinds' new names" do
+    with_graph do |graph|
+      findings = { "duplicate_method_call:A#b" => nil, "too_many_instance_variables:C" => nil }
+      File.write("baseline.json", JSON.generate(version: 6, packaging: "folder", edges:, findings:))
+      io = StringIO.new
+      current = [finding("repeated_call", "A#b"), finding("state_sprawl", "C"), finding("indirection", "A#b")]
+      expect(ratchet(graph, current, io:).check(sweeping)).to(eq(0))
+      expect(io.string).to(include("Not ratcheted: 1 indirection", "Ratchet OK: 3 edges, 3 findings, unchanged."))
+      File.write("baseline.json", JSON.generate(version: 7, packaging: "folder", edges:, findings: {}))
+      expect(ratchet(graph, current.last(1), io: StringIO.new).check(sweeping)).to(eq(1))
     end
   end
 
@@ -228,6 +255,7 @@ RSpec.describe(Hashira::CI::Ratchet) do
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["app"]).blocker)
         .to(include("recorded with the directories lib/app, but this run uses app"))
       expect(scoped(graph, analyzers: %i[coupling smells], targets: ["lib/app"]).blocker).to(be_nil)
+      expect(scoped(graph, analyzers: %i[smells coupling], targets: ["lib/app"]).blocker).to(be_nil)
     end
   end
 

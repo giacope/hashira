@@ -49,7 +49,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl) do
         "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
       }
       boundaries = Hashira::Boundaries.new([record], trees)
-      report = Hashira::Smells::Report.new(project, trees, boundaries)
+      report = Hashira::Smells::Report.new(project, trees, boundaries, Fixtures::NONE)
       expect(report.findings.select { it.kind == "boundary_sprawl" }).to(be_empty)
     end
   end

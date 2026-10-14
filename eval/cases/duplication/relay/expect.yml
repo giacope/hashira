@@ -1,0 +1,3 @@
+# Verbs that each call one shared request method are already factored.
+args: [lib/app]
+count: 0

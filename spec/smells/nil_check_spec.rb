@@ -7,6 +7,8 @@ RSpec.describe(Hashira::Smells::NilCheck) do
       module App
         module Zone
           class Thing
+            private
+
             def query(x) = x.nil? && @a
 
             def compare(x) = x == nil || nil == x
@@ -26,7 +28,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map(&:package)).to(
       eq(%w[App::Zone::Thing#query App::Zone::Thing#compare App::Zone::Thing#strict App::Zone::Thing#branch])
     )
-    expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:4"))
+    expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:6"))
   end
 
   it "reaches methods defined inside blocks and class << self" do
@@ -48,7 +50,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map(&:package)).to(eq(["App::Zone::Thing#check", "App::Zone::Thing.peek"]))
   end
 
-  it "advises translating at the boundary when the nil-checked value arrives from outside" do
+  it "leaves a value that arrives from outside to the boundary: a public argument, a payload, a library's answer" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -67,17 +69,30 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               end
             end
 
+            def handed(value) = value.nil?
+
+            def ruled(node) = node.receiver.nil?
+
+            def flipped(params) = nil == params[:name]
+
             def mixed(params) = params["id"] == nil || @cache.nil?
+
+            def optional(given, rest = nil) = given.nil?
+
+            def self.parse(text) = text.nil?
+
+            module_function
+
+            def shared(text) = text.nil?
           end
         end
       end
     RUBY
-    expect(findings.map { it.detail[:origin] }).to(eq(%i[outside outside outside both]))
-    expect(message(findings.first)).to(include("comes from outside", "where it enters, at the boundary"))
-    expect(message(findings.last)).to(include("where it enters; elsewhere prefer a null object"))
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#mixed"]))
+    expect(findings.first.detail[:site]).to(eq("zone/thing.rb:24"))
   end
 
-  it "keeps the null-object advice for values the method made or was handed" do
+  it "flags a value the method built or fetched from an owned class, but not a nil it never named" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -86,8 +101,6 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               result = { id: nil }
               result[:id].nil?
             end
-
-            def handed(value) = value.nil?
 
             def mine = nil?
 
@@ -101,12 +114,25 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               when nil then @a
               end
             end
+
+            def resolved(dependency) = dependency.target.nil?
+
+            def looked = lookup.nil?
+
+            private
+
+            def lookup = @index
+
+            def unknown(dependency) = dependency.source.nil?
+          end
+
+          class Dependency
+            attr_reader :target
           end
         end
       end
     RUBY
-    expect(findings.map(&:detail).uniq(&:keys).map(&:keys)).to(eq([[:site]]))
-    expect(findings.size).to(eq(5))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[built owned resolved looked]))
   end
 
   it "ignores comparisons that never involve nil" do
@@ -114,6 +140,8 @@ RSpec.describe(Hashira::Smells::NilCheck) do
       module App
         module Zone
           class Thing
+            private
+
             def fine(x)
               case x
               when :a then @a
@@ -197,12 +225,19 @@ RSpec.describe(Hashira::Smells::NilCheck) do
       module App
         module Zone
           class Thing
+            private
+
             def ttl(params)
               return DEFAULT_TTL if params[:ttl].nil?
               params[:ttl].to_i
             end
 
             def limit(value) = value.nil? ? 60 : value
+
+            def fallback(value)
+              return DEFAULT_TTL if value.nil?
+              value
+            end
 
             def tags(value) = value == nil ? [] : value
           end
@@ -217,9 +252,16 @@ RSpec.describe(Hashira::Smells::NilCheck) do
       module App
         module Zone
           class Thing
-            def bare(params)
-              return if params[:ttl].nil?
-              @ttl = params[:ttl]
+            def held
+              return DEFAULT_TTL if @ttl.nil?
+              @ttl
+            end
+
+            private
+
+            def bare(ttl)
+              return if ttl.nil?
+              @ttl = ttl
             end
 
             def computed(value)
@@ -227,23 +269,19 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               value
             end
 
-            def held
-              return DEFAULT_TTL if @ttl.nil?
-              @ttl
-            end
-
-            def empty(params)
-              if params[:ttl].nil?
+            def empty(ttl)
+              if ttl.nil?
               end
             end
           end
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[bare computed held empty]))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[held bare computed empty]))
+    expect(findings.first(2).map(&:evidence)).to(eq([["@ttl (line 5)"], ["ttl (line 12)"]]))
   end
 
-  it "doubts a nil check on a library's object, whose nil contract the codebase cannot design away" do
+  it "leaves a library's object to its own nil contract, and doubts a value only partly the codebase's" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -285,15 +323,22 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               return unless reply
               reply || {}
             end
+
+            def shadowed(url)
+              reply = Faraday.get(url)
+              self.reply.nil? && reply
+            end
+
+            def reply = @reply
           end
         end
       end
     RUBY
-    doubted = findings.select(&:doubted?).map { it.package.split("#").last }
-    expect([doubted, findings.size]).to(eq([%w[rescued fetched guarded unbound], 7]))
+    doubts = findings.map { [it.package.split("#").last, it.doubted?] }
+    expect(doubts).to(eq([["mixed", false], ["unbound", true], ["shadowed", false]]))
   end
 
-  it "advises exists? when a predicate fetches a record only to test it for nil" do
+  it "advises exists? when a predicate fetches a record only to test it for nil, and lets one answer its own nil" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -307,15 +352,19 @@ RSpec.describe(Hashira::Smells::NilCheck) do
             def gone? = Record.find_by(id: @id).nil? || @cache.nil?
 
             def empty? = Record.where(id: @id).first.nil?
+
+            def missing? = lookup(@id).nil?
+
+            def lookup(id) = id
           end
         end
       end
     RUBY
-    expect(findings.map { it.detail[:origin] }).to(eq([:absence, nil, nil, nil]))
+    expect(findings.map { it.detail[:origin] }).to(eq([:absence, nil, :absence]))
     expect(message(findings.first)).to(include("checks for nil", "exists? instead of fetching a record"))
   end
 
-  it "flags safe navigation on a value the codebase itself leaves nil" do
+  it "flags safe navigation on a value the codebase itself leaves nil, and not on a caller's nil default" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -350,10 +399,10 @@ RSpec.describe(Hashira::Smells::NilCheck) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found optional keyword]))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found]))
   end
 
-  it "flags blank? on a local, an ivar or a parameter, but not on a method's result" do
+  it "flags blank? on a value the object holds, but not on a public argument or a method's result" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -369,7 +418,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[named titled]))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[titled]))
   end
 
   it "flags a literal fallback for a value the codebase leaves nil, but not memoization or a computed fallback" do
@@ -438,7 +487,7 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[start pick]))
   end
 
-  it "judges an argument passed under safe navigation apart from the value it guards, and a nil on the left alike" do
+  it "names what each check tests, and under safe navigation only the receiver it guards" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -449,11 +498,56 @@ RSpec.describe(Hashira::Smells::NilCheck) do
               found&.merge(params[:extra])
             end
 
-            def flipped(params) = nil == params[:name]
+            def pick(name)
+              return DEFAULT if self.name.nil?
+              name
+            end
+
+            def name = @name
           end
         end
       end
     RUBY
-    expect(findings.map { it.detail[:origin] }).to(eq([nil, :outside]))
+    expect(findings.map(&:evidence)).to(eq([["found (line 7)"], ["self.name (line 11)"]]))
+  end
+
+  it "leaves a check alone whose branch raises: the nil is what the guard asserts against" do
+    findings = checked(<<~RUBY)
+      class Builder
+        def initialize = @adapter = nil
+
+        def ensure! = (raise(ArgumentError, "no adapter") if @adapter.nil?)
+
+        def check!
+          fail("no adapter") unless !@adapter.nil?
+        end
+
+        def warn = (@log.warn("no adapter") if @adapter.nil?)
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["Builder#warn"]))
+  end
+
+  it "lets a one-line predicate answer its own nil test, but not one that branches or does more first" do
+    findings = checked(<<~RUBY)
+      class Box
+        def initialize = @x = nil
+
+        def empty? = @x.nil?
+
+        def full?
+          return false if @x.nil?
+          true
+        end
+
+        def ready?
+          log
+          @x.nil?
+        end
+
+        def sized? = @x.nil? ? false : @x.any?
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready? Box#sized?]))
   end
 end

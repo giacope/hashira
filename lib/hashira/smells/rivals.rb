@@ -63,7 +63,7 @@ class Hashira::Smells::Rivals
   def surface = @_surface ||= @types.group_by(&:name).transform_values { exposed(it) }
 
   def exposed(kin)
-    kin.flat_map { Hashira::Smells::Visibility.new(it.node).entries }
+    kin.flat_map { Hashira::Analysis::TypeWalk.sections(it.node) }
       .filter_map { |definition, section| definition.name if section == :public && !definition.receiver }
       .to_set - [:initialize]
   end

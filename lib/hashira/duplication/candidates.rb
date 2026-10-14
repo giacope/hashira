@@ -18,7 +18,9 @@ class Hashira::Duplication::Candidates
 
   def walks = @_walks ||= Hashira::Duplication::Walks.new
 
-  def windows = nodes.grep(Prism::StatementsNode).flat_map { sequence(it.body, setting(it)).fragments }
+  def windows = (nodes.grep(Prism::StatementsNode) - reported).flat_map { sequence(it.body, setting(it)).fragments }
+
+  def reported = Hashira::Duplication::Recovery.of(nodes).map { it.clause.statements }
 
   def setting(statements) = bodies.fetch(statements, Hashira::Duplication::Setting::CODE)
 

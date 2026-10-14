@@ -46,7 +46,7 @@ module Fixtures
 
   def with_pipeline(&)
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL))
       yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
     end
   end
@@ -54,14 +54,15 @@ module Fixtures
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, NONE))
     end
   end
 
   def smells(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Smells::Report.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }))
+      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+      yield(Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), NONE))
     end
   end
 
@@ -95,6 +96,10 @@ module Fixtures
   ensure
     $stdout, $stderr = original
   end
+
+  NONE = Hashira::Config::Rules::NONE
+
+  CLEAR = Hashira::Suppression::Suppressions::CLEAR
 
   CYCLIC_FILES = {
     "lib/app/alpha/one.rb" => <<~RUBY,
@@ -166,7 +171,8 @@ module Fixtures
     "config/application.rb" => "module Sample; class Application; end; end\n",
     "app/models/billing/invoice.rb" => "module Billing\n  class Invoice\n    def pay = Ci::Runner.new\n  end\nend\n",
     "app/models/user.rb" => "class User < ApplicationRecord\n  def bill = Billing::Invoice.new\nend\n",
-    "app/models/application_record.rb" => "class ApplicationRecord\n  def self.abstract = true\nend\n",
+    "app/models/application_record.rb" =>
+      "class ApplicationRecord < ActiveRecord::Base\n  def self.abstract = true\nend\n",
     "app/jobs/ci/runner.rb" => "module Ci\n  class Runner\n    def go = 1\n  end\nend\n"
   }.freeze
 

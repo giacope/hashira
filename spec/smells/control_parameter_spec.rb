@@ -1,7 +1,35 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::ControlParameter) do
-  def steered(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "control_parameter")
+  def steered(source) = flagged("lib/app/zone/thing.rb" => source, "lib/app/zone/caller.rb" => caller(source))
+
+  def flagged(files) = sniffed(files, "control_parameter")
+
+  def caller(source) = "class Caller\n  def run = [#{defined(source).map { called(it) }.join(", ")}]\nend\n"
+
+  def defined(source) = Hashira::Analysis::NodeWalk.collect(Prism.parse(source).value).grep(Prism::DefNode)
+
+  def called(definition) = "#{definition.name}(#{flags(definition)})"
+
+  def flags(definition) = Hashira::Smells::Parameters.parts(definition).map { flag(it) }.join(", ")
+
+  def flag(part) = part.type.to_s.include?("keyword") ? "#{part.name}: true" : "true"
+
+  it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
+    source = "class Writer\n  def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)\n\n  " \
+      "def emit(raw:) = raw ? @a : @b\nend\n"
+    calls = ["write(@quoted)\n  emit(raw: compute)", "write(false)\n  emit(raw: :yes)", "self.write(:on)"]
+    found = calls.map { flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go\n  #{it}\n end\nend\n") }
+    expect(found.map { it.map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+  end
+
+  it "leaves a private or protected helper's flag alone: the explicit public methods in front are the interface" do
+    head = "class Writer\n  def quoted = put(true)\n  def plain = put(false)\n"
+    put = "def put(quoted) = quoted ? @io.puts(1) : @io.puts(2)\nend\n"
+    sources = %w[private protected public].map { "#{head}  #{it}\n  #{put}" }
+    expect(sources.map { flagged("lib/app/w.rb" => it).map(&:package) }).to(eq([[], [], %w[Writer#put]]))
+  end
+
   it "flags a parameter that only decides which path to take" do
     findings = steered(<<~RUBY)
       module App
@@ -58,7 +86,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     )
   end
 
-  it "sees destructured parameters" do
+  it "leaves a destructured parameter alone, since no caller passes it as a literal of its own" do
     findings = steered(<<~RUBY)
       module App
         module Zone
@@ -74,7 +102,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["mode (line 5)"]))
+    expect(findings).to(be_empty)
   end
 
   it "accepts parameters that also do real work" do

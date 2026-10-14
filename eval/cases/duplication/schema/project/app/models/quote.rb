@@ -1,0 +1,8 @@
+class Quote < ApplicationRecord
+  belongs_to :customer
+  belongs_to :store
+  has_many :line_items, dependent: :destroy
+  has_many :adjustments, dependent: :destroy
+  validates :number, presence: true, uniqueness: true
+  validates :currency, presence: true
+end

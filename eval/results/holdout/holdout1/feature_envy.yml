@@ -1,0 +1,233 @@
+---
+- key: rubocop|feature_envy|RuboCop::Cop::Lint::UselessAssignment#operator_assignment_message
+  message: RuboCop::Cop::Lint::UselessAssignment#operator_assignment_message refers
+    to 'assignment' more than to self, 3 to 1 (rubocop/cop/lint/useless_assignment.rb:127).
+    The behavior may belong on Assignment.
+  evidence:
+  - assignment (lines 129, 131)
+  - self (line 128)
+  code:
+  - "# rubocop/cop/lint/useless_assignment.rb:127"
+  - '127:         def operator_assignment_message(scope, assignment)'
+  - '128:           return_value_node = return_value_node_of_scope(scope)'
+  - '129:           return unless assignment.meta_assignment_node.equal?(return_value_node)'
+  - '130: '
+  - '131:           " Use `#{assignment.operator.delete_suffix(''='')}` instead of
+    `#{assignment.operator}`."'
+  - '132:         end'
+  - '133: '
+  - '134:         def similar_name_message(variable)'
+  - '135:           variable_like_names = collect_variable_like_names(variable.scope)'
+  - '136:           similar_name = NameSimilarity.find_similar_name(variable.name,
+    variable_like_names)'
+  - '137:           " Did you mean `#{similar_name}`?" if similar_name'
+  - '138:         end'
+  - '139: '
+  - '140:         # TODO: More precise handling (rescue, ensure, nested begin, etc.)'
+  - '141:         def return_value_node_of_scope(scope)'
+  - '142:           body_node = scope.body_node'
+  - '143: '
+  - '144:           if body_node.begin_type?'
+  - '145:             body_node.children.last'
+  - '146:           else'
+  - '147:             body_node'
+  - '148:           end'
+  - '149:         end'
+  - '150: '
+  - '151:         def collect_variable_like_names(scope)'
+- key: rubocop|feature_envy|RuboCop::Cop::IgnoredNode#part_of_ignored_node?
+  message: RuboCop::Cop::IgnoredNode#part_of_ignored_node? refers to 'ignored_loc'
+    more than to self, 2 to 1 (rubocop/cop/ignored_node.rb:11). The behavior may belong
+    on Loc.
+  evidence:
+  - ignored_loc (lines 13, 18)
+  - self (line 12)
+  code:
+  - "# rubocop/cop/ignored_node.rb:11"
+  - '11:       def part_of_ignored_node?(node)'
+  - '12:         ignored_nodes.map(&:loc).any? do |ignored_loc|'
+  - '13:           next false if ignored_loc.expression.begin_pos > node.source_range.begin_pos'
+  - '14: '
+  - '15:           ignored_end_pos = if ignored_loc.respond_to?(:heredoc_body)'
+  - '16:                               ignored_loc.heredoc_end.end_pos'
+  - '17:                             else'
+  - '18:                               ignored_loc.expression.end_pos'
+  - '19:                             end'
+  - '20:           ignored_end_pos >= node.source_range.end_pos'
+  - '21:         end'
+  - '22:       end'
+  - '23: '
+  - '24:       def ignored_node?(node)'
+  - '25:         # Same object found in array?'
+  - '26:         ignored_nodes.any? { |n| n.equal?(node) }'
+  - '27:       end'
+  - '28: '
+  - '29:       private'
+  - '30: '
+  - '31:       def ignored_nodes'
+  - '32:         @ignored_nodes ||= []'
+  - '33:       end'
+  - '34:     end'
+  - '35:   end'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::BisectedAttrAccessor#correct_reader
+  message: RuboCop::Cop::Style::BisectedAttrAccessor#correct_reader refers to 'macro'
+    more than to self, 3 to 2 (rubocop/cop/style/bisected_attr_accessor.rb:102). The
+    behavior may belong on Macro.
+  evidence:
+  - macro (lines 103, 105, 108)
+  - self (lines 106, 108)
+  code:
+  - "# rubocop/cop/style/bisected_attr_accessor.rb:102"
+  - '102:         def correct_reader(corrector, macro, node, range)'
+  - '103:           attr_accessor = "attr_accessor #{macro.bisected_names.join('',
+    '')}\n"'
+  - '104: '
+  - '105:           if macro.all_bisected?'
+  - '106:             corrector.replace(range, "#{indent(node)}#{attr_accessor}")'
+  - '107:           else'
+  - '108:             correction = "#{indent(node)}attr_reader #{macro.rest.join('',
+    '')}"'
+  - '109:             corrector.insert_before(node, attr_accessor)'
+  - '110:             corrector.replace(node, correction)'
+  - '111:           end'
+  - '112:         end'
+  - '113: '
+  - '114:         def correct_writer(corrector, macro, node, range)'
+  - '115:           if macro.all_bisected?'
+  - '116:             corrector.remove(range)'
+  - '117:           else'
+  - '118:             correction = "attr_writer #{macro.rest.join('', '')}"'
+  - '119:             corrector.replace(node, correction)'
+  - '120:           end'
+  - '121:         end'
+  - '122:       end'
+  - '123:     end'
+  - '124:   end'
+  - '125: end'
+- key: rubocop|feature_envy|RuboCop::Cop::Style::ArgumentsForwarding#classification_and_forwards
+  message: RuboCop::Cop::Style::ArgumentsForwarding#classification_and_forwards refers
+    to 'classifier' more than to self, 4 to 2 (rubocop/cop/style/arguments_forwarding.rb:277).
+    The behavior may belong on SendNodeClassifier.
+  evidence:
+  - classifier (lines 284, 290, 291, 292)
+  - self (lines 280, 281)
+  code:
+  - "# rubocop/cop/style/arguments_forwarding.rb:277"
+  - '277:         def classification_and_forwards(def_node, send_node, referenced_lvars,
+    forwardable_args)'
+  - '278:           classifier = SendNodeClassifier.new('
+  - '279:             def_node, send_node, referenced_lvars, forwardable_args,'
+  - '280:             target_ruby_version: target_ruby_version,'
+  - '281:             allow_only_rest_arguments: allow_only_rest_arguments?'
+  - '282:           )'
+  - '283: '
+  - '284:           classification = classifier.classification'
+  - '285: '
+  - '286:           return unless classification'
+  - '287: '
+  - '288:           ['
+  - '289:             classification,'
+  - '290:             classifier.forwarded_rest_arg,'
+  - '291:             classifier.forwarded_kwrest_arg,'
+  - '292:             classifier.forwarded_block_arg'
+  - '293:           ]'
+  - '294:         end'
+  - '295: '
+  - '296:         def redundant_named_arg(arg, config_name, keyword)'
+  - '297:           return nil unless arg'
+  - '298: '
+  - '299:           redundant_arg_names = cop_config.fetch(config_name, []).map do
+    |redundant_arg_name|'
+  - '300:             "#{keyword}#{redundant_arg_name}"'
+  - '301:           end << keyword'
+- key: rubocop|feature_envy|RuboCop::RSpec::ExpectOffense::AnnotatedSource#with_offense_annotations
+  message: RuboCop::RSpec::ExpectOffense::AnnotatedSource#with_offense_annotations
+    refers to 'offense' more than to self, 5 to 2 (rubocop/rspec/expect_offense.rb:329).
+    The behavior may belong on Offense.
+  evidence:
+  - offense (lines 332, 333, 334, 336)
+  - self (line 339)
+  code:
+  - "# rubocop/rspec/expect_offense.rb:329"
+  - '329:         def with_offense_annotations(offenses)'
+  - '330:           offense_annotations ='
+  - '331:             offenses.map do |offense|'
+  - '332:               indent     = '' '' * offense.column'
+  - '333:               carets     = ''^'' * offense.column_length'
+  - '334:               carets     = ''^{}'' if offense.column_length.zero?'
+  - '335: '
+  - '336:               [offense.line, "#{indent}#{carets} #{offense.message}\n"]'
+  - '337:             end'
+  - '338: '
+  - '339:           self.class.new(lines, offense_annotations)'
+  - '340:         end'
+  - '341: '
+  - '342:         protected'
+  - '343: '
+  - '344:         attr_reader :lines, :annotations'
+  - '345:       end'
+  - '346:     end'
+  - '347:   end'
+  - '348: end'
+- key: rubocop|feature_envy|RuboCop::Cop::VariableForce::VariableTable#find_variable
+  message: RuboCop::Cop::VariableForce::VariableTable#find_variable refers to 'scope'
+    more than to self, 2 to 1 (rubocop/cop/variable_force/variable_table.rb:94). The
+    behavior may belong on Scope.
+  evidence:
+  - scope (lines 98, 102)
+  - self (line 97)
+  code:
+  - "# rubocop/cop/variable_force/variable_table.rb:94"
+  - '94:         def find_variable(name)'
+  - '95:           name = name.to_sym'
+  - '96: '
+  - '97:           scope_stack.reverse_each do |scope|'
+  - '98:             variable = scope.variables[name]'
+  - '99:             return variable if variable'
+  - '100: '
+  - '101:             # Only block scope allows referencing outer scope variables.'
+  - '102:             node = scope.node'
+  - '103:             return nil unless node.any_block_type?'
+  - '104:           end'
+  - '105: '
+  - '106:           nil'
+  - '107:         end'
+  - '108: '
+  - '109:         def variable_exist?(name)'
+  - '110:           find_variable(name)'
+  - '111:         end'
+  - '112: '
+  - '113:         def accessible_variables'
+  - '114:           scope_stack.reverse_each.with_object([]) do |scope, variables|'
+  - '115:             variables.concat(scope.variables.values)'
+  - '116:             break variables unless scope.node.any_block_type?'
+  - '117:           end'
+  - '118:         end'
+- key: rubocop|feature_envy|RuboCop::Server::SocketReader#create_command_instance
+  message: RuboCop::Server::SocketReader#create_command_instance refers to 'request'
+    more than to self, 4 to 1 (rubocop/server/socket_reader.rb:53). The behavior may
+    belong on Request.
+  evidence:
+  - request (lines 54, 56)
+  - self (line 54)
+  code:
+  - "# rubocop/server/socket_reader.rb:53"
+  - '53:       def create_command_instance(request)'
+  - '54:         klass = find_command_class(request.header.command)'
+  - '55: '
+  - '56:         klass.new(request.header.args, token: request.header.token, cwd:
+    request.header.cwd)'
+  - '57:       end'
+  - '58: '
+  - '59:       def find_command_class(command)'
+  - '60:         case command'
+  - '61:         when ''stop'' then ServerCommand::Stop'
+  - '62:         when ''exec'' then ServerCommand::Exec'
+  - '63:         else'
+  - '64:           raise UnknownServerCommandError, "#{command.inspect} is not a valid
+    command"'
+  - '65:         end'
+  - '66:       end'
+  - '67:     end'
+  - '68:   end'
+  - '69: end'

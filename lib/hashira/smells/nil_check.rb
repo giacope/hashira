@@ -14,13 +14,19 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   FINDERS = %i[find_by].freeze
 
-  OPTIONAL = Hashira::Smells::DataClump::DEFAULTED
+  RAISES = %i[raise fail].freeze
+
+  BRANCHES = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode].freeze
 
   private
 
   def smelly? = checks.any?
 
-  def checks = @_checks ||= body.select { check?(it) && !excused?(it) }
+  def checks = @_checks ||= body.select { check?(it) && made?(it) && !excused?(it) }
+
+  def made?(check) = tested(check).any? { provenance.made?(it) }
+
+  def provenance = @_provenance ||= Hashira::Smells::Provenance.new(subject, foreign)
 
   def body = @_body ||= Hashira::Smells::Scope.inside(subject.node)
 
@@ -63,13 +69,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def assignments(node)
     case node
-    when Prism::LocalVariableReadNode then named(body.grep(Prism::LocalVariableWriteNode) + defaults, node.name)
+    when Prism::LocalVariableReadNode then named(body.grep(Prism::LocalVariableWriteNode), node.name)
     when Prism::InstanceVariableReadNode then named(state.grep(Prism::InstanceVariableWriteNode), node.name)
     else []
     end
   end
-
-  def defaults = Hashira::Smells::Parameters.parts(subject.node).select { OPTIONAL.include?(it.class) }
 
   def named(nodes, name) = nodes.select { it.name == name }
 
@@ -87,7 +91,21 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def cases = body.grep(Prism::CaseNode)
 
-  def excused?(check) = guard?(check) || defaulted?(check)
+  def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check)
+
+  def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raise?(it) } }
+
+  def asserted(check) = body.select { asserts?(it, check) }
+
+  def asserts?(node, check) = BRANCHES.first(2).include?(node.class) && within(node.predicate).any? { it.equal?(check) }
+
+  def raise?(node) = node.is_a?(Prism::CallNode) && !node.receiver && RAISES.include?(node.name)
+
+  def answering?(check) = predicate? && body.none? { BRANCHES.include?(it.class) } && !fetching?(check)
+
+  def fetching?(check) = tested(check).all? { finder?(it) }
+
+  def predicate? = subject.node.then { it.name.end_with?("?") && Hashira::Analysis::Syntax.statements(it).one? }
 
   def guard?(check)
     validations.validator?(subject.node.name) && tested(check).all? { required?(it) } && !reporting?(check)
@@ -120,16 +138,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def returned(node) = node.is_a?(Prism::ReturnNode) ? Array(node.arguments&.arguments).first : node
 
-  def inbound?(node) = tested(node).any? { foreign.entering?(it) }
-
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def origin
-    return :absence if absent?
-    arriving = checks.count { inbound?(it) }
-    return if arriving.zero?
-    arriving == checks.size ? :outside : :both
-  end
+  def origin = (:absence if absent?)
 
   def absent? = subject.node.name.end_with?("?") && checks.all? { tested(it).all? { finder?(it) } }
 
@@ -137,12 +148,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def rating = checks.all? { tested(it).all? { external?(it) } } ? { confidence: :low } : {}
 
-  def external?(node)
-    found = root(node)
-    found.is_a?(Prism::LocalVariableReadNode) && foreign.external?(found.name)
-  end
-
-  def root(node) = node.is_a?(Prism::CallNode) ? root(node.receiver) : node
+  def external?(node) = node.is_a?(Prism::LocalVariableReadNode) && foreign.external?(node.name)
 
   def detail = { site: spots(checks), origin: }.compact
+
+  def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
+
+  def shown(node) = node.slice.lines.first.strip
 end
