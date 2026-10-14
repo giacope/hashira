@@ -16,12 +16,18 @@ class Evaluation::Command
   def status
     compared = option("--compare")
     return report(compared.split(",").map { JSON.parse(File.read(it)) }) if compared
-    board = Evaluation::Board.new(option("--label") || "run", tool, checks, corpus).write(RESULTS)
-    queue
+    board = recorded
     report([board])
+    board["suites"].values.all? { it["passed"] == it["total"] } ? 0 : 1
   end
 
   private
+
+  def recorded
+    board = Evaluation::Board.new(option("--label") || "run", tool, checks, corpus).write(RESULTS)
+    queue
+    board
+  end
 
   def report(boards)
     $stdout.puts(Evaluation::Comparison.new(boards).markdown)
