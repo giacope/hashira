@@ -143,7 +143,7 @@ RSpec.describe(Hashira::Churn) do
       described_class.new(
         "a.rb" => 3, "b.rb" => 3, "c.rb" => 1,
         "d.rb" => 1
-    ).hot?(sites("a.rb", "b.rb"))
+      ).hot?(sites("a.rb", "b.rb"))
     ).to(be(true))
     expect(described_class.new({}).hot?(sites("a.rb", "b.rb"))).to(be(false))
   end
