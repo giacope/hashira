@@ -3,7 +3,9 @@
 module Hashira
   module Smells
     Whole =
-      Data.define(:openings) do
+      Data.define(:openings, :family) do
+        def initialize(family: nil, **) = super
+
         def subject = first.name
 
         def kind = first.kind

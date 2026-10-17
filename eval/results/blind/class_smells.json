@@ -1,0 +1,431 @@
+[
+  {
+    "id": 1,
+    "key": "rubygems.org|message_chain|Api::V1::OIDC::IdTokensController#show",
+    "message": "Api::V1::OIDC::IdTokensController#show reaches through ApiKey into User (app/controllers/api/v1/oidc/id_tokens_controller.rb:12). Ask ApiKey for what you need, or hand the User in.",
+    "evidence": [
+      "@api_key.user.oidc_id_tokens (line 13)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Scoping a lookup to the API key's user (api_key.user.oidc_id_tokens.find) is the normal Rails way to traverse associations; adding a wrapper on ApiKey gains nothing."
+    }
+  },
+  {
+    "id": 2,
+    "key": "rubocop|message_chain|RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_node",
+    "message": "RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_node reaches through Variable into Scope (rubocop/cop/lint/shadowing_outer_local_variable.rb:86). Ask Variable for what you need, or hand the Scope in.",
+    "evidence": [
+      "variable.scope.node (line 87)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Variable#scope and Scope#node are the public data model of VariableForce, and cops are meant to walk them; a forwarding method would only hide that."
+    }
+  },
+  {
+    "id": 3,
+    "key": "rubygems.org|message_chain|Deletion#send_gem_yanked_mail",
+    "message": "Deletion#send_gem_yanked_mail reaches through Rubygem into Organization (app/models/deletion.rb:165). Ask Rubygem for what you need, or hand the Organization in.",
+    "evidence": [
+      "rubygem.organization.push_notifiable_members (line 168)"
+    ],
+    "rater": {
+      "label": "tp",
+      "why": "Deletion calls rubygem.organization twice and does the presence check itself; Rubygem already has push_notifiable_owners and should also offer the organization's notifiable users."
+    }
+  },
+  {
+    "id": 4,
+    "key": "rubygems.org|message_chain|Pusher#write_gem",
+    "message": "Pusher#write_gem reaches through Version into Rubygem (app/models/pusher.rb:379). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.name (line 388)",
+      "version.rubygem.name (line 389)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "version.rubygem.name is a plain belongs_to read used about 200 times across the app, and Version itself uses rubygem.name; this is the project's normal idiom."
+    }
+  },
+  {
+    "id": 5,
+    "key": "rubygems.org|message_chain|Mailer#api_key_created",
+    "message": "Mailer#api_key_created reaches through ApiKey into User (app/mailers/mailer.rb:122). Ask ApiKey for what you need, or hand the User in.",
+    "evidence": [
+      "@api_key.user.email (line 125)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "A mailer reading the owner's email through an association is standard Rails; ApiKey#user is already the owner accessor."
+    }
+  },
+  {
+    "id": 6,
+    "key": "rubocop|concrete_inheritance|RuboCop::Lsp::StdinRunner",
+    "message": "RuboCop::Lsp::StdinRunner inherits from RuboCop::Runner, a concrete class the project also builds on its own (rubocop/lsp/stdin_runner.rb:17). Extract what they share into an abstract base both extend, or compose instead.",
+    "evidence": [
+      "RuboCop::Runner.new (rubocop/cli/command/execute_runner.rb:23)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Runner is meant to be extended: StdinRunner overrides its file_finished hook and calls super in initialize and run, so splitting out an abstract base would add nothing."
+    }
+  },
+  {
+    "id": 7,
+    "key": "rubygems.org|message_chain|Api::V1::DeletionsController#create",
+    "message": "Api::V1::DeletionsController#create reaches through ApiKey into User (app/controllers/api/v1/deletions_controller.rb:12). Ask ApiKey for what you need, or hand the User in.",
+    "evidence": [
+      "@api_key.user.deletions (line 14)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Building a record through the user's has_many (user.deletions.build) is idiomatic Rails association use, not a Demeter problem."
+    }
+  },
+  {
+    "id": 8,
+    "key": "rubocop|message_chain|RuboCop::Cop::Lint::UselessAssignment#autocorrect",
+    "message": "RuboCop::Cop::Lint::UselessAssignment#autocorrect reaches through Assignment into Variable (rubocop/cop/lint/useless_assignment.rb:167). Ask Assignment for what you need, or hand the Variable in.",
+    "evidence": [
+      "assignment.variable.name (line 177)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Assignment#variable is the VariableForce model's public link and reading its name is ordinary traversal of that model."
+    }
+  },
+  {
+    "id": 9,
+    "key": "rubygems.org|concrete_inheritance|GitHubSecretScanning::DepsDev",
+    "message": "GitHubSecretScanning::DepsDev inherits from GitHubSecretScanning, a concrete class the project also builds on its own (lib/github_secret_scanning.rb:34). Extract what they share into an abstract base both extend, or compose instead.",
+    "evidence": [
+      "GitHubSecretScanning.new (app/controllers/api/v1/github_secret_scanning_controller.rb:52)"
+    ],
+    "rater": {
+      "label": "tp",
+      "why": "The subclass differs only by its keys URL (it even has to copy secret_scanning_keys because constants resolve lexically), while the base is instantiated directly; passing the URL in would remove the subclass."
+    }
+  },
+  {
+    "id": 10,
+    "key": "rubocop|low_cohesion|RuboCop::Cop::Offense",
+    "message": "RuboCop::Cop::Offense splits into 2 groups of methods that share no instance variable and never call each other (rubocop/cop/offense.rb:6). Split the class along that seam.",
+    "evidence": [
+      "real_column, column_range, last_column, last_line, first_line, column_length, source_line, column, highlighted_area, line, to_s (@location, @message, @severity)",
+      "disabled?, corrected_with_todo?, corrected?, correctable? (@status)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Offense is one cohesive value object (where, what and correction status of a single offense); splitting status from location would break the domain concept."
+    }
+  },
+  {
+    "id": 11,
+    "key": "rubocop|message_chain|RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_used_in_declaration_of_outer?",
+    "message": "RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_used_in_declaration_of_outer? reaches through Variable into Scope (rubocop/cop/lint/shadowing_outer_local_variable.rb:68). Ask Variable for what you need, or hand the Scope in.",
+    "evidence": [
+      "variable.scope.node (line 69)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "variable.scope.node walks the VariableForce data model as designed; there is no behaviour to move onto Variable."
+    }
+  },
+  {
+    "id": 12,
+    "key": "rubygems.org|message_chain|Maintenance::VerifyGemContentsInFsTask#process",
+    "message": "Maintenance::VerifyGemContentsInFsTask#process reaches through Version into Rubygem (app/tasks/maintenance/verify_gem_contents_in_fs_task.rb:27). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.name (line 28)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Reading the gem name for a log tag via version.rubygem.name is the project-wide association idiom."
+    }
+  },
+  {
+    "id": 13,
+    "key": "rubocop|data_class|RuboCop::Formatter::JUnitFormatter::FailureElement",
+    "message": "RuboCop::Formatter::JUnitFormatter::FailureElement only holds 'type', 'message', 'text', with no behavior of its own (rubocop/formatter/junit_formatter.rb:132). Move the code that works on these fields into the class, or declare it a Data value.",
+    "evidence": [
+      "type",
+      "message",
+      "text"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "This is a deliberate :nodoc: parameter holder for XML building, and the Data remedy needs Ruby 3.2, newer than rubocop's supported runtime, so the change is optional style."
+    }
+  },
+  {
+    "id": 14,
+    "key": "rubocop|concrete_inheritance|RuboCop::Cop::Style::ParallelAssignment::RescueCorrector",
+    "message": "RuboCop::Cop::Style::ParallelAssignment::RescueCorrector inherits from RuboCop::Cop::Style::ParallelAssignment::GenericCorrector, a concrete class the project also builds on its own (rubocop/cop/style/parallel_assignment.rb:232). Extract what they share into an abstract base both extend, or compose instead.",
+    "evidence": [
+      "RuboCop::Cop::Style::ParallelAssignment::GenericCorrector.new (rubocop/cop/style/parallel_assignment.rb:87)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "GenericCorrector is a small internal default that the factory picks when no special case applies, with RescueCorrector specializing it; an abstract base adds nothing."
+    }
+  },
+  {
+    "id": 15,
+    "key": "rubocop|concrete_inheritance|RuboCop::Cop::Style::ParallelAssignment::ModifierCorrector",
+    "message": "RuboCop::Cop::Style::ParallelAssignment::ModifierCorrector inherits from RuboCop::Cop::Style::ParallelAssignment::GenericCorrector, a concrete class the project also builds on its own (rubocop/cop/style/parallel_assignment.rb:267). Extract what they share into an abstract base both extend, or compose instead.",
+    "evidence": [
+      "RuboCop::Cop::Style::ParallelAssignment::GenericCorrector.new (rubocop/cop/style/parallel_assignment.rb:87)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Same internal pattern as item 14: a generic default plus specializations chosen by a factory, which is an intentional and clear design."
+    }
+  },
+  {
+    "id": 16,
+    "key": "rubygems.org|message_chain|Api::V1::OwnersController#owners_payload",
+    "message": "Api::V1::OwnersController#owners_payload reaches through Ownership into User (app/controllers/api/v1/owners_controller.rb:89). Ask Ownership for what you need, or hand the User in.",
+    "evidence": [
+      "ownership.user.payload (line 93)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Building an API payload by mapping preloaded ownerships to user.payload is ordinary association use for serialization."
+    }
+  },
+  {
+    "id": 17,
+    "key": "rubygems.org|message_chain|OIDC::ApiKeyRole#set_statement_principals",
+    "message": "OIDC::ApiKeyRole#set_statement_principals reaches through Statement into Principal (app/models/oidc/api_key_role.rb:49). Ask Statement for what you need, or hand the Principal in.",
+    "evidence": [
+      "statement.principal.oidc (line 53)",
+      "statement.principal.oidc = provider.issuer (line 54)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "The model is filling in defaults on its own nested access_policy value objects during validation, which is legitimate internal setup and not reaching into a stranger."
+    }
+  },
+  {
+    "id": 18,
+    "key": "rubygems.org|message_chain|SetLinksetHomeJob#perform",
+    "message": "SetLinksetHomeJob#perform reaches through Version into Rubygem (app/jobs/set_linkset_home_job.rb:6). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.linkset (line 14)"
+    ],
+    "rater": {
+      "label": "tp",
+      "why": "The job initializes and then updates another model's association through version.rubygem.linkset twice; Rubygem should own a find-or-create-and-update linkset method."
+    }
+  },
+  {
+    "id": 19,
+    "key": "rubygems.org|message_chain|ApiKeysHelper#gem_scope",
+    "message": "ApiKeysHelper#gem_scope reaches through ApiKey into Rubygem (app/helpers/api_keys_helper.rb:4). Ask ApiKey for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "api_key.rubygem.name (line 7)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "ApiKey#rubygem is already a delegate on ApiKey, and reading its name in a view helper is normal presentation code."
+    }
+  },
+  {
+    "id": 20,
+    "key": "rubygems.org|message_chain|OwnersController#destroy",
+    "message": "OwnersController#destroy reaches through Ownership into Rubygem (app/controllers/owners_controller.rb:71). Ask Ownership for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "@ownership.rubygem.slug (line 74)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Building a redirect path from ownership.rubygem.slug is a normal belongs_to read in a controller."
+    }
+  },
+  {
+    "id": 21,
+    "key": "rubocop|message_chain|RuboCop::Cop::Lint::UnusedMethodArgument#check_argument",
+    "message": "RuboCop::Cop::Lint::UnusedMethodArgument#check_argument reaches through Variable into Scope (rubocop/cop/lint/unused_method_argument.rb:94). Ask Variable for what you need, or hand the Scope in.",
+    "evidence": [
+      "variable.scope.node (line 97)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "variable.scope.node.body walks VariableForce's public model to reach the method body; this is the intended API use."
+    }
+  },
+  {
+    "id": 22,
+    "key": "rubygems.org|message_chain|Pusher#log_pushing",
+    "message": "Pusher#log_pushing reaches through Version into Rubygem (app/models/pusher.rb:397). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "@version.rubygem.name (line 410)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "A single belongs_to name read for a log line, using the project's ubiquitous version.rubygem.name idiom."
+    }
+  },
+  {
+    "id": 23,
+    "key": "rubygems.org|message_chain|Maintenance::BackfillGemS3MetadataTask#process",
+    "message": "Maintenance::BackfillGemS3MetadataTask#process reaches through Version into Rubygem (app/tasks/maintenance/backfill_gem_s3_metadata_task.rb:10). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.name (line 30)",
+      "version.rubygem.name (line 31)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Reading version.rubygem.name for metadata is the project-wide association idiom; there is nothing to move to Version."
+    }
+  },
+  {
+    "id": 24,
+    "key": "rubygems.org|message_chain|OIDC::ApiKeyRoles::GitHubActionsWorkflowView#github?",
+    "message": "OIDC::ApiKeyRoles::GitHubActionsWorkflowView#github? reaches through ApiKeyRole into Provider (app/views/oidc/api_key_roles/github_actions_workflow_view.rb:142). Ask ApiKeyRole for what you need, or hand the Provider in.",
+    "evidence": [
+      "api_key_role.provider.github_actions? (line 143)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "A view asking the role's provider a predicate through a belongs_to is ordinary Rails presentation code."
+    }
+  },
+  {
+    "id": 25,
+    "key": "rubygems.org|message_chain|Api::V1::RubygemsController#index",
+    "message": "Api::V1::RubygemsController#index reaches through ApiKey into User (app/controllers/api/v1/rubygems_controller.rb:12). Ask ApiKey for what you need, or hand the User in.",
+    "evidence": [
+      "@api_key.user.rubygems (line 14)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Scoping the query to the key owner's gems (api_key.user.rubygems) is the normal Rails authorization-scoping idiom."
+    }
+  },
+  {
+    "id": 26,
+    "key": "rubocop|message_chain|RuboCop::Cop::Style::ConditionalAssignmentHelper#indent",
+    "message": "RuboCop::Cop::Style::ConditionalAssignmentHelper#indent reaches through Cop into Config (rubocop/cop/style/conditional_assignment.rb:51). Ask Cop for what you need, or hand the Config in.",
+    "evidence": [
+      "cop.config.for_cop(END_ALIGNMENT) (line 52)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Cop#config is the standard public accessor in rubocop's cop API, and config.for_cop is how cops everywhere read another cop's settings."
+    }
+  },
+  {
+    "id": 27,
+    "key": "rubocop|message_chain|RuboCop::Cop::Lint::RedundantCopDisableDirective#expected_final_disable?",
+    "message": "RuboCop::Cop::Lint::RedundantCopDisableDirective#expected_final_disable? reaches through ProcessedSource into Registry (rubocop/cop/lint/redundant_cop_disable_directive.rb:202). Ask ProcessedSource for what you need, or hand the Registry in.",
+    "evidence": [
+      "processed_source.registry.enabled?(cop_class, config) (line 206)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "ProcessedSource comes from the rubocop-ast library, so there is no owned class to add a forwarding method to."
+    }
+  },
+  {
+    "id": 28,
+    "key": "rubygems.org|message_chain|Deletion#record_yank_event",
+    "message": "Deletion#record_yank_event reaches through Version into Rubygem (app/models/deletion.rb:177). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.record_event!(Events::RubygemEvent::VERSION_YANKED, number: version.number, platform: version.platform, (line 178)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Recording the event on the version's gem through a belongs_to is the intended use of Rubygem#record_event!."
+    }
+  },
+  {
+    "id": 29,
+    "key": "rubygems.org|message_chain|Api::V1::ActivitiesController#just_updated",
+    "message": "Api::V1::ActivitiesController#just_updated reaches through Version into Rubygem (app/controllers/api/v1/activities_controller.rb:14). Ask Version for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "version.rubygem.payload(version) (line 17)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Mapping eager-loaded versions to rubygem.payload(version) for serialization is ordinary association use."
+    }
+  },
+  {
+    "id": 30,
+    "key": "rubocop|refused_bequest|RuboCop::MagicComment::VimComment",
+    "message": "RuboCop::MagicComment::VimComment refuses what RuboCop::MagicComment::EditorComment hands down: it overrides 'frozen_string_literal', 'shareable_constant_value' only to raise or do nothing (rubocop/magic_comment.rb:222). Compose RuboCop::MagicComment::EditorComment instead of extending it, or push the refused methods down to the subclasses that want them.",
+    "evidence": [
+      "frozen_string_literal does nothing (overrides RuboCop::MagicComment, line 243)",
+      "shareable_constant_value does nothing (overrides RuboCop::MagicComment, line 246)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Returning nil is the base contract for 'setting not specified', and Vim comments genuinely cannot set these values, so this is a domain fact, not a refused bequest."
+    }
+  },
+  {
+    "id": 31,
+    "key": "rubygems.org|message_chain|Mailer#gem_trusted_publisher_added",
+    "message": "Mailer#gem_trusted_publisher_added reaches through RubygemTrustedPublisher into Rubygem (app/mailers/mailer.rb:62). Ask RubygemTrustedPublisher for what you need, or hand the Rubygem in.",
+    "evidence": [
+      "@rubygem_trusted_publisher.rubygem.name (line 69)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "A mailer building its subject from the publisher's gem name through a belongs_to is ordinary Rails."
+    }
+  },
+  {
+    "id": 32,
+    "key": "rubygems.org|message_chain|Api::V1::OIDC::ApiKeyRolesController#verify_access",
+    "message": "Api::V1::OIDC::ApiKeyRolesController#verify_access reaches through ApiKeyRole into AccessPolicy (app/controllers/api/v1/oidc/api_key_roles_controller.rb:78). Ask ApiKeyRole for what you need, or hand the AccessPolicy in.",
+    "evidence": [
+      "@api_key_role.access_policy.verify_access!(@jwt) (line 79)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "access_policy is the role's own typed attribute (a value object), and calling its verify method is the intended API."
+    }
+  },
+  {
+    "id": 33,
+    "key": "rubygems.org|concrete_inheritance|Admin::Advisory::OSVPolicy",
+    "message": "Admin::Advisory::OSVPolicy inherits from Admin::AdvisoryPolicy, a concrete class the project also builds on its own (app/policies/admin/advisory/osv_policy.rb:3). Extract what they share into an abstract base both extend, or compose instead.",
+    "evidence": [
+      "Admin::AdvisoryPolicy.new (app/avo/actions/sync_advisories.rb:10)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "This empty subclass exists only so the policy lookup finds a class named for the Advisory::OSV resource and reuses the parent rules; an abstract base would just be ceremony."
+    }
+  },
+  {
+    "id": 34,
+    "key": "rubocop|low_cohesion|RuboCop::Cop::VariableForce::Assignment",
+    "message": "RuboCop::Cop::VariableForce::Assignment splits into 2 groups of methods that share no state (rubocop/cop/variable_force/assignment.rb:7). Split the class along that seam.",
+    "evidence": [
+      "operator_assignment?, multiple_assignment?, rest_assignment?, for_assignment?, name, regexp_named_capture?, exception_assignment?, operator, meta_assignment_node, operator_assignment_node, multiple_assignment_node, rest_assignment_node, for_assignment_node, find_multiple_assignment_node (@meta_assignment_node, @node)",
+      "scope, reference!, used? (@referenced, @references, @variable)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "Both method groups describe the same single assignment (what kind of node it is, and whether it gets used); used? reads @variable and @referenced together, so splitting them would break one domain object."
+    }
+  },
+  {
+    "id": 35,
+    "key": "rubygems.org|low_cohesion|ApplicationPolicy",
+    "message": "ApplicationPolicy splits into 2 groups of methods that share no state (app/policies/application_policy.rb:3). Split the class along that seam.",
+    "evidence": [
+      "current_user?, policy!, user_policy! (@user)",
+      "deny, rubygem_owned_by?, rubygem_owned_by_with_role?, organization_member_with_role? (@error)"
+    ],
+    "rater": {
+      "label": "fp",
+      "why": "This is the Pundit base policy: every private helper (deny, ownership and role checks, policy!) supports its subclasses, and the @user/@error split is a side effect of the shape, not a real seam."
+    }
+  }
+]

@@ -31,7 +31,7 @@ default.
   inverse pairs, relays, schemas).
 - **smells** — true positives and true negatives built from real patterns
   (timers, library nodes, owned types, evidence, sprawl weights, indirection,
-  fragmentation).
+  fragmentation, inheritance, cohesion, chains, data classes, forwarding).
 - **cli** — baseline and config resolution from another directory,
   suppressions (reason required, listed, unused), per-kind switches and
   thresholds, old baselines and kind renames, a kind the baseline predates.
@@ -196,6 +196,56 @@ The readability study behind `fragmentation` shows what readers of the house
 style actually object to: many small same-class helpers, not hollow hops (0
 findings on kimera and hashira). indirection stays, opt-in: fragmentation does
 not cover its two findings, and while it is off it costs nothing.
+
+## Class-level kinds
+
+Six kinds judge how classes are built: `concrete_inheritance`,
+`refused_bequest`, `low_cohesion` (LCOM4), `message_chain` (the Law of Demeter
+on one chain), `data_class` and `middle_man`. Their rules were fixed, the
+corpus run with `checks: all`, and the precision sample drawn the usual way
+(the 25 findings per kind with the smallest SHA-256 of their key, which here is
+every finding of every kind but `message_chain`). One independent rater
+labelled the shuffled sample (and, in a second request, the two
+`low_cohesion` findings a fix to constructor linking added after the draw) with the rubric above: a separate model instance
+that saw only the findings and the corpus source (rubocop and rubygems.org at
+the pinned commits), not hashira's code or the reasoning behind the rules. No
+second rater and no human has labelled them yet. The labels are in
+`blind/<kind>.yml`, and `blind/class_smells.json` holds the items as the rater
+saw them beside its verdicts.
+
+| kind | rubocop | faraday | rubygems.org | true (rater) | default |
+| --- | --- | --- | --- | --- | --- |
+| message_chain | 19 | 0 | 62 | 2/25 (8%) | opt-in |
+| concrete_inheritance | 3 | 0 | 2 | 1/5 | opt-in |
+| low_cohesion | 2 | 0 | 1 | 0/3 | opt-in |
+| refused_bequest | 1 | 0 | 0 | 0/1 | opt-in |
+| data_class | 1 | 0 | 0 | 0/1 | opt-in |
+| middle_man | 0 | 0 | 0 | — | opt-in |
+
+None clears one in three, so all six ship opt-in, and four of them are too
+rare in this corpus to measure at all. What the rater's reasons say:
+
+- **message_chain**: 23 of the 25 were Rails association reads
+  (`version.rubygem.name`, `@api_key.user.rubygems`) or walks of a model meant
+  to be walked (rubocop's `variable.scope.node`). The two true ones did work
+  through the chain: a presence check and a call through
+  `rubygem.organization`, and a job that set up and updated another model's
+  association through two hops. Typing every link and requiring the class to
+  declare each message keeps library objects out, but not the idiom.
+- **concrete_inheritance**: the true one is a subclass that exists to swap one
+  constant of a class built on its own; the false ones are a default
+  implementation a factory specializes, a runner meant to be extended, and an
+  empty Pundit policy subclass that exists for lookup by name.
+- **refused_bequest**: Vim magic comments return nil for settings Vim cannot
+  express, which the rater read as the parent's own "not specified" contract.
+- **low_cohesion**: rubocop's `Offense` and `VariableForce::Assignment`
+  and rubygems.org's `ApplicationPolicy` split along a status or error field
+  that reviewers read as part of one concept.
+- **data_class**: a `:nodoc:` parameter holder in rubocop, where `Data` is not
+  available on every Ruby rubocop supports.
+
+`message_chain` is separate from `repeated_call`, which reports any chain read
+twice in one method whatever its types; the two can be turned on apart.
 
 ## Known limits
 

@@ -1,0 +1,104 @@
+---
+- key: rubygems.org|message_chain|Api::V1::OIDC::IdTokensController#show
+  label: fp
+  why: Scoping a lookup to the API key's user (api_key.user.oidc_id_tokens.find) is
+    the normal Rails way to traverse associations; adding a wrapper on ApiKey gains
+    nothing.
+- key: rubocop|message_chain|RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_node
+  label: fp
+  why: Variable#scope and Scope#node are the public data model of VariableForce, and
+    cops are meant to walk them; a forwarding method would only hide that.
+- key: rubygems.org|message_chain|Deletion#send_gem_yanked_mail
+  label: tp
+  why: Deletion calls rubygem.organization twice and does the presence check itself;
+    Rubygem already has push_notifiable_owners and should also offer the organization's
+    notifiable users.
+- key: rubygems.org|message_chain|Pusher#write_gem
+  label: fp
+  why: version.rubygem.name is a plain belongs_to read used about 200 times across
+    the app, and Version itself uses rubygem.name; this is the project's normal idiom.
+- key: rubygems.org|message_chain|Mailer#api_key_created
+  label: fp
+  why: A mailer reading the owner's email through an association is standard Rails;
+    ApiKey#user is already the owner accessor.
+- key: rubygems.org|message_chain|Api::V1::DeletionsController#create
+  label: fp
+  why: Building a record through the user's has_many (user.deletions.build) is idiomatic
+    Rails association use, not a Demeter problem.
+- key: rubocop|message_chain|RuboCop::Cop::Lint::UselessAssignment#autocorrect
+  label: fp
+  why: Assignment#variable is the VariableForce model's public link and reading its
+    name is ordinary traversal of that model.
+- key: rubocop|message_chain|RuboCop::Cop::Lint::ShadowingOuterLocalVariable#variable_used_in_declaration_of_outer?
+  label: fp
+  why: variable.scope.node walks the VariableForce data model as designed; there is
+    no behaviour to move onto Variable.
+- key: rubygems.org|message_chain|Maintenance::VerifyGemContentsInFsTask#process
+  label: fp
+  why: Reading the gem name for a log tag via version.rubygem.name is the project-wide
+    association idiom.
+- key: rubygems.org|message_chain|Api::V1::OwnersController#owners_payload
+  label: fp
+  why: Building an API payload by mapping preloaded ownerships to user.payload is
+    ordinary association use for serialization.
+- key: rubygems.org|message_chain|OIDC::ApiKeyRole#set_statement_principals
+  label: fp
+  why: The model is filling in defaults on its own nested access_policy value objects
+    during validation, which is legitimate internal setup and not reaching into a
+    stranger.
+- key: rubygems.org|message_chain|SetLinksetHomeJob#perform
+  label: tp
+  why: The job initializes and then updates another model's association through version.rubygem.linkset
+    twice; Rubygem should own a find-or-create-and-update linkset method.
+- key: rubygems.org|message_chain|ApiKeysHelper#gem_scope
+  label: fp
+  why: ApiKey#rubygem is already a delegate on ApiKey, and reading its name in a view
+    helper is normal presentation code.
+- key: rubygems.org|message_chain|OwnersController#destroy
+  label: fp
+  why: Building a redirect path from ownership.rubygem.slug is a normal belongs_to
+    read in a controller.
+- key: rubocop|message_chain|RuboCop::Cop::Lint::UnusedMethodArgument#check_argument
+  label: fp
+  why: variable.scope.node.body walks VariableForce's public model to reach the method
+    body; this is the intended API use.
+- key: rubygems.org|message_chain|Pusher#log_pushing
+  label: fp
+  why: A single belongs_to name read for a log line, using the project's ubiquitous
+    version.rubygem.name idiom.
+- key: rubygems.org|message_chain|Maintenance::BackfillGemS3MetadataTask#process
+  label: fp
+  why: Reading version.rubygem.name for metadata is the project-wide association idiom;
+    there is nothing to move to Version.
+- key: rubygems.org|message_chain|OIDC::ApiKeyRoles::GitHubActionsWorkflowView#github?
+  label: fp
+  why: A view asking the role's provider a predicate through a belongs_to is ordinary
+    Rails presentation code.
+- key: rubygems.org|message_chain|Api::V1::RubygemsController#index
+  label: fp
+  why: Scoping the query to the key owner's gems (api_key.user.rubygems) is the normal
+    Rails authorization-scoping idiom.
+- key: rubocop|message_chain|RuboCop::Cop::Style::ConditionalAssignmentHelper#indent
+  label: fp
+  why: Cop#config is the standard public accessor in rubocop's cop API, and config.for_cop
+    is how cops everywhere read another cop's settings.
+- key: rubocop|message_chain|RuboCop::Cop::Lint::RedundantCopDisableDirective#expected_final_disable?
+  label: fp
+  why: ProcessedSource comes from the rubocop-ast library, so there is no owned class
+    to add a forwarding method to.
+- key: rubygems.org|message_chain|Deletion#record_yank_event
+  label: fp
+  why: Recording the event on the version's gem through a belongs_to is the intended
+    use of Rubygem#record_event!.
+- key: rubygems.org|message_chain|Api::V1::ActivitiesController#just_updated
+  label: fp
+  why: Mapping eager-loaded versions to rubygem.payload(version) for serialization
+    is ordinary association use.
+- key: rubygems.org|message_chain|Mailer#gem_trusted_publisher_added
+  label: fp
+  why: A mailer building its subject from the publisher's gem name through a belongs_to
+    is ordinary Rails.
+- key: rubygems.org|message_chain|Api::V1::OIDC::ApiKeyRolesController#verify_access
+  label: fp
+  why: access_policy is the role's own typed attribute (a value object), and calling
+    its verify method is the intended API.

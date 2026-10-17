@@ -29,3 +29,9 @@ samples:
   state_sprawl: 15
   repeated_conditional: 15
   indirection: 20
+  concrete_inheritance: 25
+  refused_bequest: 25
+  low_cohesion: 25
+  message_chain: 25
+  data_class: 25
+  middle_man: 25
