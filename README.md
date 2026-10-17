@@ -109,7 +109,8 @@ layers: [web, app, domain]         # outermost first; see Layers below
 averaging `lines:` 3.5 or fewer), `indirection` (2 or more hollow helpers),
 `boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
 `state_sprawl` (a weight of more than 4) and `repeated_conditional` (more than 2
-tests). A flag on the command line wins over
+tests). `dead_code` takes `roots:` (see [whole-codebase checks](#whole-codebase-checks)).
+A flag on the command line wins over
 the file, and a key the command line rules out sits that run out (`fail-on` under
 `--json`). `--config PATH` reads another file; `--no-config` ignores it.
 
@@ -138,6 +139,7 @@ labels. No human has relabelled them yet. True findings, per rater:
 | state_sprawl | 1/11, 2/11 | 1/9, 0/9 | 4/40 (10%) | opt-in |
 | nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
 | indirection | — | 2/2, 0/2 | 2/4 | opt-in |
+| dead_code | 13/13, 13/13 | — | 26/26 (100%) | on |
 
 `fragmentation` is on: a separate blind readability study measured it (see
 [Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
@@ -218,8 +220,8 @@ Findings:
 
 ## Whole-codebase checks
 
-These checks read the whole codebase at once, starting with the layering you
-declare.
+These checks read the whole codebase at once: the layering you declare and
+the code nothing reaches.
 
 ### Layers
 
@@ -252,6 +254,45 @@ other way (another order of the same layers, found by the same exact search as
 a cycle's cheapest cut, would leave fewer references pointing outward), the
 finding says so: the declaration may be what is wrong. With no `layers:`, the
 check does nothing; declared, it is on, since the intent is yours.
+
+### Dead code
+
+**dead_code**, on by default, reports methods and constants defined in the project that
+nothing in it reaches. A constant is reached when the constant-reference graph
+resolves a reference to it or to anything inside it; a method when any call,
+symbol or string in the project names it (`send(:name)`, `before_action
+:name`, `respond_to?(:name)`, a `delegate`, a string `class_eval`), when a
+call builds its name from a literal prefix (`public_send("on_#{event}")`
+reaches every `on_` method), or when a word in the project's other files names
+it: specs, views, rake tasks, configuration, scripts. Matching is by name, not
+by type, so a method called anywhere under its name counts as used: hashira
+misses dead code rather than report live code. Also left alone:
+
+- Ruby's protocols and hooks (`to_s`, `each`, `==`, `call`, `initialize`,
+  `inherited`, `method_missing`, `as_json`, …) and a method that calls `super`,
+  which overrides something its caller reaches.
+- Every method of a class that sends itself a computed name (`send(name)`), and
+  of its descendants.
+- Subclasses registered through an `inherited` hook or found with
+  `.subclasses` or `.descendants`.
+- A `ClassMethods` module, and the public methods of a class whose ancestry
+  leaves the project (`< ActiveRecord::Base`, `include Sidekiq::Job`) or of a
+  module mixed into one: the framework calls them.
+
+The roots differ by kind of project. In a library, every public method and
+public constant is its users' API, so only private methods and
+`private_constant`s are judged. In a Rails app, controllers, helpers, views,
+jobs, mailers, channels, policies, components and validators are the
+framework's entry points, and everything else is judged. `roots:` names more:
+constants (`MyGem::CLI`, with everything inside), methods (`MyGem::CLI#run`)
+and paths (`lib/my_gem/plugins`). In a library, naming roots says what the API
+is, and the rest of the public surface is judged too.
+
+<!-- example: dead lib/app --kind dead_code -->
+```console
+Findings (1):
+  dead_code: Invoice#legacy_total is never called in the project (invoice.rb:8). Delete it, or name it in dead_code roots if code outside the project uses it.
+```
 
 ## Rails apps
 

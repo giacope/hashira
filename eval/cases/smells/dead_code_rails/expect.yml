@@ -1,0 +1,13 @@
+# A Rails app: controllers are routed, views call model methods, and models
+# are hosted by the framework, so none of those need a caller in Ruby. A
+# private model method nobody calls, and a service class nothing refers to,
+# are dead.
+args: [app]
+present:
+  - {kind: dead_code, package: "Invoice#stale_total"}
+  - {kind: dead_code, package: "PriceCalculator"}
+absent:
+  - {kind: dead_code, package: "InvoicesController#show"}
+  - {kind: dead_code, package: "Invoice#label"}
+  - {kind: dead_code, package: "Invoice"}
+  - {kind: dead_code, package: "TaxTable"}

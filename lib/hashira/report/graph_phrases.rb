@@ -16,6 +16,13 @@ module Hashira::Report::Phrases
     [listed[..-2].join(", "), listed.last].reject(&:empty?).join(" and ")
   end
 
+  def on_dead_code(finding)
+    detail = finding.detail
+    verb = detail[:noun] == :method ? "called" : "referred to"
+    "#{finding.package} is never #{verb} in the project (#{detail[:site]}). " \
+      "Delete it, or name it in dead_code roots if code outside the project uses it."
+  end
+
   def leaning(detail)
     order = detail.leaning
     return "" unless order

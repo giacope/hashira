@@ -1,0 +1,15 @@
+# A library: its public methods and constants are its users' API, so only
+# private code is judged. legacy_format and OLD have no caller left. store is
+# reached through send(:store), on_error through public_send("on_#{kind}"),
+# normalize by a plain call; run and STALE are public API.
+present:
+  - {kind: dead_code, package: "App::Importer#legacy_format"}
+  - {kind: dead_code, package: "App::Registry::OLD"}
+absent:
+  - {kind: dead_code, package: "App::Importer#run"}
+  - {kind: dead_code, package: "App::Importer#store"}
+  - {kind: dead_code, package: "App::Importer#on_error"}
+  - {kind: dead_code, package: "App::Importer#normalize"}
+  - {kind: dead_code, package: "App::Registry::STALE"}
+messages:
+  - {kind: dead_code, package: "App::Importer#legacy_format", includes: "is never called in the project"}

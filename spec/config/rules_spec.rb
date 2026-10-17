@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Config::Rules) do
   def parse(raw)
-    described_class.parse(raw, %w[complexity feature_envy fragmentation nil_check state_sprawl])
+    described_class.parse(raw, %w[complexity dead_code feature_envy fragmentation nil_check state_sprawl])
   end
 
   it "turns kinds off and moves thresholds" do
@@ -16,7 +16,8 @@ RSpec.describe(Hashira::Config::Rules) do
 
   it "leaves measured kinds on and low-precision kinds off when nothing is said, and all of them on for all" do
     defaults = Hashira::Config::Rules::NONE
-    expect(%w[complexity duplication nil_check].map { defaults.enabled?(it) }).to(eq([true, true, false]))
+    expect(%w[complexity duplication nil_check dead_code].map { defaults.enabled?(it) })
+      .to(eq([true, true, false, true]))
     expect(defaults.threshold("complexity", 10)).to(eq(10))
     expect(%w[nil_check indirection].map { parse("all").enabled?(it) }).to(eq([true, true]))
     expect(parse("nil_check" => true).enabled?("nil_check")).to(be(true))
@@ -29,9 +30,13 @@ RSpec.describe(Hashira::Config::Rules) do
     expect(limits + [parse({}).limit("x", "y", 7)]).to(eq([6, 2.5, 7]))
   end
 
-  it "carries declared layers through naming" do
-    rules = parse("nil_check" => true).layered(Hashira::Config::Layers.parse(%w[web domain])).naming(["nil_check"])
-    expect([rules.layers.names, rules.enabled?("nil_check")]).to(eq([%w[web domain], true]))
+  it "reads a kind's named lists, and carries declared layers through naming" do
+    rules = parse("dead_code" => { "roots" => ["App::Cli", "lib/app/cli"] })
+    layers = Hashira::Config::Layers.parse(%w[web domain])
+    named = rules.layered(layers).naming(["dead_code"])
+    expect([rules.limit("dead_code", "roots", []), named.layers.names, named.enabled?("dead_code")]).to(
+      eq([["App::Cli", "lib/app/cli"], %w[web domain], true])
+    )
   end
 
   it "refuses what it cannot apply" do
@@ -45,7 +50,9 @@ RSpec.describe(Hashira::Config::Rules) do
       { "complexity" => { "threshold" => "3" } } => "threshold must be a positive whole number",
       { "fragmentation" => { "lines" => 0 } } => "fragmentation lines must be a positive number",
       { "fragmentation" => { "helpers" => "4" } } => "fragmentation helpers must be a positive number",
-      { "complexity" => { "helpers" => 4 } } => 'complexity has no setting "helpers" (use: enabled, threshold)'
+      { "complexity" => { "helpers" => 4 } } => 'complexity has no setting "helpers" (use: enabled, threshold)',
+      { "dead_code" => { "roots" => [3] } } => "dead_code roots takes a list of names",
+      { "dead_code" => { "roots" => [""] } } => "dead_code roots takes a list of names"
     }.each { |raw, message| expect { parse(raw) }.to(raise_error(Hashira::Error, /#{Regexp.escape(message)}/)) }
   end
 end

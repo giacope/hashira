@@ -46,3 +46,4 @@ samples:
   state_sprawl: 15
   repeated_conditional: 15
   indirection: 20
+  dead_code: 25

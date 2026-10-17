@@ -5,6 +5,8 @@ class Hashira::Config::Setting
 
   LIMITS = { "fragmentation" => %w[helpers lines] }.freeze
 
+  LISTS = { "dead_code" => %w[roots] }.freeze
+
   def initialize(kind, raw)
     @kind = kind
     @raw = raw
@@ -18,11 +20,19 @@ class Hashira::Config::Setting
 
   private
 
-  def keys = KEYS + named
+  def keys = KEYS + named + listed
 
   def named = LIMITS.fetch(@kind, [])
 
-  def limits = named.select { @raw.key?(it) }.to_h { [it, measured(it)] }
+  def listed = LISTS.fetch(@kind, [])
+
+  def limits = (named + listed).select { @raw.key?(it) }.to_h { [it, listed.include?(it) ? words(it) : measured(it)] }
+
+  def words(name)
+    value = Array(@raw[name])
+    return value if value.all? { it.is_a?(String) && !it.empty? }
+    raise(Hashira::Error, "checks: #{@kind} #{name} takes a list of names")
+  end
 
   def measured(name)
     value = @raw[name]

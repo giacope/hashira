@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "cycle"
+require_relative "dead_code"
 require_relative "mixed_audience"
 require_relative "echo"
 require_relative "rule"

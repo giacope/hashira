@@ -30,6 +30,9 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- `dead_code` is on by default and `layer_violation` is on once `layers:` are
+  declared. A baseline recorded before them lists their findings as not
+  ratcheted until `--update-baseline`.
 - **Every design smell is now opt-in.** A heuristic kind is on by default only
   when its blind precision, over the sample and the holdout together, clears
   one in three: duplication (42 of 100) does, and fragmentation, measured by its
@@ -83,6 +86,18 @@ true positive the earlier triage confirmed still fires.
   would leave fewer references pointing outward, the finding says the code
   leans another way. On whenever layers are declared; the ratchet holds a
   pair by its references. hashira declares its own five layers and has none.
+- `dead_code`, on by default: methods and constants the project never reaches,
+  by the constant-reference graph and every call, symbol, string and literal
+  name prefix in the code, and every word in the project's other files
+  (specs, views, rake tasks, configuration). A library is judged on its
+  private methods and private constants, its public surface being its users'
+  API; a Rails app on everything outside the framework's entry points.
+  Protocol methods, hooks, overrides that call `super`, classes that send
+  themselves computed names, registries (`inherited`, `.subclasses`) and the
+  public methods of framework-hosted classes and their mixins are left
+  alone. `checks: dead_code: { roots: [...] }` names more roots: constants,
+  methods and paths. Two blind raters judged all 13 corpus findings true
+  (26 of 26); it costs about 2.6 s on rubocop and 1.3 s on rubygems.org.
 - `fragmentation`, a complexity kind, on by default: a public method that
   reaches four or more methods of its own class, named predicates aside (calls
   with no receiver or on `self`, `send(:name)`, `method(:name)`; instance to

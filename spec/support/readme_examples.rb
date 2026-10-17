@@ -135,6 +135,22 @@ module ReadmeExamples
     RUBY
   end
 
+  def dead = { "lib/app/invoice.rb" => legacy }
+
+  def legacy
+    <<~RUBY
+      class Invoice
+        def total = lines.sum
+
+        private
+
+        def lines = [1, 2]
+
+        def legacy_total = lines.sum * 1.2
+      end
+    RUBY
+  end
+
   def fragmentation = { "lib/app/report.rb" => scattered }
 
   def scattered
