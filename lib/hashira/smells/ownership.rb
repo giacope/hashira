@@ -14,6 +14,8 @@ class Hashira::Smells::Ownership
 
   def repertoire = @_repertoire ||= Hashira::Smells::Repertoire.new(@trees)
 
+  def values = @_values ||= Hashira::Smells::Values.new(@trees)
+
   def calls(name) = sent.fetch(name, [])
 
   def keys(segments)
