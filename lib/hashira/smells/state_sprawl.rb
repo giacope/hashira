@@ -64,7 +64,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def read?(name) = exposed.include?(name) || reads(nodes).include?(name)
 
-  def reads(found) = found.select { READS.include?(it.class) }.map(&:name)
+  def reads(found) = Hashira::Smells::Attributes.ivars(found, READS)
 
   def exposed = @_exposed ||= exposing.grep(Prism::SymbolNode).map { field(it) }
 

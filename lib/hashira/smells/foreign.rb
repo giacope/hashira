@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "naming"
 require_relative "reads"
 require_relative "type_tests"
 
@@ -91,16 +92,11 @@ class Hashira::Smells::Foreign
 
   def known(local) = sources(local).map { made(it) } + declared(local.name)
 
-  def declared(name) = caught(name) + tests { it == name } + named(name)
+  def declared(name) = caught(name) + tests { it == name } + Hashira::Smells::Naming.types(name)
 
   def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.segments(value.receiver) : []
 
   def caught(name) = snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.segments(it) } }
-
-  def named(name)
-    words = name.to_s.split("_").reject(&:empty?)
-    words.each_index.map { [words.drop(it).map(&:capitalize).join] }.reject { Hashira::Analysis::CORE.include?(it.first) }
-  end
 
   def own = @subject.owner.split("::").last
 

@@ -70,5 +70,5 @@ class Hashira::Smells::Repertoire
 
   def symbol(node) = ([node.unescaped] if node.is_a?(Prism::SymbolNode))
 
-  def factory?(value) = value.is_a?(Prism::CallNode) && FACTORIES[value.receiver&.slice] == value.name
+  def factory?(value) = Hashira::Smells::Factory.made?(value, FACTORIES)
 end
