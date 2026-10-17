@@ -107,8 +107,9 @@ checks:
 `complexity` (a score of 10 or more), `fragmentation` (`helpers:` 4 or more,
 averaging `lines:` 3.5 or fewer), `indirection` (2 or more hollow helpers),
 `boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
-`state_sprawl` (a weight of more than 4) and `repeated_conditional` (more than 2
-tests). A flag on the command line wins over
+`state_sprawl` (a weight of more than 4), `repeated_conditional` (more than 2
+tests), `low_cohesion` (classes of 6 or more methods) and `middle_man` (3 or
+more forwarders). A flag on the command line wins over
 the file, and a key the command line rules out sits that run out (`fail-on` under
 `--json`). `--config PATH` reads another file; `--no-config` ignores it.
 
@@ -390,7 +391,11 @@ None clears the precision bar on independent labels, so all of them are opt-in
 
 <!-- example: smells lib/app --kind smells -->
 ```console
-Findings (2):
+Findings (3):
+  data_class: Item holds 'base', 'tax', 'quantity' and does nothing else (item.rb:1). Move the code that works on these fields into the class, or declare it a Data value.
+      · base
+      · tax
+      · quantity
   feature_envy: Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:7). The behavior may belong on Item.
       · item (line 7)
       · self (line 7)
@@ -473,6 +478,64 @@ Findings (2):
   (see [CI](#ci)).
 - **module_initialize** — `initialize` in a mixin: constructor state carried
   into every includer.
+
+The next six judge how classes are built. They need the class to be the
+project's own, so a framework's base classes stay out of all of them.
+
+- **concrete_inheritance** — a class extends an owned class that the project
+  also builds on its own (`Report.new` somewhere, or a bare `new` in the
+  parent's class methods): the subclass is coupled to a working
+  implementation, not to an abstraction. The places that build the parent are
+  the evidence. Left alone: a parent that says it is abstract (named `Base` or
+  `Abstract…`, a method that raises `NotImplementedError`, `abstract_class` or
+  `abstract!`), a parent nothing builds directly, and any hierarchy whose owned
+  root extends something the project does not own (`ApplicationRecord <
+  ActiveRecord::Base`, `MyError < StandardError`, `Struct.new(…)`): STI and
+  exception trees are how those frameworks are meant to be extended.
+- **refused_bequest** — a subclass overrides a method an owned ancestor
+  implements, only to raise or to do nothing (an empty body or a bare `nil`).
+  Left alone: overriding a hook the ancestor itself leaves empty or
+  unimplemented (that is filling a template, not refusing it), an override
+  that calls `super` or does anything else, and a library parent's methods,
+  whose contract is not the project's to redesign.
+- **low_cohesion** — LCOM4: a class of six or more methods (constructor aside)
+  whose methods fall into two or more groups that share no instance variable
+  and never call each other, each group holding two or more methods and a field
+  some method reads. Readers, writers and `def_delegators :@field` count as
+  touching their field; `send(:name)` and `method(:name)` count as calls. The
+  constructor joins what it ties together statement by statement: a field it
+  derives from another group's method (`@rules = load_rules`) or from the same
+  argument as another field. Left alone: a field only written (handed to a
+  template), a lone stateless method (that is `utility_function`'s business),
+  modules, and classes under a framework base, whose controllers and mailers
+  split into independent actions by design.
+- **message_chain** — the Law of Demeter, on one chain: `order.customer.address`
+  calls a method on what an owned object's reader returned. Every link must be
+  typed and owned: the start (a parameter, local, instance variable or own
+  reader) is named for an owned class, that class declares the reader, the
+  reader is named for another owned class, and that class declares the next
+  message. The evidence shows the classes crossed (`Order → Customer`). Left
+  alone: a library's objects (`node.loc.selector`), core collections
+  (`items.first`), a hop with arguments or a block (builders, queries), a hop
+  back to the same class (fluent APIs), a Struct or Data value's readers, and
+  messages every object answers (`to_s`, `==`). This is separate from
+  `repeated_call`, which reports a chain read twice whatever its types.
+- **data_class** — a class with two or more fields and nothing but attribute
+  macros, hand-written readers and writers, and a constructor that only stores
+  its arguments. Left alone: `Struct` and `Data` (a value declared as one),
+  a class with a superclass or a subclass (an error carrying a code, a base
+  others extend), and any method, mixin, class method or constant.
+- **middle_man** — a class whose public methods mostly (more than half, and at
+  least three) only forward to one field: one call on an instance variable or
+  its reader, passing the method's own arguments through unchanged. A single
+  forwarder is left alone, since it is exactly what `message_chain` asks for.
+  Left alone too: a class that declares its delegation (`def_delegators`,
+  `delegate … to:`, `SimpleDelegator`, `DelegateClass`) — the declaration is
+  the design, a wrapper that narrows an interface on purpose, and removing the
+  middle man would mean giving that up — forwarding to a collection's own
+  protocol (`each`, `size`, `<<`: an encapsulated collection), a facade
+  spread over several collaborators, and a method that fills a role its kin
+  share.
 
 Class-level kinds judge a class across every file that reopens it.
 
