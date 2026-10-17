@@ -139,6 +139,20 @@ labels. No human has relabelled them yet. True findings, per rater:
 | nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
 | indirection | — | 2/2, 0/2 | 2/4 | opt-in |
 
+Six class-level kinds came later and were measured the same way, on every
+finding the corpus gives them up to 25, by one independent rater (an AI
+reviewer that saw only the shuffled findings and the corpus source). None
+clears the bar, so all six are opt-in:
+
+| kind | corpus findings | true |
+| --- | --- | --- |
+| message_chain | 81 | 2/25 (8%) |
+| concrete_inheritance | 5 | 1/5 |
+| refused_bequest | 1 | 0/1 |
+| low_cohesion | 3 | 0/3 |
+| data_class | 1 | 0/1 |
+| middle_man | 0 | — |
+
 `fragmentation` is on: a separate blind readability study measured it (see
 [Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
 `boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
