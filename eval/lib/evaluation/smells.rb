@@ -21,6 +21,7 @@ class Evaluation::Smells
   end
 
   def run(root, expect)
+    Evaluation::History.new(root).replay(expect.fetch("history", []))
     settings = @tool.configured(expect["config"], File.join(root, ".evaluation.yml"))
     @tool.call(root, expect.fetch("args", []) + settings + ["--json"])
   end

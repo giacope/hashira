@@ -109,8 +109,10 @@ layers: [web, app, domain]         # outermost first; see Layers below
 averaging `lines:` 3.5 or fewer), `indirection` (2 or more hollow helpers),
 `boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
 `state_sprawl` (a weight of more than 4) and `repeated_conditional` (more than 2
-tests). `dead_code` takes `roots:` (see [whole-codebase checks](#whole-codebase-checks)).
-A flag on the command line wins over
+tests). `change_coupling` takes `commits:`, `degree:` and `files:`, and
+`dead_code` takes `roots:` (see [whole-codebase checks](#whole-codebase-checks)).
+`checks: { all: true, nil_check: false }` turns every kind on but the ones
+it names. A flag on the command line wins over
 the file, and a key the command line rules out sits that run out (`fail-on` under
 `--json`). `--config PATH` reads another file; `--no-config` ignores it.
 
@@ -140,11 +142,14 @@ labels. No human has relabelled them yet. True findings, per rater:
 | nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
 | indirection | — | 2/2, 0/2 | 2/4 | opt-in |
 | dead_code | 13/13, 13/13 | — | 26/26 (100%) | on |
+| change_coupling | 1/3, 2/3 | — | 3/6 | opt-in |
 
 `fragmentation` is on: a separate blind readability study measured it (see
 [Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
 `boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
-so they are opt-in too. `layer_violation` is on whenever `layers:` are declared. `--kind` and `--fail-on` turn on the kinds they name,
+so they are opt-in too, and so is `change_coupling`: three findings at its
+limits, and 5 of 34 labels true on a looser sample (degree 30% and over).
+`layer_violation` is on whenever `layers:` are declared. `--kind` and `--fail-on` turn on the kinds they name,
 and a `checks:` setting for a kind turns it on.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
@@ -220,8 +225,8 @@ Findings:
 
 ## Whole-codebase checks
 
-These checks read the whole codebase at once: the layering you declare and
-the code nothing reaches.
+These checks read the whole codebase at once: the layering you declare, the
+code nothing reaches, and the files that keep changing together.
 
 ### Layers
 
@@ -293,6 +298,20 @@ is, and the rest of the public surface is judged too.
 Findings (1):
   dead_code: Invoice#legacy_total is never called in the project (invoice.rb:8). Delete it, or name it in dead_code roots if code outside the project uses it.
 ```
+
+### Change coupling
+
+**change_coupling**, opt-in, reads the git history behind the hotspots: two files in
+different packages that changed together in at least `commits:` 5 commits, and
+in at least `degree:` 50% of their changes (shared commits over the mean of
+the two files' commits, Tornhill's degree of coupling). Commits touching more
+than `files:` 30 analyzed files (a rename, a style sweep) are not counted. The
+finding says whether one file refers to the other: a pair with no reference
+between them is coupled where the code does not show it.
+
+It needs the history: a CI checkout of one commit (`actions/checkout`'s
+default) sees none, so the ratchet would find the pairs resolved there. Fetch
+the history (`fetch-depth: 0`) wherever change_coupling is gated.
 
 ## Rails apps
 

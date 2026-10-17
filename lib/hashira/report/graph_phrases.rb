@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 module Hashira::Report::Phrases
+  CHANGE_ADVICE = {
+    true => "and one refers to the other — every change crosses the package boundary. " \
+      "Narrow what one asks of the other, or move them into one package.",
+    false => "though neither refers to the other — the coupling is hidden. " \
+      "Name what they share in one place both can depend on."
+  }.freeze
+
   module_function
 
   def on_layer_violation(finding)
@@ -21,6 +28,13 @@ module Hashira::Report::Phrases
     verb = detail[:noun] == :method ? "called" : "referred to"
     "#{finding.package} is never #{verb} in the project (#{detail[:site]}). " \
       "Delete it, or name it in dead_code roots if code outside the project uses it."
+  end
+
+  def on_change_coupling(finding)
+    detail = finding.detail
+    first, second = detail.files.zip(detail.packages).map { |file, package| "#{file} (#{package})" }
+    "#{first} and #{second} changed together in #{detail.shared} commits, #{detail.degree}% of their changes, " \
+      "#{CHANGE_ADVICE.fetch(detail.explicit)}"
   end
 
   def leaning(detail)

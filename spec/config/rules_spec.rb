@@ -16,8 +16,8 @@ RSpec.describe(Hashira::Config::Rules) do
 
   it "leaves measured kinds on and low-precision kinds off when nothing is said, and all of them on for all" do
     defaults = Hashira::Config::Rules::NONE
-    expect(%w[complexity duplication nil_check dead_code].map { defaults.enabled?(it) })
-      .to(eq([true, true, false, true]))
+    expect(%w[complexity duplication nil_check dead_code change_coupling].map { defaults.enabled?(it) })
+      .to(eq([true, true, false, true, false]))
     expect(defaults.threshold("complexity", 10)).to(eq(10))
     expect(%w[nil_check indirection].map { parse("all").enabled?(it) }).to(eq([true, true]))
     expect(parse("nil_check" => true).enabled?("nil_check")).to(be(true))
@@ -28,6 +28,13 @@ RSpec.describe(Hashira::Config::Rules) do
     rules = parse("fragmentation" => { "helpers" => 6, "lines" => 2.5 })
     limits = %w[helpers lines].map { rules.limit("fragmentation", it, 1) }
     expect(limits + [parse({}).limit("x", "y", 7)]).to(eq([6, 2.5, 7]))
+  end
+
+  it "turns every kind on with all: true, beside settings that still move or drop one" do
+    rules = parse("all" => true, "nil_check" => false, "complexity" => { "threshold" => 4 })
+    switches = %w[feature_envy nil_check dead_code].map { rules.enabled?(it) }
+    switches += [parse("all" => false), parse("complexity" => true)].map { it.enabled?("nil_check") }
+    expect(switches + [rules.threshold("complexity", 10)]).to(eq([true, false, true, false, false, 4]))
   end
 
   it "reads a kind's named lists, and carries declared layers through naming" do
@@ -51,6 +58,7 @@ RSpec.describe(Hashira::Config::Rules) do
       { "fragmentation" => { "lines" => 0 } } => "fragmentation lines must be a positive number",
       { "fragmentation" => { "helpers" => "4" } } => "fragmentation helpers must be a positive number",
       { "complexity" => { "helpers" => 4 } } => 'complexity has no setting "helpers" (use: enabled, threshold)',
+      { "all" => "yes" } => 'checks: all takes true or false, not "yes"',
       { "dead_code" => { "roots" => [3] } } => "dead_code roots takes a list of names",
       { "dead_code" => { "roots" => [""] } } => "dead_code roots takes a list of names"
     }.each { |raw, message| expect { parse(raw) }.to(raise_error(Hashira::Error, /#{Regexp.escape(message)}/)) }

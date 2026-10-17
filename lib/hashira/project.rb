@@ -43,6 +43,8 @@ class Hashira::Project
 
   def root = ROOT_PACKAGE
 
+  def history = @_history ||= Hashira::GitLog.new(self)
+
   def layers = rules.layers
 
   private

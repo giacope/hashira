@@ -3,7 +3,7 @@
 class Hashira::Config::Setting
   KEYS = %w[enabled threshold].freeze
 
-  LIMITS = { "fragmentation" => %w[helpers lines] }.freeze
+  LIMITS = { "fragmentation" => %w[helpers lines], "change_coupling" => %w[commits degree files] }.freeze
 
   LISTS = { "dead_code" => %w[roots] }.freeze
 

@@ -180,7 +180,7 @@ RSpec.describe(Hashira::Report::Json) do
 
     it "treats every structural kind and complexity as measured, and every smell and history guess as a pattern" do
       rate = ->(kind) { described_class.of(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])) }
-      guesses = %w[dead_code]
+      guesses = %w[change_coupling dead_code]
       expect([*(Hashira::Pipeline::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
       expect([*Hashira::Pipeline::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))
     end
