@@ -23,6 +23,17 @@ That's exactly what CI runs: rubocop, rspec (with a coverage floor), and
 hashira's own gate and ratchet on itself. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
+CI also runs the evaluation's fixed-answer suites, which check hashira's
+answers against known ones; any failed check fails the build:
+
+```sh
+eval/run --hashira . --suites complexity,coupling,duplication,smells,cli --label ci
+```
+
+The full evaluation (corpus, precision sample, blind and human labels) is a
+pre-release step; [eval/results/README.md](eval/results/README.md) says how to
+run it.
+
 Pull requests also get a mutation gate: [kimera](https://github.com/giacope/kimera)
 mutates the lines you changed, and any mutant the specs don't run or don't kill
 fails the build. To run it before pushing:

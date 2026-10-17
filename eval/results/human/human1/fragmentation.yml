@@ -1,0 +1,44 @@
+---
+- key: rubocop|fragmentation|RuboCop::DirectiveComment#cop_names
+  label: ''
+  why: ''
+  message: RuboCop::DirectiveComment#cop_names spreads its work over 5 same-class
+    helpers averaging 3.5 lines a method, 2 deep (cop_names → parsed_cop_names → cop_names_for_department)
+    (rubocop/directive_comment.rb:120). Merge the helpers that only move data into
+    the entry; keep named predicates.
+  evidence:
+  - all_cops? (line 115) (predicate, not counted)
+  - all_cop_names (line 167)
+  - exclude_lint_department_cops (line 176)
+  - parsed_cop_names (line 156)
+  - raw_cop_names (line 125)
+  - department? (line 163) (predicate, not counted)
+  - cop_names_for_department (line 171)
+  code:
+  - "# rubocop/directive_comment.rb:120"
+  - '120:     def cop_names'
+  - '121:       @cop_names ||= all_cops? ? all_cop_names : parsed_cop_names'
+  - '122:     end'
+  - '123: '
+  - '124:     # Returns an array of cops for this directive comment, without resolving
+    departments'
+  - '125:     def raw_cop_names'
+  - '126:       @raw_cop_names ||= (cops || '''').split(/,\s*/)'
+  - '127:     end'
+  - '128: '
+  - '129:     # Returns array of specified in this directive department names'
+  - '130:     # when all department disabled'
+  - '131:     def department_names'
+  - '132:       raw_cop_names.select { |cop| department?(cop) }'
+  - '133:     end'
+  - '134: '
+  - '135:     # Checks if directive departments include cop'
+  - '136:     def in_directive_department?(cop)'
+  - '137:       department_names.any? { |department| cop.start_with?(department) }'
+  - '138:     end'
+  - '139: '
+  - '140:     # Checks if cop department has already used in directive comment'
+  - '141:     def overridden_by_department?(cop)'
+  - '142:       in_directive_department?(cop) && raw_cop_names.include?(cop)'
+  - '143:     end'
+  - '144: '

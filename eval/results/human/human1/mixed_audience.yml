@@ -1,0 +1,16 @@
+---
+- key: faraday|mixed_audience|(root)
+  label: ''
+  why: ''
+  message: "(root) splits 2 ways: adapter alone uses Connection, TimeoutError; request,
+    response use BadRequestError, ClientError, ConflictError, ForbiddenError, Middleware,
+    NilStatusError, ParsingError, ProxyAuthError, RequestTimeoutError, ResourceNotFound,
+    ServerError, TooManyRequestsError, UnauthorizedError, UnprocessableContentError
+    — parts with separate client bases are separate packages in disguise. Split (root)
+    along that seam."
+  evidence:
+  - 'adapter/test.rb:240: Connection::USER_AGENT'
+  - 'adapter/test.rb:301: Faraday::TimeoutError'
+  - 'request/authorization.rb:6: Faraday::Middleware'
+  - 'request/instrumentation.rb:6: Faraday::Middleware'
+  code: []

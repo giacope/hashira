@@ -21,6 +21,16 @@ jobs:
           bundler-cache: true
       - run: bin/ci
 
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+      # The fixed-answer suites: no corpus, no network. Any failing case fails the build.
+      - run: eval/run --hashira . --suites complexity,coupling,duplication,smells,cli --label ci
+
   mutation:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
