@@ -1,0 +1,70 @@
+---
+- key: rubocop|dead_code|RuboCop::Cop::Metrics::CyclomaticComplexity#count_block?
+  versions:
+  - graph
+  label: tp
+  why: count_block? has no callers anywhere in rubocop (no send or node-pattern use);
+    a leftover private helper
+- key: rubocop|dead_code|RuboCop::Cop::Layout::LineLength#line_in_heredoc?
+  versions:
+  - graph
+  label: tp
+  why: line_in_heredoc? is private in LineLength and nothing calls it
+- key: rubocop|dead_code|RuboCop::Cop::VisibilityHelp#find_visibility_end
+  versions:
+  - graph
+  label: tp
+  why: find_visibility_end is a private mixin method with no references anywhere in
+    the repo
+- key: rubocop|dead_code|RuboCop::Cop::Lint::OutOfRangeRegexpRef#nth_ref_receiver?
+  versions:
+  - graph
+  label: tp
+  why: nth_ref_receiver? is a private helper with no callers
+- key: rubygems.org|dead_code|ApiKey::ScopeError
+  versions:
+  - graph
+  label: tp
+  why: ApiKey::ScopeError is never raised, rescued or referenced
+- key: faraday|dead_code|Faraday::RackBuilder#adapter_set?
+  versions:
+  - graph
+  label: tp
+  why: adapter_set? is private in RackBuilder and nothing calls it
+- key: rubocop|dead_code|RuboCop::Cop::CodeLength#irrelevant_line
+  versions:
+  - graph
+  label: tp
+  why: private irrelevant_line in the CodeLength mixin is unused; the calculator has
+    its own irrelevant_line?
+- key: rubocop|dead_code|RuboCop::Cop::Layout::LineLength#allow_heredoc?
+  versions:
+  - graph
+  label: tp
+  why: allow_heredoc? is private and never called; only the AllowHeredoc config is
+    used
+- key: rubocop|dead_code|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector#extract_sources
+  versions:
+  - graph
+  label: tp
+  why: GenericCorrector#extract_sources has no callers
+- key: rubocop|dead_code|RuboCop::FeatureLoader#seems_cannot_load_such_file_error?
+  versions:
+  - graph
+  label: tp
+  why: seems_cannot_load_such_file_error? is private and nothing calls it
+- key: rubocop|dead_code|RuboCop::Cop::Migration::DepartmentName#disable_comment_offset
+  versions:
+  - graph
+  label: tp
+  why: disable_comment_offset is private and never called
+- key: rubocop|dead_code|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#next_to_bracket?
+  versions:
+  - graph
+  label: tp
+  why: next_to_bracket? has no callers
+- key: rubygems.org|dead_code|Access::DEFAULT_ROLE
+  versions:
+  - graph
+  label: tp
+  why: Access::DEFAULT_ROLE is not referenced anywhere in code, migrations or config

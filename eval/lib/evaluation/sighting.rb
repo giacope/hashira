@@ -9,11 +9,17 @@ module Evaluation
 
       def key = "#{corpus}|#{kind}|#{identity}"
 
-      def identity = kind == "duplication" ? starts.join(",") : finding["package"]
+      def identity = kind == "duplication" ? starts.join(",") : finding["digest"] || finding["package"]
 
       def starts = finding["evidence"].map { it.sub(/-\d+\z/, "") }.sort
 
-      def sites = kind == "duplication" ? finding["evidence"] : [finding.dig("detail", "site") || finding["package"]]
+      def sites
+        case kind
+        when "duplication" then finding["evidence"]
+        when "change_coupling" then finding.dig("detail", "files").map { "#{it}:1" }
+        else [finding.dig("detail", "site") || finding["package"]]
+        end
+      end
 
       def entry
         { "key" => key, "message" => finding["message"], "evidence" => finding["evidence"] }.merge("code" => code)

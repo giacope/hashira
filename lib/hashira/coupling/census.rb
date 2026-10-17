@@ -35,9 +35,17 @@ class Hashira::Coupling::Census
 
   def pinpoint(segments) = scope.pinpoint(segments)
 
+  def locate(segments, nesting) = scope.locate(segments, nesting)
+
+  def owner(path) = scope.owner(path)
+
+  def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
+
   def charge(file, nesting) = translate(placement.charge(file, nesting))
 
   def web?(package) = placement.web?(package)
+
+  def home(file) = homes[file] || charge(file, [])
 
   def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
 
@@ -77,6 +85,10 @@ class Hashira::Coupling::Census
   end
 
   def type?(segments) = roster.type?(segments)
+
+  def homes = @_homes ||= placement.placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
+
+  def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).first
 
   def tally
     Hashira::Coupling::Roster.new(placement.placed.map { |definition, package| [definition, translate(package)] })

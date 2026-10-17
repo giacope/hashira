@@ -1,0 +1,73 @@
+---
+- key: rubocop|dead_code|RuboCop::Cop::Metrics::CyclomaticComplexity#count_block?
+  versions:
+  - graph
+  label: tp
+  why: Private method; nothing in lib/ or spec/ calls count_block? (the only near
+    match is count_blocks? in BlockNesting). Leftover from a refactor.
+- key: rubocop|dead_code|RuboCop::Cop::Layout::LineLength#line_in_heredoc?
+  versions:
+  - graph
+  label: tp
+  why: Private method; the cop only calls line_in_permitted_heredoc?, so nothing reaches
+    line_in_heredoc?.
+- key: rubocop|dead_code|RuboCop::Cop::VisibilityHelp#find_visibility_end
+  versions:
+  - graph
+  label: tp
+  why: Private helper in VisibilityHelp; only find_visibility_start is used, and nothing
+    in the repo refers to find_visibility_end.
+- key: rubocop|dead_code|RuboCop::Cop::Lint::OutOfRangeRegexpRef#nth_ref_receiver?
+  versions:
+  - graph
+  label: tp
+  why: Private method; the cop uses only regexp_receiver? and regexp_first_argument?,
+    and nothing refers to nth_ref_receiver?.
+- key: rubygems.org|dead_code|ApiKey::ScopeError
+  versions:
+  - graph
+  label: tp
+  why: Nothing in the repository raises, rescues or mentions ApiKey::ScopeError.
+- key: faraday|dead_code|Faraday::RackBuilder#adapter_set?
+  versions:
+  - graph
+  label: tp
+  why: Private method in RackBuilder; nothing in faraday calls adapter_set?, since
+    ensure_adapter! checks @adapter directly.
+- key: rubocop|dead_code|RuboCop::Cop::CodeLength#irrelevant_line
+  versions:
+  - graph
+  label: tp
+  why: Private irrelevant_line (no '?') in the CodeLength mixin is unreferenced; the
+    calculator uses its own irrelevant_line? instead.
+- key: rubocop|dead_code|RuboCop::Cop::Layout::LineLength#allow_heredoc?
+  versions:
+  - graph
+  label: tp
+  why: Private method; the cop reads allowed_heredoc directly. The only spec hit is
+    an unrelated `let(:allow_heredoc)` variable.
+- key: rubocop|dead_code|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector#extract_sources
+  versions:
+  - graph
+  label: tp
+  why: Private method in GenericCorrector and its subclasses; nothing calls extract_sources.
+- key: rubocop|dead_code|RuboCop::FeatureLoader#seems_cannot_load_such_file_error?
+  versions:
+  - graph
+  label: tp
+  why: Private method in FeatureLoader (@api private); nothing calls seems_cannot_load_such_file_error?.
+- key: rubocop|dead_code|RuboCop::Cop::Migration::DepartmentName#disable_comment_offset
+  versions:
+  - graph
+  label: tp
+  why: Private method; nothing calls disable_comment_offset.
+- key: rubocop|dead_code|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#next_to_bracket?
+  versions:
+  - graph
+  label: tp
+  why: Private method; nothing calls next_to_bracket?.
+- key: rubygems.org|dead_code|Access::DEFAULT_ROLE
+  versions:
+  - graph
+  label: tp
+  why: Nothing in the repository refers to Access::DEFAULT_ROLE.

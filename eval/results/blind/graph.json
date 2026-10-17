@@ -1,0 +1,362 @@
+[
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Metrics::CyclomaticComplexity#count_block?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "count_block? has no callers anywhere in rubocop (no send or node-pattern use); a leftover private helper"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; nothing in lib/ or spec/ calls count_block? (the only near match is count_blocks? in BlockNesting). Leftover from a refactor."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|encoders/flat_params_encoder.rb <-> request/authorization.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "every shared commit is a RuboCop lint or style sweep; nothing is shared between the two files"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "All six shared commits are repo-wide RuboCop lint passes, so the two files changing together is coincidence."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Layout::LineLength#line_in_heredoc?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "line_in_heredoc? is private in LineLength and nothing calls it"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; the cop only calls line_in_permitted_heredoc?, so nothing reaches line_in_heredoc?."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::VisibilityHelp#find_visibility_end",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "find_visibility_end is a private mixin method with no references anywhere in the repo"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private helper in VisibilityHelp; only find_visibility_start is used, and nothing in the repo refers to find_visibility_end."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/models/concerns/compact_index_versions.rb <-> lib/compact_index/gem_version.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "a DB query mapped onto the index value struct naturally changes with index-format features (ruby_abi, content_address); revert/cleanup commits pad the count"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "The compact-index field list (ruby_abi, content_address) is written out in the SQL and args hash in the concern and again in the GemVersion members and methods, so every new field needs edits in both files."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/models/rubygem.rb <-> app/models/version.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "Rubygem and Version are the two core associated domain models, so changing them together is expected"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "Rubygem and Version are the two core, closely linked domain models. Co-changing in feature work is expected, and putting them in one package fixes nothing."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Lint::OutOfRangeRegexpRef#nth_ref_receiver?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "nth_ref_receiver? is a private helper with no callers"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; the cop uses only regexp_receiver? and regexp_first_argument?, and nothing refers to nth_ref_receiver?."
+    }
+  },
+  {
+    "key": "rubygems.org|dead_code|ApiKey::ScopeError",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "ApiKey::ScopeError is never raised, rescued or referenced"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Nothing in the repository raises, rescues or mentions ApiKey::ScopeError."
+    }
+  },
+  {
+    "key": "faraday|dead_code|Faraday::RackBuilder#adapter_set?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "adapter_set? is private in RackBuilder and nothing calls it"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method in RackBuilder; nothing in faraday calls adapter_set?, since ensure_adapter! checks @adapter directly."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|encoders/nested_params_encoder.rb <-> options/env.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the shared commits are all RuboCop and lint mass edits"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "Every shared commit is a RuboCop or style mass edit."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/policies/ownership_policy.rb <-> app/policies/rubygem_policy.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "OwnershipPolicy already delegates to RubygemPolicy via policy!; ownership work naturally touches both"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "OwnershipPolicy already delegates to RubygemPolicy through policy!. The shared commits are refactors across all policies."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::CodeLength#irrelevant_line",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "private irrelevant_line in the CodeLength mixin is unused; the calculator has its own irrelevant_line?"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private irrelevant_line (no '?') in the CodeLength mixin is unreferenced; the calculator uses its own irrelevant_line? instead."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|encoders/flat_params_encoder.rb <-> utils/headers.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the co-changes are all RuboCop style sweeps"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "All shared commits are RuboCop lint passes."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|rack_builder.rb <-> utils/headers.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the co-changes are RuboCop and lint mass edits plus an rspec migration"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "The shared commits are lint passes plus an rspec migration, which are mass edits."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Layout::LineLength#allow_heredoc?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "allow_heredoc? is private and never called; only the AllowHeredoc config is used"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; the cop reads allowed_heredoc directly. The only spec hit is an unrelated `let(:allow_heredoc)` variable."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Style::ParallelAssignment::GenericCorrector#extract_sources",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "GenericCorrector#extract_sources has no callers"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method in GenericCorrector and its subclasses; nothing calls extract_sources."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/models/concerns/user_multifactor_methods.rb <-> app/models/concerns/user_totp_methods.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "a refactor split TOTP methods out of the multifactor concern and renamed things; the two concerns cooperating is expected"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "These are two deliberately split concerns of User, changed together by MFA feature work and renames. Both already live in one place (models/concerns)."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/policies/application_policy.rb <-> app/policies/rubygem_policy.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "ApplicationPolicy is the base class of RubygemPolicy, so policy-framework refactors touch both by design"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "This is a base class and its subclass. Shared helpers living in ApplicationPolicy is the intended design."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/models/concerns/user_totp_methods.rb <-> app/models/webauthn_credential.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "MFA feature changes spanning TOTP and WebAuthn are expected feature work, not duplication"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "The shared MFA logic is already pulled out into User (mfa_method_added, reset_mfa_attributes); the co-changes were a single feature delivered in steps."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/jobs/upload_info_file_job.rb <-> app/jobs/upload_names_file_job.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "tp",
+      "why": "both jobs copy the same S3 store, metadata, checksum and purge upload code; it should live in one shared helper"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "The S3 store call, metadata, cache headers, logging and Fastly purge are copied almost line for line between the two jobs, so they belong in a shared uploader."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::FeatureLoader#seems_cannot_load_such_file_error?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "seems_cannot_load_such_file_error? is private and nothing calls it"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method in FeatureLoader (@api private); nothing calls seems_cannot_load_such_file_error?."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/controllers/webauthn_credentials_controller.rb <-> app/models/webauthn_credential.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "a controller and its model changing together for WebAuthn features is normal MVC co-change"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "A controller and its model changing together during WebAuthn feature work is expected."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Migration::DepartmentName#disable_comment_offset",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "disable_comment_offset is private and never called"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; nothing calls disable_comment_offset."
+    }
+  },
+  {
+    "key": "rubocop|dead_code|RuboCop::Cop::Layout::SpaceInsideArrayLiteralBrackets#next_to_bracket?",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "next_to_bracket? has no callers"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Private method; nothing calls next_to_bracket?."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/models/organization.rb <-> app/models/organization_onboarding.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the organization onboarding feature naturally touches the Organization model; it's associated domain work"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "These are organization feature commits that naturally touch both models; the coupling is expected domain work."
+    }
+  },
+  {
+    "key": "rubygems.org|dead_code|Access::DEFAULT_ROLE",
+    "kind": "dead_code",
+    "rater_a": {
+      "label": "tp",
+      "why": "Access::DEFAULT_ROLE is not referenced anywhere in code, migrations or config"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "Nothing in the repository refers to Access::DEFAULT_ROLE."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/request_options.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the shared commits are all RuboCop lint sweeps"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "All shared commits are RuboCop lint or documentation passes."
+    }
+  },
+  {
+    "key": "rubygems.org|change_coupling|app/policies/oidc/rubygem_trusted_publisher_policy.rb <-> app/policies/rubygem_policy.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "tp",
+      "why": "the trusted-publisher policy repeats the owner/admin role rule that RubygemPolicy#configure_trusted_publishers? already has; it should delegate as OwnershipPolicy does"
+    },
+    "rater_b": {
+      "label": "tp",
+      "why": "The rule 'owner, or org admin' is copied three times in the trusted-publisher policy instead of delegating to RubygemPolicy#configure_trusted_publishers?, the way OwnershipPolicy already delegates."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/env.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "the shared commits are all RuboCop and lint mass edits"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "All shared commits are RuboCop lint passes."
+    }
+  },
+  {
+    "key": "faraday|change_coupling|error.rb <-> response/raise_error.rb",
+    "kind": "change_coupling",
+    "rater_a": {
+      "label": "fp",
+      "why": "adding an error class and mapping its status in RaiseError is expected feature work, plus lint sweeps"
+    },
+    "rater_b": {
+      "label": "fp",
+      "why": "Error classes are public API and the RaiseError middleware maps statuses to them. Adding a status naturally touches both, and merging the two files makes no sense."
+    }
+  }
+]

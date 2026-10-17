@@ -7,13 +7,15 @@ class Hashira::Coupling::Graph
     @trees = trees
   end
 
-  attr_reader :trees
+  attr_reader :trees, :census
 
   def unfolded = @_unfolded ||= self.class.new(@project, @trees, @census.unfolded)
 
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
 
   def charge(file) = @census.charge(file, [])
+
+  def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a
 
   def packages = (@census.packages | dependencies.keys)
 

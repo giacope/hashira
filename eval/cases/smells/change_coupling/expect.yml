@@ -1,0 +1,28 @@
+# The invoice and the shipping rate live in two packages, neither refers to
+# the other, yet most commits touching one touch the other: hidden change
+# coupling. Money and its rates change together too, but inside one package.
+# The API client changed with the rate only three times, under the five
+# commits a pair needs.
+history:
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
+  - [lib/app/billing/invoice.rb]
+  - [lib/app/core/money.rb, lib/app/core/rates.rb]
+  - [lib/app/core/money.rb, lib/app/core/rates.rb]
+  - [lib/app/core/money.rb, lib/app/core/rates.rb]
+  - [lib/app/core/money.rb, lib/app/core/rates.rb]
+  - [lib/app/core/money.rb, lib/app/core/rates.rb]
+  - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
+  - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
+  - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
+present:
+  - {kind: change_coupling, package: billing}
+absent:
+  - {kind: change_coupling, package: core}
+  - {kind: change_coupling, package: api}
+messages:
+  - {kind: change_coupling, package: billing, includes: "billing/invoice.rb (billing) and shipping/rate.rb (shipping) changed together in 6 commits"}

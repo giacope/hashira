@@ -1,0 +1,102 @@
+---
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> request/authorization.rb
+  versions:
+  - graph
+  label: fp
+  why: every shared commit is a RuboCop lint or style sweep; nothing is shared between
+    the two files
+- key: rubygems.org|change_coupling|app/models/concerns/compact_index_versions.rb
+    <-> lib/compact_index/gem_version.rb
+  versions:
+  - graph
+  label: fp
+  why: a DB query mapped onto the index value struct naturally changes with index-format
+    features (ruby_abi, content_address); revert/cleanup commits pad the count
+- key: rubygems.org|change_coupling|app/models/rubygem.rb <-> app/models/version.rb
+  versions:
+  - graph
+  label: fp
+  why: Rubygem and Version are the two core associated domain models, so changing
+    them together is expected
+- key: faraday|change_coupling|encoders/nested_params_encoder.rb <-> options/env.rb
+  versions:
+  - graph
+  label: fp
+  why: the shared commits are all RuboCop and lint mass edits
+- key: rubygems.org|change_coupling|app/policies/ownership_policy.rb <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: fp
+  why: OwnershipPolicy already delegates to RubygemPolicy via policy!; ownership work
+    naturally touches both
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> utils/headers.rb
+  versions:
+  - graph
+  label: fp
+  why: the co-changes are all RuboCop style sweeps
+- key: faraday|change_coupling|rack_builder.rb <-> utils/headers.rb
+  versions:
+  - graph
+  label: fp
+  why: the co-changes are RuboCop and lint mass edits plus an rspec migration
+- key: rubygems.org|change_coupling|app/models/concerns/user_multifactor_methods.rb
+    <-> app/models/concerns/user_totp_methods.rb
+  versions:
+  - graph
+  label: fp
+  why: a refactor split TOTP methods out of the multifactor concern and renamed things;
+    the two concerns cooperating is expected
+- key: rubygems.org|change_coupling|app/policies/application_policy.rb <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: fp
+  why: ApplicationPolicy is the base class of RubygemPolicy, so policy-framework refactors
+    touch both by design
+- key: rubygems.org|change_coupling|app/models/concerns/user_totp_methods.rb <-> app/models/webauthn_credential.rb
+  versions:
+  - graph
+  label: fp
+  why: MFA feature changes spanning TOTP and WebAuthn are expected feature work, not
+    duplication
+- key: rubygems.org|change_coupling|app/jobs/upload_info_file_job.rb <-> app/jobs/upload_names_file_job.rb
+  versions:
+  - graph
+  label: tp
+  why: both jobs copy the same S3 store, metadata, checksum and purge upload code;
+    it should live in one shared helper
+- key: rubygems.org|change_coupling|app/controllers/webauthn_credentials_controller.rb
+    <-> app/models/webauthn_credential.rb
+  versions:
+  - graph
+  label: fp
+  why: a controller and its model changing together for WebAuthn features is normal
+    MVC co-change
+- key: rubygems.org|change_coupling|app/models/organization.rb <-> app/models/organization_onboarding.rb
+  versions:
+  - graph
+  label: fp
+  why: the organization onboarding feature naturally touches the Organization model;
+    it's associated domain work
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/request_options.rb
+  versions:
+  - graph
+  label: fp
+  why: the shared commits are all RuboCop lint sweeps
+- key: rubygems.org|change_coupling|app/policies/oidc/rubygem_trusted_publisher_policy.rb
+    <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: tp
+  why: the trusted-publisher policy repeats the owner/admin role rule that RubygemPolicy#configure_trusted_publishers?
+    already has; it should delegate as OwnershipPolicy does
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/env.rb
+  versions:
+  - graph
+  label: fp
+  why: the shared commits are all RuboCop and lint mass edits
+- key: faraday|change_coupling|error.rb <-> response/raise_error.rb
+  versions:
+  - graph
+  label: fp
+  why: adding an error class and mapping its status in RaiseError is expected feature
+    work, plus lint sweeps
