@@ -3,10 +3,10 @@
 require "prism"
 
 class Hashira::Coupling::Mentions
-  SENDS = %i[
-    send public_send __send__ try try! method public_method instance_method public_instance_method
-    respond_to? define_method alias_method
-  ].freeze
+  SENDS = (
+    Hashira::Analysis::Syntax::SENDS +
+    %i[try try! public_method instance_method public_instance_method respond_to? define_method alias_method]
+  ).freeze
 
   MARKERS = %i[
     private public protected module_function private_class_method public_class_method private_constant public_constant

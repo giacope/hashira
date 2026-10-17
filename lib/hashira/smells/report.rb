@@ -2,6 +2,18 @@
 
 require_relative "boundary_sprawl"
 require_relative "check"
+require_relative "concrete_inheritance"
+require_relative "data_class"
+require_relative "hierarchy"
+require_relative "attributes"
+require_relative "factory"
+require_relative "naming"
+require_relative "refusal"
+require_relative "values"
+require_relative "low_cohesion"
+require_relative "message_chain"
+require_relative "middle_man"
+require_relative "refused_bequest"
 require_relative "control_parameter"
 require_relative "data_clump"
 require_relative "repeated_call"
@@ -23,7 +35,8 @@ class Hashira::Smells::Report
   JUDGES = [
     Hashira::Smells::DataClump, Hashira::Smells::AssumedState,
     Hashira::Smells::ModuleInitialize, Hashira::Smells::RepeatedConditional,
-    Hashira::Smells::StateSprawl
+    Hashira::Smells::StateSprawl, Hashira::Smells::ConcreteInheritance, Hashira::Smells::RefusedBequest,
+    Hashira::Smells::LowCohesion, Hashira::Smells::DataClass, Hashira::Smells::MiddleMan
   ].freeze
 
   PROBES = (CHECKS - JUDGES).freeze
@@ -43,7 +56,10 @@ class Hashira::Smells::Report
 
   def types = @_types ||= census.types
 
-  def wholes = types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it) }
+  def wholes
+    family = Hashira::Smells::Hierarchy.new(types)
+    types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it, family:) }
+  end
 
   def methods = types.flat_map(&:defs)
 

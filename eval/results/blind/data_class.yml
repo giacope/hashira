@@ -1,0 +1,6 @@
+---
+- key: rubocop|data_class|RuboCop::Formatter::JUnitFormatter::FailureElement
+  label: fp
+  why: 'This is a deliberate :nodoc: parameter holder for XML building, and the Data
+    remedy needs Ruby 3.2, newer than rubocop''s supported runtime, so the change
+    is optional style.'

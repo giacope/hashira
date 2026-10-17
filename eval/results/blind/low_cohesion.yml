@@ -1,0 +1,15 @@
+---
+- key: rubocop|low_cohesion|RuboCop::Cop::Offense
+  label: fp
+  why: Offense is one cohesive value object (where, what and correction status of
+    a single offense); splitting status from location would break the domain concept.
+- key: rubocop|low_cohesion|RuboCop::Cop::VariableForce::Assignment
+  label: fp
+  why: Both method groups describe the same single assignment (what kind of node it
+    is, and whether it gets used); used? reads @variable and @referenced together,
+    so splitting them would break one domain object.
+- key: rubygems.org|low_cohesion|ApplicationPolicy
+  label: fp
+  why: 'This is the Pundit base policy: every private helper (deny, ownership and
+    role checks, policy!) supports its subclasses, and the @user/@error split is a
+    side effect of the shape, not a real seam.'

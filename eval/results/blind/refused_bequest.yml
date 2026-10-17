@@ -1,0 +1,5 @@
+---
+- key: rubocop|refused_bequest|RuboCop::MagicComment::VimComment
+  label: fp
+  why: Returning nil is the base contract for 'setting not specified', and Vim comments
+    genuinely cannot set these values, so this is a domain fact, not a refused bequest.

@@ -1,0 +1,25 @@
+---
+- key: rubocop|concrete_inheritance|RuboCop::Lsp::StdinRunner
+  label: fp
+  why: 'Runner is meant to be extended: StdinRunner overrides its file_finished hook
+    and calls super in initialize and run, so splitting out an abstract base would
+    add nothing.'
+- key: rubygems.org|concrete_inheritance|GitHubSecretScanning::DepsDev
+  label: tp
+  why: The subclass differs only by its keys URL (it even has to copy secret_scanning_keys
+    because constants resolve lexically), while the base is instantiated directly;
+    passing the URL in would remove the subclass.
+- key: rubocop|concrete_inheritance|RuboCop::Cop::Style::ParallelAssignment::RescueCorrector
+  label: fp
+  why: GenericCorrector is a small internal default that the factory picks when no
+    special case applies, with RescueCorrector specializing it; an abstract base adds
+    nothing.
+- key: rubocop|concrete_inheritance|RuboCop::Cop::Style::ParallelAssignment::ModifierCorrector
+  label: fp
+  why: 'Same internal pattern as item 14: a generic default plus specializations chosen
+    by a factory, which is an intentional and clear design.'
+- key: rubygems.org|concrete_inheritance|Admin::Advisory::OSVPolicy
+  label: fp
+  why: This empty subclass exists only so the policy lookup finds a class named for
+    the Advisory::OSV resource and reuses the parent rules; an abstract base would
+    just be ceremony.

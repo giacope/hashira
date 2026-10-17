@@ -1,0 +1,18 @@
+# A single chain through objects the project owns: Yank reaches through the
+# version's gem into its organization to find whom to mail, and LinksetJob
+# sets up another model's association through two hops (both shapes
+# rubygems.org raters judged worth changing). Left alone: a library's node
+# (node.loc.selector), a Data value's reader, a builder that answers its own
+# class, a collection's element, and one hop.
+present:
+  - {kind: message_chain, package: "App::Yank#notify"}
+  - {kind: message_chain, package: "App::LinksetJob#perform"}
+absent:
+  - {kind: message_chain, package: "App::Lint#on_send"}
+  - {kind: message_chain, package: "App::Plotter#x"}
+  - {kind: message_chain, package: "App::Search#run"}
+  - {kind: message_chain, package: "App::Invoice#first_price"}
+  - {kind: message_chain, package: "App::Yank#gem_name"}
+messages:
+  - {kind: message_chain, package: "App::Yank#notify", includes: "reaches through Rubygem into Organization"}
+evidence: [message_chain]

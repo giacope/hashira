@@ -199,6 +199,35 @@ true positive the earlier triage confirmed still fires.
 - JSON gains `kinds`, each kind's count and the number of files it touches.
 - When the text findings list is capped, a rollup above it states every
   kind once — `nil_check  113 in 92 files` — withheld findings included.
+- Six class-level design kinds, all opt-in because none clears the precision
+  bar (one independent rater, every corpus finding up to 25 per kind; see
+  `eval/results/README.md`):
+  - `concrete_inheritance` — a class extends an owned class the project also
+    builds on its own; the evidence is where. Abstract parents (named `Base` or
+    `Abstract…`, an unimplemented hook, `abstract_class`/`abstract!`) and
+    hierarchies rooted in a framework or core class are left alone. 5 corpus
+    findings, 1 of 5 true.
+  - `refused_bequest` — a subclass overrides a method an owned ancestor
+    implements only to raise or do nothing. 1 corpus finding, judged false.
+  - `low_cohesion` — LCOM4 over classes of six or more methods: groups of two
+    or more methods that share no instance variable and never call each other.
+    Readers, writers and Forwardable delegators count as touching their field,
+    and the constructor joins what it derives together. `threshold` moves the
+    class size. 3 corpus findings, 0 of 3 true.
+  - `message_chain` — the Law of Demeter on a single chain through objects the
+    project owns (`order.customer.address`), each link typed by name and
+    declared by its class; library objects, collections, hops with arguments or
+    blocks, fluent hops, Struct and Data readers and universal messages are left
+    alone. `repeated_call` still reports a chain read twice. 81 corpus findings,
+    2 of 25 true.
+  - `data_class` — a class of two or more fields with nothing but attribute
+    macros, plain readers and writers and a constructor that stores its
+    arguments; Struct, Data and classes with a superclass or subclass are left
+    alone. 1 corpus finding, judged false.
+  - `middle_man` — a class whose public methods mostly (at least three, more
+    than half) only forward to one field. Declared delegation (Forwardable,
+    `delegate`, SimpleDelegator, DelegateClass), collection protocols and
+    facades are left alone. `threshold` moves the minimum. No corpus findings.
 
 ### Changed
 

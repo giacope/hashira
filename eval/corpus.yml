@@ -48,3 +48,9 @@ samples:
   indirection: 20
   dead_code: 25
   change_coupling: 25
+  concrete_inheritance: 25
+  refused_bequest: 25
+  low_cohesion: 25
+  message_chain: 25
+  data_class: 25
+  middle_man: 25
