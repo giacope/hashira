@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Config::Rules) do
-  def parse(raw) = described_class.parse(raw, %w[complexity feature_envy fragmentation nil_check state_sprawl])
+  def parse(raw)
+    described_class.parse(raw, %w[complexity feature_envy fragmentation nil_check state_sprawl])
+  end
 
   it "turns kinds off and moves thresholds" do
     rules = parse("feature_envy" => false, "complexity" => { "threshold" => 4 }, "state_sprawl" => true)
@@ -25,6 +27,11 @@ RSpec.describe(Hashira::Config::Rules) do
     rules = parse("fragmentation" => { "helpers" => 6, "lines" => 2.5 })
     limits = %w[helpers lines].map { rules.limit("fragmentation", it, 1) }
     expect(limits + [parse({}).limit("x", "y", 7)]).to(eq([6, 2.5, 7]))
+  end
+
+  it "carries declared layers through naming" do
+    rules = parse("nil_check" => true).layered(Hashira::Config::Layers.parse(%w[web domain])).naming(["nil_check"])
+    expect([rules.layers.names, rules.enabled?("nil_check")]).to(eq([%w[web domain], true]))
   end
 
   it "refuses what it cannot apply" do

@@ -5,7 +5,7 @@ module Hashira::Report::Confidence
   MEDIUM = "medium"
   LOW = "low"
 
-  MEASURED = %w[cycle sdp_violation mixed_audience wide_edge roll_call complexity].freeze
+  MEASURED = %w[cycle sdp_violation mixed_audience wide_edge roll_call complexity layer_violation].freeze
 
   NARROW = %i[identical literal message constant].freeze
 

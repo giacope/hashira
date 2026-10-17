@@ -43,6 +43,8 @@ class Hashira::Project
 
   def root = ROOT_PACKAGE
 
+  def layers = rules.layers
+
   private
 
   def resolved

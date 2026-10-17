@@ -16,10 +16,13 @@ class Hashira::Config::Rules
     new(raw.to_h { |kind, setting| Hashira::Config::Rule.parse(kind, setting, kinds) })
   end
 
-  def initialize(table, chosen = OPT_IN)
+  def initialize(table, chosen = OPT_IN, layers = Hashira::Config::Layers::NONE)
     @table = table
     @chosen = chosen
+    @layers = layers
   end
+
+  attr_reader :layers
 
   def enabled?(kind) = rule(kind).enabled
 
@@ -27,7 +30,9 @@ class Hashira::Config::Rules
 
   def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
 
-  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds)
+  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers)
+
+  def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers)
 
   private
 

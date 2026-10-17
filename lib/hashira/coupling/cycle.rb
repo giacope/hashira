@@ -13,7 +13,7 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
 
   def knot(key, members, cycles)
     found = cycles.cut(members)
-    cut = found.edges.map { |from, to, weight| { from:, to:, weight: } }
+    cut = found.edges.map { weighed(*it) }
     detail = { members:, folded: folded(members) }.merge(cut:, exact: found.exact?)
     finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail:)
   end

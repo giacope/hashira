@@ -1,1 +1,7 @@
 checks: all
+layers:
+  - cli
+  - gates: [ci, diagram]
+  - pipeline: ["(root)", report]
+  - analyzers: [complexity, coupling, duplication, hotspots, smells, suppression]
+  - foundation: [analysis, config]

@@ -5,6 +5,7 @@ require_relative "mixed_audience"
 require_relative "echo"
 require_relative "rule"
 require_relative "imbalance"
+require_relative "layering"
 require_relative "wide_edge"
 
 class Hashira::Coupling::Report
@@ -19,7 +20,7 @@ class Hashira::Coupling::Report
 
   def graph = @_graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
 
-  def findings = RULES.flat_map { it.new(@project, graph, @rules).list }
+  def findings = RULES.select { @rules.enabled?(it::KIND) }.flat_map { it.new(@project, graph, @rules).list }
 
   private
 

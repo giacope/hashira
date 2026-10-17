@@ -48,7 +48,7 @@ fixture, so what you read is what hashira prints.
 
 ---
 
-[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Rails apps](#rails-apps) · [Complexity and fragmentation](#complexity-and-fragmentation) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
+[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Whole-codebase checks](#whole-codebase-checks) · [Rails apps](#rails-apps) · [Complexity and fragmentation](#complexity-and-fragmentation) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
 
 ## Install
 
@@ -101,6 +101,7 @@ checks:
   complexity: { threshold: 12 }    # or move a threshold
   fragmentation: { helpers: 6 }    # fragmentation has two limits
   indirection: { threshold: 3 }    # (a setting turns an opt-in kind on too)
+layers: [web, app, domain]         # outermost first; see Layers below
 ```
 
 `checks: all` turns every kind on. Kinds with a threshold, and what reaches it:
@@ -141,7 +142,7 @@ labels. No human has relabelled them yet. True findings, per rater:
 `fragmentation` is on: a separate blind readability study measured it (see
 [Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
 `boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
-so they are opt-in too. `--kind` and `--fail-on` turn on the kinds they name,
+so they are opt-in too. `layer_violation` is on whenever `layers:` are declared. `--kind` and `--fail-on` turn on the kinds they name,
 and a `checks:` setting for a kind turns it on.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
@@ -214,6 +215,43 @@ Findings:
   distinct constants; a facade would narrow it to one.
 - **roll_call** — the same list of three or more words maintained by hand in
   three or more files across packages; the list wants a single owner.
+
+## Whole-codebase checks
+
+These checks read the whole codebase at once, starting with the layering you
+declare.
+
+### Layers
+
+Declare the layers in `.hashira.yml`, outermost first. Each is a package name,
+or a name with the packages and paths (from the project's root) it holds:
+
+```yaml
+layers:
+  - web: [app/controllers, app/views, app/helpers]
+  - app: [app/jobs, app/services]
+  - domain: app/models
+```
+
+A layer may use the layers declared inside it, never one outside it.
+**layer_violation** reports every reference that points outward, one finding
+per pair of layers, with the package edges to cut, the cheapest first:
+
+<!-- example: layers app --kind layer_violation -->
+```console
+Findings (1):
+  layer_violation: billing depends on web, an outer layer, through 1 ref — a layer may depend only on the layers declared inside it. Cut billing -> web (1 ref).
+      · billing/ledger.rb:5: Web::InvoicesPage
+```
+
+A file is in the layer whose path holds it or whose package it charges, a
+constant in the layer of the files that define it (one defined in two layers is
+left alone), and a file in no layer is not judged. The ratchet holds a pair by
+its count of references, so a new one fails the build. When the code leans the
+other way (another order of the same layers, found by the same exact search as
+a cycle's cheapest cut, would leave fewer references pointing outward), the
+finding says so: the declaration may be what is wrong. With no `layers:`, the
+check does nothing; declared, it is on, since the intent is yours.
 
 ## Rails apps
 

@@ -9,9 +9,13 @@ class Hashira::Coupling::Scope
 
   def resolve(segments, nesting)
     return if @placement.skip?(segments)
-    found = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
-    qualify(found && @registry.exact(found))
+    found = locate(segments, nesting)
+    owner(found) if found
   end
+
+  def owner(path) = qualify(@registry.exact(path))
+
+  def locate(segments, nesting) = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
 
   def pinpoint(segments) = resolve(segments, [])
 

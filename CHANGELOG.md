@@ -74,6 +74,15 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- Declared layers and `layer_violation`. `layers:` in `.hashira.yml` lists
+  the layers outermost first, each a package name or a name with the
+  packages and paths it holds; every reference from a layer to one declared
+  outside it is reported, one finding per pair of layers, with the package
+  edges to cut, the cheapest first, and the references as evidence. When
+  another order of the same layers (found by the cycles' exact cut search)
+  would leave fewer references pointing outward, the finding says the code
+  leans another way. On whenever layers are declared; the ratchet holds a
+  pair by its references. hashira declares its own five layers and has none.
 - `fragmentation`, a complexity kind, on by default: a public method that
   reaches four or more methods of its own class, named predicates aside (calls
   with no receiver or on `self`, `send(:name)`, `method(:name)`; instance to

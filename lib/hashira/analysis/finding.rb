@@ -5,7 +5,8 @@ module Hashira
     CLONES = "duplication"
 
     MAGNITUDES = { "duplication" => :mass, "boundary_sprawl" => :count }
-      .merge("complexity" => :cognitive, "indirection" => :chain, "fragmentation" => :helpers).freeze
+      .merge("complexity" => :cognitive, "indirection" => :chain, "fragmentation" => :helpers)
+      .merge("layer_violation" => :refs).freeze
 
     TRACKS = [/ \(lines? [\d, ]+\)/, /:[\d, -]+\z/, /:\d+(?=:)/].freeze
 
