@@ -120,7 +120,7 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
         module Zone
           class Thing
             def initialize(value, packed)
-              @a, @b, @c = value, 2, 3
+              @a, @b, @c = 1, 2, 3
               @packed = true if packed
               @value = value unless value.nil?
             end
@@ -384,6 +384,47 @@ RSpec.describe(Hashira::Smells::StateSprawl) do
       end
     RUBY
     expect(findings).to(be_empty)
+  end
+
+  it "weighs fields taken from the arguments in one parallel assignment as nothing, and pairs them by position" do
+    findings = crowded(<<~RUBY)
+      class Notice
+        def initialize(title, body, path, badge, endpoint)
+          @title, @body, @path = title, body, path
+          @badge, @endpoint = [badge, endpoint]
+        end
+
+        def text = [@title, @body]
+
+        def link = [@path, @badge, @endpoint]
+      end
+
+      class Split
+        def initialize(title, body, path, badge, endpoint)
+          @title, @body = title.strip, body
+          @path, @badge = path
+          @endpoint, *@rest = endpoint, badge
+          @more, @last = *badge, endpoint
+        end
+
+        def text = [@title, @body, @path]
+
+        def link = [@badge, @endpoint, @rest, @more, @last]
+      end
+    RUBY
+    expect(findings.map { [it.package, it.evidence] }).to(
+      eq(
+        [
+          [
+            "Split",
+            [
+              "@badge", "@body (given to the constructor)", "@endpoint (given to the constructor)", "@last", "@more",
+              "@path", "@rest", "@title"
+            ]
+          ]
+        ]
+      )
+    )
   end
 
   it "notes the given fields of a class whose own state sprawls" do

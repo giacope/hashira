@@ -556,14 +556,15 @@ Findings (3):
   test (`signed_in?`, `@closed`) asks about state rather than dispatching on
   it, and stays quiet.
 - **state_sprawl** — a class whose fields weigh more than four. A field the
-  constructor takes straight from an argument (`@size = size`) is an input, a
-  component's props or a job's arguments, and weighs nothing. Any other field the
-  constructor (or a helper it calls, or a callback the class registers such as a
-  `before_action`) sets weighs one. One set elsewhere and taken up by another
-  method or a reader is parked between calls and weighs two; one set elsewhere
-  that no method reads is handed on — to a template, to a caller — and weighs
-  nothing. Memo caches (`@x ||=`, `@_x`, `defined?` guards) are not state, and a
-  class whose methods use all its constructor fields together is one handle.
+  constructor takes straight from an argument (`@size = size`, or
+  `@w, @h = w, h`) is an input, a component's props or a job's arguments, and
+  weighs nothing. Any other field the constructor (or a helper it calls, or a
+  callback the class registers such as a `before_action`) sets weighs one. One
+  set elsewhere and taken up by another method or a reader is parked between
+  calls and weighs two; one set elsewhere that no method reads is handed on —
+  to a template, to a caller — and weighs nothing. Memo caches (`@x ||=`,
+  `@_x`, `defined?` guards) are not state, and a class whose methods use all
+  its constructor fields together is one handle.
 - **assumed_state** — an instance variable read that nothing the class can reach
   ever assigns: a typo, or a fragile base class waiting for subclasses to install
   its state.

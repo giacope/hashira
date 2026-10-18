@@ -418,6 +418,11 @@ true positive the earlier triage confirmed still fires.
   References to such a class never resolve to the project, so it was always
   "never referred to", even with `ActionText::Content::Filters.new` in plain
   sight (Campfire). The methods the project adds to it are still judged.
+- `state_sprawl` weighs fields a constructor takes from its arguments in one
+  parallel assignment (`@title, @body = title, body`) as inputs, as it did
+  `@title = title`, pairing them by position. Campfire's
+  `WebPush::Notification` weighed 8 for eight fields its constructor only
+  stores.
 - The analyzed project's root is the nearest folder holding a project marker
   (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
   checked out inside another (a corpus under `eval/tmp`, a vendored gem) no
