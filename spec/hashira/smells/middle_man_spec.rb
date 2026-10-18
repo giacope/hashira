@@ -46,8 +46,8 @@ RSpec.describe(Hashira::Smells::MiddleMan) do
       "attr_reader :store\n  def fetch(key) = store.fetch_value(key)",
       "def touch(*, **) = @store.touch(*, **)"
     ]
-    readers << "def clear(...) = @store.clear_all(...)"
-    expect(readers.map { relayed(cache(it)).first.detail.count }).to(eq([4, 4, 4]))
+    readers += ["def clear(...) = @store.clear_all(...)", "def scan(key, &) = @store.scan(key, &)"]
+    expect(readers.map { relayed(cache(it)).first.detail.count }).to(eq([4, 4, 4, 4]))
   end
 
   it "leaves alone a class where forwarders are not most of its public methods" do
@@ -64,9 +64,22 @@ RSpec.describe(Hashira::Smells::MiddleMan) do
     changed = [
       "def read(key) = @store.read(key.to_s)", "def write(key, value) = @store.write(value, key)",
       "def write(key, value) = @store.write(key)", "def read(key) = @store.read(key) { 1 }.to_s",
-      "def read(key) = @store.read(key, ttl: 1)"
+      "def read(key) = @store.read(key, ttl: 1)", "def read(key) = @store.read(key, &:to_s)",
+      "def read(key, &block) = @store.read(key)", "def read(key, &) = @store.read(key) { 1 }"
     ]
     expect(changed.map { relayed(cache.sub(/  def #{it[/def (\w+)/, 1]}\(.*\n/, "  #{it}\n")) }).to(all(be_empty))
+  end
+
+  it "does not count a call given a block of its own, which does the method's work rather than forwarding" do
+    source = <<~RUBY
+      class Tally
+        def initialize = (@mutex = Mutex.new; @count = 0; @items = [])
+        def add = @mutex.synchronize { @count += 1 }
+        def count = @mutex.synchronize { @count }
+        def items = @mutex.synchronize { @items.dup }
+      end
+    RUBY
+    expect(relayed(source)).to(be_empty)
   end
 
   it "does not count forwarding to a collection's own protocol, a local, a method call or a constant" do

@@ -58,4 +58,14 @@ module App
 
     def receipt(address) = @mailer.receipt(address)
   end
+
+  class Tally
+    def initialize = (@mutex = Mutex.new; @count = 0; @items = [])
+
+    def add = @mutex.synchronize { @count += 1 }
+
+    def count = @mutex.synchronize { @count }
+
+    def items = @mutex.synchronize { @items.dup }
+  end
 end

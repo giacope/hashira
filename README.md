@@ -646,8 +646,11 @@ project's own, so a framework's base classes stay out of all of them.
   others extend), and any method, mixin, class method or constant.
 - **middle_man** — a class whose public methods mostly (more than half, and at
   least three) only forward to one field: one call on an instance variable or
-  its reader, passing the method's own arguments through unchanged. A single
-  forwarder is left alone, since it is exactly what `message_chain` asks for.
+  its reader, passing the method's own arguments, and its block if it takes
+  one, through unchanged. A call given a block of its own
+  (`@mutex.synchronize { @count += 1 }`) is doing the method's work there, not
+  forwarding it. A single forwarder is left alone, since it is exactly what
+  `message_chain` asks for.
   Left alone too: a class that declares its delegation (`def_delegators`,
   `delegate … to:`, `SimpleDelegator`, `DelegateClass`) — the declaration is
   the design, a wrapper that narrows an interface on purpose, and removing the

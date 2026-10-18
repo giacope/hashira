@@ -435,6 +435,10 @@ true positive the earlier triage confirmed still fires.
   stray bytes replaced, so their names, comments and evidence reach the
   report, the JSON and the baseline as UTF-8. A single such file made hashira
   unusable on its whole project.
+- `middle_man` counts a forwarder only when it passes the method's block
+  through unchanged, as it already required of the arguments. A call given a
+  block of its own does the method's work: a counter whose methods each run
+  `@mutex.synchronize { ... }` was reported as forwarding to `@mutex`.
 - The analyzed project's root is the nearest folder holding a project marker
   (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
   checked out inside another (a corpus under `eval/tmp`, a vendored gem) no
