@@ -7,8 +7,8 @@ module Hashira::Coupling::Words
 
   module_function
 
-  def list(tree)
-    Hashira::Analysis::NodeWalk.collect(tree).flat_map { entries(it) }.compact.grep(PATTERN).to_set
+  def lists(tree)
+    Hashira::Analysis::NodeWalk.collect(tree).map { entries(it).compact.grep(PATTERN).to_set }.reject(&:empty?)
   end
 
   def entries(node)

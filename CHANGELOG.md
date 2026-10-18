@@ -412,6 +412,14 @@ true positive the earlier triage confirmed still fires.
 
 ### Fixed
 
+- `roll_call` reads each array literal and hash on its own. It used to pool
+  every word a file lists into one set, so separate lists that only shared a
+  few words with each other became one roll: a controller's
+  `only: %i[show edit update]` and `only: %i[new create]`, next to the
+  `resources ... only:` lists in routes, was reported as the hand-kept list
+  "create, edit, new, show, update" (Campfire). A roll is now a set of words
+  that one literal in each file holds whole.
+
 - `dead_code` no longer reports a class the project reopens but leaves to its
   owner: Ruby's (`class String`) or one opened in a library's namespace
   (`class ActionText::Content::Filters` in `lib/rails_ext/filters.rb`).
