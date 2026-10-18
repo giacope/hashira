@@ -547,9 +547,10 @@ Findings (3):
   command on the receiver, a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
-  variable — no arguments, or literal keys — made exactly twice, which is style.
-  A chain (`order.customer.address`), a helper method's result, a constant's
-  query (`Time.now` twice is two times) or three reads are reported.
+  variable — no arguments, or literal keys — made at most twice in any one run,
+  which is style. A chain (`order.customer.address`), a helper method's result,
+  a constant's query (`Time.now` twice is two times) or three reads in one run
+  are reported.
 - **repeated_conditional** — one class testing the same condition in three or
   more places: a comparison with a fixed value (`@mode == :draft`), a type test
   (`is_a?`), or the subject of a `case`; polymorphism is overdue. A plain truth
