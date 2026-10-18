@@ -21,7 +21,7 @@ class Hashira::Duplication::Relay
 
   def drifts = @_drifts ||= @cluster.others.flat_map { Hashira::Duplication::Variance.new(canonical, it).drifts }
 
-  def passed = walk(call.arguments)
+  def passed = walk(call.arguments, call.block)
 
   def header = canonical.roots.grep(Prism::DefNode).flat_map { [it, *walk(it.parameters)] }
 

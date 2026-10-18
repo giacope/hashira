@@ -439,6 +439,12 @@ true positive the earlier triage confirmed still fires.
   through unchanged, as it already required of the arguments. A call given a
   block of its own does the method's work: a counter whose methods each run
   `@mutex.synchronize { ... }` was reported as forwarding to `@mutex`.
+- `duplication` counts the block a call hands a shared method as part of what
+  it passes, like its arguments. Campfire's `edited_meanwhile` and
+  `boosted_meanwhile`, each one call to `meanwhile(email, name) { ... }`, were
+  reported as "2 similar fragments" and told to call one shared method, which
+  they already do. Such a call is set aside before the smaller clones inside
+  it are weighed, so copies within the blocks are still reported.
 - The analyzed project's root is the nearest folder holding a project marker
   (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
   checked out inside another (a corpus under `eval/tmp`, a vendored gem) no

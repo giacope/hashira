@@ -488,7 +488,11 @@ What is not counted:
   and a `rescue` clause that only reports its error weighs nothing wherever it
   sits. A report that builds its own context outside a rescue is code.
 - **Calls into an abstraction you already have.** `def patch(path, body) =
-  request(:patch, path, body)` beside `def post` is already factored.
+  request(:patch, path, body)` beside `def post` is already factored: a method
+  whose body is one call to a method the project defines, and whose copies
+  differ only in what they hand it, block included (`meanwhile(email, name) {
+  boost(message) }`). What the block holds is still compared on its own, so
+  copies inside it are a clone.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
 

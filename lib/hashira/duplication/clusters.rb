@@ -11,13 +11,15 @@ class Hashira::Duplication::Clusters
     @all = all
   end
 
-  def sorted = Hashira::Duplication::Maximal.new(sized).reduced.reject { excused?(it) }.sort_by { -it.mass }
+  def sorted
+    Hashira::Duplication::Maximal.new(sized.reject { relay?(it) }).reduced.reject { inverse?(it) }.sort_by { -it.mass }
+  end
 
   private
 
-  def excused?(cluster) = relay?(cluster) || Hashira::Duplication::Inverse.new(cluster, definitions).inverse?
-
   def relay?(cluster) = Hashira::Duplication::Relay.new(cluster, defined).relay?
+
+  def inverse?(cluster) = Hashira::Duplication::Inverse.new(cluster, definitions).inverse?
 
   def defined = @_defined ||= definitions.to_set { it.roots.first.name }
 
