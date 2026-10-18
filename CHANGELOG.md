@@ -427,6 +427,14 @@ true positive the earlier triage confirmed still fires.
   most twice per run is style, however many exclusive `when` arms repeat it:
   Campfire's `@room.messages` was reported "× 5" across three arms that read
   it twice, twice and once.
+- A literal that spells bytes UTF-8 cannot read (`"\xFF".b`, a binary
+  protocol's magic number) no longer stops the run with "invalid byte sequence
+  in UTF-8": every analyzer reads a literal's text with such bytes replaced by
+  U+FFFD. Files are read the same way: in the encoding their magic comment
+  declares (`# encoding: Shift_JIS`), with a binary file's high bytes and
+  stray bytes replaced, so their names, comments and evidence reach the
+  report, the JSON and the baseline as UTF-8. A single such file made hashira
+  unusable on its whole project.
 - The analyzed project's root is the nearest folder holding a project marker
   (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
   checked out inside another (a corpus under `eval/tmp`, a vendored gem) no

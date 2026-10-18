@@ -15,5 +15,5 @@ module Hashira::Smells::Attributes
 
   def ivars(nodes, kinds) = nodes.select { kinds.include?(it.class) }.map(&:name)
 
-  def names(call) = Array(call.arguments&.arguments).grep(Prism::SymbolNode).map(&:unescaped)
+  def names(call) = Hashira::Analysis::Syntax.symbol_names(Array(call.arguments&.arguments))
 end

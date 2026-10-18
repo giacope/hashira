@@ -34,11 +34,11 @@ class Hashira::Smells::Probe
 
   def message = Array(@call.arguments&.arguments).first
 
-  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(message.unescaped.to_sym)
+  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(Hashira::Analysis::Syntax.symbol(message))
 
   def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(message.unescaped.to_sym)
+  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.symbol(message))
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 

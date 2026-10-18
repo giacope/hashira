@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Notes
-  def initialize(path, comments)
+  def initialize(parsed, path, comments)
+    @parsed = parsed
     @path = path
     @comments = comments
   end
@@ -15,7 +16,7 @@ class Hashira::Complexity::Notes
     text.byteslice(0, cuts.fetch(number, text.bytesize))
   end
 
-  def lines = @_lines ||= File.binread(@path).lines
+  def lines = @_lines ||= @parsed.lines(@path)
 
   def cuts = @_cuts ||= @comments.each_with_object({}) { |comment, found| mark(comment.location, found) }
 

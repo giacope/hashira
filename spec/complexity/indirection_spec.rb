@@ -4,8 +4,8 @@ RSpec.describe(Hashira::Complexity::Indirection) do
   def traced(source, rules = Fixtures::NONE)
     within("lib/app/walk.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      return Hashira::Complexity::Scores.new(project, trees, rules).findings.select { it.kind == "indirection" }
+      parsed = Hashira::Trees.new(project)
+      return Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed).findings.select { it.kind == "indirection" }
     end
   end
 

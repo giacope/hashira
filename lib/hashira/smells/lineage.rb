@@ -40,7 +40,7 @@ class Hashira::Smells::Lineage
   def message(node)
     case node
     when Prism::CallNode then node.name
-    when Prism::SymbolNode then node.unescaped.to_sym
+    when Prism::SymbolNode then Hashira::Analysis::Syntax.symbol(node)
     end
   end
 
@@ -122,7 +122,7 @@ class Hashira::Smells::Lineage
   def setters(node) = Hashira::Smells::Scope.sweep(node).select { SETTERS.include?(it.class) }.map(&:name)
 
   def attributes(type)
-    named(type, WRITERS).select { it.is_a?(Prism::SymbolNode) || it.is_a?(Prism::StringNode) }.map { :"@#{it.unescaped}" }
+    named(type, WRITERS).select { it.is_a?(Prism::SymbolNode) || it.is_a?(Prism::StringNode) }.map { :"@#{Hashira::Analysis::Syntax.text(it)}" }
   end
 
   def named(type, names) = passed(calls(type).select { names.include?(it.name) })

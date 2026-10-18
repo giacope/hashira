@@ -59,7 +59,13 @@ module Hashira
 
       def option(call, key) = options(call).find { named?(it.key, key) }&.value
 
-      def named?(node, key) = node.is_a?(Prism::SymbolNode) && node.unescaped == key.to_s
+      def text(node) = node.unescaped.scrub
+
+      def symbol(node) = text(node).to_sym
+
+      def symbol_names(nodes) = nodes.grep(Prism::SymbolNode).map { text(it) }
+
+      def named?(node, key) = node.is_a?(Prism::SymbolNode) && text(node) == key.to_s
 
       def constants(type) = statements(type).grep(Prism::ConstantWriteNode)
 

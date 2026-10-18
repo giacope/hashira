@@ -84,7 +84,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     selves(found).select { SENDS.include?(it.name) }.filter_map { symbol(Array(it.arguments&.arguments).first) }
   end
 
-  def symbol(node) = (node.unescaped.to_sym if node.is_a?(Prism::SymbolNode))
+  def symbol(node) = (Hashira::Analysis::Syntax.symbol(node) if node.is_a?(Prism::SymbolNode))
 
   def sweep = @_sweep ||= subject.sweep
 

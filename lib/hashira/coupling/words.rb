@@ -23,7 +23,7 @@ module Hashira::Coupling::Words
 
   def word(node)
     case node
-    when Prism::SymbolNode, Prism::StringNode then node.unescaped
+    when Prism::SymbolNode, Prism::StringNode then Hashira::Analysis::Syntax.text(node)
     end
   end
 end

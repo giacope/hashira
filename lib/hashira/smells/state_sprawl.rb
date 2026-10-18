@@ -78,7 +78,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def exposed = @_exposed ||= exposing.grep(Prism::SymbolNode).map { field(it) }
 
-  def field(symbol) = :"@#{symbol.unescaped}"
+  def field(symbol) = :"@#{Hashira::Analysis::Syntax.text(symbol)}"
 
   def exposing = readers.flat_map { Array(it.arguments&.arguments) }
 
@@ -92,7 +92,9 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name) + registered
 
-  def registered = hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { it.unescaped.to_sym }
+  def registered
+    Hashira::Analysis::Syntax.symbol_names(hooks.flat_map { Array(it.arguments&.arguments) }).map(&:to_sym)
+  end
 
   def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
 

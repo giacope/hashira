@@ -27,7 +27,7 @@ class Hashira::Coupling::Associations
 
   def given(call)
     named = option(call, "class_name")
-    named.unescaped if named.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax.text(named) if named.is_a?(Prism::StringNode)
   end
 
   def inferred(call)
@@ -37,7 +37,9 @@ class Hashira::Coupling::Associations
     COLLECTIONS.include?(call.name) || source ? @inflection.classify(base) : @inflection.camelize(base)
   end
 
-  def literal(node) = (node.unescaped if node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode))
+  def literal(node)
+    Hashira::Analysis::Syntax.text(node) if node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode)
+  end
 end
 
 Hashira::Coupling::Associations::NONE = Hashira::Coupling::Associations.new(nil)

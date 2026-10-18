@@ -31,9 +31,11 @@ class Hashira::Smells::Validations
     @_calls ||= Hashira::Analysis::Syntax.statements(@home).grep(Prism::CallNode).reject(&:receiver).select(&:arguments)
   end
 
-  def symbols(call) = given(call).grep(Prism::SymbolNode).map { it.unescaped.to_sym }
+  def symbols(call) = Hashira::Analysis::Syntax.symbol_names(given(call)).map(&:to_sym)
 
-  def option?(call, key) = options(call).any? { it.key.unescaped.to_sym == key && !OFF.include?(it.value.class) }
+  def option?(call, key)
+    options(call).any? { Hashira::Analysis::Syntax.symbol(it.key) == key && !OFF.include?(it.value.class) }
+  end
 
   def options(call) = Hashira::Analysis::Syntax.options(call).select { it.key.is_a?(Prism::SymbolNode) }
 

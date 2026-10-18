@@ -41,7 +41,7 @@ class Hashira::Smells::Vocabulary
     node.compact_child_nodes.each { gather(it, found) } unless node.is_a?(Prism::DefNode)
   end
 
-  def declared(node) = node.is_a?(Prism::DefNode) ? [node.name] : offered(node).grep(Prism::SymbolNode).map(&:unescaped)
+  def declared(node) = node.is_a?(Prism::DefNode) ? [node.name] : Hashira::Analysis::Syntax.symbol_names(offered(node))
 
   def offered(node)
     case node

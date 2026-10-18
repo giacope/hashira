@@ -782,6 +782,10 @@ hashira hedges (clones whose control flow differs).
   zero and restates instability.
 - **Ruby files only.** Templates are out of scope. Comments are read only for
   `hashira:` directives.
+- **Text is read as UTF-8.** A file is decoded from the encoding its magic
+  comment declares, and bytes no encoding reads (a binary file's high bytes, a
+  stray byte, a literal's `"\xFF"`) read as U+FFFD, so one odd file never stops
+  a run.
 
 ## Contributing
 

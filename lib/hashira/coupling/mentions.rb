@@ -58,8 +58,8 @@ class Hashira::Coupling::Mentions
   def note(node, owner)
     case node
     when Prism::CallNode then called(node, owner)
-    when Prism::SymbolNode then names << node.unescaped
-    when Prism::StringNode then said(node.unescaped)
+    when Prism::SymbolNode then names << Hashira::Analysis::Syntax.text(node)
+    when Prism::StringNode then said(Hashira::Analysis::Syntax.text(node))
     when *INTERPOLATED then stem(node.parts.first)
     when *WRITES then names.merge([node.read_name.to_s, node.write_name.to_s])
     end
@@ -81,7 +81,7 @@ class Hashira::Coupling::Mentions
   def said(text) = text.scan(TOKEN) { names << it }
 
   def stem(part)
-    text = part.unescaped if part.is_a?(Prism::StringNode)
+    text = Hashira::Analysis::Syntax.text(part) if part.is_a?(Prism::StringNode)
     prefixes << text if text&.match?(STEM)
   end
 end

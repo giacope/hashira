@@ -272,6 +272,37 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  def unreadable_literals
+    {
+      "r/lib/x/bad.rb" => "module X; BAD = \"\\xFF\".b; end\n",
+      "r/lib/x/sender.rb" => <<~'RUBY',
+        module X
+          class Sender
+            LIST = ["\xFFa", "\xFFb"]
+            def initialize(io) = @io = io
+            def pack(item) = @io.write("\xFF#{item}")
+            def call(name) = public_send("\xFF#{name}")
+            def check(value) = value == "\xFF" ? LIST : { "\xFF" => 1 }
+            define_method("\xFF") { @io }
+          end
+        end
+      RUBY
+      "r/lib/x/fields.rb" => "module X\n  class Fields\n    attr_reader :\"\\xFF\", :b\n  end\nend\n",
+      "r/.hashira.yml" => "checks: all\n"
+    }
+  end
+
+  it "analyzes literals whose escapes spell bytes that are not UTF-8, in every format and the ratchet" do
+    within(unreadable_literals) do
+      text = capture { expect(described_class.new(["r/lib"]).status).to(eq(0)) }
+      expect(text).to(include("data_class: X::Fields holds '\uFFFD', 'b' and does nothing else"))
+      json = JSON.parse(capture { described_class.new(["r/lib", "--json"]).status })
+      expect(json["findings"].map { it["kind"] }).to(include("data_class"))
+      capture { expect(described_class.new(["r/lib", "--update-baseline"]).status).to(eq(0)) }
+      capture { expect(described_class.new(["r/lib", "--ratchet"]).status).to(eq(0)) }
+    end
+  end
+
   it "refuses a baseline it cannot read, and an unwritable one" do
     within("lib/app/x.rb" => "class X; def a = 1; end\n", "b.json" => "{ oops") do
       expect { expect(described_class.new(["lib/app", "--baseline", "b.json"]).status).to(eq(2)) }

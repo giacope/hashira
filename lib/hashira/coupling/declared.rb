@@ -28,13 +28,15 @@ class Hashira::Coupling::Declared
   def value(node)
     case node
     when Prism::ArrayNode then node.elements.flat_map { value(it) }
-    when Prism::StringNode, Prism::SymbolNode then [node.unescaped]
+    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.text(node)]
     else Array(expression(node))
     end
   end
 
   def expression(node)
     Regexp.new(node.unescaped, node.ignore_case? ? Regexp::IGNORECASE : 0) if node.is_a?(Prism::RegularExpressionNode)
+  rescue RegexpError
+    nil
   end
 
   def irregular(table, _list, (one, many)) = many ? table.irregular(one, many) : table
