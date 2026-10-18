@@ -15,6 +15,8 @@ class Hashira::Coupling::Rule
 
   def threshold(default) = @rules.threshold(self.class::KIND, default)
 
+  def weighed(from, to, weight) = { from:, to:, weight: }
+
   def finding(**attributes)
     Hashira::Analysis::Finding.new(kind: self.class::KIND, cycle: nil, **attributes)
   end

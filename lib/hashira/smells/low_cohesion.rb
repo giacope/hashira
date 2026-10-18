@@ -22,7 +22,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   DELEGATORS = %i[def_delegator def_delegators def_instance_delegator def_instance_delegators].freeze
 
-  SENDS = %i[send public_send __send__ method].freeze
+  SENDS = Hashira::Analysis::Syntax::SENDS
 
   private
 

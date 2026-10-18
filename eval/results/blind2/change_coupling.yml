@@ -1,0 +1,106 @@
+---
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> request/authorization.rb
+  versions:
+  - graph
+  label: fp
+  why: All six shared commits are repo-wide RuboCop lint passes, so the two files
+    changing together is coincidence.
+- key: rubygems.org|change_coupling|app/models/concerns/compact_index_versions.rb
+    <-> lib/compact_index/gem_version.rb
+  versions:
+  - graph
+  label: tp
+  why: The compact-index field list (ruby_abi, content_address) is written out in
+    the SQL and args hash in the concern and again in the GemVersion members and methods,
+    so every new field needs edits in both files.
+- key: rubygems.org|change_coupling|app/models/rubygem.rb <-> app/models/version.rb
+  versions:
+  - graph
+  label: fp
+  why: Rubygem and Version are the two core, closely linked domain models. Co-changing
+    in feature work is expected, and putting them in one package fixes nothing.
+- key: faraday|change_coupling|encoders/nested_params_encoder.rb <-> options/env.rb
+  versions:
+  - graph
+  label: fp
+  why: Every shared commit is a RuboCop or style mass edit.
+- key: rubygems.org|change_coupling|app/policies/ownership_policy.rb <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: fp
+  why: OwnershipPolicy already delegates to RubygemPolicy through policy!. The shared
+    commits are refactors across all policies.
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> utils/headers.rb
+  versions:
+  - graph
+  label: fp
+  why: All shared commits are RuboCop lint passes.
+- key: faraday|change_coupling|rack_builder.rb <-> utils/headers.rb
+  versions:
+  - graph
+  label: fp
+  why: The shared commits are lint passes plus an rspec migration, which are mass
+    edits.
+- key: rubygems.org|change_coupling|app/models/concerns/user_multifactor_methods.rb
+    <-> app/models/concerns/user_totp_methods.rb
+  versions:
+  - graph
+  label: fp
+  why: These are two deliberately split concerns of User, changed together by MFA
+    feature work and renames. Both already live in one place (models/concerns).
+- key: rubygems.org|change_coupling|app/policies/application_policy.rb <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: fp
+  why: This is a base class and its subclass. Shared helpers living in ApplicationPolicy
+    is the intended design.
+- key: rubygems.org|change_coupling|app/models/concerns/user_totp_methods.rb <-> app/models/webauthn_credential.rb
+  versions:
+  - graph
+  label: fp
+  why: The shared MFA logic is already pulled out into User (mfa_method_added, reset_mfa_attributes);
+    the co-changes were a single feature delivered in steps.
+- key: rubygems.org|change_coupling|app/jobs/upload_info_file_job.rb <-> app/jobs/upload_names_file_job.rb
+  versions:
+  - graph
+  label: tp
+  why: The S3 store call, metadata, cache headers, logging and Fastly purge are copied
+    almost line for line between the two jobs, so they belong in a shared uploader.
+- key: rubygems.org|change_coupling|app/controllers/webauthn_credentials_controller.rb
+    <-> app/models/webauthn_credential.rb
+  versions:
+  - graph
+  label: fp
+  why: A controller and its model changing together during WebAuthn feature work is
+    expected.
+- key: rubygems.org|change_coupling|app/models/organization.rb <-> app/models/organization_onboarding.rb
+  versions:
+  - graph
+  label: fp
+  why: These are organization feature commits that naturally touch both models; the
+    coupling is expected domain work.
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/request_options.rb
+  versions:
+  - graph
+  label: fp
+  why: All shared commits are RuboCop lint or documentation passes.
+- key: rubygems.org|change_coupling|app/policies/oidc/rubygem_trusted_publisher_policy.rb
+    <-> app/policies/rubygem_policy.rb
+  versions:
+  - graph
+  label: tp
+  why: The rule 'owner, or org admin' is copied three times in the trusted-publisher
+    policy instead of delegating to RubygemPolicy#configure_trusted_publishers?, the
+    way OwnershipPolicy already delegates.
+- key: faraday|change_coupling|encoders/flat_params_encoder.rb <-> options/env.rb
+  versions:
+  - graph
+  label: fp
+  why: All shared commits are RuboCop lint passes.
+- key: faraday|change_coupling|error.rb <-> response/raise_error.rb
+  versions:
+  - graph
+  label: fp
+  why: Error classes are public API and the RaiseError middleware maps statuses to
+    them. Adding a status naturally touches both, and merging the two files makes
+    no sense.

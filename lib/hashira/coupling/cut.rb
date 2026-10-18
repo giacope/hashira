@@ -12,12 +12,14 @@ class Hashira::Coupling::Cut
 
   def exact? = @members.size <= EXACT
 
-  private
+  def cost = edges.sum(&:last)
 
   def order
     nodes = @members.sort
     exact? ? Hashira::Coupling::Ordering.new(nodes, @edges).best : Hashira::Coupling::Sweep.new(nodes, @edges).order
   end
+
+  private
 
   def backward(order)
     place = order.each_with_index.to_h

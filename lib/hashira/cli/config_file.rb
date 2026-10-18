@@ -5,7 +5,7 @@ require "yaml"
 class Hashira::CLI::ConfigFile
   DEFAULT = ".hashira.yml"
   FLAGS = %w[fail-on skip kind top package-by baseline].freeze
-  KEYS = ["directories", "checks", *FLAGS].freeze
+  KEYS = ["directories", "checks", "layers", *FLAGS].freeze
 
   def initialize(argv, home)
     @argv = argv
@@ -18,7 +18,7 @@ class Hashira::CLI::ConfigFile
 
   def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
 
-  def rules = blamed { settings.key?("checks") ? checks : Hashira::Config::Rules::NONE }
+  def rules = blamed { (settings.key?("checks") ? checks : Hashira::Config::Rules::NONE).layered(layers) }
 
   def vet
     argv = directories + flags.flatten
@@ -45,6 +45,8 @@ class Hashira::CLI::ConfigFile
   end
 
   def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Pipeline::KINDS)
+
+  def layers = Hashira::Config::Layers.parse(settings["layers"], @home.path)
 
   def placed(key) = key == "baseline" ? @home.expand(setting(key)) : setting(key)
 

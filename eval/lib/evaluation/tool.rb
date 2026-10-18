@@ -19,6 +19,13 @@ class Evaluation::Tool
 
   def every = @_every ||= opting? ? ["--config", EVERY] : []
 
+  def configured(settings, path)
+    return every unless settings
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, YAML.dump({ "checks" => "all" }.merge(settings)))
+    ["--config", path]
+  end
+
   def commit = Open3.capture2e("git", "-C", @root, "rev-parse", "--short", "HEAD").first.strip
 
   private

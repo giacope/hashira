@@ -63,7 +63,10 @@ own, and score them against each other with
   inverse pairs, relays, schemas).
 - **smells** — true positives and true negatives built from real patterns
   (timers, library nodes, owned types, evidence, sprawl weights, indirection,
-  fragmentation, inheritance, cohesion, chains, data classes, forwarding).
+  fragmentation, inheritance, cohesion, chains, data classes, forwarding,
+  declared layers, dead code in a library and in a Rails app, and change
+  coupling replayed from a fixture's own git `history:`). A case's
+  `config:` is merged into `checks: all`.
 - **cli** — baseline and config resolution from another directory,
   suppressions (reason required, listed, unused), per-kind switches and
   thresholds, old baselines and kind renames, a kind the baseline predates.
@@ -284,6 +287,94 @@ rare in this corpus to measure at all. What the rater's reasons say:
 `message_chain` is separate from `repeated_call`, which reports any chain read
 twice in one method whatever its types; the two can be turned on apart.
 
+## Layers, dead code and change coupling
+
+Three whole-codebase kinds, measured on the same corpus. `graph.json` and
+`graph.md` are the branch's board (every suite passes: smells 45/45 with the
+new cases, cli 35/35, coupling 25/25, corpus 6/6). The corpus declares a
+plausible layering for each project in `corpus.yml` (`config:`), so
+layer_violation is measured too.
+
+### Findings on the corpus
+
+| kind | rubocop | faraday | rubygems.org |
+| --- | --- | --- | --- |
+| layer_violation (declared layers) | 2 | 2 | 3 |
+| dead_code | 10 | 1 | 2 |
+| change_coupling | 0 | 0 | 3 |
+
+rubocop is one folder package, so no pair of its files crosses a package
+boundary and change_coupling cannot fire there. faraday and rubocop are
+libraries, so dead_code judges only their private methods and private
+constants; rubygems.org is a Rails app, judged outside its entry points.
+
+### Cost
+
+Wall time and peak RSS, the least of three runs each, on a shared machine
+(load around 9 on 4 cores, so a single run varies by a few seconds). The
+coupling-only rows (`--skip complexity,duplication,smells`) isolate the kinds'
+own cost; "base" is this branch with all three off, "main" is `origin/main`.
+
+| run | rubocop | faraday | rubygems.org |
+| --- | --- | --- | --- |
+| main, coupling only | 3.34 s, 87.8 MB | 0.41 s, 27.7 MB | 2.11 s, 79.7 MB |
+| base, coupling only | 3.44 s, 92.2 MB | 0.40 s, 28.0 MB | 2.19 s, 82.9 MB |
+| + dead_code | 6.07 s, 96.7 MB | 0.45 s, 28.4 MB | 3.47 s, 91.4 MB |
+| + change_coupling | 3.31 s, 90.6 MB | 0.46 s, 28.0 MB | 2.53 s, 79.9 MB |
+| + layers | 4.29 s, 96.4 MB | 0.46 s, 27.7 MB | 2.67 s, 69.7 MB |
+| main, every analyzer | 29.8 s, 449 MB | 1.24 s, 38.8 MB | 11.1 s, 162 MB |
+| base, every analyzer | 30.7 s, 466 MB | 1.22 s, 40.0 MB | 11.8 s, 172 MB |
+| + dead_code, every analyzer | 33.1 s, 458 MB | 1.44 s, 40.7 MB | 11.6 s, 169 MB |
+
+Timed in process: the reference walk dead_code and layers share takes 0.7 s on
+rubocop and 0.5 s on rubygems.org; dead_code's own work 1.6 s and 0.7 s (most
+of it the name index and reading the project's other files: specs, views,
+configuration); layer_violation 0.14 s and 0.04 s; change_coupling under 0.1 s
+on top of the git log the hotspots already read. Peak memory moves by less
+than the run-to-run spread, about 10 MB at most.
+
+### Blind precision
+
+Two raters labelled every dead_code finding the corpus reports (13), and a
+looser change_coupling sample (degree 30% and over, 17 findings, which holds
+the 3 at the default limits), blind as before: separate model instances that
+saw only the shuffled findings, the shared commits and the corpus source,
+cloned at the pinned commits, not hashira's code or these notes. Their labels
+are in `blind/` and `blind2/`, side by side in `blind/graph.json`.
+
+| kind | rater 1 | rater 2 | pooled | agreement | default |
+| --- | --- | --- | --- | --- | --- |
+| dead_code | 13/13 | 13/13 | 26/26 (100%) | 13/13 | on |
+| change_coupling, default limits | 1/3 | 2/3 | 3/6 | 2/3 | opt-in |
+| change_coupling, degree ≥ 30% | 2/17 | 3/17 | 5/34 (15%) | 16/17 | — |
+
+dead_code clears the bar with room to spare (each rater's 95% Wilson interval
+is 0.77 to 1.0), so it is on by default. Every finding was a private helper,
+an error class or a constant nothing reaches; both raters checked by searching
+each repository for the name, node patterns and specs included.
+change_coupling has three findings at its limits, too few to measure, and the
+looser sample is weak, so it stays opt-in like the other kinds too rare to
+measure. The raters' reasons name two causes: pairs that only ever changed
+together in RuboCop lint sweeps (6 of faraday's 7), which a commit-size cap
+of 30 files does not catch in a 32-file library, and feature work that
+naturally touches a model and its controller or two associated models. The
+true ones were duplicated knowledge: two upload jobs copying one S3 routine,
+a policy repeating its parent's role rule, and (for one rater) a field list
+written out in a query and in a struct.
+
+layer_violation is not rated: a finding is a reference that points outward
+from a layering the user declared, true by construction once the declaration
+is taken as intent. Its corpus layerings are mine, there to price the check.
+
+### hashira on itself
+
+hashira declares its own layers in `.hashira.yml` (cli; ci and diagram;
+pipeline and report; the analyzers; analysis and config) and reports no
+layer_violation and no dead_code. `.hashira.yml` turns change_coupling off for
+hashira's own gate: CI checks out one commit, so a history-based finding would
+be present locally and resolved there. Run locally on this branch it reports
+none.
+
 ## Known limits
 
 - nil_check is the least precise kind on both raters' labels: most nil checks
@@ -299,8 +390,15 @@ twice in one method whatever its types; the two can be turned on apart.
   are no longer reported.
 - Hollow-hop indirection is nearly silent on these corpora; with two findings
   its precision cannot be measured on them.
-- Duplication is the only heuristic that clears the bar, at 42%: the default
-  report is mostly measurements.
+- Duplication and dead_code are the heuristics that clear the bar: the
+  default report is mostly measurements.
+- dead_code matches methods by name, so a dead method that shares its name
+  with any call, symbol or word in the project is missed; and the corpus
+  gives it only 13 findings, all private or internal, so its precision on a
+  Rails app's public methods rests on two.
+- change_coupling sees only pairs across package boundaries, so a project
+  hashira reads as one package (rubocop) shows none, and lint sweeps under
+  the commit-size cap still pair files.
 
 ## Before and after
 
