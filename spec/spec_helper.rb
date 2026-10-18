@@ -22,7 +22,9 @@ module Fixtures
     end
   end
 
-  def git(*) = system("git", *, exception: true)
+  QUIET_GIT = %w[-c gc.auto=0 -c maintenance.auto=false].freeze
+
+  def git(*) = system("git", *QUIET_GIT, *, exception: true)
 
   def with_default_encodings(external, internal = nil)
     saved = [Encoding.default_external, Encoding.default_internal]
