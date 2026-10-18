@@ -1,0 +1,27 @@
+---
+- key: rubygems.org|wide_edge|User
+  label: ''
+  why: ''
+  message: User -> OIDC is 5 constants wide (OIDC::ApiKeyRole, OIDC::IdToken, OIDC::PendingTrustedPublisher,
+    OIDC::Provider, OIDC::RubygemTrustedPublisher) — every one is a reason for User
+    to change. Front OIDC with one facade.
+  evidence:
+  - 'app/models/user.rb:60: OIDC::ApiKeyRole'
+  - 'app/models/user.rb:61: OIDC::IdToken'
+  - 'app/models/user.rb:62: OIDC::Provider'
+  - 'app/models/user.rb:63: OIDC::PendingTrustedPublisher'
+  code: []
+- key: faraday|wide_edge|response
+  label: ''
+  why: ''
+  message: response -> (root) is 15 constants wide (BadRequestError, ClientError,
+    ConflictError, ForbiddenError, Middleware, MiddlewareRegistry, NilStatusError,
+    ParsingError, ProxyAuthError, RequestTimeoutError, ResourceNotFound, ServerError,
+    TooManyRequestsError, UnauthorizedError, UnprocessableContentError) — every one
+    is a reason for response to change. Front (root) with one facade.
+  evidence:
+  - 'response.rb:9: MiddlewareRegistry'
+  - 'response/json.rb:8: Middleware'
+  - 'response/json.rb:28: Faraday::ParsingError'
+  - 'response/logger.rb:12: Middleware'
+  code: []

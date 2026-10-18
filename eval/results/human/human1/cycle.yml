@@ -1,0 +1,22 @@
+---
+- key: rubocop|cycle|rubocop
+  label: ''
+  why: ''
+  message: rubocop and ruby_lsp depend on each other in a cycle — any change may ripple
+    back around. The cheapest cut is rubocop -> ruby_lsp (5 refs).
+  evidence:
+  - 'rubocop/lsp/diagnostic.rb:170: RubyLsp::Document::Scanner::SURROGATE_PAIR_START'
+  - 'rubocop/lsp/stdin_runner.rb:58: RubyLsp::Requests::Formatting::Error'
+  - 'rubocop/lsp/stdin_runner.rb:59: RubyLsp::Requests::Formatting::Error'
+  - 'rubocop/lsp/stdin_runner.rb:66: RubyLsp::Requests::Formatting::Error'
+  - 'rubocop/lsp/stdin_runner.rb:67: RubyLsp::Requests::Support::InternalRuboCopError'
+  code: []
+- key: rubygems.org|cycle|LinkVerification
+  label: ''
+  why: ''
+  message: LinkVerification and VerifyLinkJob depend on each other in a cycle — any
+    change may ripple back around. The cheapest cut is LinkVerification -> VerifyLinkJob
+    (1 ref).
+  evidence:
+  - 'app/models/link_verification.rb:63: VerifyLinkJob'
+  code: []

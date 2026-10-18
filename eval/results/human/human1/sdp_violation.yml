@@ -1,0 +1,10 @@
+---
+- key: rubygems.org|sdp_violation|WebHook
+  label: ''
+  why: ''
+  message: WebHook (I=0.45) depends on the LESS stable NotifyWebHookJob (I=0.67) —
+    churn in NotifyWebHookJob will force churn in WebHook. Invert the edge or extract
+    the stable part of NotifyWebHookJob that WebHook needs.
+  evidence:
+  - 'app/models/web_hook.rb:26: NotifyWebHookJob'
+  code: []

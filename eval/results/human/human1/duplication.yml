@@ -1,0 +1,593 @@
+---
+- key: rubygems.org|duplication|app/views/oidc/pending_trusted_publishers/index_view.rb:43,app/views/oidc/pending_trusted_publishers/new_view.rb:65
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 18) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - app/views/oidc/pending_trusted_publishers/index_view.rb:43-45
+  - app/views/oidc/pending_trusted_publishers/new_view.rb:65-67
+  code:
+  - "# app/views/oidc/pending_trusted_publishers/index_view.rb:43-45"
+  - '43:   def subject_sidebar'
+  - '44:     view_context.render(partial: "dashboards/subject", locals: { user: current_user,
+    current: :settings })'
+  - '45:   end'
+  - "# app/views/oidc/pending_trusted_publishers/new_view.rb:65-67"
+  - '65:   def subject_sidebar'
+  - '66:     view_context.render(partial: "dashboards/subject", locals: { user: current_user,
+    current: :settings })'
+  - '67:   end'
+- key: rubocop|duplication|rubocop/cop/layout/first_method_parameter_line_break.rb:57,rubocop/cop/layout/multiline_array_line_breaks.rb:48
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 21) — differs in its method names and in several
+    other ways — keep each name, calling one shared method that takes what else differs
+    as parameters.
+  evidence:
+  - rubocop/cop/layout/first_method_parameter_line_break.rb:57-64
+  - rubocop/cop/layout/multiline_array_line_breaks.rb:48-55
+  code:
+  - "# rubocop/cop/layout/first_method_parameter_line_break.rb:57-64"
+  - '57:         include FirstElementLineBreak'
+  - '58:         extend AutoCorrector'
+  - '59: '
+  - '60:         MSG = ''Add a line break before the first parameter of a multi-line
+    method parameter list.'''
+  - '61: '
+  - '62:         def on_def(node)'
+  - '63:           check_method_line_break(node, node.arguments, ignore_last: ignore_last_element?)'
+  - '64:         end'
+  - "# rubocop/cop/layout/multiline_array_line_breaks.rb:48-55"
+  - '48:         include MultilineElementLineBreaks'
+  - '49:         extend AutoCorrector'
+  - '50: '
+  - '51:         MSG = ''Each item in a multi-line array must start on a separate
+    line.'''
+  - '52: '
+  - '53:         def on_array(node)'
+  - '54:           check_line_breaks(node, node.children, ignore_last: ignore_last_element?)'
+  - '55:         end'
+- key: rubygems.org|duplication|app/controllers/organizations/onboarding/base_controller.rb:12,app/controllers/rubygems/transfer/base_controller.rb:11
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 35) — differs in its method names and in several
+    other ways — keep each name, calling one shared method that takes what else differs
+    as parameters. Both sites change often — fix one, miss the other.
+  evidence:
+  - app/controllers/organizations/onboarding/base_controller.rb:12-22
+  - app/controllers/rubygems/transfer/base_controller.rb:11-21
+  code:
+  - "# app/controllers/organizations/onboarding/base_controller.rb:12-22"
+  - '12:   def find_or_initialize_onboarding'
+  - '13:     @organization_onboarding = OrganizationOnboarding'
+  - '14:       .includes(invites: :user)'
+  - '15:       .where.not(status: :completed)'
+  - '16:       .find_or_initialize_by(created_by: Current.user)'
+  - '17:   end'
+  - '18: '
+  - '19:   def set_breadcrumbs'
+  - '20:     add_breadcrumb t("breadcrumbs.dashboard"), dashboard_path'
+  - '21:     add_breadcrumb "Create Org"'
+  - '22:   end'
+  - "# app/controllers/rubygems/transfer/base_controller.rb:11-21"
+  - '11:   def find_or_initialize_transfer'
+  - '12:     @rubygem_transfer = RubygemTransfer'
+  - '13:       .includes(invites: :user)'
+  - '14:       .where.not(status: :completed)'
+  - '15:       .find_or_initialize_by(created_by: Current.user)'
+  - '16:   end'
+  - '17: '
+  - '18:   def set_breadcrumbs'
+  - '19:     add_breadcrumb t("breadcrumbs.gems"), rubygems_path'
+  - '20:     add_breadcrumb "Transfer"'
+  - '21:   end'
+- key: rubocop|duplication|rubocop/options.rb:232,rubocop/options.rb:235
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 24) — differs only in literal values — extract
+    a method, pass them as arguments.
+  evidence:
+  - rubocop/options.rb:232-234
+  - rubocop/options.rb:235-237
+  code:
+  - "# rubocop/options.rb:232-234"
+  - '232:         option(opts, ''--show-cops [COP1,COP2,...]'') do |list|'
+  - '233:           @options[:show_cops] = list.nil? ? [] : list.split('','')'
+  - '234:         end'
+  - "# rubocop/options.rb:235-237"
+  - '235:         option(opts, ''--show-docs-url [COP1,COP2,...]'') do |list|'
+  - '236:           @options[:show_docs_url] = list.nil? ? [] : list.split('','')'
+  - '237:         end'
+- key: rubygems.org|duplication|app/views/oidc/id_tokens/index_view.rb:21,app/views/oidc/providers/index_view.rb:24
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 21) — differs only in the receiver or message
+    — extract a method taking the receiver. Both sites change often — fix one, miss
+    the other.
+  evidence:
+  - app/views/oidc/id_tokens/index_view.rb:21-23
+  - app/views/oidc/providers/index_view.rb:24-26
+  code:
+  - "# app/views/oidc/id_tokens/index_view.rb:21-23"
+  - '21:       header(class: "flex items-center py-4") do'
+  - '22:         p(class: HEADING) { plain page_entries_info(id_tokens) }'
+  - '23:       end'
+  - "# app/views/oidc/providers/index_view.rb:24-26"
+  - '24:       header(class: "flex items-center py-4") do'
+  - '25:         p(class: HEADING) { plain page_entries_info(providers) }'
+  - '26:       end'
+- key: rubocop|duplication|rubocop/cop/layout/space_before_brackets.rb:30,rubocop/cop/style/redundant_current_directory_in_path.rb:33
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 17) — differs only in the receiver or message
+    — extract a method taking the receiver.
+  evidence:
+  - rubocop/cop/layout/space_before_brackets.rb:30-34
+  - rubocop/cop/style/redundant_current_directory_in_path.rb:33-37
+  code:
+  - "# rubocop/cop/layout/space_before_brackets.rb:30-34"
+  - '30:           range = range_between(receiver_end_pos, selector_begin_pos)'
+  - '31: '
+  - '32:           add_offense(range) do |corrector|'
+  - '33:             corrector.remove(range)'
+  - '34:           end'
+  - "# rubocop/cop/style/redundant_current_directory_in_path.rb:33-37"
+  - '33:           range = range_between(begin_pos, end_pos)'
+  - '34: '
+  - '35:           add_offense(range) do |corrector|'
+  - '36:             corrector.remove(range)'
+  - '37:           end'
+- key: rubocop|duplication|rubocop/cop/bundler/duplicated_gem.rb:81,rubocop/cop/bundler/duplicated_group.rb:94,rubocop/cop/gemspec/duplicated_assignment.rb:120
+  label: ''
+  why: ''
+  message: 3 similar fragments (mass 40) — extract the shared shape and pass what
+    differs as parameters. Both sites change often — fix one, miss the other.
+  evidence:
+  - rubocop/cop/bundler/duplicated_gem.rb:81-90
+  - rubocop/cop/bundler/duplicated_group.rb:94-103
+  - rubocop/cop/gemspec/duplicated_assignment.rb:120-129
+  code:
+  - "# rubocop/cop/bundler/duplicated_gem.rb:81-90"
+  - '81:         def register_offense(node, gem_name, line_of_first_occurrence)'
+  - '82:           line_range = node.loc.column...node.loc.last_column'
+  - '83:           offense_location = source_range(processed_source.buffer, node.first_line,
+    line_range)'
+  - '84:           message = format('
+  - '85:             MSG,'
+  - '86:             gem_name: gem_name,'
+  - '87:             line_of_first_occurrence: line_of_first_occurrence'
+  - '88:           )'
+  - '89:           add_offense(offense_location, message: message)'
+  - '90:         end'
+  - "# rubocop/cop/bundler/duplicated_group.rb:94-103"
+  - '94:         def register_offense(node, group_name, line_of_first_occurrence)'
+  - '95:           line_range = node.loc.column...node.loc.last_column'
+  - '96:           offense_location = source_range(processed_source.buffer, node.first_line,
+    line_range)'
+  - '97:           message = format('
+  - '98:             MSG,'
+  - '99:             group_name: group_name,'
+  - '100:             line_of_first_occurrence: line_of_first_occurrence'
+  - '101:           )'
+  - '102:           add_offense(offense_location, message: message)'
+  - '103:         end'
+  - "# rubocop/cop/gemspec/duplicated_assignment.rb:120-129"
+  - '120:         def register_offense(node, assignment, line_of_first_occurrence)'
+  - '121:           line_range = node.loc.column...node.loc.last_column'
+  - '122:           offense_location = source_range(processed_source.buffer, node.first_line,
+    line_range)'
+  - '123:           message = format('
+  - '124:             MSG,'
+  - '125:             assignment: assignment,'
+  - '126:             line_of_first_occurrence: line_of_first_occurrence'
+  - '127:           )'
+  - '128:           add_offense(offense_location, message: message)'
+  - '129:         end'
+- key: rubocop|duplication|rubocop/cop/style/magic_comment_format.rb:207,rubocop/cop/style/magic_comment_format.rb:221
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 49) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence).
+  evidence:
+  - rubocop/cop/style/magic_comment_format.rb:207-219
+  - rubocop/cop/style/magic_comment_format.rb:221-231
+  code:
+  - "# rubocop/cop/style/magic_comment_format.rb:207-219"
+  - '207:         def fix_directives(issues)'
+  - '208:           return if issues.empty?'
+  - '209: '
+  - '210:           msg = format(MSG, style: expected_style)'
+  - '211: '
+  - '212:           issues.each do |directive|'
+  - '213:             add_offense(directive, message: msg) do |corrector|'
+  - '214:               replacement = replace_separator(replace_capitalization(directive.source,'
+  - '215:                                                                      directive_capitalization))'
+  - '216:               corrector.replace(directive, replacement)'
+  - '217:             end'
+  - '218:           end'
+  - '219:         end'
+  - "# rubocop/cop/style/magic_comment_format.rb:221-231"
+  - '221:         def fix_values(issues)'
+  - '222:           return if issues.empty?'
+  - '223: '
+  - '224:           msg = format(MSG_VALUE, case: value_capitalization)'
+  - '225: '
+  - '226:           issues.each do |value|'
+  - '227:             add_offense(value, message: msg) do |corrector|'
+  - '228:               corrector.replace(value, replace_capitalization(value.source,
+    value_capitalization))'
+  - '229:             end'
+  - '230:           end'
+  - '231:         end'
+- key: rubygems.org|duplication|app/models/organization_onboarding.rb:54,app/models/rubygem_transfer.rb:40
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 23) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - app/models/organization_onboarding.rb:54-59
+  - app/models/rubygem_transfer.rb:40-45
+  code:
+  - "# app/models/organization_onboarding.rb:54-59"
+  - '54:   rescue ActiveRecord::ActiveRecordError => e'
+  - '55:     self.status = :failed'
+  - '56:     self.error = e.message'
+  - '57:     save(validate: false)'
+  - '58: '
+  - '59:     raise e'
+  - "# app/models/rubygem_transfer.rb:40-45"
+  - '40:   rescue ActiveRecord::ActiveRecordError => e'
+  - '41:     self.status = :failed'
+  - '42:     self.error = e.message'
+  - '43:     save(validate: false)'
+  - '44: '
+  - '45:     raise e'
+- key: rubygems.org|duplication|app/tasks/maintenance/backfill_compact_index_v2_task.rb:10,app/tasks/maintenance/backfill_compact_index_v2_task.rb:11
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 16) — differs only in the receiver or message
+    — extract a method taking the receiver.
+  evidence:
+  - app/tasks/maintenance/backfill_compact_index_v2_task.rb:10-10
+  - app/tasks/maintenance/backfill_compact_index_v2_task.rb:11-11
+  code:
+  - "# app/tasks/maintenance/backfill_compact_index_v2_task.rb:10-10"
+  - '10:     scope = scope.where(rubygems: { id: min_rubygem_id.. }) if min_rubygem_id.present?'
+  - "# app/tasks/maintenance/backfill_compact_index_v2_task.rb:11-11"
+  - '11:     scope = scope.where(rubygems: { id: ..max_rubygem_id }) if max_rubygem_id.present?'
+- key: rubocop|duplication|rubocop/cop/layout/space_around_keyword.rb:45,rubocop/cop/layout/space_around_keyword.rb:57
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 32) — differs in its method names and in literal
+    values — keep each name, calling one shared method that takes the literals as
+    arguments.
+  evidence:
+  - rubocop/cop/layout/space_around_keyword.rb:45-55
+  - rubocop/cop/layout/space_around_keyword.rb:57-67
+  code:
+  - "# rubocop/cop/layout/space_around_keyword.rb:45-55"
+  - '45:         def on_block(node) # rubocop:disable InternalAffairs/NumblockHandler'
+  - '46:           check(node, %i[begin end].freeze)'
+  - '47:         end'
+  - '48: '
+  - '49:         def on_break(node)'
+  - '50:           check(node, [:keyword].freeze)'
+  - '51:         end'
+  - '52: '
+  - '53:         def on_case(node)'
+  - '54:           check(node, %i[keyword else].freeze)'
+  - '55:         end'
+  - "# rubocop/cop/layout/space_around_keyword.rb:57-67"
+  - '57:         def on_case_match(node)'
+  - '58:           check(node, %i[keyword else].freeze)'
+  - '59:         end'
+  - '60: '
+  - '61:         def on_ensure(node)'
+  - '62:           check(node, [:keyword].freeze)'
+  - '63:         end'
+  - '64: '
+  - '65:         def on_for(node)'
+  - '66:           check(node, %i[begin end].freeze)'
+  - '67:         end'
+- key: rubocop|duplication|rubocop/cop/style/empty_literal.rb:113,rubocop/cop/style/empty_literal.rb:117
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 19) — differs in its method names and in the
+    receiver or message — keep each name, calling one shared method that takes the
+    receiver.
+  evidence:
+  - rubocop/cop/style/empty_literal.rb:113-115
+  - rubocop/cop/style/empty_literal.rb:117-120
+  code:
+  - "# rubocop/cop/style/empty_literal.rb:113-115"
+  - '113:         def offense_array_node?(node)'
+  - '114:           (array_node(node) && !array_with_block(node.parent)) || array_with_index(node)'
+  - '115:         end'
+  - "# rubocop/cop/style/empty_literal.rb:117-120"
+  - '117:         def offense_hash_node?(node)'
+  - '118:           # If Hash.new takes a block, it can''t be changed to {}.'
+  - '119:           (hash_node(node) && !hash_with_block(node.parent)) || hash_with_index(node)'
+  - '120:         end'
+- key: rubocop|duplication|rubocop/cop/internal_affairs/cop_enabled.rb:72,rubocop/cop/internal_affairs/create_empty_file.rb:30,rubocop/cop/internal_affairs/location_exists.rb:89,rubocop/cop/internal_affairs/method_name_end_with.rb:61,rubocop/cop/internal_affairs/method_name_equal.rb:41,rubocop/cop/internal_affairs/node_first_or_last_argument.rb:45,rubocop/cop/lint/array_literal_in_regexp.rb:82,rubocop/cop/lint/symbol_conversion.rb:123,rubocop/cop/mixin/percent_array.rb:49,rubocop/cop/style/collection_compact.rb:99,rubocop/cop/style/eval_with_location.rb:139,rubocop/cop/style/hash_fetch_chain.rb:66,rubocop/cop/style/numeric_predicate.rb:100,rubocop/cop/style/redundant_regexp_argument.rb:57,rubocop/cop/style/yoda_expression.rb:61
+  label: ''
+  why: ''
+  message: 15 sites follow one convention (mass 17) — a convention the code repeats
+    on purpose, not a copy to extract — if it should change in one place, give it
+    a name (a macro, a concern, a base class); otherwise leave it. Both sites change
+    often — fix one, miss the other.
+  evidence:
+  - rubocop/cop/internal_affairs/cop_enabled.rb:72-74
+  - rubocop/cop/internal_affairs/create_empty_file.rb:30-32
+  - rubocop/cop/internal_affairs/location_exists.rb:89-91
+  - rubocop/cop/internal_affairs/method_name_end_with.rb:61-63
+  - rubocop/cop/internal_affairs/method_name_equal.rb:41-43
+  - rubocop/cop/internal_affairs/node_first_or_last_argument.rb:45-47
+  - rubocop/cop/lint/array_literal_in_regexp.rb:82-84
+  - rubocop/cop/lint/symbol_conversion.rb:123-123
+  - rubocop/cop/mixin/percent_array.rb:49-51
+  - rubocop/cop/style/collection_compact.rb:99-99
+  - rubocop/cop/style/eval_with_location.rb:139-141
+  - rubocop/cop/style/hash_fetch_chain.rb:66-68
+  - rubocop/cop/style/numeric_predicate.rb:100-102
+  - rubocop/cop/style/redundant_regexp_argument.rb:57-59
+  - rubocop/cop/style/yoda_expression.rb:61-63
+  code:
+  - "# rubocop/cop/internal_affairs/cop_enabled.rb:72-74"
+  - '72:           add_offense(node, message: message) do |corrector|'
+  - '73:             corrector.replace(node, replacement)'
+  - '74:           end'
+  - "# rubocop/cop/internal_affairs/create_empty_file.rb:30-32"
+  - '30:           add_offense(node, message: message) do |corrector|'
+  - '31:             corrector.replace(node, replacement)'
+  - '32:           end'
+  - "# rubocop/cop/internal_affairs/location_exists.rb:89-91"
+  - '89:           add_offense(node, message: message) do |corrector|'
+  - '90:             corrector.replace(node, replacement)'
+  - '91:           end'
+  - "# rubocop/cop/internal_affairs/method_name_end_with.rb:61-63"
+  - '61:             add_offense(range, message: message) do |corrector|'
+  - '62:               corrector.replace(range, preferred_method)'
+  - '63:             end'
+  - "# rubocop/cop/internal_affairs/method_name_equal.rb:41-43"
+  - '41:             add_offense(node, message: message) do |corrector|'
+  - '42:               corrector.replace(node, prefer)'
+  - '43:             end'
+  - "# rubocop/cop/internal_affairs/node_first_or_last_argument.rb:45-47"
+  - '45:             add_offense(range, message: message) do |corrector|'
+  - '46:               corrector.replace(range, correct)'
+  - '47:             end'
+  - "# rubocop/cop/lint/array_literal_in_regexp.rb:82-84"
+  - '82:           add_offense(begin_node, message: message) do |corrector|'
+  - '83:             corrector.replace(begin_node, replacement)'
+  - '84:           end'
+  - "# rubocop/cop/lint/symbol_conversion.rb:123-123"
+  - '123:           add_offense(node, message: message) { |corrector| corrector.replace(node,
+    correction) }'
+  - "# rubocop/cop/mixin/percent_array.rb:49-51"
+  - '49:         add_offense(node, message: message) do |corrector|'
+  - '50:           corrector.replace(node, bracketed_array)'
+  - '51:         end'
+  - "# rubocop/cop/style/collection_compact.rb:99-99"
+  - '99:           add_offense(range, message: message) { |corrector| corrector.replace(range,
+    good) }'
+  - "# rubocop/cop/style/eval_with_location.rb:139-141"
+  - '139:           add_offense(line_node, message: message) do |corrector|'
+  - '140:             corrector.replace(line_node, expected)'
+  - '141:           end'
+  - "# rubocop/cop/style/hash_fetch_chain.rb:66-68"
+  - '66:           add_offense(range, message: message) do |corrector|'
+  - '67:             corrector.replace(range, replacement)'
+  - '68:           end'
+  - "# rubocop/cop/style/numeric_predicate.rb:100-102"
+  - '100:           add_offense(node, message: message) do |corrector|'
+  - '101:             corrector.replace(node, replacement)'
+  - '102:           end'
+  - "# rubocop/cop/style/redundant_regexp_argument.rb:57-59"
+  - '57:           add_offense(regexp_node, message: message) do |corrector|'
+  - '58:             corrector.replace(regexp_node, prefer)'
+  - '59:           end'
+  - "# rubocop/cop/style/yoda_expression.rb:61-63"
+  - '61:           add_offense(node, message: message) do |corrector|'
+  - '62:             corrector.swap(lhs, rhs)'
+  - '63:           end'
+- key: rubygems.org|duplication|app/controllers/api/v1/api_keys_controller.rb:78,app/controllers/api/v1/downloads_controller.rb:4
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 60) — the control flow differs — extract the
+    common core, but verify by hand (lower confidence). Both sites change often —
+    fix one, miss the other.
+  evidence:
+  - app/controllers/api/v1/api_keys_controller.rb:78-84
+  - app/controllers/api/v1/downloads_controller.rb:4-11
+  code:
+  - "# app/controllers/api/v1/api_keys_controller.rb:78-84"
+  - '78:   def respond_with(msg, status: :ok)'
+  - '79:     respond_to do |format|'
+  - '80:       format.any(:all) { render plain: msg, status: status }'
+  - '81:       format.json { render json: { rubygems_api_key: msg, status: status
+    } }'
+  - '82:       format.yaml { render plain: { rubygems_api_key: msg, status: status
+    }.to_yaml }'
+  - '83:     end'
+  - '84:   end'
+  - "# app/controllers/api/v1/downloads_controller.rb:4-11"
+  - '4:   def index'
+  - '5:     total = GemDownload.total_count'
+  - '6:     respond_to do |format|'
+  - '7:       format.any(:all) { render plain: total }'
+  - '8:       format.json { render json: { total: total } }'
+  - '9:       format.yaml { render plain: { total: total }.to_yaml }'
+  - '10:     end'
+  - '11:   end'
+- key: faraday|duplication|options.rb:106,options.rb:120
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 27) — differs in its method names and in several
+    other ways — keep each name, calling one shared method that takes what else differs
+    as parameters.
+  evidence:
+  - options.rb:106-117
+  - options.rb:120-131
+  code:
+  - "# options.rb:106-117"
+  - '106:     def each_key(&block)'
+  - '107:       return to_enum(:each_key) unless block'
+  - '108: '
+  - '109:       keys.each(&block)'
+  - '110:     end'
+  - '111: '
+  - '112:     # Public'
+  - '113:     def key?(key)'
+  - '114:       keys.include?(key)'
+  - '115:     end'
+  - '116: '
+  - '117:     alias has_key? key?'
+  - "# options.rb:120-131"
+  - '120:     def each_value(&block)'
+  - '121:       return to_enum(:each_value) unless block'
+  - '122: '
+  - '123:       values.each(&block)'
+  - '124:     end'
+  - '125: '
+  - '126:     # Public'
+  - '127:     def value?(value)'
+  - '128:       values.include?(value)'
+  - '129:     end'
+  - '130: '
+  - '131:     alias has_value? value?'
+- key: rubocop|duplication|rubocop/options.rb:142,rubocop/options.rb:152
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 27) — differs only in literal values — extract
+    a method, pass them as arguments.
+  evidence:
+  - rubocop/options.rb:142-146
+  - rubocop/options.rb:152-156
+  code:
+  - "# rubocop/options.rb:142-146"
+  - '142:         option(opts, ''-a'', ''--autocorrect'') { @options[:safe_autocorrect]
+    = true }'
+  - '143:         option(opts, ''--auto-correct'') do'
+  - '144:           handle_deprecated_option(''--auto-correct'', ''--autocorrect'')'
+  - '145:           @options[:safe_autocorrect] = true'
+  - '146:         end'
+  - "# rubocop/options.rb:152-156"
+  - '152:         option(opts, ''-A'', ''--autocorrect-all'') { @options[:autocorrect]
+    = true }'
+  - '153:         option(opts, ''--auto-correct-all'') do'
+  - '154:           handle_deprecated_option(''--auto-correct-all'', ''--autocorrect-all'')'
+  - '155:           @options[:autocorrect] = true'
+  - '156:         end'
+- key: rubocop|duplication|rubocop/formatter/clang_style_formatter.rb:17,rubocop/formatter/tap_formatter.rb:46
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 49) — differs only in literal values — extract
+    a method, pass them as arguments.
+  evidence:
+  - rubocop/formatter/clang_style_formatter.rb:17-31
+  - rubocop/formatter/tap_formatter.rb:46-60
+  code:
+  - "# rubocop/formatter/clang_style_formatter.rb:17-31"
+  - '17:       def report_offense(file, offense)'
+  - '18:         output.printf('
+  - '19:           "%<path>s:%<line>d:%<column>d: %<severity>s: %<message>s\n",'
+  - '20:           path: cyan(smart_path(file)),'
+  - '21:           line: offense.line,'
+  - '22:           column: offense.real_column,'
+  - '23:           severity: colored_severity_code(offense),'
+  - '24:           message: message(offense)'
+  - '25:         )'
+  - '26: '
+  - '27:         return unless valid_line?(offense)'
+  - '28: '
+  - '29:         report_line(offense.location)'
+  - '30:         report_highlighted_area(offense.highlighted_area)'
+  - '31:       end'
+  - "# rubocop/formatter/tap_formatter.rb:46-60"
+  - '46:       def report_offense(file, offense)'
+  - '47:         output.printf('
+  - '48:           "# %<path>s:%<line>d:%<column>d: %<severity>s: %<message>s\n",'
+  - '49:           path: cyan(smart_path(file)),'
+  - '50:           line: offense.line,'
+  - '51:           column: offense.real_column,'
+  - '52:           severity: colored_severity_code(offense),'
+  - '53:           message: message(offense)'
+  - '54:         )'
+  - '55: '
+  - '56:         return unless valid_line?(offense)'
+  - '57: '
+  - '58:         report_line(offense.location)'
+  - '59:         report_highlighted_area(offense.highlighted_area)'
+  - '60:       end'
+- key: rubygems.org|duplication|app/jobs/sync_disposable_email_domains_job.rb:78,app/jobs/sync_disposable_email_domains_job.rb:81
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 21) — extract the shared shape and pass what
+    differs as parameters.
+  evidence:
+  - app/jobs/sync_disposable_email_domains_job.rb:78-80
+  - app/jobs/sync_disposable_email_domains_job.rb:81-83
+  code:
+  - "# app/jobs/sync_disposable_email_domains_job.rb:78-80"
+  - '78:     if domains.size < MIN_EXPECTED_DOMAINS'
+  - '79:       raise PoisonedUpstreamError, "Suspiciously small blocklist: #{domains.size}
+    domains (expected >= #{MIN_EXPECTED_DOMAINS})"'
+  - '80:     end'
+  - "# app/jobs/sync_disposable_email_domains_job.rb:81-83"
+  - '81:     if domains.size > MAX_EXPECTED_DOMAINS'
+  - '82:       raise PoisonedUpstreamError, "Suspiciously large blocklist: #{domains.size}
+    domains (expected <= #{MAX_EXPECTED_DOMAINS})"'
+  - '83:     end'
+- key: rubocop|duplication|rubocop/cop/lint/useless_access_modifier.rb:128,rubocop/cop/style/collection_methods.rb:44
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 22) — differs in its method names and in several
+    other ways — keep each name, calling one shared method that takes what else differs
+    as parameters. Both sites change often — fix one, miss the other.
+  evidence:
+  - rubocop/cop/lint/useless_access_modifier.rb:128-137
+  - rubocop/cop/style/collection_methods.rb:44-53
+  code:
+  - "# rubocop/cop/lint/useless_access_modifier.rb:128-137"
+  - '128:         include RangeHelp'
+  - '129:         extend AutoCorrector'
+  - '130: '
+  - '131:         MSG = ''Useless `%<current>s` access modifier.'''
+  - '132: '
+  - '133:         def on_class(node)'
+  - '134:           check_node(node.body)'
+  - '135:         end'
+  - '136:         alias on_module on_class'
+  - '137:         alias on_sclass on_class'
+  - "# rubocop/cop/style/collection_methods.rb:44-53"
+  - '44:         include MethodPreference'
+  - '45:         extend AutoCorrector'
+  - '46: '
+  - '47:         MSG = ''Prefer `%<prefer>s` over `%<current>s`.'''
+  - '48: '
+  - '49:         def on_block(node)'
+  - '50:           check_method_node(node.send_node)'
+  - '51:         end'
+  - '52:         alias on_numblock on_block'
+  - '53:         alias on_itblock on_block'
+- key: rubocop|duplication|rubocop/cop/layout/multiline_method_call_indentation.rb:148,rubocop/cop/layout/multiline_operation_indentation.rb:115
+  label: ''
+  why: ''
+  message: 2 similar fragments (mass 19) — byte-for-byte identical — extract a shared
+    method and call it from each site. Both sites change often — fix one, miss the
+    other.
+  evidence:
+  - rubocop/cop/layout/multiline_method_call_indentation.rb:148-149
+  - rubocop/cop/layout/multiline_operation_indentation.rb:115-116
+  code:
+  - "# rubocop/cop/layout/multiline_method_call_indentation.rb:148-149"
+  - '148:           "Use #{correct_indentation(node)} (not #{used_indentation}) "
+    \'
+  - '149:             "spaces for indenting #{what} spanning multiple lines."'
+  - "# rubocop/cop/layout/multiline_operation_indentation.rb:115-116"
+  - '115:             "Use #{correct_indentation(node)} (not #{used_indentation})
+    " \'
+  - '116:               "spaces for indenting #{what} spanning multiple lines."'

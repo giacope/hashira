@@ -1,8 +1,14 @@
 # Evaluation results
 
-`before` is `main` at the commit recorded in `before.json`; `after` is this
-branch at the commit in `after.json`. Both were run by the same suite, with the
-same cases and the same corpus checkouts:
+Everything below is a snapshot as of 2026-10-13, not a live measurement.
+`before` is `main` at `32e7969` (2026-10-09); `after` is the branch merged as
+pull request #16, recorded at `b1d1b85` with the change committed as `8130067`
+on top (the run reads `HEAD`, so `after.json` says `b1d1b85`). The blind labels
+and the holdout were taken on that branch the same day. hashira has changed
+since: re-run the suites before quoting a number.
+
+Both were run by the same suite, with the same cases and the same corpus
+checkouts:
 
 ```sh
 eval/run --hashira PATH --label before|after --corpus DIR   # all suites
@@ -15,6 +21,32 @@ under `eval/probe/peak.rb`, which reports wall time and peak RSS (VmHWM). The
 smells and corpus suites pass `--config eval/probe/every.yml` (`checks: all`)
 to a version that has opt-in kinds, so every kind is measured whatever its
 default.
+
+## When the suites run
+
+CI's `eval` job runs the fixed-answer suites on every push to `main` and every
+pull request. They need no corpus and no network, take about ten seconds, and
+any failed check fails the build:
+
+```sh
+eval/run --hashira . --suites complexity,coupling,duplication,smells,cli --label ci
+```
+
+The rest is a pre-release step, run by hand before a version is tagged, with
+this README's numbers and snapshot date updated from it:
+
+```sh
+eval/run --hashira . --label after   # every suite; clones the corpus into eval/tmp/corpus
+eval/run --compare eval/results/before.json,eval/results/after.json
+eval/run --hashira . --suites corpus --seed SALT   # a fresh holdout in eval/tmp/holdout/SALT
+eval/run --agree eval/results/human/human1         # human labels against the raters
+```
+
+The first run parks every sampled finding without a label in
+`eval/tmp/pending/<kind>.yml`; label those into `labels/`. Copy a holdout to
+`holdout/SALT/`, have two raters label it blind, each into a folder of their
+own, and score them against each other with
+`eval/run --agree RATER1 --raters RATER2`.
 
 ## What the suites check
 
@@ -45,9 +77,10 @@ default.
 Each kind's sample is the 25 (or 15, or 20 for indirection) findings with the
 smallest SHA-256 of their key, so the sample is stable across runs and a
 finding that survives a change keeps its label. `--seed SALT` salts the hash
-and leaves out every key any dev label file holds, which draws a fresh sample
-disjoint from everything labelled so far. The interval is a 95% Wilson
-interval.
+and leaves out every key any dev label file holds or any earlier draw in
+`holdout/` or `human/` handed out, which draws a fresh sample disjoint from
+everything labelled so far. `--samples kind=N,...` replaces the sizes in
+`eval/corpus.yml`. The interval is a 95% Wilson interval.
 
 Rubric: a finding is **tp** when its claim is true, its remedy applies to code
 the project owns, and a strict reviewer on a team aiming for clean code would
@@ -71,6 +104,10 @@ reason:
   was handed to the raters, with no labels.
 - `blind/sample.json` and `blind/holdout1.json` — both raters' raw labels for
   the sample and for `holdout1`, side by side.
+- `human/<salt>/` — a seeded sample of the default kinds for a person to
+  label, with the verdicts left blank ([human/README.md](human/README.md)).
+  `eval/run --agree DIR` prints its precision and its agreement with the two
+  raters.
 
 ### Blind precision
 

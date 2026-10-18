@@ -16,7 +16,11 @@ module Evaluation
         sightings.reject { known.include?(it.key) }.sort_by { rank(it) }.first(size)
       end
 
-      def seen = salt.empty? ? Set.new : Labels::DEV.flat_map { Labels.new(it).entries.keys }.to_set
+      def seen = salt.empty? ? Set.new : [*Labels::DEV.flat_map { Labels.new(it).entries.keys }, *drawn].to_set
+
+      def drawn = earlier.flat_map { Labels.new(it).listed }.map { it["key"] }
+
+      def earlier = Dir[Labels::DRAWN].reject { File.basename(it) == seed }
 
       def rank(sighting) = Digest::SHA256.hexdigest("#{salt}#{sighting.key}")
     end

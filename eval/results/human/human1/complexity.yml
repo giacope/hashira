@@ -1,0 +1,381 @@
+---
+- key: faraday|complexity|Faraday::Connection#run_request
+  label: ''
+  why: ''
+  message: Faraday::Connection#run_request — cognitive 10, 13 calls (connection.rb:439).
+    flatten the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - unless +1 (line 440)
+  - if +8 (lines 446, 447, 448, 449)
+  - recursion +1 (line 439)
+  code:
+  - "# connection.rb:439"
+  - '439:     def run_request(method, url, body, headers)'
+  - '440:       unless METHODS.include?(method)'
+  - '441:         raise ArgumentError, "unknown http method: #{method}"'
+  - '442:       end'
+  - '443: '
+  - '444:       request = build_request(method) do |req|'
+  - '445:         req.options.proxy = proxy_for_request(url)'
+  - '446:         req.url(url)                if url'
+  - '447:         req.headers.update(headers) if headers'
+  - '448:         req.body = body             if body'
+  - '449:         yield(req) if block_given?'
+  - '450:       end'
+  - '451: '
+  - '452:       builder.build_response(self, request)'
+  - '453:     end'
+  - '454: '
+  - '455:     # Creates and configures the request object.'
+  - '456:     #'
+  - '457:     # @param method [Symbol]'
+  - '458:     #'
+  - '459:     # @yield [Faraday::Request] if block given'
+  - '460:     # @return [Faraday::Request]'
+  - '461:     def build_request(method)'
+  - '462:       Request.create(method) do |req|'
+  - '463:         req.params  = params.dup'
+- key: rubygems.org|complexity|Maintenance::BackfillSpecSha256Task#process
+  label: ''
+  why: ''
+  message: Maintenance::BackfillSpecSha256Task#process — cognitive 10, 30 calls (app/tasks/maintenance/backfill_spec_sha256_task.rb:10).
+    flatten the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +9 (lines 17, 27, 28)
+  - else +1 (line 31)
+  code:
+  - "# app/tasks/maintenance/backfill_spec_sha256_task.rb:10"
+  - '10:   def process(version)'
+  - '11:     logger.tagged(version_id: version.id, name: version.rubygem.name, number:
+    version.number, platform: version.platform) do'
+  - '12:       logger.info "Updating spec_sha256 for #{version.full_name}"'
+  - '13: '
+  - '14:       spec_path = "quick/Marshal.4.8/#{version.full_name}.gemspec.rz"'
+  - '15:       spec_contents = RubygemFs.instance.get(spec_path)'
+  - '16: '
+  - '17:       if spec_contents.nil?'
+  - '18:         logger.error "Could not find #{spec_path}"'
+  - '19:         return'
+  - '20:       end'
+  - '21: '
+  - '22:       spec_sha256 = Digest::SHA2.base64digest(spec_contents)'
+  - '23: '
+  - '24:       logger.info "Updating spec_sha256 for #{version.full_name} to #{spec_sha256}"'
+  - '25: '
+  - '26:       version.transaction do'
+  - '27:         if version.reload.spec_sha256.present?'
+  - '28:           if spec_sha256 != version.spec_sha256'
+  - '29:             raise "Version #{version.full_name} has incorrect spec_sha256
+    (expected #{version.spec_sha256}, got #{spec_sha256})"'
+  - '30:           end'
+  - '31:         else'
+  - '32:           version.update!(spec_sha256: spec_sha256)'
+  - '33:         end'
+  - '34:       end'
+- key: rubocop|complexity|RuboCop::Cop::Style::MultipleComparison#find_offending_var
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Style::MultipleComparison#find_offending_var — cognitive
+    10, 15 calls (rubocop/cop/style/multiple_comparison.rb:97). flatten the branching
+    — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +6 (lines 98, 104, 107, 112)
+  - elsif +2 (lines 101, 103)
+  - boolean +1 (line 104)
+  - recursion +1 (line 97)
+  code:
+  - "# rubocop/cop/style/multiple_comparison.rb:97"
+  - '97:         def find_offending_var(node, variables = Set.new, values = [])'
+  - '98:           if node.or_type?'
+  - '99:             find_offending_var(node.lhs, variables, values)'
+  - '100:             find_offending_var(node.rhs, variables, values)'
+  - '101:           elsif simple_double_comparison?(node)'
+  - '102:             return'
+  - '103:           elsif (var, obj = simple_comparison(node))'
+  - '104:             return if allow_method_comparison? && obj.call_type?'
+  - '105: '
+  - '106:             variables << var'
+  - '107:             return if variables.size > 1'
+  - '108: '
+  - '109:             values << obj'
+  - '110:           end'
+  - '111: '
+  - '112:           [variables.first, values] if variables.any?'
+  - '113:         end'
+  - '114:         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity'
+  - '115: '
+  - '116:         def offense_range(values)'
+  - '117:           values.first.parent.source_range.begin.join(values.last.parent.source_range.end)'
+  - '118:         end'
+  - '119: '
+  - '120:         def variable_name(node)'
+  - '121:           node.children[0]'
+- key: rubocop|complexity|RuboCop::Cop::Lint::UselessAssignment#check_for_unused_assignments
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Lint::UselessAssignment#check_for_unused_assignments — cognitive
+    10, 15 calls (rubocop/cop/lint/useless_assignment.rb:56). flatten the branching
+    — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +8 (lines 57, 61, 70, 77)
+  - boolean +2 (lines 61, 70)
+  code:
+  - "# rubocop/cop/lint/useless_assignment.rb:56"
+  - '56:         def check_for_unused_assignments(variable)'
+  - '57:           return if variable.should_be_unused?'
+  - '58: '
+  - '59:           variable.assignments.reverse_each do |assignment|'
+  - '60:             assignment_node = assignment.node'
+  - '61:             next if assignment.used? || part_of_ignored_node?(assignment_node)'
+  - '62: '
+  - '63:             message = message_for_useless_assignment(assignment)'
+  - '64:             range = offense_range(assignment)'
+  - '65: '
+  - '66:             add_offense(range, message: message) do |corrector|'
+  - '67:               # In cases like `x = 1, y = 2`, where removing a variable would
+    cause a syntax error,'
+  - '68:               # and where changing `x ||= 1` to `x = 1` would cause `NameError`,'
+  - '69:               # the autocorrect will be skipped, even if the variable is
+    unused.'
+  - '70:               if sequential_assignment?(assignment_node) || assignment_node.parent&.or_asgn_type?'
+  - '71:                 next'
+  - '72:               end'
+  - '73: '
+  - '74:               autocorrect(corrector, assignment)'
+  - '75:             end'
+  - '76: '
+  - '77:             ignore_node(assignment_node) if chained_assignment?(assignment_node)'
+  - '78:           end'
+  - '79:         end'
+  - '80:         # rubocop:enable Metrics/AbcSize, Metrics/PerceivedComplexity, Metrics/CyclomaticComplexity'
+- key: rubocop|complexity|RuboCop::Cop::Style::RedundantEach#redundant_each_method
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Style::RedundantEach#redundant_each_method — cognitive 13,
+    26 calls (rubocop/cop/style/redundant_each.rb:64). flatten the branching — guard
+    clauses, early returns, or polymorphism.
+  evidence:
+  - if +6 (lines 65, 67, 73, 77, 82)
+  - boolean +5 (lines 67, 69, 70, 77, 82)
+  - unless +2 (lines 76, 80)
+  code:
+  - "# rubocop/cop/style/redundant_each.rb:64"
+  - '64:         def redundant_each_method(node)'
+  - '65:           return if node.last_argument&.block_pass_type?'
+  - '66: '
+  - '67:           if node.method?(:each) && !node.parent&.block_type?'
+  - '68:             ancestor_node = node.each_ancestor(:call).detect do |ancestor|'
+  - '69:               ancestor.receiver == node &&'
+  - '70:                 (RESTRICT_ON_SEND.include?(ancestor.method_name) || ancestor.method?(:reverse_each))'
+  - '71:             end'
+  - '72: '
+  - '73:             return ancestor_node if ancestor_node'
+  - '74:           end'
+  - '75: '
+  - '76:           return unless (prev_method = node.children.first)'
+  - '77:           return if !prev_method.send_type? ||'
+  - '78:                     prev_method.parent.block_type? || prev_method.last_argument&.block_pass_type?'
+  - '79: '
+  - '80:           detected = prev_method.method_name.to_s.start_with?(''each_'')
+    unless node.method?(:each)'
+  - '81: '
+  - '82:           prev_method if detected || prev_method.method?(:reverse_each)'
+  - '83:         end'
+  - '84:         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity'
+  - '85: '
+  - '86:         def range(node)'
+  - '87:           return node.selector unless node.method?(:each)'
+  - '88: '
+- key: rubocop|complexity|RuboCop::Cop::Style::ConditionalCorrectorHelper#remove_whitespace_in_branches
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Style::ConditionalCorrectorHelper#remove_whitespace_in_branches
+    — cognitive 10, 35 calls (rubocop/cop/style/conditional_assignment.rb:441). flatten
+    the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +7 (lines 443, 444, 447, 450)
+  - boolean +2 (lines 450, 454)
+  - unless +1 (line 454)
+  code:
+  - "# rubocop/cop/style/conditional_assignment.rb:441"
+  - '441:         def remove_whitespace_in_branches(corrector, branch, condition,
+    column)'
+  - '442:           branch.each_node do |child|'
+  - '443:             next if child.source_range.nil?'
+  - '444:             next if child.parent.dstr_type?'
+  - '445: '
+  - '446:             white_space = white_space_range(child, column)'
+  - '447:             corrector.remove(white_space) if white_space.source.strip.empty?'
+  - '448:           end'
+  - '449: '
+  - '450:           if condition.loc.else && !same_line?(condition.else_branch, condition)'
+  - '451:             corrector.remove_preceding(condition.loc.else, condition.loc.else.column
+    - column)'
+  - '452:           end'
+  - '453: '
+  - '454:           return unless condition.loc.end && !same_line?(condition.loc.end,
+    condition)'
+  - '455: '
+  - '456:           corrector.remove_preceding(condition.loc.end, condition.loc.end.column
+    - column)'
+  - '457:         end'
+  - '458:         # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity'
+  - '459: '
+  - '460:         def same_line?(node1, node2)'
+  - '461:           RuboCop::Cop::Util.same_line?(node1, node2)'
+  - '462:         end'
+  - '463: '
+  - '464:         def white_space_range(node, column)'
+  - '465:           expression = node.source_range'
+- key: rubygems.org|complexity|OIDC::Providers::ShowView#view_template
+  label: ''
+  why: ''
+  message: OIDC::Providers::ShowView#view_template — cognitive 12, 40 calls (app/views/oidc/providers/show_view.rb:14).
+    flatten the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +7 (lines 25, 39)
+  - ternary +5 (line 28)
+  code:
+  - "# app/views/oidc/providers/show_view.rb:14"
+  - '14:   def view_template'
+  - '15:     self.title = t(".title")'
+  - '16: '
+  - '17:     subject_sidebar'
+  - '18: '
+  - '19:     render CardComponent.new do |c|'
+  - '20:       c.head { c.title(provider.issuer, icon: "settings") }'
+  - '21: '
+  - '22:       dl do'
+  - '23:         supported_attrs.each do |attr|'
+  - '24:           val = provider.configuration.send(attr)'
+  - '25:           next if val.blank?'
+  - '26:           dt(class: "#{HEADING} mt-4") { provider.configuration.class.human_attribute_name(attr)
+    }'
+  - '27:           dd(class: "mt-1 mb-6") do'
+  - '28:             attr.end_with?("s_supported") ? tags_attr(attr, val) : text_attr(attr,
+    val)'
+  - '29:           end'
+  - '30:         end'
+  - '31:       end'
+  - '32: '
+  - '33:       h3(class: HEADING) { "Roles" }'
+  - '34:       div(class: "mt-1") do'
+  - '35:         api_key_roles = current_user.oidc_api_key_roles.where(provider:).page(0).per(10)'
+  - '36:         header(class: "flex items-center py-4") do'
+  - '37:           p(class: HEADING) { plain page_entries_info(api_key_roles) }'
+  - '38:         end'
+- key: faraday|complexity|Faraday::FlatParamsEncoder.encode
+  label: ''
+  why: ''
+  message: Faraday::FlatParamsEncoder.encode — cognitive 17, 24 calls (encoders/flat_params_encoder.rb:24).
+    flatten the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - if +11 (lines 25, 34, 39, 46, 49)
+  - unless +3 (lines 27, 28)
+  - elsif +1 (line 48)
+  - else +2 (lines 51, 57)
+  code:
+  - "# encoders/flat_params_encoder.rb:24"
+  - '24:     def self.encode(params)'
+  - '25:       return nil if params.nil?'
+  - '26: '
+  - '27:       unless params.is_a?(Array)'
+  - '28:         unless params.respond_to?(:to_hash)'
+  - '29:           raise TypeError,'
+  - '30:                 "Can''t convert #{params.class} into Hash."'
+  - '31:         end'
+  - '32:         params = params.to_hash'
+  - '33:         params = params.map do |key, value|'
+  - '34:           key = key.to_s if key.is_a?(Symbol)'
+  - '35:           [key, value]'
+  - '36:         end'
+  - '37: '
+  - '38:         # Only to be used for non-Array inputs. Arrays should preserve order.'
+  - '39:         params.sort! if @sort_params'
+  - '40:       end'
+  - '41: '
+  - '42:       # The params have form [[''key1'', ''value1''], [''key2'', ''value2'']].'
+  - '43:       buffer = +'''''
+  - '44:       params.each do |key, value|'
+  - '45:         encoded_key = escape(key)'
+  - '46:         if value.nil?'
+  - '47:           buffer << "#{encoded_key}&"'
+  - '48:         elsif value.is_a?(Array)'
+- key: rubocop|complexity|RuboCop::Cop::Lint::ShadowedArgument#assignment_without_argument_usage
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Lint::ShadowedArgument#assignment_without_argument_usage
+    — cognitive 10, 13 calls (rubocop/cop/lint/shadowed_argument.rb:120). flatten
+    the branching — guard clauses, early returns, or polymorphism.
+  evidence:
+  - boolean +1 (line 122)
+  - if +5 (lines 125, 134)
+  - unless +4 (lines 126, 131)
+  code:
+  - "# rubocop/cop/lint/shadowed_argument.rb:120"
+  - '120:         def assignment_without_argument_usage(argument)'
+  - '121:           argument.assignments.reduce(true) do |location_known, assignment|'
+  - '122:             assignment_node = assignment.meta_assignment_node || assignment.node'
+  - '123: '
+  - '124:             # Shorthand assignments always use their arguments'
+  - '125:             next false if assignment_node.shorthand_asgn?'
+  - '126:             next false unless assignment_node.parent'
+  - '127: '
+  - '128:             node_within_block_or_conditional ='
+  - '129:               node_within_block_or_conditional?(assignment_node.parent,
+    argument.scope.node)'
+  - '130: '
+  - '131:             unless uses_var?(assignment_node, argument.name)'
+  - '132:               # It''s impossible to decide whether a branch or block is
+    executed,'
+  - '133:               # so the precise reassignment location is undecidable.'
+  - '134:               next false if node_within_block_or_conditional'
+  - '135: '
+  - '136:               yield(assignment.node, location_known)'
+  - '137:               break'
+  - '138:             end'
+  - '139: '
+  - '140:             location_known'
+  - '141:           end'
+  - '142:         end'
+  - '143: '
+  - '144:         def reference_pos(node)'
+- key: rubocop|complexity|RuboCop::Cop::Lint::LiteralAsCondition#correct_if_node
+  label: ''
+  why: ''
+  message: RuboCop::Cop::Lint::LiteralAsCondition#correct_if_node — cognitive 10,
+    31 calls (rubocop/cop/lint/literal_as_condition.rb:240). name the compound condition
+    in a predicate method.
+  evidence:
+  - if +1 (line 243)
+  - boolean +4 (lines 243, 247, 251, 259)
+  - elsif +4 (lines 247, 251, 255, 259)
+  - else +1 (line 263)
+  code:
+  - "# rubocop/cop/lint/literal_as_condition.rb:240"
+  - '240:         def correct_if_node(node, cond)'
+  - '241:           result = condition_evaluation(node, cond)'
+  - '242: '
+  - '243:           if node.elsif? && result'
+  - '244:             add_offense(cond) do |corrector|'
+  - '245:               corrector.replace(node, "else\n  #{node.if_branch.source}")'
+  - '246:             end'
+  - '247:           elsif node.elsif? && !result'
+  - '248:             add_offense(cond) do |corrector|'
+  - '249:               corrector.replace(node, "else\n  #{node.else_branch.source}")'
+  - '250:             end'
+  - '251:           elsif node.if_branch && result'
+  - '252:             add_offense(cond) do |corrector|'
+  - '253:               corrector.replace(node, node.if_branch.source)'
+  - '254:             end'
+  - '255:           elsif node.elsif_conditional?'
+  - '256:             add_offense(cond) do |corrector|'
+  - '257:               corrector.replace(node, "#{node.else_branch.source.sub(''elsif'',
+    ''if'')}\nend")'
+  - '258:             end'
+  - '259:           elsif node.else? || node.ternary?'
+  - '260:             add_offense(cond) do |corrector|'
+  - '261:               corrector.replace(node, node.else_branch.source)'
+  - '262:             end'
+  - '263:           else'
+  - '264:             add_offense(cond) do |corrector|'
