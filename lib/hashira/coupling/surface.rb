@@ -49,7 +49,8 @@ class Hashira::Coupling::Surface
 
   def declared(opening)
     hidden = opening.hidden
-    [constant(opening, opening.node, opening.full, hidden: false), *written(opening, hidden)].reject { it.path.empty? }
+    [constant(opening, opening.node, opening.full, hidden: false), *written(opening, hidden)]
+      .select { @census.owned?(it.path) }
   end
 
   def written(opening, hidden)

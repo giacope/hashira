@@ -298,6 +298,11 @@ misses dead code rather than report live code. Also left alone:
 - A `ClassMethods` module, and the public methods of a class whose ancestry
   leaves the project (`< ActiveRecord::Base`, `include Sidekiq::Job`) or of a
   module mixed into one: the framework calls them.
+- A class the project reopens but [leaves to its owner](#coupling): Ruby's
+  (`class String`), or one opened in a library's namespace
+  (`class ActionText::Content::Filters`) that the project does not otherwise
+  claim. References to it never resolve to the project, so they cannot show it
+  is used. The methods the project adds to it are still judged.
 
 The roots differ by kind of project. In a library, every public method and
 public constant is its users' API, so only private methods and
