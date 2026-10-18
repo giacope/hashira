@@ -46,7 +46,17 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def handed?(write) = setup.include?(write) && passed?(write)
 
-  def passed?(write) = write.is_a?(Prism::InstanceVariableWriteNode) && argument?(write.value)
+  def passed?(write) = argument?(write.is_a?(Prism::InstanceVariableWriteNode) ? write.value : paired[write])
+
+  def paired
+    @_paired ||= setup.grep(Prism::MultiWriteNode).each_with_object({}.compare_by_identity) { |multi, found| pair(multi, found) }
+  end
+
+  def pair(multi, found)
+    values = multi.value
+    return unless values.is_a?(Prism::ArrayNode) && values.elements.none?(Prism::SplatNode)
+    multi.lefts.zip(values.elements).each { |target, value| found[target] = value }
+  end
 
   def argument?(value) = value.is_a?(Prism::LocalVariableReadNode) && inputs.include?(value.name)
 

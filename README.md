@@ -298,6 +298,11 @@ misses dead code rather than report live code. Also left alone:
 - A `ClassMethods` module, and the public methods of a class whose ancestry
   leaves the project (`< ActiveRecord::Base`, `include Sidekiq::Job`) or of a
   module mixed into one: the framework calls them.
+- A class the project reopens but [leaves to its owner](#coupling): Ruby's
+  (`class String`), or one opened in a library's namespace
+  (`class ActionText::Content::Filters`) that the project does not otherwise
+  claim. References to it never resolve to the project, so they cannot show it
+  is used. The methods the project adds to it are still judged.
 
 The roots differ by kind of project. In a library, every public method and
 public constant is its users' API, so only private methods and
@@ -542,23 +547,25 @@ Findings (3):
   command on the receiver, a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
-  variable — no arguments, or literal keys — made exactly twice, which is style.
-  A chain (`order.customer.address`), a helper method's result, a constant's
-  query (`Time.now` twice is two times) or three reads are reported.
+  variable — no arguments, or literal keys — made at most twice in any one run,
+  which is style. A chain (`order.customer.address`), a helper method's result,
+  a constant's query (`Time.now` twice is two times) or three reads in one run
+  are reported.
 - **repeated_conditional** — one class testing the same condition in three or
   more places: a comparison with a fixed value (`@mode == :draft`), a type test
   (`is_a?`), or the subject of a `case`; polymorphism is overdue. A plain truth
   test (`signed_in?`, `@closed`) asks about state rather than dispatching on
   it, and stays quiet.
 - **state_sprawl** — a class whose fields weigh more than four. A field the
-  constructor takes straight from an argument (`@size = size`) is an input, a
-  component's props or a job's arguments, and weighs nothing. Any other field the
-  constructor (or a helper it calls, or a callback the class registers such as a
-  `before_action`) sets weighs one. One set elsewhere and taken up by another
-  method or a reader is parked between calls and weighs two; one set elsewhere
-  that no method reads is handed on — to a template, to a caller — and weighs
-  nothing. Memo caches (`@x ||=`, `@_x`, `defined?` guards) are not state, and a
-  class whose methods use all its constructor fields together is one handle.
+  constructor takes straight from an argument (`@size = size`, or
+  `@w, @h = w, h`) is an input, a component's props or a job's arguments, and
+  weighs nothing. Any other field the constructor (or a helper it calls, or a
+  callback the class registers such as a `before_action`) sets weighs one. One
+  set elsewhere and taken up by another method or a reader is parked between
+  calls and weighs two; one set elsewhere that no method reads is handed on —
+  to a template, to a caller — and weighs nothing. Memo caches (`@x ||=`,
+  `@_x`, `defined?` guards) are not state, and a class whose methods use all
+  its constructor fields together is one handle.
 - **assumed_state** — an instance variable read that nothing the class can reach
   ever assigns: a typo, or a fragile base class waiting for subclasses to install
   its state.

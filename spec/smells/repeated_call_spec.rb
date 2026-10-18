@@ -46,6 +46,34 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     )
   end
 
+  it "counts the plain reads one run makes, not every read across branches that never run together" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def paged(kind)
+              case kind
+              when :before then page(@room.messages, @room.messages)
+              when :after then page(@room.messages, @room.messages)
+              else @room.messages
+              end
+            end
+
+            def crowded(kind)
+              case kind
+              when :before then page(@room.messages, @room.messages, @room.messages)
+              else @room.messages
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { [it.package, it.evidence] }).to(
+      eq([["App::Zone::Thing#crowded", ["@room.messages × 4 (lines 14, 15)"]]])
+    )
+  end
+
   it "takes a reading measured against a stored earlier reading for a deliberate second sample, not a repeat" do
     findings = repeated(<<~RUBY)
       module App

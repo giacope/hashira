@@ -77,7 +77,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
 
-  def glance?(nodes) = nodes.size == 2 && Hashira::Smells::Lookup.cheap?(nodes.first)
+  def glance?(nodes) = Hashira::Smells::Lookup.cheap?(nodes.first) && nodes.combination(3).none? { thrice?(it) }
+
+  def thrice?(trio) = trio.combination(2).all? { reachable?(it) }
 
   def sampling = @_sampling ||= Hashira::Smells::Sampling.new(subject.node, every)
 

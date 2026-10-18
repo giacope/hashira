@@ -128,6 +128,18 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     expect(dead(rails, directories: %w[app lib])).to(eq(%w[Order#stale_scope Pricing Pricing#quote Pricing.rate]))
   end
 
+  it "leaves a class the project reopens to its owner, Ruby or a library, and still judges the methods it adds" do
+    reopened = rails.merge(
+      "lib/rails_ext/string.rb" => "class String\n  def shout = upcase\n  def whisper = downcase\nend\n",
+      "lib/rails_ext/filters.rb" => "class ActionText::Content::Filters\n  def initialize(*all) = @all = all\nend\n",
+      "app/helpers/notes_helper.rb" =>
+        "module NotesHelper\n  FILTERS = ActionText::Content::Filters.new\n  def loud(text) = text.shout\nend\n"
+    )
+    expect(dead(reopened, directories: %w[app lib])).to(
+      eq(%w[Order#stale_scope Pricing Pricing#quote Pricing.rate String#whisper])
+    )
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end
