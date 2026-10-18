@@ -5,17 +5,21 @@ require_relative "rule"
 class Hashira::Coupling::Echo < Hashira::Coupling::Rule
   KIND = "roll_call"
 
-  def list = rolls.map { entry(it) }
+  REST_ACTIONS = %w[index show new create edit update destroy].to_set.freeze
+
+  def list = rolls.reject { framework?(it) }.map { entry(it) }
 
   private
 
   def rolls = Hashira::Coupling::RollCall.new(lists, homes).rolls
 
+  def framework?(roll) = project.rails? && REST_ACTIONS.superset?(roll.words.to_set)
+
   def sightings
     @_sightings ||=
       graph.trees.filter_map do |file, tree|
         words = Hashira::Coupling::Words.lists(tree)
-        [project.relative(file), graph.charge(file), words] unless words.empty?
+        [project.relative(file), graph.home(file), words] unless words.empty?
       end
   end
 

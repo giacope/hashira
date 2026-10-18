@@ -419,6 +419,19 @@ true positive the earlier triage confirmed still fires.
   `resources ... only:` lists in routes, was reported as the hand-kept list
   "create, edit, new, show, update" (Campfire). A roll is now a set of words
   that one literal in each file holds whole.
+- `roll_call` charges each file to the package its definitions live in. Under
+  namespace packaging (every Rails app) it asked for the package of an empty
+  nesting, so every file outside the web layer landed in the root package and
+  a roll could only ever span "(root)" and "(web)".
+- `roll_call` leaves a Rails app's lists of REST actions alone (`index`,
+  `show`, `new`, `create`, `edit`, `update`, `destroy`). Routes and
+  controllers both have to spell them, and Rails, not the app, owns the words.
+- Under namespace packaging, tests that drive requests (`test/controllers`,
+  `test/integration`, `test/system`, `spec/requests`, and `spec/controllers`)
+  join "(web)" with the controllers they reach. A `Users::SidebarsControllerTest`
+  used to fold into the `User` package, so its edges to view helpers and
+  caching concerns made the model look unstable (Campfire's `Room -> User`
+  SDP finding).
 
 - `dead_code` no longer reports a class the project reopens but leaves to its
   owner: Ruby's (`class String`) or one opened in a library's namespace

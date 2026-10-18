@@ -310,6 +310,20 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "leaves a Rails app's lists of REST actions out of roll-calls, since Rails owns those words" do
+    app = {
+      "config/application.rb" => "module Shop; class Application; end; end\n",
+      "app/controllers/application_controller.rb" => "class ApplicationController; end\n"
+    }
+    names = %w[One Two Three]
+    rolls =
+      %w[red show].map do |first|
+        files = names.to_h { ["app/models/#{it.downcase}/a.rb", "module #{it}; A = %i[#{first} edit update]; end\n"] }
+        verdicts(app.merge(files), directories: ["app"]) { |all| all.select { it.kind == "roll_call" }.map(&:digest) }
+      end
+    expect(rolls).to(eq([["edit,red,update"], []]))
+  end
+
   it "lists findings in rule order" do
     verdicts(Fixtures::CYCLIC_FILES.merge(Fixtures::UNSTABLE_FILES)) do |all|
       expect(all.map(&:kind).uniq).to(eq(%w[cycle sdp_violation utility_function]))
