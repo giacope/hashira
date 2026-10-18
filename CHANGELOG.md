@@ -412,6 +412,12 @@ true positive the earlier triage confirmed still fires.
 
 ### Fixed
 
+- The duplication exemption for calls into an abstraction the project already
+  has now covers a test block: `test "..." do`, `it`, `specify` and `example`
+  define a method just as `def` does. Two tests whose body is one call to the
+  project's own assertion, differing only in what they pass it and in their
+  names, were reported as a clone, while the same bodies under `def test_...`
+  were not (Campfire).
 - `roll_call` reads each array literal and hash on its own. It used to pool
   every word a file lists into one set, so separate lists that only shared a
   few words with each other became one roll: a controller's

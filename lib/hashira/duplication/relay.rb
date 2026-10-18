@@ -12,18 +12,15 @@ class Hashira::Duplication::Relay
 
   private
 
-  def project? = call.is_a?(Prism::CallNode) && @defined.include?(call.name)
+  def project? = lead.calls?(@defined)
 
-  def call
-    statements = canonical.statements
-    statements.first if statements.one?
-  end
+  def lead = @_lead ||= Hashira::Duplication::Lead.new(canonical.statements)
 
   def drifts = @_drifts ||= @cluster.others.flat_map { Hashira::Duplication::Variance.new(canonical, it).drifts }
 
-  def passed = walk(call.arguments, call.block)
+  def passed = walk(*lead.handed)
 
-  def header = canonical.roots.grep(Prism::DefNode).flat_map { [it, *walk(it.parameters)] }
+  def header = [*canonical.roots.grep(Prism::DefNode).flat_map { [it, *walk(it.parameters)] }, *lead.named]
 
   def canonical = @cluster.canonical
 

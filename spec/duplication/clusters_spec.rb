@@ -345,6 +345,22 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters("b.rb" => source)).to(be_empty)
   end
 
+  it "leaves alone tests whose body is one call to the project's own assertion, as it does such methods" do
+    test =
+      lambda do |name, who, route|
+        "  test \"#{name}\" do\n    assert_leaves(users(:#{who})) { delete #{route}(users(:#{who})) }\n  end\n"
+      end
+    helper = "module Leaving; def assert_leaves(user, &) = yield; end\n"
+    files = {
+      "leaving.rb" => helper,
+      "a.rb" => "class BotsTest\n#{test["a bot leaves", "bender", "bot_url"]}end\n",
+      "b.rb" => "class UsersTest\n#{test["a person leaves", "david", "user_url"]}end\n"
+    }
+    expect(clusters(files)).to(be_empty)
+    stranger = files.merge("leaving.rb" => "module Leaving; end\n")
+    expect(clusters(stranger).map(&:size)).to(eq([2]))
+  end
+
   it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
     external = client.sub(/ def request.*\n/, "")
     renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")

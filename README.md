@@ -491,8 +491,9 @@ What is not counted:
   request(:patch, path, body)` beside `def post` is already factored: a method
   whose body is one call to a method the project defines, and whose copies
   differ only in what they hand it, block included (`meanwhile(email, name) {
-  boost(message) }`). What the block holds is still compared on its own, so
-  copies inside it are a clone.
+  boost(message) }`). A test block (`test "..." do`, `it`, `specify`) counts
+  as such a method, its name included in what may differ. What the block holds
+  is still compared on its own, so copies inside it are a clone.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
 
