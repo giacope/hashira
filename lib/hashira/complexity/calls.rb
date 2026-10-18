@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Complexity::Calls
-  SENDS = %i[send public_send __send__ method].freeze
+  SENDS = Hashira::Analysis::Syntax::SENDS
 
   def initialize(node)
     @node = node

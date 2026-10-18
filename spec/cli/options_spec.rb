@@ -268,6 +268,18 @@ RSpec.describe(Hashira::CLI::Options) do
       configured("skip: coupling\n") { expect(read("--format", "dot", %i[mode skip])).to(eq(mode: :dot, skip: [])) }
     end
 
+    it "reads declared layers, outermost first, with paths from the project's root" do
+      configured("layers:\n  - web: app/controllers\n  - domain\n") do
+        layers = described_class.parse([]).project.layers
+        expect(
+          [
+            layers.names, layers.rank("app/controllers/a.rb", "x"),
+            layers.rank("a.rb", "domain")
+          ]
+        ).to(eq([%w[web domain], 0, 1]))
+      end
+    end
+
     it "reads another file with --config, and none with --no-config" do
       within(".hashira.yml" => "top: 3\n", "ci/hashira.yml" => "top: 9\n", "empty.yml" => "") do
         expect(read("--config", "ci/hashira.yml", %i[top])).to(eq(top: 9))
@@ -297,7 +309,8 @@ RSpec.describe(Hashira::CLI::Options) do
         "skip: true\n" => "skip takes a value or a list of values, not true",
         "skip:\n" => "--skip needs a value",
         "top: 0\n" => '--top "0" is not a positive whole number',
-        "skip: coupling\nfail-on: cycles\n" => "--fail-on cycle needs the coupling analyzer, but --skip drops it"
+        "skip: coupling\nfail-on: cycles\n" => "--fail-on cycle needs the coupling analyzer, but --skip drops it",
+        "layers: [web]\n" => "layers needs at least two layers to order"
       }.each do |yaml, message|
         configured(yaml) { expect { described_class.parse([]) }.to(raise_error(Hashira::Error, ".hashira.yml: #{message}")) }
       end

@@ -1,0 +1,131 @@
+# frozen_string_literal: true
+
+require_relative "rule"
+
+class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
+  KIND = "dead_code"
+
+  HOOKS = %w[
+    initialize initialize_copy initialize_dup initialize_clone inherited included extended prepended
+    method_added method_removed method_undefined singleton_method_added const_missing method_missing
+    respond_to_missing? marshal_dump marshal_load _dump _load encode_with init_with to_json as_json
+    to_param to_partial_path to_model to_key serializable_hash coerce call perform up down change
+    table_name_prefix table_name_suffix model_name policy_class
+  ].to_set.freeze
+
+  ENTRIES = %w[
+    controllers helpers views channels mailboxes components policies graphql admin inputs validators jobs workers
+    mailers
+  ].freeze
+
+  LEVELS = %w[ClassMethods InstanceMethods].freeze
+
+  def list = (constants + methods).sort_by(&:place).map { entry(it) }
+
+  private
+
+  def surface = @_surface ||= Hashira::Coupling::Surface.new(project, graph.trees, graph.census)
+
+  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees).found
+
+  def roots = @_roots ||= Array(@rules.limit(KIND, "roots", []))
+
+  def constants
+    dead = surface.constants.reject { live?(it) }
+    names = dead.to_set(&:path)
+    dead.reject { |member| (1...member.path.size).any? { names.include?(member.path.first(it)) } }
+  end
+
+  def live?(member)
+    path = member.path
+    used?(path) || mentioned?(path.last) || LEVELS.include?(path.last) || rooted?(member) || registered?(path) ||
+      hosted?(path)
+  end
+
+  def used?(path) = referenced.include?(path.join("::"))
+
+  def referenced
+    @_referenced ||=
+      graph.sightings.each_with_object(Set.new) do |sighting, found|
+        path = sighting.path
+        path.size.times { found << path.first(it + 1).join("::") }
+      end
+  end
+
+  def mentioned?(name) = mentions.names.include?(name) || words.include?(name)
+
+  def words = @_words ||= Hashira::Coupling::Outside.new(project).words
+
+  def registered?(path)
+    surface.ancestors(path).any? { inheriting.include?(it) || mentions.registries.include?(it.last) }
+  end
+
+  def inheriting = @_inheriting ||= surface.methods.select { it.selector == "inherited" }.to_set(&:path)
+
+  def methods
+    surface.methods.reject { it.overrides || called?(it.selector) || rooted?(it) || framed?(it) || open?(it) }
+  end
+
+  def called?(name)
+    bare = name.delete_suffix("=")
+    HOOKS.include?(name) || protocol?(name) || mentioned?(name) || words.include?(bare) || dynamic?(name)
+  end
+
+  def protocol?(name)
+    Hashira::Analysis::UNIVERSAL.include?(name.to_sym) || Hashira::Analysis::VALUES.include?(name.to_sym)
+  end
+
+  def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) }
+
+  def framed?(member) = member.exposed && hosted?(member.owner)
+
+  def hosted?(path) = (@_hosted ||= {}).fetch(path) { settle(path) }
+
+  def settle(path)
+    @_hosted[path] = false
+    @_hosted[path] = lineage(path).any? { surface.outside?(it) } || hosting?(path)
+  end
+
+  def hosting?(path) = surface.mixers(path).any? { hosted?(it) || entered?(it) }
+
+  def entered?(path) = surface.types.fetch(path, []).any? { entry?(it.file) }
+
+  def open?(member) = lineage(member.owner).any? { opened.include?(it) }
+
+  def lineage(path) = [path, *surface.ancestors(path)]
+
+  def opened = @_opened ||= surface.openings.select { mentions.open.include?(it.node) }.to_set(&:path)
+
+  def rooted?(member) = declared?(member) || entry?(member.file) || api?(member)
+
+  def declared?(member) = roots.any? { root?(it, member) }
+
+  def root?(root, member)
+    return within?(member.file, root) if root.include?("/") || root.end_with?(".rb")
+    name = member.name
+    name == root || %w[:: # .].any? { name.start_with?("#{root}#{it}") }
+  end
+
+  def within?(file, root)
+    place = File.expand_path(root, project.home)
+    path = absolute(file)
+    path == place || path.start_with?("#{place}/")
+  end
+
+  def entry?(file) = project.rails? && ENTRIES.include?(Hashira::Coupling::Stratum.of(absolute(file)))
+
+  def absolute(file) = File.expand_path(file, project.directories.then { it.one? ? it.first : "." })
+
+  def api?(member) = library? && member.exposed && owner_exposed?(member)
+
+  def library? = !project.rails? && roots.empty?
+
+  def owner_exposed?(member) = exposure.fetch(member.owner, true)
+
+  def exposure = @_exposure ||= surface.constants.to_h { [it.path, it.exposed] }
+
+  def entry(member)
+    noun = member.selector ? :method : :constant
+    finding(package: member.name, detail: { site: member.site, noun: }, evidence: [], anchors: [member.site])
+  end
+end

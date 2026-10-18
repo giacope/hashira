@@ -8,7 +8,7 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 6
+max_ignored: 7
 ignore:
 - file: lib/hashira/coupling/echo.rb
   line: 18
@@ -42,3 +42,8 @@ ignore:
   reason: A cut only ever holds edges between two different packages of a knot (an edge map never records a package's
     reference to itself), and an ordering gives each package its own position, so the two ends of an edge never share a
     position and >= agrees with >
+- file: lib/hashira/coupling/layering.rb
+  line: 23
+  label: condition => true
+  reason: With no layers declared every rank is nil, so no reference becomes a crossing and the list comes out empty
+    either way; the guard only spares the reference walk that layers need (about 0.7 s on rubocop)

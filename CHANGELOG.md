@@ -30,6 +30,11 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- `dead_code` is on by default and `layer_violation` is on once `layers:` are
+  declared; `checks: all` also turns on `change_coupling`. A baseline recorded
+  before them lists their findings as not ratcheted until `--update-baseline`.
+  change_coupling reads git history, so a CI job that gates it needs the full
+  history (`fetch-depth: 0`).
 - **Every design smell is now opt-in.** A heuristic kind is on by default only
   when its blind precision, over the sample and the holdout together, clears
   one in three: duplication (42 of 100) does, and fragmentation, measured by its
@@ -74,6 +79,42 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- Declared layers and `layer_violation`. `layers:` in `.hashira.yml` lists
+  the layers outermost first, each a package name or a name with the
+  packages and paths it holds; every reference from a layer to one declared
+  outside it is reported, one finding per pair of layers, with the package
+  edges to cut, the cheapest first, and the references as evidence. When
+  another order of the same layers (found by the cycles' exact cut search)
+  would leave fewer references pointing outward, the finding says the code
+  leans another way. On whenever layers are declared; the ratchet holds a
+  pair by its references. hashira declares its own five layers and has none.
+- `dead_code`, on by default: methods and constants the project never reaches,
+  by the constant-reference graph and every call, symbol, string and literal
+  name prefix in the code, and every word in the project's other files
+  (specs, views, rake tasks, configuration). A library is judged on its
+  private methods and private constants, its public surface being its users'
+  API; a Rails app on everything outside the framework's entry points.
+  Protocol methods, hooks, overrides that call `super`, classes that send
+  themselves computed names, registries (`inherited`, `.subclasses`) and the
+  public methods of framework-hosted classes and their mixins are left
+  alone. `checks: dead_code: { roots: [...] }` names more roots: constants,
+  methods and paths. Two blind raters judged all 13 corpus findings true
+  (26 of 26); it costs about 2.6 s on rubocop and 1.3 s on rubygems.org.
+- `change_coupling`, opt-in: two files in different packages that changed
+  together in five or more commits and half or more of their changes
+  (Tornhill's degree of coupling), from the same git log as the hotspots,
+  commits of more than 30 analyzed files aside; `commits:`, `degree:` and
+  `files:` move the limits. The finding says whether either file refers to
+  the other. It needs the full history wherever it is gated. Opt-in: the
+  corpus holds three findings at these limits (3 of 6 labels true), and on a
+  looser sample (degree 30% and over) 5 of 34; most false ones were pairs
+  that only ever changed together in lint sweeps.
+- `checks: { all: true, ... }` turns every kind on beside settings that turn
+  one off or move it.
+- `eval/` cases for the three kinds, a fixture's git `history:` and `config:`
+  in the smells suite, a per-project `config:` in `eval/corpus.yml` (the
+  corpus declares plausible layers for each project), and precision samples
+  for dead_code and change_coupling.
 - `fragmentation`, a complexity kind, on by default: a public method that
   reaches four or more methods of its own class, named predicates aside (calls
   with no receiver or on `self`, `send(:name)`, `method(:name)`; instance to

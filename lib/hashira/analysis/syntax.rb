@@ -5,6 +5,8 @@ require "prism"
 module Hashira
   module Analysis
     module Syntax
+      SENDS = %i[send public_send __send__ method].freeze
+
       module_function
 
       def segments(node)

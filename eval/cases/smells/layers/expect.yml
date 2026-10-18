@@ -1,0 +1,13 @@
+# Declared layers, outermost first: web may use service and domain, service
+# may use domain. Order reaching back up into the web page is the one
+# reference that points outward; the page and the checkout point inward, and
+# Checkout using Tax stays inside its own layer.
+config:
+  layers: [web, service, domain]
+present:
+  - {kind: layer_violation, package: domain}
+absent:
+  - {kind: layer_violation, package: web}
+  - {kind: layer_violation, package: service}
+messages:
+  - {kind: layer_violation, package: domain, includes: "domain depends on web, an outer layer, through 1 ref"}

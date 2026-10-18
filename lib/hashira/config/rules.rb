@@ -11,18 +11,31 @@ class Hashira::Config::Rules
     concrete_inheritance data_class low_cohesion message_chain middle_man refused_bequest
   ].freeze
 
+  HISTORY = %w[change_coupling].freeze
+
+  CHOSEN = (OPT_IN + HISTORY).freeze
+
   EVERY = "all"
 
   def self.parse(raw, kinds)
     return Hashira::Config::Rules::ALL if raw == EVERY
     raise(Hashira::Error, "checks takes all, or kind: settings, not #{raw.inspect}") unless raw.is_a?(Hash)
-    new(raw.to_h { |kind, setting| Hashira::Config::Rule.parse(kind, setting, kinds) })
+    every = raw.fetch(EVERY, false)
+    raise(Hashira::Error, "checks: all takes true or false, not #{every.inspect}") unless [true, false].include?(every)
+    new(
+      raw.except(EVERY).to_h do |kind, setting|
+        Hashira::Config::Rule.parse(kind, setting, kinds)
+      end, every ? [] : CHOSEN
+    )
   end
 
-  def initialize(table, chosen = OPT_IN)
+  def initialize(table, chosen = CHOSEN, layers = Hashira::Config::Layers::NONE)
     @table = table
     @chosen = chosen
+    @layers = layers
   end
+
+  attr_reader :layers
 
   def enabled?(kind) = rule(kind).enabled
 
@@ -30,7 +43,9 @@ class Hashira::Config::Rules
 
   def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
 
-  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds)
+  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers)
+
+  def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers)
 
   private
 

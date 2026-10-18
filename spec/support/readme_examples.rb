@@ -114,6 +114,43 @@ module ReadmeExamples
     RUBY
   end
 
+  def layers
+    {
+      ".hashira.yml" => "layers: [web, billing, core]\n",
+      "app/web/invoices_page.rb" => "module Web\n  class InvoicesPage\n    def rows = Billing::Ledger\n  end\nend\n",
+      "app/billing/ledger.rb" => ledger,
+      "app/core/money.rb" => "module Core\n  class Money\n    def self.zero = 0\n  end\nend\n"
+    }
+  end
+
+  def ledger
+    <<~RUBY
+      module Billing
+        class Ledger
+          def entries = Core::Money.zero
+
+          def link = Web::InvoicesPage.name
+        end
+      end
+    RUBY
+  end
+
+  def dead = { "lib/app/invoice.rb" => legacy }
+
+  def legacy
+    <<~RUBY
+      class Invoice
+        def total = lines.sum
+
+        private
+
+        def lines = [1, 2]
+
+        def legacy_total = lines.sum * 1.2
+      end
+    RUBY
+  end
+
   def fragmentation = { "lib/app/report.rb" => scattered }
 
   def scattered

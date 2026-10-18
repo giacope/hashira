@@ -30,7 +30,9 @@ class Evaluation::Corpus
 
   def run(project)
     home = checkout(project)
-    Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + @tool.every + ["--json"]))
+    path = File.join(Evaluation::ROOT, "tmp", "configs", "#{project["name"]}.yml")
+    settings = @tool.configured(project["config"], path)
+    Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + settings + ["--json"]))
   end
 
   def checkout(project)

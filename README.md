@@ -48,7 +48,7 @@ fixture, so what you read is what hashira prints.
 
 ---
 
-[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Rails apps](#rails-apps) · [Complexity and fragmentation](#complexity-and-fragmentation) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
+[Install](#install) · [Running it](#running-it) · [Configuration](#configuration) · [Coupling](#coupling) · [Whole-codebase checks](#whole-codebase-checks) · [Rails apps](#rails-apps) · [Complexity and fragmentation](#complexity-and-fragmentation) · [Duplication](#duplication) · [Design smells](#design-smells) · [Hotspots](#hotspots) · [CI](#ci) · [Other formats](#other-formats) · [Design choices](#design-choices)
 
 ## Install
 
@@ -101,6 +101,7 @@ checks:
   complexity: { threshold: 12 }    # or move a threshold
   fragmentation: { helpers: 6 }    # fragmentation has two limits
   indirection: { threshold: 3 }    # (a setting turns an opt-in kind on too)
+layers: [web, app, domain]         # outermost first; see Layers below
 ```
 
 `checks: all` turns every kind on. Kinds with a threshold, and what reaches it:
@@ -109,7 +110,10 @@ averaging `lines:` 3.5 or fewer), `indirection` (2 or more hollow helpers),
 `boundary_sprawl` (12 or more methods), `wide_edge` (5 or more constants),
 `state_sprawl` (a weight of more than 4), `repeated_conditional` (more than 2
 tests), `low_cohesion` (classes of 6 or more methods) and `middle_man` (3 or
-more forwarders). A flag on the command line wins over
+more forwarders). `change_coupling` takes `commits:`, `degree:` and `files:`,
+and `dead_code` takes `roots:` (see [whole-codebase checks](#whole-codebase-checks)).
+`checks: { all: true, nil_check: false }` turns every kind on but the ones
+it names. A flag on the command line wins over
 the file, and a key the command line rules out sits that run out (`fail-on` under
 `--json`). `--config PATH` reads another file; `--no-config` ignores it.
 
@@ -138,6 +142,8 @@ labels. No human has relabelled them yet. True findings, per rater:
 | state_sprawl | 1/11, 2/11 | 1/9, 0/9 | 4/40 (10%) | opt-in |
 | nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
 | indirection | — | 2/2, 0/2 | 2/4 | opt-in |
+| dead_code | 13/13, 13/13 | — | 26/26 (100%) | on |
+| change_coupling | 1/3, 2/3 | — | 3/6 | opt-in |
 
 Six class-level kinds came later and were measured the same way, on every
 finding the corpus gives them up to 25, by one independent rater (an AI
@@ -156,7 +162,9 @@ clears the bar, so all six are opt-in:
 `fragmentation` is on: a separate blind readability study measured it (see
 [Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
 `boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
-so they are opt-in too. `--kind` and `--fail-on` turn on the kinds they name,
+so they are opt-in too, and so is `change_coupling`: three findings at its
+limits, and 5 of 34 labels true on a looser sample (degree 30% and over).
+`layer_violation` is on whenever `layers:` are declared. `--kind` and `--fail-on` turn on the kinds they name,
 and a `checks:` setting for a kind turns it on.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
@@ -229,6 +237,96 @@ Findings:
   distinct constants; a facade would narrow it to one.
 - **roll_call** — the same list of three or more words maintained by hand in
   three or more files across packages; the list wants a single owner.
+
+## Whole-codebase checks
+
+These checks read the whole codebase at once: the layering you declare, the
+code nothing reaches, and the files that keep changing together.
+
+### Layers
+
+Declare the layers in `.hashira.yml`, outermost first. Each is a package name,
+or a name with the packages and paths (from the project's root) it holds:
+
+```yaml
+layers:
+  - web: [app/controllers, app/views, app/helpers]
+  - app: [app/jobs, app/services]
+  - domain: app/models
+```
+
+A layer may use the layers declared inside it, never one outside it.
+**layer_violation** reports every reference that points outward, one finding
+per pair of layers, with the package edges to cut, the cheapest first:
+
+<!-- example: layers app --kind layer_violation -->
+```console
+Findings (1):
+  layer_violation: billing depends on web, an outer layer, through 1 ref — a layer may depend only on the layers declared inside it. Cut billing -> web (1 ref).
+      · billing/ledger.rb:5: Web::InvoicesPage
+```
+
+A file is in the layer whose path holds it or whose package it charges, a
+constant in the layer of the files that define it (one defined in two layers is
+left alone), and a file in no layer is not judged. The ratchet holds a pair by
+its count of references, so a new one fails the build. When the code leans the
+other way (another order of the same layers, found by the same exact search as
+a cycle's cheapest cut, would leave fewer references pointing outward), the
+finding says so: the declaration may be what is wrong. With no `layers:`, the
+check does nothing; declared, it is on, since the intent is yours.
+
+### Dead code
+
+**dead_code**, on by default, reports methods and constants defined in the project that
+nothing in it reaches. A constant is reached when the constant-reference graph
+resolves a reference to it or to anything inside it; a method when any call,
+symbol or string in the project names it (`send(:name)`, `before_action
+:name`, `respond_to?(:name)`, a `delegate`, a string `class_eval`), when a
+call builds its name from a literal prefix (`public_send("on_#{event}")`
+reaches every `on_` method), or when a word in the project's other files names
+it: specs, views, rake tasks, configuration, scripts. Matching is by name, not
+by type, so a method called anywhere under its name counts as used: hashira
+misses dead code rather than report live code. Also left alone:
+
+- Ruby's protocols and hooks (`to_s`, `each`, `==`, `call`, `initialize`,
+  `inherited`, `method_missing`, `as_json`, …) and a method that calls `super`,
+  which overrides something its caller reaches.
+- Every method of a class that sends itself a computed name (`send(name)`), and
+  of its descendants.
+- Subclasses registered through an `inherited` hook or found with
+  `.subclasses` or `.descendants`.
+- A `ClassMethods` module, and the public methods of a class whose ancestry
+  leaves the project (`< ActiveRecord::Base`, `include Sidekiq::Job`) or of a
+  module mixed into one: the framework calls them.
+
+The roots differ by kind of project. In a library, every public method and
+public constant is its users' API, so only private methods and
+`private_constant`s are judged. In a Rails app, controllers, helpers, views,
+jobs, mailers, channels, policies, components and validators are the
+framework's entry points, and everything else is judged. `roots:` names more:
+constants (`MyGem::CLI`, with everything inside), methods (`MyGem::CLI#run`)
+and paths (`lib/my_gem/plugins`). In a library, naming roots says what the API
+is, and the rest of the public surface is judged too.
+
+<!-- example: dead lib/app --kind dead_code -->
+```console
+Findings (1):
+  dead_code: Invoice#legacy_total is never called in the project (invoice.rb:8). Delete it, or name it in dead_code roots if code outside the project uses it.
+```
+
+### Change coupling
+
+**change_coupling**, opt-in, reads the git history behind the hotspots: two files in
+different packages that changed together in at least `commits:` 5 commits, and
+in at least `degree:` 50% of their changes (shared commits over the mean of
+the two files' commits, Tornhill's degree of coupling). Commits touching more
+than `files:` 30 analyzed files (a rename, a style sweep) are not counted. The
+finding says whether one file refers to the other: a pair with no reference
+between them is coupled where the code does not show it.
+
+It needs the history: a CI checkout of one commit (`actions/checkout`'s
+default) sees none, so the ratchet would find the pairs resolved there. Fetch
+the history (`fetch-depth: 0`) wherever change_coupling is gated.
 
 ## Rails apps
 
