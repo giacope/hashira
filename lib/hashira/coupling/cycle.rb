@@ -5,17 +5,21 @@ require_relative "rule"
 class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   KIND = "cycle"
 
-  def list = graph.cycles.knots.map { entry(it) }
+  def list = graph.cycles.knots.map { knot(it.first, it, graph.cycles) }
 
   private
 
-  def entry(members) = knot(members.first, members, graph.cycles)
-
   def knot(key, members, cycles)
     found = cycles.cut(members)
-    cut = found.edges.map { weighed(*it) }
+    cut = found.edges.map { pledged(*it) }
     detail = { members:, folded: folded(members) }.merge(cut:, exact: found.exact?)
     finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail:)
+  end
+
+  def pledged(from, to, weight)
+    edge = weighed(from, to, weight)
+    guarantees = graph.guarantees(from, to).sort
+    guarantees.empty? ? edge : edge.merge(guarantees:)
   end
 
   def folded(members) = (members & graph.folds.map { it[:to] }).reject { graph.unfolded.cycles.through?(it) }

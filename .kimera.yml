@@ -37,7 +37,7 @@ ignore:
   reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
     groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)
 - file: lib/hashira/coupling/cut.rb
-  line: 24
+  line: 28
   label: "> => >="
   reason: A cut only ever holds edges between two different packages of a knot (an edge map never records a package's
     reference to itself), and an ordering gives each package its own position, so the two ends of an edge never share a

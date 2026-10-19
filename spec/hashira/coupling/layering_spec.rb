@@ -21,8 +21,8 @@ RSpec.describe(Hashira::Coupling::Layering) do
     }
   end
 
-  def layered(declared, extra = {})
-    within(files.merge(extra)) do
+  def layered(declared, extra = {}, base = files)
+    within(base.merge(extra)) do
       rules = Hashira::Config::Rules::NONE.layered(Hashira::Config::Layers.parse(declared))
       return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).screened.kept.select { it.kind == "layer_violation" }
     end
@@ -95,6 +95,17 @@ RSpec.describe(Hashira::Coupling::Layering) do
   it "notes when the code leans the other way" do
     said = message(layered(%w[web domain], more).first)
     expect(said[/Cut .*/].sub("declared order", "order")).to(eq("Cut domain -> web (4 refs). #{leaning}"))
+  end
+
+  it "keeps the declared order among the layers the references leave free" do
+    upward = {
+      "lib/app/web/page.rb" => type("Web", "Page", "def a = 1"),
+      "lib/app/billing/run.rb" => type("Billing", "Run", "def go = Web::Page"),
+      "lib/app/domain/order.rb" => type("Domain", "Order", "def page = Web::Page")
+    }
+    said = message(layered(%w[web billing domain], {}, upward).first)
+    order = "layered billing, domain, web, no ref would point outward — check the declared order."
+    expect(said[/layered .*/]).to(eq(order))
   end
 
   def long
