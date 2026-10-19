@@ -5,17 +5,24 @@ require_relative "placement"
 class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   WEB = "(web)"
 
+  TEST = "(test)"
+
   def mode = :namespace
 
   def placed = catalog.map { [it, home(it)] }
 
   def baseline = []
 
-  def charge(file, nesting) = served?(file) ? WEB : owner(nesting)
+  def charge(file, nesting)
+    return TEST if tested?(file)
+    served?(file) ? WEB : owner(nesting)
+  end
 
   def skip?(segments) = project.rails? && adapters.include?(segments.first)
 
-  def web?(package) = package == WEB
+  def aside?(package) = [WEB, TEST].include?(package)
+
+  def test?(package) = package == TEST
 
   def folding(census) = Hashira::Coupling::Folding.new(domain, census, suffixes: suffixes)
 
@@ -28,17 +35,22 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   end
 
   def home(definition)
-    return definition.name unless served?(definition.file)
-    WEB unless claimed.include?(definition.path)
+    file = definition.file
+    return definition.name unless apart?(file)
+    (tested?(file) ? TEST : WEB) unless claimed.include?(definition.path)
   end
 
-  def domain = @_domain ||= catalog.reject { served?(it.file) }
+  def domain = @_domain ||= catalog.reject { apart?(it.file) }
 
   def names = @_names ||= domain.to_set(&:name)
 
   def claimed = @_claimed ||= domain.to_set(&:path)
 
+  def apart?(file) = served?(file) || tested?(file)
+
   def served?(file) = project.rails? && Hashira::Coupling::Stratum.presentation?(file)
+
+  def tested?(file) = project.rails? && project.test?(file)
 
   def suffixes = project.rails? ? Hashira::Coupling::Folding::SUFFIXES : []
 end

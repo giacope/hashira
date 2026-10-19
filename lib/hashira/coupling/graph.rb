@@ -42,7 +42,7 @@ class Hashira::Coupling::Graph
 
   def guarantees(from, to) = evidence(from, to).filter_map { map.pledges[it] }
 
-  def domain = edges.reject { web?(it.from) || web?(it.to) }
+  def domain = edges.reject { aside?(it.from) || aside?(it.to) }
 
   def usage(package) = clients(package).reject { it.end_with?(@project.root) }.to_h { [it, map.usage[[it, package]]] }
 
@@ -76,13 +76,18 @@ class Hashira::Coupling::Graph
 
   def dependencies = map.dependencies
 
-  def links = @_links ||= packages.to_h { |package| [package, dependencies[package].reject { web?(it) }.to_set] }
+  def links
+    @_links ||=
+      packages.to_h do |package|
+        [package, @census.test?(package) ? Set.new : dependencies[package].reject { aside?(it) }.to_set]
+      end
+  end
 
   def clients(package) = sources(links, package)
 
   def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
 
-  def web?(package) = @census.web?(package)
+  def aside?(package) = @census.aside?(package)
 
   def inside?(name, outer) = name.start_with?("#{outer}::") && @census.classes.include?(outer)
 end

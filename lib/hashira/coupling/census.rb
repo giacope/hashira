@@ -43,7 +43,9 @@ class Hashira::Coupling::Census
 
   def charge(file, nesting) = translate(placement.charge(file, nesting))
 
-  def web?(package) = placement.web?(package)
+  def aside?(package) = placement.aside?(package)
+
+  def test?(package) = placement.test?(package)
 
   def home(file) = homes[file] || charge(file, [])
 

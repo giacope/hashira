@@ -5,6 +5,8 @@ class Hashira::Project
 
   INFLECTIONS = %w[config/initializers/inflections.rb ../config/initializers/inflections.rb].freeze
 
+  TESTS = %w[test spec].freeze
+
   def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
     @boundaries = boundaries
@@ -31,6 +33,8 @@ class Hashira::Project
     home = parent(path)
     "#{shown(home)}#{path.delete_prefix("#{home}/")}"
   end
+
+  def test?(path) = (@_tests ||= files.select { tested?(it) }.to_set).include?(path)
 
   def shown(directory) = directories.one? ? "" : "#{directory}/"
 
@@ -107,6 +111,13 @@ class Hashira::Project
     @_contested ||=
       directories.flat_map { |directory| Dir["#{directory}/*/"].map { File.basename(it) } }
         .tally.filter_map { |name, count| name if count > 1 }
+  end
+
+  def tested?(path) = TESTS.include?(File.expand_path(path).delete_prefix("#{base(path)}/").split("/").first)
+
+  def base(path)
+    directory = File.expand_path(parent(path))
+    File.exist?("#{directory}/config/application.rb") ? directory : File.dirname(directory)
   end
 
   def parent(path)

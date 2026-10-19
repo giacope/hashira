@@ -388,6 +388,12 @@ Findings (1):
 - **Presentation stays out of the domain.** Controllers, serializers and
   resources are one `(web)` package, counted once as a client of each package it
   uses.
+- **Tests stay out of the structure.** Analyzed, the files under the app's
+  `test/` and `spec/` are one `(test)` package: it depends on what it tests but
+  is no package's client. A test named into a domain's namespace
+  (`WebPush::ConnectionsTest`) and the helpers it includes never join that
+  domain's cycles, SDP, audience or wide-edge findings, and never add to a
+  package's Ca.
 - **Folding.** A package that is part of another joins it, and every fold is
   listed: `base` (a lone class joins its superclass's package), `suffix`
   (`OrderPolicy` joins `Order`), `plural` (`Orders` joins `Order`), `mixin` (a

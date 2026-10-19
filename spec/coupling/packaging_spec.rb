@@ -259,6 +259,33 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       end
     end
 
+    def tests
+      {
+        "test/test_helper.rb" => "class ActiveSupport::TestCase\n  def signed = Current.user\nend\n",
+        "test/helpers/invoice_helper.rb" => "module InvoiceHelper\n  def build = Billing::Invoice.new\nend\n",
+        "test/models/order_test.rb" => "class OrderTest < ActiveSupport::TestCase\n  def test_bill = Order.new\nend\n",
+        "test/models/billing/invoice_test.rb" =>
+          "class Billing::InvoiceTest < ActiveSupport::TestCase\n  include InvoiceHelper\n  def t = Order\nend\n",
+        "test/controllers/orders_controller_test.rb" =>
+          "class OrdersControllerTest < ActionDispatch::IntegrationTest\n  def test_index = Order\nend\n"
+      }
+    end
+
+    it "puts tests in one (test) package, never a client: a test in a domain's namespace never joins its cycles" do
+      analyze(storefront.merge(tests), directories: %w[app test], packaging: :namespace) do |_project, census, graph|
+        expect(census.packages).to(include("(test)"))
+        expect(census.packages).not_to(include("InvoiceHelper", "OrderTest", "OrdersControllerTest", "(web)"))
+        expect(%w[InvoiceHelper OrderTest].map { census.resolve([it]) } + [census.resolve(%w[Billing InvoiceTest])])
+          .to(eq(["(test)"] * 3))
+        expect(edges(graph)).to(include("(test) -> Billing", "(test) -> Current", "(test) -> Order"))
+        expect(graph.cycles.knots).to(be_empty)
+        expect([graph.metric("Order").to_h, graph.metric("(test)").to_h])
+          .to(eq([{ tc: 1, ca: 0, ce: 1, i: 1.0 }, { tc: 5, ca: 0, ce: 0, i: nil }]))
+        expect(graph.usage("Billing").keys).to(eq(["Order"]))
+        expect(graph.domain.map(&:to_s)).to(eq(["Order -> Billing"]))
+      end
+    end
+
     it "keeps the layer view under folder packaging" do
       namespaced = "module Admin\n  class OrdersController < ApplicationController\n    def index = Order\n  end\nend\n"
       controllers = { "app/controllers/admin/orders_controller.rb" => namespaced }
