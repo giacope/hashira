@@ -79,6 +79,14 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- A cycle's cut names the `dependent:` options its edges carry. `has_many
+  :messages, dependent: :destroy` is a guarantee as well as a reference:
+  deleting the owner deletes the messages. Cutting that edge to break the cycle
+  drops the guarantee, so later deletes leave orphans or trip a foreign key.
+  The finding now says which edges to cut carry one, and the JSON lists them
+  under each cut edge's `guarantees` (`"app/models/user.rb:8: has_many
+  :messages, dependent: :destroy"`). On Campfire, 8 of the 12 edges in its
+  model cycle's cut carry one.
 - Declared layers and `layer_violation`. `layers:` in `.hashira.yml` lists
   the layers outermost first, each a package name or a name with the
   packages and paths it holds; every reference from a layer to one declared

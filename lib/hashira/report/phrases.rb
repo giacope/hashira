@@ -29,7 +29,7 @@ module Hashira::Report::Phrases
   def on_cycle(finding)
     detail = finding.detail
     "#{roster(detail[:members])} depend on each other in a cycle#{joined(detail[:folded])} — " \
-      "any change may ripple back around. #{cut(detail[:cut], detail[:exact])}"
+      "any change may ripple back around. #{cut(detail[:cut], detail[:exact])}#{guarded(detail[:cut])}"
   end
 
   def cut(edges, exact)

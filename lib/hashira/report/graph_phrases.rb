@@ -23,6 +23,24 @@ module Hashira::Report::Phrases
     [listed[..-2].join(", "), listed.last].reject(&:empty?).join(" and ")
   end
 
+  def guarded(edges)
+    held = edges.select { it[:guarantees] }
+    return "" if held.empty?
+    " #{holders(held)} a dependent: option (#{pledge(held)}) — cutting #{held.one? ? "it" : "one"} drops what " \
+      "deleting the owner does to its records, so hand that to an object above both packages first."
+  end
+
+  def holders(held) = held.one? ? "#{arrow(held.first)} carries" : "#{held.size} of these edges carry"
+
+  def pledge(held)
+    edge = held.first
+    site, said = edge[:guarantees].first.split(": ", 2)
+    lead = "#{arrow(edge)}: " unless held.one?
+    "#{lead}#{said} at #{site}#{", …" if held.sum { it[:guarantees].size } > 1}"
+  end
+
+  def arrow(edge) = "#{edge[:from]} -> #{edge[:to]}"
+
   def on_dead_code(finding)
     detail = finding.detail
     verb = detail[:noun] == :method ? "called" : "referred to"

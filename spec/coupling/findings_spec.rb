@@ -73,6 +73,55 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  def cascade(user, post = "belongs_to :user")
+    {
+      "config/application.rb" => "module Shop; class Application; end; end\n",
+      "app/models/user.rb" => "class User\n  #{user}\nend\n",
+      "app/models/post.rb" => "class Post\n  #{post}\nend\n",
+      "app/models/session.rb" => "class Session\n  belongs_to :user\nend\n"
+    }
+  end
+
+  def carried(files)
+    verdicts(files, directories: ["app"]) { |all| return all.find { it.kind == "cycle" } }
+  end
+
+  it "names the dependent: option an edge to cut carries, since cutting it drops what deleting the owner does" do
+    cycle = carried(cascade("has_many :posts, dependent: :destroy"))
+    pledge = "models/user.rb:2: has_many :posts, dependent: :destroy"
+    expect(cycle.detail[:cut]).to(eq([{ from: "User", to: "Post", weight: 1, guarantees: [pledge] }]))
+    said = "The cheapest cut is User -> Post (1 ref). User -> Post carries a dependent: option (has_many :posts, " \
+      "dependent: :destroy at models/user.rb:2) — cutting it drops what deleting the owner does to its records, " \
+      "so hand that to an object above both packages first."
+    expect(message(cycle)).to(end_with(said))
+  end
+
+  it "says how many edges to cut carry a dependent: option, and that there are more than it shows" do
+    user = "has_many :posts, dependent: :destroy\n  has_many :notes, dependent: :nullify"
+    notes = { "app/models/note.rb" => "class Note\n  belongs_to :user\nend\n" }
+    cycle = carried(cascade(user, "belongs_to :user\n  def n = Note").merge(notes))
+    held = cycle.detail[:cut].map { [it[:from], it[:to], it[:guarantees].size] }
+    expect(held).to(eq([["User", "Note", 1], ["User", "Post", 1]]))
+    said = "2 of these edges carry a dependent: option (User -> Note: has_many :notes, dependent: :nullify at " \
+      "models/user.rb:3, …) — cutting one drops"
+    expect(message(cycle)).to(include(said))
+  end
+
+  it "marks a second dependent: option on the one edge to cut" do
+    user = "has_many :posts, dependent: :destroy\n  has_many :drafts, class_name: \"Post\", dependent: :delete_all"
+    post = "belongs_to :user\n  belongs_to :editor, class_name: \"User\""
+    expect(message(carried(cascade(user, post)))).to(
+      include("User -> Post carries a dependent: option (has_many :posts, dependent: :destroy at models/user.rb:2, …)")
+    )
+  end
+
+  it "takes dependent: nil for no option at all" do
+    cycle = carried(cascade("has_many :posts, dependent: nil"))
+    expect([cycle.detail[:cut], message(cycle)[/cut is .*/]]).to(
+      eq([[{ from: "User", to: "Post", weight: 1 }], "cut is User -> Post (1 ref)."])
+    )
+  end
+
   it "reports a knot of packages once, from its smallest member, whatever loops run through it" do
     verdicts(ring(8, "C1::X")) do |all|
       cycles = all.select { it.kind == "cycle" }

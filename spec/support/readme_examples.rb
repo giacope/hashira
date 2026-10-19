@@ -82,6 +82,16 @@ module ReadmeExamples
     RUBY
   end
 
+  def cascade
+    {
+      "config/application.rb" => "module Shop\n  class Application < Rails::Application\n  end\nend\n",
+      "app/models/application_record.rb" => "class ApplicationRecord < ActiveRecord::Base\nend\n",
+      "app/models/user.rb" => "class User < ApplicationRecord\n  has_many :posts, dependent: :destroy\nend\n",
+      "app/models/post.rb" => "class Post < ApplicationRecord\n  belongs_to :user\nend\n",
+      "app/models/session.rb" => "class Session < ApplicationRecord\n  belongs_to :user\nend\n"
+    }
+  end
+
   def controller = "class InvoicesController < ApplicationController\n  def show = Billing::Invoice.find(1)\nend\n"
 
   def complexity = { "lib/shop/pricing.rb" => pricing }

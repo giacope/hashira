@@ -363,6 +363,24 @@ Findings (1):
   `has_many :line_items` to `LineItem`, inferred with ActiveSupport's inflection
   rules, including the app's own `config/initializers/inflections.rb`; an
   explicit `class_name:` wins and `polymorphic: true` names nothing.
+- **A cut can drop a guarantee.** `has_many :posts, dependent: :destroy` is
+  more than a reference: deleting the user deletes the posts (or nullifies
+  them, or refuses). When an edge to cut carries a `dependent:` option, the
+  cycle finding names it, and the JSON lists it under that edge's
+  `guarantees`. Move the guarantee before cutting the edge: to an object above
+  both packages, or, for `:delete_all` and `:nullify`, to the foreign key's
+  `on_delete`. A foreign key cannot stand in for `:destroy`, which runs the
+  records' callbacks.
+
+<!-- example: cascade app --kind cycles -->
+```console
+$ hashira app --kind cycles
+...
+Findings (1):
+  cycle: Post and User depend on each other in a cycle — any change may ripple back around. The cheapest cut is User -> Post (1 ref). User -> Post carries a dependent: option (has_many :posts, dependent: :destroy at models/user.rb:2) — cutting it drops what deleting the owner does to its records, so hand that to an object above both packages first.
+      · models/user.rb:2: Post
+```
+
 - **Framework adapters are plumbing.** A top-level class that extends an outside
   class and that the app's classes extend (`ApplicationRecord <
   ActiveRecord::Base`, a `ApplicationCable::Channel`) is not a package anyone

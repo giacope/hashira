@@ -40,6 +40,8 @@ class Hashira::Coupling::Graph
 
   def evidence(from, to) = map.evidence[[from, to]]
 
+  def guarantees(from, to) = evidence(from, to).filter_map { map.pledges[it] }
+
   def domain = edges.reject { web?(it.from) || web?(it.to) }
 
   def usage(package) = clients(package).reject { it.end_with?(@project.root) }.to_h { [it, map.usage[[it, package]]] }
