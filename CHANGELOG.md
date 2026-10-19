@@ -79,6 +79,14 @@ true positive the earlier triage confirmed still fires.
 
 ### Added
 
+- A cycle's cut names the `dependent:` options its edges carry. `has_many
+  :messages, dependent: :destroy` is a guarantee as well as a reference:
+  deleting the owner deletes the messages. Cutting that edge to break the cycle
+  drops the guarantee, so later deletes leave orphans or trip a foreign key.
+  The finding now says which edges to cut carry one, and the JSON lists them
+  under each cut edge's `guarantees` (`"app/models/user.rb:8: has_many
+  :messages, dependent: :destroy"`). On Campfire, 8 of the 12 edges in its
+  model cycle's cut carry one.
 - Declared layers and `layer_violation`. `layers:` in `.hashira.yml` lists
   the layers outermost first, each a package name or a name with the
   packages and paths it holds; every reference from a layer to one declared
@@ -231,6 +239,18 @@ true positive the earlier triage confirmed still fires.
 
 ### Changed
 
+- **A cycle's cut follows the dependency direction when weights tie.** Among
+  cuts of the same weight it keeps the edges into the packages more others
+  depend on (the higher Ca) and cuts the ones out of them. It used to break
+  the tie by package name, and in a Rails app, where most edges weigh one
+  association, the name decided the advice. Campfire's model cycle was cut at
+  `Ban -> User`, `Membership -> User`, `Search -> User` and the other
+  `belongs_to :user` lines, the edges into the identity every model rests on,
+  which is the direction to keep. The cut now takes `User -> Ban`, `User ->
+  Search` and its other `has_many` lines, at the same 15 refs. When the
+  code leans away from declared layers, the order `layer_violation` names keeps the
+  declared order wherever the references leave it free, rather than the
+  alphabetical one.
 - **Smells report only where their advice applies to owned code.**
   `feature_envy` needs a destination class it can name (from a constructor,
   a rescue, a type test, or the variable's name or last words), that the

@@ -11,11 +11,14 @@ class Hashira::Coupling::EdgeMap
 
   def usage = @_usage ||= sets
 
+  def pledges = @_pledges.to_h
+
   def record(source, file, tree)
     references = Hashira::Coupling::References.new(@census.roots, @census.associations)
     references.sightings(tree).each do |segments, line, nesting, home|
       note(@census.charge(file, home), locate(segments, nesting), segments, "#{source}:#{line}")
     end
+    (@_pledges ||= {}).merge!(references.guarantees.to_h { |at, said| ["#{source}:#{at}", "#{source}:#{said}"] })
   end
 
   private

@@ -3,9 +3,10 @@
 class Hashira::Coupling::Cut
   EXACT = 12
 
-  def initialize(members, edges)
+  def initialize(members, edges, depth)
     @members = members
     @edges = edges
+    @depth = depth
   end
 
   def edges = @_edges ||= backward(order).sort_by { [it.last, *it.first(2)] }
@@ -15,8 +16,9 @@ class Hashira::Coupling::Cut
   def cost = edges.sum(&:last)
 
   def order
-    nodes = @members.sort
-    exact? ? Hashira::Coupling::Ordering.new(nodes, @edges).best : Hashira::Coupling::Sweep.new(nodes, @edges).order
+    nodes = @members.sort_by { [-@depth.fetch(it), it] }
+    return Hashira::Coupling::Ordering.new(nodes, @edges).best if exact?
+    Hashira::Coupling::Sweep.new(nodes, @edges, @depth).order
   end
 
   private

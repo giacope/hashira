@@ -22,6 +22,8 @@ class Hashira::Coupling::References
     found
   end
 
+  def guarantees = @_guarantees.to_h
+
   private
 
   def found = @_found ||= []
@@ -49,9 +51,10 @@ class Hashira::Coupling::References
   end
 
   def named(target, scope)
-    name = target.name
-    rooted = name.start_with?("::")
-    [name.delete_prefix("::").split("::"), target.line, (nesting unless rooted), scope]
+    name, line, guarantee = target.deconstruct
+    segments = name.delete_prefix("::").split("::")
+    (@_guarantees ||= {})["#{line}: #{segments.join("::")}"] = "#{line}: #{guarantee}" if guarantee
+    [segments, line, (nesting unless name.start_with?("::")), scope]
   end
 
   def written(node)

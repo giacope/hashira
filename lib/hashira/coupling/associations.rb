@@ -9,7 +9,7 @@ class Hashira::Coupling::Associations
 
   CONSTANT = /\A(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*\z/
 
-  Target = Data.define(:name, :line)
+  Target = Data.define(:name, :line, :guarantee)
 
   def initialize(inflection)
     @inflection = inflection
@@ -18,12 +18,18 @@ class Hashira::Coupling::Associations
   def targets(node)
     return [] unless Hashira::Analysis::Syntax.macro?(node, MACROS) && !option(node, "polymorphic").is_a?(Prism::TrueNode)
     name = given(node) || inferred(node)
-    name&.match?(CONSTANT) ? [Target.new(name:, line: node.location.start_line)] : []
+    name&.match?(CONSTANT) ? [Target.new(name:, line: node.location.start_line, guarantee: guarantee(node))] : []
   end
 
   private
 
   def option(call, key) = Hashira::Analysis::Syntax.option(call, key)
+
+  def guarantee(call)
+    dependent = option(call, "dependent")
+    return unless dependent.is_a?(Prism::SymbolNode)
+    "#{call.name} #{call.arguments.arguments.first.slice}, dependent: #{dependent.slice}"
+  end
 
   def given(call)
     named = option(call, "class_name")
