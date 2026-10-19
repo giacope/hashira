@@ -13,7 +13,7 @@ class Hashira::Coupling::Graph
 
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
 
-  def charge(file) = @census.charge(file, [])
+  def home(file) = @census.home(file)
 
   def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a
 

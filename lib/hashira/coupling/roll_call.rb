@@ -21,11 +21,14 @@ class Hashira::Coupling::RollCall
   def files = @_files ||= @lists.keys.sort
 
   def candidates
-    files.combination(2).map { |one, two| @lists[one] & @lists[two] }.select { it.size >= MIN_WORDS }.uniq
+    pairs = files.combination(2).flat_map { |one, two| @lists[one].product(@lists[two]) }
+    pairs.map { |mine, theirs| mine & theirs }.select { it.size >= MIN_WORDS }.uniq
   end
 
+  def holds?(file, words) = @lists[file].any? { it >= words }
+
   def entry(words)
-    holders = files.select { @lists[it] >= words }
+    holders = files.select { holds?(it, words) }
     spread = holders.map { @homes[it] }.uniq.sort
     return unless holders.size >= MIN_FILES && spread.size >= MIN_PACKAGES
     Roll.new(words: words.sort, files: holders, packages: spread)

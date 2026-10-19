@@ -55,4 +55,19 @@ RSpec.describe(Hashira::Coupling::Inflection) do
       eq(%w[cacti oxes Oxes feet footballs lones outsides])
     )
   end
+
+  it "reads inflections whose literals are not valid UTF-8, and drops a rule Ruby will not compile" do
+    source = <<~'RUBY'
+      ActiveSupport::Inflector.inflections(:en) do |inflect|
+        inflect.irregular "\xFFa", "\xFFb"
+        inflect.plural(/\xFF/n, "x")
+        inflect.uncountable "fi\xFE"
+        inflect.plural "foot", "feet"
+      end
+    RUBY
+    found = inflection(source)
+    expect(%w[foot box].map { found.plural(it) }).to(eq(%w[feet boxes]))
+    expect(found.plural("\uFFFDa")).to(eq("\uFFFDb"))
+    expect(found.plural("fi\uFFFD")).to(eq("fi\uFFFD"))
+  end
 end

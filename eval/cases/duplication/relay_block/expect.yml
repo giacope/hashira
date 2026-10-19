@@ -1,0 +1,10 @@
+# Each Flow method is one call to a shared method, handing it the arguments
+# and the block that differ: already factored. Jobs' methods are one call to
+# a shared method too, but the blocks they hand it are copies of each other,
+# and those copies are the clone.
+args: [lib/app]
+clusters:
+  - ["jobs.rb:5", "jobs.rb:13"]
+apart:
+  - ["flow.rb:3", "flow.rb:4"]
+count: 1

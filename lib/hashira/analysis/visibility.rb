@@ -76,7 +76,7 @@ class Hashira::Analysis::Visibility
   def note(argument, section)
     case argument
     when Prism::DefNode then @_found << [argument, section]
-    when Prism::SymbolNode then @_overrides[argument.unescaped.to_sym] = section
+    when Prism::SymbolNode then @_overrides[Hashira::Analysis::Syntax.symbol(argument)] = section
     end
   end
 

@@ -5,7 +5,7 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
     within(files) do
       project = Hashira::Project.new(["lib/app"])
       parsed = Hashira::Trees.new(project)
-      return fragments(Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed.comments))
+      return fragments(Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed))
     end
   end
 

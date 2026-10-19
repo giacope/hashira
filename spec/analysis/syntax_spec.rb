@@ -24,6 +24,15 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     end
   end
 
+  describe ".text / .symbol" do
+    it "reads a literal's text as valid UTF-8, whatever bytes its escapes spell" do
+      string, symbol = parse('["\\xFFok", :"caf\\u00e9"]').statements.body.first.elements
+      expect(described_class.text(string)).to(eq("\uFFFDok"))
+      expect(described_class.symbol(string).name).to(eq("\uFFFDok"))
+      expect(described_class.symbol(symbol)).to(eq(:café))
+    end
+  end
+
   describe ".static? / .dynamic?" do
     def node(source) = parse(source).statements.body.first
 

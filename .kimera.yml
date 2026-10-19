@@ -8,10 +8,10 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 7
+max_ignored: 8
 ignore:
 - file: lib/hashira/coupling/echo.rb
-  line: 18
+  line: 22
   label: condition => false
   reason: RollCall keeps only word sets at least 3 files share (MIN_WORDS = MIN_FILES = 3), so a file with no words never
     joins a roll; the filter only keeps such files out of the pairwise scan (about 30% of coupling time on a 2,600-file app)
@@ -47,3 +47,9 @@ ignore:
   label: condition => true
   reason: With no layers declared every rank is nil, so no reference becomes a crossing and the list comes out empty
     either way; the guard only spares the reference walk that layers need (about 0.7 s on rubocop)
+- file: lib/hashira/trees.rb
+  line: 36
+  label: condition => false
+  reason: Prism reads a valid UTF-8 file the same with or without its magic comment, and encoding valid UTF-8 to UTF-8
+    replaces nothing, so parsing the file again yields the same tree; the guard only spares that second parse (about
+    0.1 s on hashira itself, double the parse time of every file)

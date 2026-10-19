@@ -22,7 +22,9 @@ module Fixtures
     end
   end
 
-  def git(*) = system("git", *, exception: true)
+  QUIET_GIT = %w[-c gc.auto=0 -c maintenance.auto=false].freeze
+
+  def git(*) = system("git", *QUIET_GIT, *, exception: true)
 
   def with_default_encodings(external, internal = nil)
     saved = [Encoding.default_external, Encoding.default_internal]
@@ -54,7 +56,8 @@ module Fixtures
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Complexity::Scores.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, NONE))
+      parsed = Hashira::Trees.new(project)
+      yield(Hashira::Complexity::Scores.new(project, parsed.all, NONE, parsed))
     end
   end
 

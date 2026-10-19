@@ -36,7 +36,7 @@ class Hashira::Pipeline
 
   def graph = coupling.graph
 
-  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules, parsed.comments)
+  def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules, parsed)
 
   def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 

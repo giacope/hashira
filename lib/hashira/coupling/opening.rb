@@ -22,7 +22,7 @@ module Hashira
           statements.grep(Prism::CallNode).select { it.name == name && it.receiver.nil? && it.arguments }
         end
 
-        def symbols(call) = call.arguments.arguments.grep(Prism::SymbolNode).map(&:unescaped)
+        def symbols(call) = Hashira::Analysis::Syntax.symbol_names(call.arguments.arguments)
 
         def mixins = %i[include prepend].flat_map { calls(it) }.flat_map { it.arguments.arguments }
 

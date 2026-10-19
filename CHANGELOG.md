@@ -412,6 +412,33 @@ true positive the earlier triage confirmed still fires.
 
 ### Fixed
 
+- The duplication exemption for calls into an abstraction the project already
+  has now covers a test block: `test "..." do`, `it`, `specify` and `example`
+  define a method just as `def` does. Two tests whose body is one call to the
+  project's own assertion, differing only in what they pass it and in their
+  names, were reported as a clone, while the same bodies under `def test_...`
+  were not (Campfire).
+- `roll_call` reads each array literal and hash on its own. It used to pool
+  every word a file lists into one set, so separate lists that only shared a
+  few words with each other became one roll: a controller's
+  `only: %i[show edit update]` and `only: %i[new create]`, next to the
+  `resources ... only:` lists in routes, was reported as the hand-kept list
+  "create, edit, new, show, update" (Campfire). A roll is now a set of words
+  that one literal in each file holds whole.
+- `roll_call` charges each file to the package its definitions live in. Under
+  namespace packaging (every Rails app) it asked for the package of an empty
+  nesting, so every file outside the web layer landed in the root package and
+  a roll could only ever span "(root)" and "(web)".
+- `roll_call` leaves a Rails app's lists of REST actions alone (`index`,
+  `show`, `new`, `create`, `edit`, `update`, `destroy`). Routes and
+  controllers both have to spell them, and Rails, not the app, owns the words.
+- Under namespace packaging, tests that drive requests (`test/controllers`,
+  `test/integration`, `test/system`, `spec/requests`, and `spec/controllers`)
+  join "(web)" with the controllers they reach. A `Users::SidebarsControllerTest`
+  used to fold into the `User` package, so its edges to view helpers and
+  caching concerns made the model look unstable (Campfire's `Room -> User`
+  SDP finding).
+
 - `dead_code` no longer reports a class the project reopens but leaves to its
   owner: Ruby's (`class String`) or one opened in a library's namespace
   (`class ActionText::Content::Filters` in `lib/rails_ext/filters.rb`).
@@ -427,6 +454,24 @@ true positive the earlier triage confirmed still fires.
   most twice per run is style, however many exclusive `when` arms repeat it:
   Campfire's `@room.messages` was reported "× 5" across three arms that read
   it twice, twice and once.
+- A literal that spells bytes UTF-8 cannot read (`"\xFF".b`, a binary
+  protocol's magic number) no longer stops the run with "invalid byte sequence
+  in UTF-8": every analyzer reads a literal's text with such bytes replaced by
+  U+FFFD. Files are read the same way: in the encoding their magic comment
+  declares (`# encoding: Shift_JIS`), with a binary file's high bytes and
+  stray bytes replaced, so their names, comments and evidence reach the
+  report, the JSON and the baseline as UTF-8. A single such file made hashira
+  unusable on its whole project.
+- `middle_man` counts a forwarder only when it passes the method's block
+  through unchanged, as it already required of the arguments. A call given a
+  block of its own does the method's work: a counter whose methods each run
+  `@mutex.synchronize { ... }` was reported as forwarding to `@mutex`.
+- `duplication` counts the block a call hands a shared method as part of what
+  it passes, like its arguments. Campfire's `edited_meanwhile` and
+  `boosted_meanwhile`, each one call to `meanwhile(email, name) { ... }`, were
+  reported as "2 similar fragments" and told to call one shared method, which
+  they already do. Such a call is set aside before the smaller clones inside
+  it are weighed, so copies within the blocks are still reported.
 - The analyzed project's root is the nearest folder holding a project marker
   (`.git`, a `Gemfile`, a `*.gemspec`) or hashira's own files, so a project
   checked out inside another (a corpus under `eval/tmp`, a vendored gem) no

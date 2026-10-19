@@ -488,7 +488,12 @@ What is not counted:
   and a `rescue` clause that only reports its error weighs nothing wherever it
   sits. A report that builds its own context outside a rescue is code.
 - **Calls into an abstraction you already have.** `def patch(path, body) =
-  request(:patch, path, body)` beside `def post` is already factored.
+  request(:patch, path, body)` beside `def post` is already factored: a method
+  whose body is one call to a method the project defines, and whose copies
+  differ only in what they hand it, block included (`meanwhile(email, name) {
+  boost(message) }`). A test block (`test "..." do`, `it`, `specify`) counts
+  as such a method, its name included in what may differ. What the block holds
+  is still compared on its own, so copies inside it are a clone.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
 
@@ -646,8 +651,11 @@ project's own, so a framework's base classes stay out of all of them.
   others extend), and any method, mixin, class method or constant.
 - **middle_man** — a class whose public methods mostly (more than half, and at
   least three) only forward to one field: one call on an instance variable or
-  its reader, passing the method's own arguments through unchanged. A single
-  forwarder is left alone, since it is exactly what `message_chain` asks for.
+  its reader, passing the method's own arguments, and its block if it takes
+  one, through unchanged. A call given a block of its own
+  (`@mutex.synchronize { @count += 1 }`) is doing the method's work there, not
+  forwarding it. A single forwarder is left alone, since it is exactly what
+  `message_chain` asks for.
   Left alone too: a class that declares its delegation (`def_delegators`,
   `delegate … to:`, `SimpleDelegator`, `DelegateClass`) — the declaration is
   the design, a wrapper that narrows an interface on purpose, and removing the
@@ -782,6 +790,10 @@ hashira hedges (clones whose control flow differs).
   zero and restates instability.
 - **Ruby files only.** Templates are out of scope. Comments are read only for
   `hashira:` directives.
+- **Text is read as UTF-8.** A file is decoded from the encoding its magic
+  comment declares, and bytes no encoding reads (a binary file's high bytes, a
+  stray byte, a literal's `"\xFF"`) read as U+FFFD, so one odd file never stops
+  a run.
 
 ## Contributing
 

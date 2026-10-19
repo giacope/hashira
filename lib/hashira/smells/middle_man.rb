@@ -45,7 +45,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   def relay(method)
     call = sole(method.node)
     return unless call && !COLLECTION.include?(call.name)
-    return unless Array(call.arguments&.arguments).flat_map { passed(it) } == method.arguments
+    return unless [*call.arguments&.arguments, call.block].compact.flat_map { passed(it) } == method.parameters
     target = target(call.receiver)
     [target, method] if target
   end
@@ -69,7 +69,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   def passed(node)
     case node
     when Prism::LocalVariableReadNode then [node.name]
-    when Prism::SplatNode then Array(node.expression).flat_map { passed(it) }
+    when Prism::SplatNode, Prism::BlockArgumentNode then Array(node.expression).flat_map { passed(it) }
     when Prism::AssocSplatNode, Prism::AssocNode, Prism::ImplicitNode then Array(node.value).flat_map { passed(it) }
     when Prism::KeywordHashNode then node.elements.flat_map { passed(it) }
     when Prism::ForwardingArgumentsNode then []

@@ -330,15 +330,52 @@ RSpec.describe(Hashira::Duplication::Clusters) do
 
   it "leaves alone calls to the project's own method that differ only in what they pass it" do
     renamed = "def patch(route, data, headers: {}) = request(:patch, route, body: data.to_json, headers:)"
-    expect([client, client(renamed)].map { clusters("c.rb" => it) }).to(all(be_empty))
+    blocked = client.sub("headers:)\n", "headers:) { it.retry }\n").sub("headers:)\n", "headers:) { it.fail }\n")
+    expect([client, client(renamed), blocked].map { clusters("c.rb" => it) }).to(all(be_empty))
+  end
+
+  it "leaves alone one-line methods that each hand a shared method a different block" do
+    source = <<~RUBY
+      class Boosting
+        def edited_meanwhile(to:) = meanwhile("jz@example.com", "JZ") { edit_message(:third, to:) }
+        def boosted_meanwhile(with:) = meanwhile("david@example.com", "David") { boost(:third, with:) }
+        def meanwhile(email, name, &) = using(email, name, &)
+      end
+    RUBY
+    expect(clusters("b.rb" => source)).to(be_empty)
+  end
+
+  it "leaves alone tests whose body is one call to the project's own assertion, as it does such methods" do
+    test =
+      lambda do |name, who, route|
+        "  test \"#{name}\" do\n    assert_leaves(users(:#{who})) { delete #{route}(users(:#{who})) }\n  end\n"
+      end
+    helper = "module Leaving; def assert_leaves(user, &) = yield; end\n"
+    files = {
+      "leaving.rb" => helper,
+      "a.rb" => "class BotsTest\n#{test["a bot leaves", "bender", "bot_url"]}end\n",
+      "b.rb" => "class UsersTest\n#{test["a person leaves", "david", "user_url"]}end\n"
+    }
+    expect(clusters(files)).to(be_empty)
+    stranger = files.merge("leaving.rb" => "module Leaving; end\n")
+    expect(clusters(stranger).map(&:size)).to(eq([2]))
   end
 
   it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
     external = client.sub(/ def request.*\n/, "")
     renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")
-    blocked = client.sub("headers:)\n", "headers:) { it.retry }\n").sub("headers:)\n", "headers:) { it.fail }\n")
     longer = client.gsub(/= (request\(:\w+, path)(.*)\n/, "\n  \\1\\2\n  log(:sent, path)\n end\n")
-    expect([external, renamed, blocked, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2, 2]))
+    expect([external, renamed, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2]))
+  end
+
+  it "still reports the copies inside the block a shared method is handed" do
+    job =
+      lambda do |name, id|
+        "def #{name}\n transaction do\n  order = load(:order, #{id})\n  order.check(:stock, limit: 5, warn: true)\n  " \
+          "order.save(:order, status: \"ok\", at: clock.now)\n end\nend\n"
+      end
+    source = "class Jobs\n#{job["pay", 1]}#{job["ship", 2]}def transaction = yield\nend\n"
+    expect(clusters("j.rb" => source).map { it.canonical.statements.size }).to(eq([3]))
   end
 
   def toggles(one, two)

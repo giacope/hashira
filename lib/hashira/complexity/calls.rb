@@ -24,6 +24,6 @@ class Hashira::Complexity::Calls
 
   def aimed(call)
     target = call.arguments&.arguments&.first
-    SENDS.include?(call.name) && target.is_a?(Prism::SymbolNode) ? [target.unescaped.to_sym] : []
+    SENDS.include?(call.name) && target.is_a?(Prism::SymbolNode) ? [Hashira::Analysis::Syntax.symbol(target)] : []
   end
 end
