@@ -69,7 +69,8 @@ once after upgrading, after reading what the ratchet reports:
   `class << self`, `class_methods do`) and charges nesting for ternaries and
   rescue modifiers, so more methods cross the threshold.
 - In a Rails app, controllers, controller concerns and serializers now report
-  as one `(web)` package instead of joining domain packages, folds gain the
+  as one `(web)` package and analyzed tests as one `(test)` package instead of
+  joining domain packages, folds gain the
   `plural` and `mixin` kinds, and SDP needs a measurable gap, so namespace
   baselines see edges and findings move. Smell and clone fixes from the
   precision audit (below) retire findings; a few kinds also see new ones.
@@ -432,12 +433,17 @@ true positive the earlier triage confirmed still fires.
 - `roll_call` leaves a Rails app's lists of REST actions alone (`index`,
   `show`, `new`, `create`, `edit`, `update`, `destroy`). Routes and
   controllers both have to spell them, and Rails, not the app, owns the words.
-- Under namespace packaging, tests that drive requests (`test/controllers`,
-  `test/integration`, `test/system`, `spec/requests`, and `spec/controllers`)
-  join "(web)" with the controllers they reach. A `Users::SidebarsControllerTest`
-  used to fold into the `User` package, so its edges to view helpers and
-  caching concerns made the model look unstable (Campfire's `Room -> User`
-  SDP finding).
+- Under namespace packaging, analyzed tests (every file under the Rails root's
+  `test/` or `spec/`) are one "(test)" package that depends on what it tests
+  and is no package's client. A test joined the package whose namespace it
+  was named into. A `Users::SidebarsControllerTest` folded into `User`, so its
+  edges to view helpers and caching concerns made the model look unstable
+  (Campfire's `Room -> User` SDP finding). A `WebPush::ConnectionsTest` that
+  includes a helper building `WebPush::Connections::HTTP` made a cycle that
+  existed only in test code, and it merged into the model cycle: the finding
+  listed `PushServiceTestHelper` as a member, and test references raised its
+  cut from 15 refs to 21. Run with `test/`, Campfire's cycle is now the one
+  `app lib` reports.
 
 - `dead_code` no longer reports a class the project reopens but leaves to its
   owner: Ruby's (`class String`) or one opened in a library's namespace

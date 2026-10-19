@@ -138,6 +138,34 @@ RSpec.describe(Hashira::Project) do
     end
   end
 
+  describe "#test?" do
+    def rails(root = "") = { "#{root}config/application.rb" => "", "#{root}app/models/order.rb" => "x = 1\n" }
+
+    it "takes a file under the Rails root's test/ or spec/ for a test, wherever it sits below" do
+      tests = %w[test/test_helper.rb test/models/order_test.rb spec/requests/orders_spec.rb]
+      within(rails.merge((tests + ["lib/test/stub.rb"]).to_h { [it, "x = 1\n"] })) do
+        project = described_class.new(%w[app lib test spec])
+        expect((tests + %w[app/models/order.rb lib/test/stub.rb]).map { project.test?(it) })
+          .to(eq([true, true, true, false, false]))
+      end
+    end
+
+    it "reads the path from the Rails root, so an app checked out under a test folder has no tests" do
+      within(rails("test/shop/").merge("test/shop/test/order_test.rb" => "x = 1\n")) do
+        project = described_class.new(["test/shop/app", "test/shop/test"])
+        expect(%w[test/shop/app/models/order.rb test/shop/test/order_test.rb].map { project.test?(it) })
+          .to(eq([false, true]))
+      end
+    end
+
+    it "reads the path from the Rails root when that root is the directory analyzed" do
+      within(rails.merge("test/order_test.rb" => "x = 1\n")) do
+        expect(%w[./app/models/order.rb ./test/order_test.rb].map { described_class.new(["."]).test?(it) })
+          .to(eq([false, true]))
+      end
+    end
+  end
+
   describe "#label" do
     it "joins the directories" do
       within("a/x.rb" => "", "b/y.rb" => "") do

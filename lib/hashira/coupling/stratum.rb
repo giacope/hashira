@@ -5,13 +5,9 @@ module Hashira::Coupling::Stratum
 
   APP = %w[app].freeze
 
-  TESTS = %w[test spec].freeze
-
-  REQUEST_TESTS = %w[controllers requests integration system].freeze
-
   module_function
 
-  def presentation?(path) = PRESENTATION.include?(of(path)) || REQUEST_TESTS.include?(under(path, TESTS))
+  def presentation?(path) = PRESENTATION.include?(of(path))
 
   def of(path) = under(path, APP)
 
