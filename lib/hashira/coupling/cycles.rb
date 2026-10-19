@@ -14,7 +14,7 @@ class Hashira::Coupling::Cycles
 
   def tied?(from, to) = knots.any? { it.include?(from) && it.include?(to) }
 
-  def cut(members) = Hashira::Coupling::Cut.new(members, inside(members))
+  def cut(members) = Hashira::Coupling::Cut.new(members, inside(members), dependents(members))
 
   private
 
@@ -23,6 +23,8 @@ class Hashira::Coupling::Cycles
   def reach(package, links) = Hashira::Coupling::Reach.from(package, links)
 
   def backward = @_backward ||= Hashira::Coupling::Reach.invert(@dependencies)
+
+  def dependents(members) = members.to_h { [it, @graph.metric(it).afferent] }
 
   def inside(members) = members.flat_map { |from| links(from, members) }
 

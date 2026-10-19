@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Coupling::Sweep) do
   def cost(nodes, edges)
-    place = described_class.new(nodes, edges).order.each_with_index.to_h
+    place = described_class.new(nodes, edges, nodes.to_h { [it, 0] }).order.each_with_index.to_h
     edges.sum { |from, to, weight| place.fetch(from) > place.fetch(to) ? weight : 0 }
   end
 
@@ -25,16 +25,21 @@ RSpec.describe(Hashira::Coupling::Sweep) do
     expect(cost(nodes, edges)).to(eq(1))
   end
 
+  it "puts the source fewer packages depend on in front when sources tie" do
+    edges = [["a", "b", 1], ["b", "a", 1]]
+    expect(described_class.new(%w[a b], edges, { "a" => 2, "b" => 0 }).order).to(eq(%w[b a]))
+  end
+
   it "settles a knot too big to search exhaustively without trying every ordering" do
     nodes, edges = ring(Array.new(24, 1), [[3, 1, 2]])
     members = nodes
-    cut = Hashira::Coupling::Cut.new(members, edges)
+    cut = Hashira::Coupling::Cut.new(members, edges, members.to_h { [it, 0] })
     expect([cut.exact?, cut.edges.sum(&:last)]).to(eq([false, 1]))
   end
 
   it "searches every ordering of a knot of up to twelve packages" do
     nodes, edges = ring(Array.new(12, 1), [])
-    expect(Hashira::Coupling::Cut.new(nodes, edges).exact?).to(be(true))
-    expect(Hashira::Coupling::Cut.new(nodes + ["n12"], edges).exact?).to(be(false))
+    expect(Hashira::Coupling::Cut.new(nodes, edges, {}).exact?).to(be(true))
+    expect(Hashira::Coupling::Cut.new(nodes + ["n12"], edges, {}).exact?).to(be(false))
   end
 end

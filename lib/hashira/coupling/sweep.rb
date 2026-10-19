@@ -4,9 +4,10 @@ class Hashira::Coupling::Sweep
   OUT = 0
   IN = 1
 
-  def initialize(nodes, edges)
+  def initialize(nodes, edges, depth)
     @nodes = nodes
     @edges = edges
+    @depth = depth
   end
 
   def order = settled(peeled(@nodes.to_set, [], []))
@@ -23,7 +24,7 @@ class Hashira::Coupling::Sweep
     return front + back if left.empty?
     sink = left.find { weight(OUT, it, left).zero? }
     return peeled(left - [sink], front, [sink] + back) if sink
-    source = left.min_by { [weight(IN, it, left) - weight(OUT, it, left), it] }
+    source = left.min_by { [weight(IN, it, left) - weight(OUT, it, left), @depth.fetch(it), it] }
     peeled(left - [source], front + [source], back)
   end
 

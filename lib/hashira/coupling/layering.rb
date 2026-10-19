@@ -65,7 +65,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def sites(group) = group.map { it.sighting.evidence }.uniq.sort
 
-  def cut = @_cut ||= Hashira::Coupling::Cut.new(names, links)
+  def cut = @_cut ||= Hashira::Coupling::Cut.new(names, links, names.each_with_index.to_h)
 
   def leaning
     against = cut.cost

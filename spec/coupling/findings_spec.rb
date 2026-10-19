@@ -61,6 +61,18 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "cuts the edge out of the package more others depend on when the weights tie" do
+    files = {
+      "lib/app/post/x.rb" => "module App; module Post; class X; def c = User::X; end; end; end\n",
+      "lib/app/user/x.rb" => "module App; module User; class X; def c = Post::X; end; end; end\n",
+      "lib/app/tag/x.rb" => "module App; module Tag; class X; def c = User::X; end; end; end\n",
+      "lib/app/vote/x.rb" => "module App; module Vote; class X; def c = User::X; end; end; end\n"
+    }
+    verdicts(files) do |all|
+      expect(message(all.find { it.kind == "cycle" })).to(include("The cheapest cut is user -> post (1 ref)."))
+    end
+  end
+
   it "reports a knot of packages once, from its smallest member, whatever loops run through it" do
     verdicts(ring(8, "C1::X")) do |all|
       cycles = all.select { it.kind == "cycle" }

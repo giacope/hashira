@@ -231,6 +231,18 @@ true positive the earlier triage confirmed still fires.
 
 ### Changed
 
+- **A cycle's cut follows the dependency direction when weights tie.** Among
+  cuts of the same weight it keeps the edges into the packages more others
+  depend on (the higher Ca) and cuts the ones out of them. It used to break
+  the tie by package name, and in a Rails app, where most edges weigh one
+  association, the name decided the advice. Campfire's model cycle was cut at
+  `Ban -> User`, `Membership -> User`, `Search -> User` and the other
+  `belongs_to :user` lines, the edges into the identity every model rests on,
+  which is the direction to keep. The cut now takes `User -> Ban`, `User ->
+  Search` and its other `has_many` lines, at the same 15 refs. When the
+  code leans away from declared layers, the order `layer_violation` names keeps the
+  declared order wherever the references leave it free, rather than the
+  alphabetical one.
 - **Smells report only where their advice applies to owned code.**
   `feature_envy` needs a destination class it can name (from a constructor,
   a rescue, a type test, or the variable's name or last words), that the

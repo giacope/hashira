@@ -223,10 +223,12 @@ Findings:
 
 - **cycle** — packages that can all reach one another, reported once per knot
   with its **cheapest cut**: the set of edges of least total weight whose removal
-  leaves no cycle (a minimum feedback arc set). It is exact for knots of up to
-  twelve packages; beyond that it is a heuristic, and the message says "the
-  cheapest cut found". The evidence is the references on those edges — the lines
-  to change.
+  leaves no cycle (a minimum feedback arc set). Among cuts of the same weight
+  it keeps the edges into the packages more others depend on (the higher Ca)
+  and cuts the ones out of them, so the package everything rests on stays at
+  the bottom. It is exact for knots of up to twelve packages; beyond that it is
+  a heuristic, and the message says "the cheapest cut found". The evidence is
+  the references on those edges — the lines to change.
 - **sdp_violation** — a stable package depends on a less stable one, against
   the Stable Dependencies Principle. It needs a gap of at least 0.10 and three
   edges at each end; edges inside a cycle are the cycle's.
@@ -272,7 +274,8 @@ left alone), and a file in no layer is not judged. The ratchet holds a pair by
 its count of references, so a new one fails the build. When the code leans the
 other way (another order of the same layers, found by the same exact search as
 a cycle's cheapest cut, would leave fewer references pointing outward), the
-finding says so: the declaration may be what is wrong. With no `layers:`, the
+finding says so, naming that order, which keeps yours wherever the references
+leave it free: the declaration may be what is wrong. With no `layers:`, the
 check does nothing; declared, it is on, since the intent is yours.
 
 ### Dead code
