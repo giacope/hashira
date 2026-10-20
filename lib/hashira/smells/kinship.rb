@@ -62,5 +62,7 @@ class Hashira::Smells::Kinship
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
 
-  def defined(name) = index.fetch(name).flat_map { @lineage.definitions(it) }.to_set(&:name)
+  def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { @lineage.definitions(it) }.to_set(&:name)
+
+  def carried(type) = [type, *@lineage.mixins(type).flat_map { index.fetch(it) }]
 end

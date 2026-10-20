@@ -5,10 +5,15 @@ require "prism"
 module Hashira::Coupling::Words
   PATTERN = /\A[a-z][a-z_]*\z/
 
+  Literal = Data.define(:words, :line)
+
   module_function
 
   def lists(tree)
-    Hashira::Analysis::NodeWalk.collect(tree).map { entries(it).compact.grep(PATTERN).to_set }.reject(&:empty?)
+    Hashira::Analysis::NodeWalk.collect(tree).filter_map do |node|
+      words = entries(node).compact.grep(PATTERN).to_set
+      Literal.new(words:, line: node.location.start_line) unless words.empty?
+    end
   end
 
   def entries(node)

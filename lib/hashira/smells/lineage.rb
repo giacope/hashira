@@ -31,6 +31,8 @@ class Hashira::Smells::Lineage
 
   def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
+  def mixins(type) = named(type, MIXINS).filter_map { resolve(type.name, Hashira::Analysis::Syntax.segments(it)) }
+
   def messages(type) = sweep(type).filter_map { message(it) }
 
   private

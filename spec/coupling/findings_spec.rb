@@ -381,7 +381,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       finding = all.find { it.kind == "roll_call" }
       expect(finding.digest).to(eq("blue,lime,red"))
       expect(message(finding)).to(eq(expected))
-      expect(finding.evidence).to(eq(["one/a.rb", "three/c.rb", "two/b.rb"]))
+      expect(finding.evidence).to(eq(["one/a.rb:1", "three/c.rb:1", "two/b.rb:1"]))
     end
   end
 

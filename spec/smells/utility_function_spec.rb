@@ -20,6 +20,37 @@ RSpec.describe(Hashira::Smells::UtilityFunction) do
     expect(message(finding)).to(end_with("(zone/thing.rb:4). Move it onto the object it serves, or make it private."))
   end
 
+  it "exempts a role its siblings fill through the mixins they include" do
+    findings = utility(<<~RUBY)
+      module App
+        class Monitor
+          def initialize(name) = @name = name
+
+          module Suffixed
+            def field_key(field) = "\#{field.path}.graphql"
+          end
+
+          module Prefixed
+            def field_key(field) = "graphql.\#{field.path}"
+          end
+        end
+
+        class Datadog < Monitor
+          include Monitor::Suffixed
+        end
+
+        class Sentry < Monitor
+          include Monitor::Prefixed
+        end
+
+        class Relic < Monitor
+          def field_key(field) = "Field/\#{field.path}"
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "leaves private helpers, module functions, and singleton methods alone" do
     findings = utility(<<~RUBY)
       module App
