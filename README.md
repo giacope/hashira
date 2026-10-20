@@ -71,7 +71,9 @@ hashira --only app/models      # report only findings in these files; still read
 ```
 
 With no directory, hashira picks `lib/<gem>` (the one beside `lib/<gem>.rb`, or
-the one the `*.gemspec` names), else `lib`, and in a Rails root (a
+the one the `*.gemspec` names), else `lib`; with no code in `lib/`, the
+folders the gemspec's `require_paths` lists or globs (fastlane's
+`Dir["*/lib"]` is nineteen gems); and in a Rails root (a
 `config/application.rb`) `app` and `lib`. One directory is descended through
 single-folder wrappers, so `hashira`, `hashira lib` and `hashira lib/gem/core`
 land on the same packages. With one directory files are named relative to it;
@@ -256,6 +258,13 @@ layers:
   - app: [app/jobs, app/services]
   - domain: app/models
 ```
+
+In a Rails app, `layers: rails` declares the conventional three: `web`
+(`app/controllers`, `views`, `helpers`, `components`, `serializers`,
+`presenters`, `decorators`, `policies`, `avo`, `dashboards`), `app`
+(`app/jobs`, `workers`, `mailers`, `services`, `channels`, `mailboxes`) and
+`domain` (`app/models`, `app/validators`, `lib`). A model that enqueues a job
+or sends mail from a callback then points outward, which is the point.
 
 A layer may use the layers declared inside it, never one outside it.
 **layer_violation** reports every reference that points outward, one finding

@@ -225,6 +225,13 @@ RSpec.describe(Hashira::Project) do
       end
     end
 
+    it "reads where the gemspecs say the code lives when lib/ holds none" do
+      code = %w[one/lib/one.rb two/lib/two/x.rb three/lib/x.txt src/a.rb gen/g.rb].to_h { [it, ""] }
+      said = ['Dir["*/lib"]', '["src"].freeze', "paths", '"gen"'].map { "Gem::Specification.new { it.require_paths = #{it} }" }
+      specs = said.each_with_index.to_h { |text, index| ["#{index}.gemspec", text] }
+      within(code.merge(specs)) { expect(described_class.new([]).directories).to(eq(%w[one/lib two/lib src gen])) }
+    end
+
     it "reads app and lib in a Rails root, whichever exist" do
       within("config/application.rb" => "", "app/models/user.rb" => "", "lib/tools/x.rb" => "") do
         expect(described_class.new([]).directories).to(eq(%w[app lib]))

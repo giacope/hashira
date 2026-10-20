@@ -5,7 +5,7 @@ class Hashira::Layout
 
   def targets
     return RAILS_TARGETS.select { Dir.exist?(it) } if File.exist?("config/application.rb")
-    return [] unless Dir["lib/*/"].any? || Dir["lib/*.rb"].any?
+    return required unless Dir["lib/*/"].any? || Dir["lib/*.rb"].any?
     [["lib", library].compact.join("/")]
   end
 
@@ -20,6 +20,8 @@ class Hashira::Layout
   def tops(files) = files.map { File.dirname(it).split("/").first }.uniq
 
   def covered?(file) = targets.any? { file.start_with?("#{it}/") }
+
+  def required = Dir["*.gemspec"].flat_map { Hashira::Gemspec.new(it).paths }.uniq
 
   def library
     named = Dir["lib/*.rb"].map { File.basename(it, ".rb") }.select { Dir.exist?("lib/#{it}") }
