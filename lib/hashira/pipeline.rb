@@ -55,11 +55,13 @@ class Hashira::Pipeline
   end
 
   def findings
-    found = structural + listed(complexity) + listed(duplication) + listed(smells)
+    found = structural + listed(complexity) + listed(duplication) + grouped
     focus.narrow(found.select { rules.enabled?(it.kind) })
   end
 
   def focus = @_focus ||= Hashira::Focus.new(@project, @only)
+
+  def grouped = Hashira::Smells::Grouping.new(listed(smells)).findings
 
   private
 

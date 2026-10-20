@@ -5,11 +5,7 @@ class Hashira::Config::Rules
     boundary_sprawl complexity indirection low_cohesion middle_man repeated_conditional state_sprawl wide_edge
   ].freeze
 
-  OPT_IN = %w[
-    assumed_state boundary_sprawl control_parameter data_clump feature_envy indirection manual_dispatch
-    module_initialize nil_check repeated_call repeated_conditional state_sprawl utility_function
-    concrete_inheritance data_class low_cohesion message_chain middle_man refused_bequest
-  ].freeze
+  OPT_IN = %w[boundary_sprawl indirection middle_man repeated_conditional].freeze
 
   HISTORY = %w[change_coupling].freeze
 

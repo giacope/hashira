@@ -1,0 +1,77 @@
+# frozen_string_literal: true
+
+RSpec.describe(Hashira::Smells::Grouping) do
+  def grouped(files, kind)
+    within(files) do
+      rules = Hashira::Config::Rules.parse({ kind => true }, Hashira::Pipeline::KINDS)
+      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.select { it.kind == kind }
+    end
+  end
+
+  def shop = <<~RUBY
+    module Shop
+      class Address; def city = 1; end
+      class Customer; attr_reader :address; end
+      class Order; attr_reader :customer; end
+    end
+  RUBY
+
+  def desk(name) = <<~RUBY
+    module Shop
+      class #{name}
+        def run(order) = order.customer.address
+        def go(order) = order.customer.address.city
+      end
+    end
+  RUBY
+
+  def desks = { "lib/app/shop.rb" => shop, "lib/app/desk.rb" => desk("Desk"), "lib/app/till.rb" => desk("Till") }
+
+  def chain = grouped(desks, "message_chain").first
+
+  it "reports one message chain per class edge, with each method that reaches through it" do
+    sites = ["Shop::Desk#run (desk.rb:3)", "Shop::Desk#go (desk.rb:4)", "Shop::Till#run (till.rb:3)"]
+    expect([chain.package, chain.detail[:places], chain.evidence.first(3)]).to(eq(["Order → Customer", 4, sites]))
+  end
+
+  it "says how many methods reach through the edge and what to do" do
+    said = "Order → Customer — 4 methods reach through Order into Customer (desk.rb:3). " \
+      "Ask Order for what you need, or hand the Customer in."
+    expect(message(chain)).to(eq(said))
+  end
+
+  def account = <<~RUBY
+    module Shop
+      class Account
+        def initialize = @owner = nil
+        def name = @owner.nil? ? "none" : @owner
+        def mail = @owner.nil? ? "none" : @owner
+        def total(rows)
+          sum = nil
+          sum.nil? ? rows : sum
+        end
+        private
+        def current = nil
+        def label = current.nil? ? "x" : current
+      end
+    end
+  RUBY
+
+  def nils = grouped({ "lib/app/account.rb" => account }, "nil_check").to_h { [it.package, it] }
+
+  it "reports one nil check per nil the class makes, and keeps a local's check on its method" do
+    expect(nils.keys).to(contain_exactly("Shop::Account#total", "Shop::Account@owner", "Shop::Account#current"))
+  end
+
+  it "lists the methods that check a nil, and says to settle it where it is made" do
+    owner = nils["Shop::Account@owner"]
+    said = "Shop::Account@owner may be nil, and 2 methods check for it (account.rb:4). " \
+      "Prefer a default, a null object, or polymorphism. Settle it where the nil is made."
+    sites = ["Shop::Account#name (account.rb:4)", "Shop::Account#mail (account.rb:5)"]
+    expect([owner.evidence, message(owner)]).to(eq([sites, said]))
+  end
+
+  it "speaks of one checking method in the singular" do
+    expect(message(nils["Shop::Account#current"])).to(include("may be nil, and 1 method checks for it"))
+  end
+end

@@ -150,7 +150,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def external?(node) = node.is_a?(Prism::LocalVariableReadNode) && foreign.external?(node.name)
 
-  def detail = { site: spots(checks), origin: }.compact
+  def detail = { site: spots(checks), origin:, sources: }.compact
+
+  def sources = checks.flat_map { tested(it) }.filter_map { origin_of(it) }.uniq.sort
+
+  def origin_of(node) = Hashira::Smells::Origin.of(node, subject.singleton?)
 
   def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
 

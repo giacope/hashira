@@ -74,7 +74,10 @@ module Hashira::Report::Phrases
 
   def on_nil_check(finding)
     detail = finding.detail
-    "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}"
+    places = detail[:places]
+    return "#{finding.package} checks for nil (#{detail[:site]}). #{remedy(detail[:origin])}" unless places
+    "#{finding.package} may be nil, and #{count(places, "method")} check#{"s" if places == 1} for it " \
+      "(#{detail[:site]}). #{NIL_ADVICE} Settle it where the nil is made."
   end
 
   def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE

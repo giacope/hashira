@@ -28,8 +28,11 @@ module Hashira::Report::Phrases
 
   def on_message_chain(finding)
     near, far = finding.detail[:through]
-    plain(finding, "reaches through #{near} into #{far}", "Ask #{near} for what you need, or hand the #{far} in.")
+    advice = "Ask #{near} for what you need, or hand the #{far} in."
+    plain(finding, "#{reaching(finding.detail[:places])} #{near} into #{far}", advice)
   end
+
+  def reaching(places) = places ? "— #{count(places, "method")} reach through" : "reaches through"
 
   def on_data_class(finding)
     plain(finding, "holds #{quoted(finding.detail[:fields])} and does nothing else", DATA_CLASS)
