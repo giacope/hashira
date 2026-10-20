@@ -13,7 +13,7 @@ class Hashira::Coupling::Graph
 
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(code, self)
 
-  def pairs = edges.map(&:deconstruct).select { |from, to| from < to && declares?(from, to) && declares?(to, from) }
+  def pairs = edges.map(&:deconstruct).select { |from, to| from < to && paired?(from, to) }
 
   def declarations(from, to) = noted(from, to, map.declared)
 
@@ -65,7 +65,9 @@ class Hashira::Coupling::Graph
 
   def metrics = packages.to_h { [it, metric(it)] }
 
-  def violations = Hashira::Coupling::SdpCheck.new(links, metrics).violations.reject { cycles.tied?(*it) }
+  def violations
+    Hashira::Coupling::SdpCheck.new(links, metrics).violations.reject { cycles.tied?(*it) || paired?(*it) }
+  end
 
   def weight(from, to) = evidence(from, to).size
 
@@ -94,6 +96,8 @@ class Hashira::Coupling::Graph
   def navigation?(from, to) = declares?(to, from) && evidence(from, to).all? { map.declared.key?(it) }
 
   def declares?(from, to) = declarations(from, to).any?
+
+  def paired?(from, to) = declares?(from, to) && declares?(to, from)
 
   def noted(from, to, notes) = evidence(from, to).filter_map { notes[it] }
 

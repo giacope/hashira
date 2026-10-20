@@ -9,9 +9,10 @@ RSpec.describe(Hashira::Coupling::Navigation) do
     }
   end
 
-  def found(files)
+  def found(files, *kinds)
     within(files) do
-      Hashira::Pipeline.new(Hashira::Project.new(["app"])).findings.select { %w[cycle bidirectional_association].include?(it.kind) }
+      shown = kinds.empty? ? %w[cycle bidirectional_association] : kinds
+      Hashira::Pipeline.new(Hashira::Project.new(["app"])).findings.select { shown.include?(it.kind) }
     end
   end
 
@@ -43,6 +44,13 @@ RSpec.describe(Hashira::Coupling::Navigation) do
     said = "Post and User each declare an association to the other (models/post.rb:2) — navigating both ways ties " \
       "them together. Drop Post's side and query User where it is needed."
     expect([findings.map { it.detail[:parent] }, message(findings.first)]).to(eq([%w[Post Post], said]))
+  end
+
+  it "leaves a declared pair's edges out of the stability check, since one side is to go" do
+    owned = %w[Session Device Token].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  belongs_to :user\nend\n"] }
+    files = models("has_many :posts", "belongs_to :user\n  has_many :tags").merge(owned)
+    tags = { "app/models/tag.rb" => "class Tag\n  def post = Post\nend\n" }
+    expect(found(files.merge(tags), "sdp_violation")).to(be_empty)
   end
 
   it "keeps a declared pair in the cycle search when code reaches both ways besides the declarations" do

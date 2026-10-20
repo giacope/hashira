@@ -375,8 +375,9 @@ Findings (1):
   explicit `class_name:` wins and `polymorphic: true` names nothing.
 - **Two-way associations are their own finding.** When `User has_many :posts`
   and `Post belongs_to :user`, each model declares the other. That pair is not
-  code reaching back, so it stays out of the cycle search: a cycle means a
-  method, a constant or a one-sided association closes the loop. It is still
+  code reaching back, so it stays out of the cycle search and the stability
+  check: a cycle means a method, a constant or a one-sided association closes
+  the loop. It is still
   two classes that know each other, and **bidirectional_association** reports
   it once: drop the owning side (`has_many`, `has_one`) and query the other
   where it is needed. A pair whose code also reaches both ways is in the cycle

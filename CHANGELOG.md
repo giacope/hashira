@@ -90,8 +90,10 @@ true positive the earlier triage confirmed still fires.
   an association to the other, one finding per pair, naming the owning side
   (`has_many`, `has_one`) to drop and any `dependent:` option it carries,
   which has to move before the side does. Those declarations stay out of the
-  cycle search, so a cycle is code reaching back; a pair whose code also
-  reaches both ways is still in it.
+  cycle search, so a cycle is code reaching back (a pair whose code also
+  reaches both ways is still in it), and the pair's edges out of the SDP
+  check, where one direction of a mutual pair always pointed at the less
+  stable side.
 - `layers: rails` declares the conventional layering: `web` (controllers,
   views, helpers, components, serializers, presenters, decorators, policies,
   avo, dashboards), `app` (jobs, workers, mailers, services, channels,
@@ -490,6 +492,10 @@ From the field test on ten MIT-licensed codebases:
   and schema words (`id`, `created_at`, `type`, `properties`), and names each
   list's file and line.
 - A grouped message_chain of one method says it "reaches", not "reach".
+- repeated_call reads `it`, Ruby 3.4's implicit block parameter, as the local
+  it is: `it.name` twice is style, as `row.name` twice already was.
+- With no code in `lib/`, hashira no longer stops at "no lib/ directory" when
+  a gemspec says where the code lives.
 
 - The duplication exemption for calls into an abstraction the project already
   has now covers a test block: `test "..." do`, `it`, `specify` and `example`
