@@ -23,7 +23,7 @@ class Hashira::Smells::Census
     found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
   end
 
-  def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)
+  def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
 
   def harvest(file, tree)
     found = []

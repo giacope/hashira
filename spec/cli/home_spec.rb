@@ -34,6 +34,19 @@ RSpec.describe(Hashira::CLI::Home) do
     end
   end
 
+  it "is the project that holds every directory named, whatever their order" do
+    files = {
+      "repo/.git/HEAD" => "", "repo/core/core.gemspec" => "", "repo/core/lib/x.rb" => "",
+      "repo/support/support.gemspec" => "", "repo/support/lib/y.rb" => ""
+    }
+    within(files) do
+      expected = File.expand_path("repo")
+      expect(home(%w[repo/core/lib repo/support/lib]).path).to(eq(expected))
+      expect(home(%w[repo/support/lib repo/core/lib]).path).to(eq(expected))
+      expect(home(%w[repo/support/lib]).path).to(eq(File.expand_path("repo/support")))
+    end
+  end
+
   it "climbs to the project's markers from outside it, then to the folder holding lib" do
     files = { "proj/Gemfile" => "", "proj/lib/app/x.rb" => "", "bare/lib/x/y.rb" => "", "here/README" => "" }
     within(files) do

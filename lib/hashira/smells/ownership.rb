@@ -69,7 +69,9 @@ class Hashira::Smells::Ownership
     parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
   end
 
-  def builtin?(name) = Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
+  def builtin?(name)
+    Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
+  end
 
   def chart(path, value)
     return unless value.is_a?(Prism::HashNode)

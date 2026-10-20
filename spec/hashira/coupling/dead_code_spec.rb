@@ -272,6 +272,67 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Registry Static::Lost]))
   end
 
+  it "leaves a library's mixin, and the library namespace a hosted class sits in, to the library" do
+    shared = rails.merge(
+      "app/lib/dfe/bigquery.rb" => "module DfE\n  module Bigquery\n    def self.client = :bq\n  end\nend\n",
+      "app/controllers/reports_controller.rb" => "class ReportsController\n  def index = DfE::Bigquery.client\nend\n",
+      "app/wizards/course_wizard.rb" =>
+        "class CourseWizard\n  include DfE::Wizard\n  def route_strategy = :linear\nend\n",
+      "app/controllers/courses_controller.rb" => "class CoursesController\n  def new = CourseWizard.new\nend\n",
+      "lib/rubocop/cop/no_puts.rb" =>
+        "module RuboCop\n  module Cop\n    class NoPuts < Base\n      def on_send(node) = node\n    end\n  end\nend\n"
+    )
+    expect(dead(shared, directories: %w[app lib])).to(eq(%w[Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "reaches the constants a const_get finds inside the namespace it names from within a module" do
+    backends = rails.merge(
+      "app/lib/embedding.rb" => <<~RUBY,
+        module Embedding
+          module Backends
+            class Bedrock; end
+          end
+
+          module Stores
+            class Disk; end
+          end
+
+          def self.backend = Backends.const_get(ENV.fetch("BACKEND"))
+          def self.store = ::Stores.const_get(ENV.fetch("STORE"))
+        end
+        [::Embedding.backend, ::Embedding.store]
+      RUBY
+      "app/lib/stores.rb" => "module Stores\n  class Cloud; end\nend\n"
+    )
+    expect(dead(backends, directories: %w[app lib]))
+      .to(eq(%w[Embedding::Stores Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "reads a folder under an app directory as the namespace Zeitwerk makes of it" do
+    steps = rails.merge(
+      "app/wizards/candidate/course_wizard.rb" => <<~RUBY,
+        module Candidate
+          class CourseWizard
+            def steps = [Steps::CourseWizard::Review]
+          end
+        end
+      RUBY
+      "app/wizards/candidate/steps/course_wizard/review.rb" => <<~RUBY,
+        module Candidate
+          module Steps
+            class CourseWizard::Review; end
+            class CourseWizard::Lost; end
+          end
+        end
+      RUBY
+      "app/models/concerns/billing/plan.rb" => "module Billing\n  module Plan; end\nend\n",
+      "app/controllers/wizards_controller.rb" => "class WizardsController\n  def new = Candidate::CourseWizard.new.steps\nend\n"
+    )
+    expect(dead(steps, directories: %w[app lib])).to(
+      eq(%w[Billing Order#stale_scope Candidate::Steps::CourseWizard::Lost Pricing Pricing#quote Pricing.rate])
+    )
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end

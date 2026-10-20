@@ -26,7 +26,9 @@ class Hashira::CLI::Home
 
   private
 
-  def start = File.expand_path(@directories.first)
+  def start = File.join("/", *shared(@directories.map { File.expand_path(it).split("/") }))
+
+  def shared(paths) = paths.reduce { |common, path| common.take_while.with_index { |part, at| path[at] == part } }
 
   def found = ancestors.find { rooted?(it) } || climb(LAYOUT) || start
 

@@ -29,7 +29,8 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance) do
   it "leaves a subclass of a core class alone even where the project reopens and builds it" do
     reopened = "class String\n  def shout = upcase\nend\n"
     child = "module App\n  class Label < String\n    def tag = self\n  end\nend\n"
-    expect(concrete(reopened + child, "module App\n  class Use\n    def run = String.new.shout\n  end\nend\n")).to(be_empty)
+    use = "module App\n  class Use\n    def run = String.new.shout\n  end\nend\n"
+    expect(concrete(reopened + child, use)).to(be_empty)
   end
 
   it "says what the parent is and what to do" do

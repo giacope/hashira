@@ -46,17 +46,19 @@ class Hashira::Smells::Hierarchy
 
   def table
     @_table ||=
-      begin
-        lineage = Hashira::Smells::Lineage.new(@types)
-        @types.group_by(&:name).to_h do |name, openings|
-          node = openings.filter_map { it.node.superclass if it.kind == :class }.first
-          parent = owned(lineage.resolve(name, Hashira::Analysis::Syntax.segments(node)))
-          [name, Kin.new(parent:, foreign: !node.nil? && !parent, openings:)]
-        end
+      @types.group_by(&:name).to_h do |name, openings|
+        node = openings.filter_map { it.node.superclass if it.kind == :class }.first
+        parent = ancestor(name, node)
+        [name, Kin.new(parent:, foreign: !node.nil? && !parent, openings:)]
       end
   end
 
-  def owned(parent) = (parent unless Hashira::Analysis::CORE.include?(parent))
+  def ancestor(name, node)
+    found = lineage.resolve(name, Hashira::Analysis::Syntax.segments(node))
+    found unless Hashira::Analysis::CORE.include?(found)
+  end
+
+  def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
 
   def marked?(type)
     Hashira::Analysis::Syntax.statements(type.node).any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
