@@ -6,7 +6,7 @@ class Hashira::Complexity::Reach
     @table = table
   end
 
-  def helpers = @_helpers ||= [].tap { |found| descend(@entry.node, Set[root], found) }
+  def helpers = @_helpers ||= [].tap { |found| descend(@entry.node, found) }
 
   def path = @_path ||= trail(parents.keys.last)
 
@@ -16,11 +16,10 @@ class Hashira::Complexity::Reach
 
   def root = @entry.node.name
 
-  def descend(node, seen, found)
+  def descend(node, found)
     links(node).each do |name|
-      next unless seen.add?(name)
       found << @table.fetch(name)
-      descend(found.last.node, seen, found)
+      descend(found.last.node, found)
     end
   end
 
@@ -32,7 +31,7 @@ class Hashira::Complexity::Reach
 
   def adopt(name, tree) = links(node(name)).reject { tree.key?(it) }.each { tree[it] = name }
 
-  def node(name) = @table.fetch(name).node
+  def node(name) = name == root ? @entry.node : @table.fetch(name).node
 
   def trail(name) = name ? trail(parents[name]) + [name] : []
 end

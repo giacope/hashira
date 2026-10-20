@@ -442,7 +442,7 @@ file that reopens the class.
 <!-- example: fragmentation lib/app --kind fragmentation -->
 ```console
 Findings (1):
-  fragmentation: Report#render spreads its work over 7 same-class helpers averaging 1.0 lines a method, 3 deep (render → body → lines → line) (report.rb:4). Merge the helpers that only move data into the entry; keep named predicates.
+  fragmentation: Report#render spreads its work over 7 private helpers only it calls, averaging 1.0 lines a method, 3 deep (render → body → lines → line) (report.rb:4). Merge the helpers that only move data into the entry; keep named predicates.
       · title (line 8)
       · label (line 10)
 ```

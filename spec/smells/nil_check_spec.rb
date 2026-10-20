@@ -31,6 +31,32 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:6"))
   end
 
+  it "takes a bare call's nil for the project's only when the class or its owned ancestors answer it" do
+    source = <<~RUBY
+      module App
+        class Error < StandardError
+          class << self
+            def label = name.nil? ? "anonymous" : name
+            def code = slug.nil? ? 0 : slug
+            def slug = nil
+          end
+        end
+
+        module Labels
+          def tag = title.nil? ? "none" : title
+        end
+
+        class Item
+          def initialize(title) = @title = title
+          def name = @title
+          def title = @title
+        end
+      end
+    RUBY
+    findings = sniffed({ "lib/app/error.rb" => source }, "nil_check")
+    expect(findings.map(&:package)).to(eq(%w[App::Error.code App::Labels#tag]))
+  end
+
   it "reaches methods defined inside blocks and class << self" do
     findings = checked(<<~RUBY)
       module App

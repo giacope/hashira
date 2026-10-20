@@ -30,7 +30,15 @@ class Hashira::Complexity::Fragmentation
 
   def entry(file, site) = Hashira::Complexity::Entry.new(KIND, file, site)
 
-  def reach(site) = Hashira::Complexity::Reach.new(site, table(site.family))
+  def reach(site) = Hashira::Complexity::Reach.new(site, helpers(site.family))
+
+  def helpers(family) = (@_helpers ||= {})[family] ||= table(family).select { |name, site| helper?(family, name, site) }
+
+  def helper?(family, name, site) = !exposed.include?(site.node) && callers(family)[name] == 1
+
+  def callers(family) = (@_callers ||= {})[family] ||= table(family).values.flat_map { called(it) }.tally
+
+  def called(site) = Hashira::Complexity::Calls.new(site.node).names - [site.node.name]
 
   def entry?(site) = exposed.include?(site.node) && !HIDDEN.include?(site.node.name)
 

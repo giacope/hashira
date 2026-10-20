@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Ownership
-  def initialize(trees)
+  def initialize(trees, catalog = nil)
     @trees = trees
+    @catalog = catalog
   end
 
   def owned?(segments)
@@ -39,6 +40,7 @@ class Hashira::Smells::Ownership
 
   def survey(tree)
     Hashira::Analysis::TypeWalk.each(tree) do |node, full|
+      next unless claimed?(full)
       absorb(full)
       Hashira::Analysis::Syntax.constants(node).each { record(full, it) }
     end
@@ -72,6 +74,8 @@ class Hashira::Smells::Ownership
     segments = Hashira::Analysis::Syntax.segments(element.key)
     segments unless segments.empty?
   end
+
+  def claimed?(full) = !@catalog || @catalog.claimed?(full)
 
   def suffixes(path)
     path.each_index.map { path.drop(it).join("::") }

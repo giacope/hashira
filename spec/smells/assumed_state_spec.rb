@@ -2,6 +2,32 @@
 
 RSpec.describe(Hashira::Smells::AssumedState) do
   def assumed(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "assumed_state")
+  it "leaves a reopened library class to its owner, and counts instance_variable_set on a copy as assigning" do
+    files = {
+      "lib/app/ext/doc_manager.rb" => "class Gem::DocManager\n  def install = File.join(@doc_dir, @spec.name)\nend\n",
+      "lib/app/zone/agg.rb" => <<~RUBY
+        module App
+          module Zone
+            class Agg
+              def initialize(expr) = @expr = expr
+
+              def distinct = dup.tap { it.instance_variable_set(:@distinct, true) }
+
+              def stamped = dup.tap { it.instance_variable_set("@stamp", 1) }
+
+              def odd = dup.tap { it.instance_variable_set(name, 1) }
+
+              def bare = instance_variable_set
+
+              def report = [@expr, @distinct, @stamp, @lost]
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
+  end
+
   it "flags instance variables read but never assigned anywhere in the class" do
     findings = assumed(<<~RUBY)
       module App

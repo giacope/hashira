@@ -43,10 +43,22 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
   end
 
   it "says how many helpers, how short, how deep, and what to do" do
-    said = "Walk#run spreads its work over 4 same-class helpers averaging 1.0 lines a method, 3 deep " \
+    said = "Walk#run spreads its work over 4 private helpers only it calls, averaging 1.0 lines a method, 3 deep " \
       "(run → first → third → fourth) (walk.rb:2). Merge the helpers that only move data into the entry; " \
       "keep named predicates."
     expect(message(found(walk).first)).to(eq(said))
+  end
+
+  def deep(count)
+    "class Deep\n  def run(rows) = s1(rows)\n  private\n#{(1...count).map { step(it) }.join("\n")}\n" \
+      "def s#{count}(rows) = rows\nend\n"
+  end
+
+  def step(index) = "def s#{index}(rows) = s#{index + 1}(rows)"
+
+  it "names an object hiding in the class once more than fifteen private helpers carry one entry's work" do
+    advice = [17, 15].map { message(found(deep(it)).first).split(". ").last }
+    expect(advice).to(eq([Hashira::Report::Phrases::EXTRACT, Hashira::Report::Phrases::MERGE]))
   end
 
   it "moves both limits under checks, flagging from exactly each limit and not past it" do
@@ -78,14 +90,18 @@ RSpec.describe(Hashira::Complexity::Fragmentation) do
 
   it "links instance methods to instance methods and class methods to class methods, across a reopened class" do
     lifted = walk("def self.run(rows) = first(rows)")
-    more = "class Walk\n  def go(rows) = method(:first)\nend\n"
-    reopened = { "lib/app/walk.rb" => walk, "lib/app/walk/more.rb" => more }
-    expect([found(lifted).map(&:package), split(reopened).map(&:package)]).to(eq([[], %w[Walk#run Walk#go]]))
+    more = "class Walk\n  private\n\n  def fifth(rows) = rows\nend\n"
+    longer = walk.sub("def fourth(rows) = rows.last", "def fourth(rows) = fifth(rows)")
+    reopened = { "lib/app/walk.rb" => longer, "lib/app/walk/more.rb" => more }
+    expect([found(lifted).map(&:package), split(reopened).map { it.detail.helpers }]).to(eq([[], [5]]))
   end
 
-  it "counts a helper reached along two paths once" do
+  it "ends the path at a helper two methods share or a public one, which are abstractions, not fragments" do
     twice = walk.sub("def third(rows) = fourth(rows)", "def third(rows) = fourth(rows) + second(rows)")
-    expect(found(twice).first.detail.helpers).to(eq(4))
+    shared = walk.sub("def run(rows) = first(rows)", "def run(rows) = first(rows)\n  def go(rows) = third(rows)")
+    exposed = walk.sub("private\n", "").sub("def first", "private\ndef first").sub("def third", "public\ndef third")
+    recursive = walk.sub("def run(rows) = first(rows)", "def run(rows) = first(rows) + run(rows)")
+    expect([twice, shared, exposed, recursive].map { found(it).size }).to(eq([0, 0, 0, 1]))
   end
 
   it "leaves named predicates out of the count, and lists them as not counted" do

@@ -22,6 +22,12 @@ module Hashira::Report::Phrases
 
   ROSTER = 6
 
+  HIDDEN_OBJECT = 15
+
+  MERGE = "Merge the helpers that only move data into the entry; keep named predicates."
+
+  EXTRACT = "That many private steps are an object hiding inside the class: extract it and give it a name."
+
   module_function
 
   def message(finding) = public_send("on_#{finding.kind}", finding)
@@ -100,9 +106,9 @@ module Hashira::Report::Phrases
 
   def on_fragmentation(finding)
     detail = finding.detail
-    "#{finding.package} spreads its work over #{count(detail.helpers, "same-class helper")} averaging " \
+    "#{finding.package} spreads its work over #{count(detail.helpers, "private helper")} only it calls, averaging " \
       "#{format("%.1f", detail.lines)} lines a method, #{detail.depth} deep (#{detail.path.join(" → ")}) " \
-      "(#{detail.site}). Merge the helpers that only move data into the entry; keep named predicates."
+      "(#{detail.site}). #{detail.helpers > HIDDEN_OBJECT ? EXTRACT : MERGE}"
   end
 
   def score(value) = format("%.2f", value)

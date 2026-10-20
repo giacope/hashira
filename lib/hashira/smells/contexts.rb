@@ -74,8 +74,8 @@ module Hashira
       end
 
     TypeContext =
-      Data.define(:name, :node, :kind, :file, :defs, :assigned, :heirs) do
-        def initialize(assigned: nil, heirs: [], **rest) = super
+      Data.define(:name, :node, :kind, :file, :defs, :assigned, :heirs, :claimed) do
+        def initialize(assigned: nil, heirs: [], claimed: true, **rest) = super
 
         def line = node.location.start_line
 

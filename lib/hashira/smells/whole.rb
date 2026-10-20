@@ -16,6 +16,8 @@ module Hashira
 
         def heirs = first.heirs
 
+        def claimed? = openings.any?(&:claimed)
+
         def owned = openings.flat_map(&:owned)
 
         def nodes = openings.map(&:node)
