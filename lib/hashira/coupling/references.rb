@@ -51,10 +51,10 @@ class Hashira::Coupling::References
   end
 
   def named(target, scope)
-    name, line, guarantee = target.deconstruct
+    name, line, guarantee, macro = target.deconstruct
     segments = name.delete_prefix("::").split("::")
     (@_guarantees ||= {})["#{line}: #{segments.join("::")}"] = "#{line}: #{guarantee}" if guarantee
-    [segments, line, (nesting unless name.start_with?("::")), scope]
+    [segments, line, (nesting unless name.start_with?("::")), scope, macro]
   end
 
   def written(node)

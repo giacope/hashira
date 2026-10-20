@@ -350,35 +350,44 @@ Package (namespace) metrics for app  (4 packages, 4 files)
 
 package            TC  Ca  Ce  I     Cyc
 ----------------------------------------
-Billing             1   2   1  0.33  YES
-User                1   1   1  0.50  YES
+Billing             1   2   1  0.33  -
+User                1   1   1  0.50  -
 (web)               1   0   1  1.00  -
 ...
 Findings (1):
-  cycle: Billing and User depend on each other in a cycle — any change may ripple back around. The cheapest cut is Billing -> User (1 ref).
-      · models/billing/invoice.rb:3: User
+  bidirectional_association: User and Billing each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Billing where it is needed.
+      · models/user.rb:2: has_many Billing::Invoice
+      · models/billing/invoice.rb:3: belongs_to User
 ```
 
 - **Associations are references.** `belongs_to :user` refers to `User` and
   `has_many :line_items` to `LineItem`, inferred with ActiveSupport's inflection
   rules, including the app's own `config/initializers/inflections.rb`; an
   explicit `class_name:` wins and `polymorphic: true` names nothing.
-- **A cut can drop a guarantee.** `has_many :posts, dependent: :destroy` is
-  more than a reference: deleting the user deletes the posts (or nullifies
-  them, or refuses). When an edge to cut carries a `dependent:` option, the
-  cycle finding names it, and the JSON lists it under that edge's
-  `guarantees`. Move the guarantee before cutting the edge: to an object above
-  both packages, or, for `:delete_all` and `:nullify`, to the foreign key's
-  `on_delete`. A foreign key cannot stand in for `:destroy`, which runs the
-  records' callbacks.
+- **Two-way associations are their own finding.** When `User has_many :posts`
+  and `Post belongs_to :user`, each model declares the other. That pair is not
+  code reaching back, so it stays out of the cycle search: a cycle means a
+  method, a constant or a one-sided association closes the loop. It is still
+  two classes that know each other, and **bidirectional_association** reports
+  it once: drop the owning side (`has_many`, `has_one`) and query the other
+  where it is needed. A pair whose code also reaches both ways is in the cycle
+  search as well.
+- **Dropping a side can drop a guarantee.** `has_many :posts, dependent:
+  :destroy` is more than a reference: deleting the user deletes the posts (or
+  nullifies them, or refuses). When the side to drop, or an edge to cut, carries
+  a `dependent:` option, the finding names it, and the JSON lists it under
+  `guarantees`. Move the guarantee first: to an object above both, or, for
+  `:delete_all` and `:nullify`, to the foreign key's `on_delete`. A foreign key
+  cannot stand in for `:destroy`, which runs the records' callbacks.
 
-<!-- example: cascade app --kind cycles -->
+<!-- example: cascade app --kind bidirectional_association -->
 ```console
-$ hashira app --kind cycles
+$ hashira app --kind bidirectional_association
 ...
 Findings (1):
-  cycle: Post and User depend on each other in a cycle — any change may ripple back around. The cheapest cut is User -> Post (1 ref). User -> Post carries a dependent: option (has_many :posts, dependent: :destroy at models/user.rb:2) — cutting it drops what deleting the owner does to its records, so hand that to an object above both packages first.
-      · models/user.rb:2: Post
+  bidirectional_association: User and Post each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Post where it is needed. It carries has_many :posts, dependent: :destroy: hand that to an object above both, or to the foreign key, first.
+      · models/user.rb:2: has_many Post
+      · models/post.rb:2: belongs_to User
 ```
 
 - **Framework adapters are plumbing.** A top-level class that extends an outside

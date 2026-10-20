@@ -41,6 +41,20 @@ module Hashira::Report::Phrases
 
   def arrow(edge) = "#{edge[:from]} -> #{edge[:to]}"
 
+  def on_bidirectional_association(finding)
+    detail = finding.detail
+    parent, child = detail.values_at(:parent, :child)
+    "#{parent} and #{child} each declare an association to the other (#{finding.anchors.first}) — navigating both " \
+      "ways ties them together. Drop #{parent}'s side and query #{child} where it is needed.#{carried(detail)}"
+  end
+
+  def carried(detail)
+    pledged = detail[:guarantees]
+    return "" if pledged.empty?
+    " It carries #{pledged.map { it.split(": ", 2).last }.join("; ")}: hand that to an object above both, or to the " \
+      "foreign key, first."
+  end
+
   def on_dead_code(finding)
     detail = finding.detail
     verb = detail[:noun] == :method ? "called" : "referred to"

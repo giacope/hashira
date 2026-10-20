@@ -11,7 +11,11 @@ class Hashira::Coupling::Graph
 
   def unfolded = @_unfolded ||= self.class.new(@project, @trees, @census.unfolded)
 
-  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
+  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(code, self)
+
+  def pairs = edges.map(&:deconstruct).select { |from, to| from < to && declares?(from, to) && declares?(to, from) }
+
+  def declarations(from, to) = evidence(from, to).filter_map { map.declared[it] }
 
   def home(file) = @census.home(file)
 
@@ -84,6 +88,12 @@ class Hashira::Coupling::Graph
   end
 
   def clients(package) = sources(links, package)
+
+  def code = @_code ||= links.to_h { |from, tos| [from, tos.reject { navigation?(from, it) }.to_set] }
+
+  def navigation?(from, to) = declares?(to, from) && evidence(from, to).all? { map.declared.key?(it) }
+
+  def declares?(from, to) = evidence(from, to).any? { map.declared.key?(it) }
 
   def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
 
