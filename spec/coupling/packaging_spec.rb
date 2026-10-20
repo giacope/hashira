@@ -140,6 +140,22 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       end
     end
 
+    def lexical(parent)
+      files = {
+        "app/models/extensions/active_record/base.rb" => "module Extensions::ActiveRecord::Base\nend\n",
+        "app/models/extensions/record.rb" => "module Extensions\n  class ::Record < #{parent}\n  end\nend\n",
+        "app/models/ledger.rb" => "class Ledger < Record\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = Record\nend\n"
+      }
+      analyze(Fixtures::RAILS_FILES.merge(files), directories: ["app"], packaging: :namespace) do |*, graph|
+        graph.edges.map(&:to_s).grep(/\AReport/)
+      end
+    end
+
+    it "resolves an unrooted superclass lexically and a rooted one from the top, wherever the class is written" do
+      expect(["::ActiveRecord::Base", "ActiveRecord::Base"].map { lexical(it) }).to(eq([[], ["Report -> Record"]]))
+    end
+
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do
       within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).rails?).to(be(true)) }
       within(Fixtures::CYCLIC_FILES) { expect(Hashira::Project.new(["lib/app"]).rails?).to(be(false)) }

@@ -46,7 +46,7 @@ class Hashira::Coupling::Scope
 
   def ancestral(path, rest)
     found = lineage(path).lazy.filter_map { descend(it, rest, rest.length) }.first
-    vias[found] << path if found
+    vias[found] << path
     found
   end
 

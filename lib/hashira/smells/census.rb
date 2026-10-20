@@ -20,7 +20,7 @@ class Hashira::Smells::Census
 
   def settled(found, lineage)
     kinship = Hashira::Smells::Kinship.new(found, lineage)
-    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:).with(claimed: claimed?(it)) }
+    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
   end
 
   def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)

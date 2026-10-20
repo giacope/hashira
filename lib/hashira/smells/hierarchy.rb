@@ -83,8 +83,7 @@ class Hashira::Smells::Hierarchy
 
   def lifted(node, factory)
     return true if node.is_a?(Prism::SingletonClassNode)
-    return factory unless node.is_a?(Prism::DefNode)
-    node.name if node.receiver || factory == true
+    node.is_a?(Prism::DefNode) ? node.name : factory
   end
 
   def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.name, factory)

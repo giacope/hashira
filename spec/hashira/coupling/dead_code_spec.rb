@@ -204,12 +204,17 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       "lib/filters.rb" => "module Filters\n  def hex = 1\nend\nLiquid::Environment.default.register_filter(Filters)\n",
       "lib/plain.rb" => "Liquid::Template.registered\nPricing.include(Comparable)\n",
       "lib/discounts.rb" => "module Discounts\n  def discount = 1\nend\nOrder.include(Discounts)\n",
-      "lib/rates.rb" => "module Rates\n  def rate = 1\nend\nPricing.include(Rates)\n",
+      "lib/rates.rb" => "module Rates\n  def rate = 1\nend\nPricing.singleton_class.include(Rates)\n",
       "lib/hooked.rb" => "module Hooked\n  def self.included(base) = base.prepend(Hooks)\nend\n",
       "lib/hooks.rb" => "module Hooks\n  def hook = 1\nend\n",
       "lib/watchdog/worker.rb" => "module Watchdog\n  module Worker\n    def reserve = 1\n  end\nend\n",
       "lib/watchdog/core.rb" => "module Watchdog\n  module Core\n    def quit = 1\n  end\nend\n",
-      "config/initializers/jobs.rb" => "Delayed::Worker.prepend(Watchdog::Worker)\nDelayed::Master.prepend ::Watchdog::Core\n"
+      "lib/watchdog/timer.rb" => "module Watchdog\n  module Timer\n    def tick = 1\n  end\nend\n",
+      "config/initializers/jobs.rb" => <<~RUBY
+        Delayed::Worker.prepend(Watchdog::Worker)
+        Delayed::Master.prepend ::Watchdog::Core
+        Delayed::Clock.prepend Timer
+      RUBY
     )
     expect(dead(handed, directories: %w[app lib]))
       .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
@@ -256,12 +261,13 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       "lib/loader.rb" => <<~RUBY
         class Loader
           def plugin(name) = [Plugins.const_get(name), Static.const_get(:Kept), name.const_get(name), Static::Kept]
+          def all = Extensions.load_all([])
           def none = const_get
         end
         const_get(ENV.fetch("X"))
       RUBY
     )
-    expected = %w[Order#stale_scope Extensions Extensions.load_all Loader Loader#plugin Loader#none Pricing]
+    expected = %w[Order#stale_scope Loader Loader#plugin Loader#all Loader#none Pricing]
     expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Static::Lost]))
   end
 

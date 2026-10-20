@@ -56,6 +56,8 @@ RSpec.describe(Hashira::Smells::Grouping) do
           sum = nil
           sum.nil? ? rows : sum
         end
+        def self.default = nil
+        def self.pick = default.nil? ? "x" : default
         private
         def current = nil
         def label = current.nil? ? "x" : current
@@ -66,7 +68,9 @@ RSpec.describe(Hashira::Smells::Grouping) do
   def nils = grouped({ "lib/app/account.rb" => account }, "nil_check").to_h { [it.package, it] }
 
   it "reports one nil check per nil the class makes, and keeps a local's check on its method" do
-    expect(nils.keys).to(contain_exactly("Shop::Account#total", "Shop::Account@owner", "Shop::Account#current"))
+    expect(nils.keys).to(
+      contain_exactly("Shop::Account#total", "Shop::Account@owner", "Shop::Account#current", "Shop::Account.default")
+    )
   end
 
   it "lists the methods that check a nil, and says to settle it where it is made" do

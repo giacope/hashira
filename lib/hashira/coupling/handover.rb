@@ -18,8 +18,7 @@ class Hashira::Coupling::Handover
   def gifts
     @_gifts ||=
       @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, given), found|
-        target = @census.locate(given, [])
-        found[target] << ((host && @census.locate(host, [])) || FOREIGN) if target
+        found[@census.locate(given, [])] << ((host && @census.locate(host, [])) || FOREIGN)
       end
   end
 end
