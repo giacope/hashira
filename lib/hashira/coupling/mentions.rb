@@ -28,7 +28,7 @@ class Hashira::Coupling::Mentions
 
   WRITES = [Prism::CallOperatorWriteNode, Prism::CallOrWriteNode, Prism::CallAndWriteNode].freeze
 
-  Found = Data.define(:names, :prefixes, :suffixes, :open, :registries, :handed)
+  Found = Data.define(:names, :prefixes, :suffixes, :open, :registries, :handed, :reflected)
 
   def initialize(trees)
     @trees = trees
@@ -38,7 +38,7 @@ class Hashira::Coupling::Mentions
     return @_found if @_found
     @_found = Found.new(
       names: Set.new, prefixes: Set.new, suffixes: Set.new, open: Set.new.compare_by_identity, registries: Set.new,
-      handed: []
+      handed: [], reflected: []
     )
     @trees.each_value { visit(it, nil) }
     @_found
@@ -58,6 +58,8 @@ class Hashira::Coupling::Mentions
 
   def handed = found.handed
 
+  def reflected = found.reflected
+
   def visit(node, owner)
     note(node, owner)
     inner = Hashira::Analysis::TypeWalk.type?(node) ? node : owner
@@ -74,15 +76,35 @@ class Hashira::Coupling::Mentions
     when Prism::SymbolNode then names << Hashira::Analysis::Syntax.text(node)
     when Prism::StringNode then said(Hashira::Analysis::Syntax.text(node))
     when *INTERPOLATED then built(node.parts)
-    when *WRITES then names.merge([node.read_name.to_s, node.write_name.to_s])
+    when *WRITES, Prism::ConstantPathNode then named(node)
     end
   end
+
+  def named(node)
+    return names.merge([node.read_name.to_s, node.write_name.to_s]) unless node.is_a?(Prism::ConstantPathNode)
+    names << node.name.to_s if polymorphic?(node.parent)
+  end
+
+  def polymorphic?(parent) = parent.is_a?(Prism::SelfNode) || (parent.is_a?(Prism::CallNode) && parent.name == :class)
 
   def called(call, owner)
     names << call.name.to_s
     open << owner if owner && dynamic?(call)
     registries << Hashira::Analysis::Syntax.segments(call.receiver).last if REFLECTIONS.include?(call.name)
+    passed(call, owner)
+  end
+
+  def passed(call, owner)
     gift(call) if handing?(call)
+    mirror(call.receiver, owner) if call.name == :const_get && computed?(call)
+  end
+
+  def mirror(receiver, owner)
+    if own?(receiver)
+      reflected << [owner, nil] if owner
+    elsif Hashira::Analysis::Syntax.static?(receiver)
+      reflected << [nil, Hashira::Analysis::Syntax.segments(receiver)]
+    end
   end
 
   def handing?(call) = (HANDS.include?(call.name) || call.name.start_with?("register")) && !own?(call.receiver)
@@ -99,9 +121,11 @@ class Hashira::Coupling::Mentions
     root(node.receiver) if node.is_a?(Prism::CallNode)
   end
 
-  def dynamic?(call)
+  def dynamic?(call) = SENDS.include?(call.name) && own?(call.receiver) && computed?(call)
+
+  def computed?(call)
     first = call.arguments&.arguments&.first
-    SENDS.include?(call.name) && own?(call.receiver) && !(first.is_a?(Prism::SymbolNode) || first.is_a?(Prism::StringNode))
+    !(first.nil? || first.is_a?(Prism::SymbolNode) || first.is_a?(Prism::StringNode))
   end
 
   def own?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)

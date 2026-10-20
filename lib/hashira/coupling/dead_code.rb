@@ -1,24 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "contracts"
 require_relative "rule"
 
 class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   KIND = "dead_code"
 
-  HOOKS = %w[
-    initialize initialize_copy initialize_dup initialize_clone inherited included extended prepended
-    method_added method_removed method_undefined singleton_method_added const_missing method_missing
-    respond_to_missing? marshal_dump marshal_load _dump _load encode_with init_with to_json as_json
-    to_param to_partial_path to_model to_key serializable_hash coerce call perform up down change
-    table_name_prefix table_name_suffix model_name policy_class
-  ].to_set.freeze
-
-  ENTRIES = %w[
-    controllers helpers views channels mailboxes components policies graphql admin inputs validators jobs workers
-    mailers
-  ].freeze
-
-  LEVELS = %w[ClassMethods InstanceMethods].freeze
+  include Hashira::Coupling::Contracts
 
   def list = (constants + methods).sort_by(&:place).map { entry(it) }
 
@@ -38,9 +26,20 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def live?(member)
     path = member.path
-    used?(path) || mentioned?(path.last) || LEVELS.include?(path.last) || rooted?(member) || registered?(path) ||
-      hosted?(path) || assembled?(path)
+    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member)
   end
+
+  def named?(path) = used?(path) || mentioned?(path.last) || assembled?(path)
+
+  def framework?(member) = registered?(member.path) || hosted?(member.path) || housed?(member) || reflected?(member)
+
+  def reflected?(member) = reflection.reached?(member.path)
+
+  def reflection
+    @_reflection ||= Hashira::Coupling::Reflection.new(mentions.reflected, graph.census, surface.openings)
+  end
+
+  def housed?(member) = member.exposed && member.path.size > 1 && hosted?(member.path[...-1])
 
   def used?(path) = referenced.include?(path.join("::"))
 
@@ -85,7 +84,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
   end
 
-  def framed?(member) = member.exposed && hosted?(member.owner)
+  def framed?(member) = member.exposed ? hosted?(member.owner) : surface.outside?(member.owner)
 
   def hosted?(path) = (@_hosted ||= {}).fetch(path) { settle(path) }
 

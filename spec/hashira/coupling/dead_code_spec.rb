@@ -215,6 +215,56 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
   end
 
+  it "leaves to the framework the constants a hosted class declares, the hooks it calls, and polymorphic reads" do
+    framed = rails.merge(
+      "app/dashboards/user_dashboard.rb" => <<~RUBY,
+        class UserDashboard < Administrate::BaseDashboard
+          TYPES = {}.freeze
+          HIDDEN = 1
+          private_constant :HIDDEN
+        end
+      RUBY
+      "lib/filter.rb" => <<~RUBY,
+        class Filter
+          KIND = "base".freeze
+          LIMIT = 3
+          STALE = 4
+          def kind = self.class::KIND
+          def self.limit = self::LIMIT
+          def other(x) = x.factory::STALE.object_id
+        end
+      RUBY
+      "lib/admin_constraint.rb" => "class AdminConstraint\n  def self.matches?(request) = request\nend\n",
+      "lib/quiet_runner.rb" => "class QuietRunner < RuboCop::Runner\n  private\n\n  def file_finished(*) = 1\nend\n",
+      "app/jobs/use_job.rb" =>
+        "class UseJob\n  def perform = [Filter.new.kind, Filter.limit, QuietRunner, AdminConstraint]\nend\n"
+    )
+    expect(dead(framed, directories: %w[app lib]))
+      .to(eq(%w[UserDashboard::HIDDEN Order#stale_scope Filter::STALE Filter#other Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "takes a const_get with a computed name for reaching every constant under its receiver" do
+    loaded = rails.merge(
+      "lib/extensions.rb" => <<~RUBY,
+        module Extensions
+          def self.load_all(names) = names.map { const_get(it) }
+          class Audit; end
+        end
+      RUBY
+      "lib/plugins.rb" => "module Plugins\n  class Mailer; end\nend\n",
+      "lib/static.rb" => "module Static\n  class Kept; end\n  class Lost; end\nend\n",
+      "lib/loader.rb" => <<~RUBY
+        class Loader
+          def plugin(name) = [Plugins.const_get(name), Static.const_get(:Kept), name.const_get(name), Static::Kept]
+          def none = const_get
+        end
+        const_get(ENV.fetch("X"))
+      RUBY
+    )
+    expected = %w[Order#stale_scope Extensions Extensions.load_all Loader Loader#plugin Loader#none Pricing]
+    expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Static::Lost]))
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end
