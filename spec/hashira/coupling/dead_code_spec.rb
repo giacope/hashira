@@ -170,6 +170,51 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       .to(eq(%w[Keys::STALE Order#stale_scope Pricing Pricing#quote Pricing.rate]))
   end
 
+  it "reaches the names a string or symbol builds around a literal prefix or suffix, methods and constants alike" do
+    built = rails.merge(
+      "app/models/dataset.rb" => <<~RUBY,
+        class Dataset
+          def select_limit_sql = "TOP 1"
+          def limit_s = 1
+          def limit_ab = 1
+          def limit_tail = 1
+        end
+      RUBY
+      "app/jobs/sql_job.rb" => <<~RUBY,
+        class SqlJob
+          def perform(type)
+            set = Dataset.new
+            [set.public_send(:"\#{type}_limit_sql"), set.public_send("\#{type}_s"), set.public_send("\#{type}_ab")]
+          end
+        end
+      RUBY
+      "app/helpers/present_helper.rb" =>
+        "module PresentHelper\n  def show(x) = [\"\#{x.class}Presenter\", \"Auth::\#{x}\"].map(&:constantize)\nend\n",
+      "app/presenters/user_presenter.rb" => "class UserPresenter\nend\n",
+      "app/models/auth/seb_key.rb" => "module Auth\n  class SebKey\n  end\nend\n",
+      "app/models/stray.rb" => "class Stray\nend\n"
+    )
+    expect(dead(built, directories: %w[app lib]))
+      .to(eq(%w[Dataset#limit_s Dataset#limit_tail Order#stale_scope Stray Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "takes a module handed to a library, or to a hosted class, from outside its body for one the framework calls" do
+    handed = rails.merge(
+      "lib/safe_dig.rb" => "module SafeDig\n  def dig_one = 1\nend\nJsonPath::Dig.prepend(SafeDig)\n",
+      "lib/filters.rb" => "module Filters\n  def hex = 1\nend\nLiquid::Environment.default.register_filter(Filters)\n",
+      "lib/plain.rb" => "Liquid::Template.registered\nPricing.include(Comparable)\n",
+      "lib/discounts.rb" => "module Discounts\n  def discount = 1\nend\nOrder.include(Discounts)\n",
+      "lib/rates.rb" => "module Rates\n  def rate = 1\nend\nPricing.include(Rates)\n",
+      "lib/hooked.rb" => "module Hooked\n  def self.included(base) = base.prepend(Hooks)\nend\n",
+      "lib/hooks.rb" => "module Hooks\n  def hook = 1\nend\n",
+      "lib/watchdog/worker.rb" => "module Watchdog\n  module Worker\n    def reserve = 1\n  end\nend\n",
+      "lib/watchdog/core.rb" => "module Watchdog\n  module Core\n    def quit = 1\n  end\nend\n",
+      "config/initializers/jobs.rb" => "Delayed::Worker.prepend(Watchdog::Worker)\nDelayed::Master.prepend ::Watchdog::Core\n"
+    )
+    expect(dead(handed, directories: %w[app lib]))
+      .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end

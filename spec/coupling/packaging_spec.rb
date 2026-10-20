@@ -37,6 +37,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
   end
 
+  it "charges top-level code in a file that defines a type to that type's package, not to the root" do
+    policy =
+      lambda { |name|
+        "class #{name}Policy < ApplicationPolicy\n  def edit? = show?\nend\n\n#{name}Policy.prepend_mod\n"
+      }
+    files = %w[Account Article Category Company Contact].to_h { ["app/policies/#{it.downcase}.rb", policy.call(it)] }
+    base = "class ApplicationPolicy\n  def show? = true\nend\n"
+    files = Fixtures::RAILS_FILES.merge(files, "app/policies/application_policy.rb" => base)
+    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      expect(graph.packages).not_to(include("(root)"))
+      expect(graph.edges.map(&:to_s).grep(/Policy/)).to(be_empty)
+    end
+  end
+
   describe "top-level statements that write a namespaced constant" do
     def payments(source)
       files = Fixtures::RAILS_FILES.merge(

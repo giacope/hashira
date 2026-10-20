@@ -39,7 +39,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def live?(member)
     path = member.path
     used?(path) || mentioned?(path.last) || LEVELS.include?(path.last) || rooted?(member) || registered?(path) ||
-      hosted?(path)
+      hosted?(path) || assembled?(path)
   end
 
   def used?(path) = referenced.include?(path.join("::"))
@@ -55,7 +55,9 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def mentioned?(name) = mentions.names.include?(name) || words.include?(name)
 
-  def words = @_words ||= Hashira::Coupling::Outside.new(project).words
+  def words = outside.words
+
+  def outside = @_outside ||= Hashira::Coupling::Outside.new(project)
 
   def registered?(path)
     surface.ancestors(path).any? { inheriting.include?(it) || mentions.registries.include?(it.last) }
@@ -76,7 +78,12 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     Hashira::Analysis::UNIVERSAL.include?(name.to_sym) || Hashira::Analysis::VALUES.include?(name.to_sym)
   end
 
-  def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) }
+  def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { name.end_with?(it) }
+
+  def assembled?(path)
+    name = path.join("::")
+    mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
+  end
 
   def framed?(member) = member.exposed && hosted?(member.owner)
 
@@ -87,7 +94,13 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     @_hosted[path] = lineage(path).any? { surface.outside?(it) } || hosting?(path)
   end
 
-  def hosting?(path) = surface.mixers(path).any? { hosted?(it) || entered?(it) }
+  def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
+
+  def hosts(path) = surface.mixers(path) + handover.hosts(path)
+
+  def foreign?(host) = host == Hashira::Coupling::Handover::FOREIGN
+
+  def handover = @_handover ||= Hashira::Coupling::Handover.new(mentions.handed, graph.census, outside.handed)
 
   def entered?(path) = surface.types.fetch(path, []).any? { entry?(it.file) }
 

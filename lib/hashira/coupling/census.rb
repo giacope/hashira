@@ -43,7 +43,7 @@ class Hashira::Coupling::Census
 
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
 
-  def charge(file, nesting) = translate(placement.charge(file, nesting))
+  def charge(file, nesting) = (homes[file] if nesting.empty?) || translate(placement.charge(file, nesting))
 
   def aside?(package) = placement.aside?(package)
 

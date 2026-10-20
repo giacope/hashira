@@ -14,15 +14,21 @@ class Hashira::Coupling::Mentions
 
   REFLECTIONS = %i[subclasses descendants].freeze
 
+  HANDS = %i[include prepend extend].freeze
+
   TOKEN = /[A-Za-z_]\w*[?!=]?/
 
   STEM = /\A[a-z_]\w*\z/
+
+  NAMESPACE = /\A(?:[A-Z]\w*::)+\z/
+
+  TAIL = /\A(?:_\w+|[A-Z]\w*)[?!=]?\z/
 
   INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
 
   WRITES = [Prism::CallOperatorWriteNode, Prism::CallOrWriteNode, Prism::CallAndWriteNode].freeze
 
-  Found = Data.define(:names, :prefixes, :open, :registries)
+  Found = Data.define(:names, :prefixes, :suffixes, :open, :registries, :handed)
 
   def initialize(trees)
     @trees = trees
@@ -30,7 +36,10 @@ class Hashira::Coupling::Mentions
 
   def found
     return @_found if @_found
-    @_found = Found.new(names: Set.new, prefixes: Set.new, open: Set.new.compare_by_identity, registries: Set.new)
+    @_found = Found.new(
+      names: Set.new, prefixes: Set.new, suffixes: Set.new, open: Set.new.compare_by_identity, registries: Set.new,
+      handed: []
+    )
     @trees.each_value { visit(it, nil) }
     @_found
   end
@@ -41,9 +50,13 @@ class Hashira::Coupling::Mentions
 
   def prefixes = found.prefixes
 
+  def suffixes = found.suffixes
+
   def open = found.open
 
   def registries = found.registries
+
+  def handed = found.handed
 
   def visit(node, owner)
     note(node, owner)
@@ -60,7 +73,7 @@ class Hashira::Coupling::Mentions
     when Prism::CallNode then called(node, owner)
     when Prism::SymbolNode then names << Hashira::Analysis::Syntax.text(node)
     when Prism::StringNode then said(Hashira::Analysis::Syntax.text(node))
-    when *INTERPOLATED then stem(node.parts.first)
+    when *INTERPOLATED then built(node.parts)
     when *WRITES then names.merge([node.read_name.to_s, node.write_name.to_s])
     end
   end
@@ -69,6 +82,21 @@ class Hashira::Coupling::Mentions
     names << call.name.to_s
     open << owner if owner && dynamic?(call)
     registries << Hashira::Analysis::Syntax.segments(call.receiver).last if REFLECTIONS.include?(call.name)
+    gift(call) if handing?(call)
+  end
+
+  def handing?(call) = (HANDS.include?(call.name) || call.name.start_with?("register")) && !own?(call.receiver)
+
+  def gift(call)
+    host = root(call.receiver)
+    Array(call.arguments&.arguments).select { Hashira::Analysis::Syntax.static?(it) }.each do |given|
+      handed << [host, Hashira::Analysis::Syntax.segments(given)]
+    end
+  end
+
+  def root(node)
+    return Hashira::Analysis::Syntax.segments(node) if Hashira::Analysis::Syntax.static?(node)
+    root(node.receiver) if node.is_a?(Prism::CallNode)
   end
 
   def dynamic?(call)
@@ -80,8 +108,11 @@ class Hashira::Coupling::Mentions
 
   def said(text) = text.scan(TOKEN) { names << it }
 
-  def stem(part)
-    text = Hashira::Analysis::Syntax.text(part) if part.is_a?(Prism::StringNode)
-    prefixes << text if text&.match?(STEM)
+  def built(parts)
+    head, tail = [parts.first, parts.last].map { literal(it) }
+    prefixes << head if head.match?(STEM) || head.match?(NAMESPACE)
+    suffixes << tail if tail.length > 2 && tail.match?(TAIL)
   end
+
+  def literal(part) = part.is_a?(Prism::StringNode) ? Hashira::Analysis::Syntax.text(part) : ""
 end
