@@ -129,7 +129,7 @@ class Hashira::Smells::Lineage
   def injected(node)
     return unless node.is_a?(Prism::CallNode) && node.name == :instance_variable_set
     first = node.arguments&.arguments&.first
-    Hashira::Analysis::Syntax.symbol(first) if first.is_a?(Prism::SymbolNode) || first.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax.symbol(first) if Hashira::Analysis::Syntax.word?(first)
   end
 
   def attributes(type)

@@ -39,7 +39,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     @_reflection ||= Hashira::Coupling::Reflection.new(mentions.reflected, graph.census, surface.openings)
   end
 
-  def housed?(member) = member.exposed && member.path.size > 1 && hosted?(member.path[...-1])
+  def housed?(member) = member.hosts.any? { hosted?(it) }
 
   def used?(path) = referenced.include?(path.join("::"))
 

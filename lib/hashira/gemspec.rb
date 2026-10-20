@@ -5,13 +5,12 @@ class Hashira::Gemspec
     @path = path
   end
 
-  def paths = globs.flat_map { Dir[it] }.select { Dir["#{it}/**/*.rb"].any? }
+  def paths
+    nodes(Hashira::Trees.parse(@path)).grep(Prism::CallNode).select { it.name == :require_paths= }
+      .flat_map { strings(it.arguments.arguments.first) }.flat_map { Dir[it] }.select { Dir["#{it}/**/*.rb"].any? }
+  end
 
   private
-
-  def globs = written.flat_map { strings(it.arguments.arguments.first) }
-
-  def written = nodes(Prism.parse_file(@path).value).grep(Prism::CallNode).select { it.name == :require_paths= }
 
   def nodes(node) = [node, *node.compact_child_nodes.flat_map { nodes(it) }]
 

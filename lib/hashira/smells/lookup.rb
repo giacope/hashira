@@ -8,7 +8,10 @@ module Hashira::Smells::Lookup
 
   KEYS = (Hashira::Smells::Foreign::KEYS + [Prism::IntegerNode]).freeze
 
-  NEAR = [NilClass, Prism::SelfNode, Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
+  NEAR = [
+    NilClass, Prism::SelfNode, Prism::LocalVariableReadNode, Prism::ItLocalVariableReadNode,
+    Prism::InstanceVariableReadNode
+  ].freeze
 
   module_function
 

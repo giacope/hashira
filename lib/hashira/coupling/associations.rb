@@ -45,7 +45,7 @@ class Hashira::Coupling::Associations
   end
 
   def literal(node)
-    Hashira::Analysis::Syntax.text(node) if node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode)
+    Hashira::Analysis::Syntax.text(node) if Hashira::Analysis::Syntax.word?(node)
   end
 end
 

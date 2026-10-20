@@ -63,6 +63,8 @@ module Hashira
 
       def text(node) = node.unescaped.scrub
 
+      def word?(node) = node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode)
+
       def symbol(node) = text(node).to_sym
 
       def symbol_names(nodes) = nodes.grep(Prism::SymbolNode).map { text(it) }

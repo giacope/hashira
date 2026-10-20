@@ -19,21 +19,19 @@ class Hashira::Smells::Grouping
 
   def sourced?(finding) = finding.kind == ABSENT && finding.detail[:sources].to_a.any?
 
-  def edges = of(CHAIN).group_by { it.detail[:through] }.map { |through, group| edge(through, group) }
+  def edges
+    @findings.select { it.kind == CHAIN }.group_by { it.detail[:through] }.map do |through, group|
+      merged(group, through.join(" → "), through:)
+    end
+  end
 
-  def edge(through, group) = merged(group, through.join(" → "), through:)
+  def sources
+    @findings.select { sourced?(it) }.flat_map { |finding| named(finding) }.group_by(&:first).map do |name, found|
+      merged(found.map(&:last), name, origin: found.first.last.detail[:origin])
+    end
+  end
 
-  def sources = origins.group_by(&:first).map { |name, found| source(name, found.map(&:last)) }
-
-  def origins = of(ABSENT).select { sourced?(it) }.flat_map { |finding| named(finding) }
-
-  def named(finding) = finding.detail[:sources].map { [owner(finding) + it, finding] }
-
-  def source(name, group) = merged(group, name, origin: group.first.detail[:origin])
-
-  def of(kind) = @findings.select { it.kind == kind }
-
-  def owner(finding) = finding.package.sub(OWNER, "")
+  def named(finding) = finding.detail[:sources].map { [finding.package.sub(OWNER, "") + it, finding] }
 
   def merged(group, package, **told)
     first = group.first

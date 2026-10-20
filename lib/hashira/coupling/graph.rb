@@ -15,7 +15,7 @@ class Hashira::Coupling::Graph
 
   def pairs = edges.map(&:deconstruct).select { |from, to| from < to && declares?(from, to) && declares?(to, from) }
 
-  def declarations(from, to) = evidence(from, to).filter_map { map.declared[it] }
+  def declarations(from, to) = noted(from, to, map.declared)
 
   def home(file) = @census.home(file)
 
@@ -44,7 +44,7 @@ class Hashira::Coupling::Graph
 
   def evidence(from, to) = map.evidence[[from, to]]
 
-  def guarantees(from, to) = evidence(from, to).filter_map { map.pledges[it] }
+  def guarantees(from, to) = noted(from, to, map.pledges)
 
   def domain = edges.reject { aside?(it.from) || aside?(it.to) }
 
@@ -93,7 +93,9 @@ class Hashira::Coupling::Graph
 
   def navigation?(from, to) = declares?(to, from) && evidence(from, to).all? { map.declared.key?(it) }
 
-  def declares?(from, to) = evidence(from, to).any? { map.declared.key?(it) }
+  def declares?(from, to) = declarations(from, to).any?
+
+  def noted(from, to, notes) = evidence(from, to).filter_map { notes[it] }
 
   def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
 

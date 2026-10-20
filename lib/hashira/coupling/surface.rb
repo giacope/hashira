@@ -10,6 +10,8 @@ class Hashira::Coupling::Surface
   Member =
     Data.define(:name, :path, :owner, :site, :file, :exposed, :selector, :overrides) do
       def place = [file, site[/\d+\z/].to_i]
+
+      def hosts = exposed ? [path[...-1]].reject(&:empty?) : []
     end
 
   def initialize(project, trees, census)
