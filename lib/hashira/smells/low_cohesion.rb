@@ -51,11 +51,17 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
   end
 
-  def inputs = subject.owned.select { constructor?(it) }.flat_map(&:parameters)
+  def inputs = constructors.flat_map(&:parameters)
 
-  def setup
-    subject.owned.select { constructor?(it) }.flat_map { Hashira::Analysis::Syntax.statements(it.node).compact }
-  end
+  def setup = constructors.flat_map { Hashira::Analysis::Syntax.statements(it.node).compact }
+
+  def constructors = @_constructors ||= built(subject.owned).then { it.empty? ? bequeathed : it }
+
+  def bequeathed = family.ancestors(subject.subject).lazy.map { built(family.definitions(it)) }.find(&:any?) || []
+
+  def built(methods) = methods.select { constructor?(it) }
+
+  def family = subject.family
 
   def fuse(found, piece)
     touching, apart = found.partition { linked?(it, piece) }

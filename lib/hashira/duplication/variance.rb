@@ -16,6 +16,8 @@ class Hashira::Duplication::Variance
 
   RELAYS = %i[super_node forwarding_super_node].freeze
 
+  WORD = /\A[[:alpha:]_]/
+
   def initialize(canonical, other)
     @canonical = canonical
     @other = other
@@ -37,7 +39,11 @@ class Hashira::Duplication::Variance
 
   def pairs = @canonical.nodes.zip(@other.nodes)
 
-  def named = @_named ||= pairs.select { |left, _| NAMED.include?(left.type) && !inner?(left) && !recurring?(left) }
+  def named = @_named ||= pairs.select { |left, _| spoken?(left) && !inner?(left) && !recurring?(left) }
+
+  def spoken?(node) = NAMED.include?(node.type) && worded?(node)
+
+  def worded?(node) = WORD.match?(node.name.to_s)
 
   def recurring?(node) = (@canonical.recurring | @other.recurring).include?(node.name)
 

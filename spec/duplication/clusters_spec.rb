@@ -309,6 +309,36 @@ RSpec.describe(Hashira::Duplication::Clusters) do
     expect(clusters("a.rb" => declared["A"], "b.rb" => declared["B"])).to(be_empty)
   end
 
+  it "reads a literal table that freezes its values in place as a declaration, and a passed block as code" do
+    pairs = %w[year month day hour minute second].map { "#{it}: \"'#{it[0]}'\"" }.join(", ")
+    table = ->(name, tail) { "module #{name}\n MAP = { #{pairs} }.freeze\n #{tail}\nend\n" }
+    expect(clusters("a.rb" => table["A", "MAP.each_value(&:freeze)"], "b.rb" => table["B", "MAP.each_value(&:freeze)"]))
+      .to(be_empty)
+    %w[MAP.each_value(&:dup) MAP.each_value(&@cb) MAP.each(&) x.each(&:freeze)].each do |tail|
+      expect(clusters("a.rb" => table["A", tail], "b.rb" => table["B", tail])).not_to(be_empty)
+    end
+  end
+
+  it "takes two runs that share only their shape and their operators for two lists, not one clone" do
+    pods = <<~RUBY
+      def a(params)
+        cmd = []
+        cmd << "--no-clean" unless params[:clean]
+        cmd << "--x" unless params[:x]
+        cmd
+      end
+    RUBY
+    keys = <<~RUBY
+      def b(json)
+        out = []
+        out << "key_id" unless json.key?(:key_id)
+        out << "key" unless json.key?(:key)
+        out
+      end
+    RUBY
+    expect(clusters("a.rb" => pods, "b.rb" => keys)).to(be_empty)
+  end
+
   it "reads a heredoc that interpolates, or a constant built by a message, as code" do
     header =
       lambda do |name, value|

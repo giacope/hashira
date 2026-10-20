@@ -64,21 +64,36 @@ class Hashira::Smells::Hierarchy
     @_births ||=
       {}.tap do |found|
         @types.each do |type|
-          news(type.node).each do |call|
+          news(type.node).each do |call, factory|
+            next if relayed?(type, call, factory)
             (found[born(type, call)] ||= []) << "#{type.file}:#{call.location.start_line}"
           end
         end
       end
   end
 
-  def news(node, found = [])
+  def news(node, factory = nil, found = [])
     node.compact_child_nodes.each do |child|
       next if FENCES.include?(child.class)
-      found << child if child.is_a?(Prism::CallNode) && child.name == :new
-      news(child, found)
+      found << [child, factory] if child.is_a?(Prism::CallNode) && child.name == :new
+      news(child, lifted(child, factory), found)
     end
     found
   end
+
+  def lifted(node, factory)
+    return true if node.is_a?(Prism::SingletonClassNode)
+    return factory unless node.is_a?(Prism::DefNode)
+    node.name if node.receiver || factory == true
+  end
+
+  def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.name, factory)
+
+  def summoned?(name, selector) = invocations.any? { |owner, call| call.name == selector && born(owner, call) == name }
+
+  def invocations = @_invocations ||= @types.flat_map { |type| sent(type).map { [type, it] } }
+
+  def sent(type) = Hashira::Smells::Scope.sweep(type.node).grep(Prism::CallNode).select(&:receiver)
 
   def born(type, call)
     return type.name unless call.receiver
