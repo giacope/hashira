@@ -10,7 +10,7 @@ RSpec.describe(Hashira::Coupling::Words) do
       MIX = ["two words", :epsilon, 9, *rest]
       call(:zeta, "eta")
     RUBY
-    expected = [Set.new(%w[alpha beta]), Set.new(%w[gamma delta]), Set.new(%w[epsilon])]
-    expect(described_class.lists(tree)).to(eq(expected))
+    expected = [[Set.new(%w[alpha beta]), 1], [Set.new(%w[gamma delta]), 2], [Set.new(%w[epsilon]), 3]]
+    expect(described_class.lists(tree).map { [it.words, it.line] }).to(eq(expected))
   end
 end

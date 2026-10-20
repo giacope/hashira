@@ -62,8 +62,8 @@ module Hashira
 
         def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name
 
-        def settle(assigned:, heirs:, protocol:, ownership:)
-          TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), assigned:, heirs:)
+        def settle(protocol:, ownership:, **facts)
+          TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), **facts)
         end
 
         def defs(protocol, ownership)
@@ -74,7 +74,7 @@ module Hashira
       end
 
     TypeContext =
-      Data.define(:name, :node, :kind, :file, :defs, :assigned, :heirs) do
+      Data.define(:name, :node, :kind, :file, :defs, :assigned, :heirs, :claimed) do
         def initialize(assigned: nil, heirs: [], **rest) = super
 
         def line = node.location.start_line

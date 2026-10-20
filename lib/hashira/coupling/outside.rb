@@ -15,15 +15,21 @@ class Hashira::Coupling::Outside
 
   WORD = /[A-Za-z_][A-Za-z0-9_]*[?!]?/
 
+  HANDED = /\.(?:include|prepend|extend|register\w*)[(\s]\s*((?:::)?[A-Z]\w*(?:::[A-Z]\w*)*)/
+
   LISTING = %w[ls-files -z --cached --others --exclude-standard].freeze
 
   def initialize(project)
     @project = project
   end
 
-  def words = @_words ||= files.each_with_object(Set.new) { |path, found| read(path, found) }
+  def words = scanned.first
+
+  def handed = scanned.last
 
   private
+
+  def scanned = @_scanned ||= files.each_with_object([Set.new, Set.new]) { |path, found| read(path, *found) }
 
   def home = File.expand_path(@project.home)
 
@@ -51,7 +57,9 @@ class Hashira::Coupling::Outside
 
   def places = @_places ||= @project.directories.map { "#{File.expand_path(it)}/" }
 
-  def read(path, found)
-    File.binread(path).scan(WORD) { found << it.force_encoding(Encoding::UTF_8) }
+  def read(path, words, handed)
+    text = File.binread(path)
+    text.scan(WORD) { words << it.force_encoding(Encoding::UTF_8) }
+    text.scan(HANDED).flatten.each { handed << it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
   end
 end

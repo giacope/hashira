@@ -2,7 +2,9 @@
 # :posts reaches Post as surely as class_name: "Post" would. Singularized
 # with ActiveSupport's rules (people -> Person, categories -> Category,
 # statuses -> Status, analyses -> Analysis) plus the app's own irregular
-# inflection; a polymorphic belongs_to names no class.
+# inflection; a polymorphic belongs_to names no class. Author and Post, and
+# Category and Post, each declare the other: two bidirectional associations,
+# not a cycle, since no code reaches back.
 args: [app]
 edges:
   - "Author -> Post"
@@ -16,4 +18,5 @@ edges:
   - "Post -> Status"
   - "Team -> Person"
 absent: ["Remark -> Commentable"]
-cycles: [[Author, Category, Post]]
+cycles: []
+pairs: ["Author ⇄ Post", "Category ⇄ Post"]

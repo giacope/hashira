@@ -164,9 +164,10 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
-  it "leaves opt-in kinds out of a plain run and gates on one that --fail-on names" do
+  it "reports the default smells in a plain run, leaves opt-in kinds out, and gates on one that --fail-on names" do
     within(Fixtures::CYCLIC_FILES) do
-      expect(capture { described_class.new(["lib/app"]).status }).not_to(include("utility_function"))
+      plain = capture { described_class.new(["lib/app"]).status }
+      expect([plain.include?("utility_function"), plain.include?("repeated_conditional")]).to(eq([true, false]))
       gate = capture { expect(described_class.new(%w[lib/app --fail-on utility_function]).status).to(eq(1)) }
       expect(gate).to(include("Gate FAILED: 4 finding(s) — utility_function 4."))
     end

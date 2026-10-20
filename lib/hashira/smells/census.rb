@@ -8,7 +8,9 @@ class Hashira::Smells::Census
     @trees = trees
   end
 
-  def ownership = @_ownership ||= Hashira::Smells::Ownership.new(@trees.values)
+  def ownership = @_ownership ||= Hashira::Smells::Ownership.new(@trees.values, catalog)
+
+  def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
 
   def types = @_types ||= placed(@trees.flat_map { |path, tree| harvest(@project.relative(path), tree) })
 
@@ -18,7 +20,7 @@ class Hashira::Smells::Census
 
   def settled(found, lineage)
     kinship = Hashira::Smells::Kinship.new(found, lineage)
-    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:) }
+    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
   end
 
   def roots = @_roots ||= Hashira::Analysis::TypeWalk.roots(@trees)
@@ -30,4 +32,6 @@ class Hashira::Smells::Census
   end
 
   def kind(node) = node.is_a?(Prism::ModuleNode) ? :module : :class
+
+  def claimed?(sketch) = catalog.claimed?(sketch.name.split("::"))
 end

@@ -14,6 +14,13 @@ RSpec.describe(Hashira::Config::Layers) do
     expect([rank(raw, "/srv/app/models/user.rb", "User"), rank(raw, "/srv/app/jobs/a.rb", "A")]).to(eq([1, nil]))
   end
 
+  it "reads rails as the conventional web, app and domain folders, outermost first" do
+    files = %w[app/views/a.rb app/mailers/a.rb lib/a.rb app/assets/a.rb].map { "/srv/#{it}" }
+    expect([described_class.parse("rails").names, files.map { rank("rails", it, "A") }]).to(
+      eq([%w[web app domain], [0, 1, 2, nil]])
+    )
+  end
+
   it "stands for no layers when none are declared" do
     expect([described_class.parse(nil).any?, described_class::NONE.names]).to(eq([false, []]))
   end

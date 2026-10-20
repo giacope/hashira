@@ -1,5 +1,7 @@
-# Report#render reaches seven same-class helpers, three deep, averaging one
-# line each: the reader hops through seven names to read one method's work.
+# Report#render reaches seven private helpers only it calls, three deep,
+# averaging one line each: the reader hops through seven names to read one
+# method's work. Download#delete and #size share the public #file_path, an
+# abstraction that ends the path, so neither is fragmented.
 # Invoice#total has two helpers that each hold a step. Pipeline#run calls four
 # short steps straight from one flat recipe, so its path is one deep.
 present:
@@ -7,5 +9,7 @@ present:
 absent:
   - {kind: fragmentation, package: "App::Invoice#total"}
   - {kind: fragmentation, package: "App::Pipeline#run"}
+  - {kind: fragmentation, package: "App::Download#delete"}
+  - {kind: fragmentation, package: "App::Download#size"}
 messages:
-  - {kind: fragmentation, package: "App::Report#render", includes: "7 same-class helpers averaging 1.0 lines a method, 3 deep"}
+  - {kind: fragmentation, package: "App::Report#render", includes: "7 private helpers only it calls, averaging 1.0 lines a method, 3 deep"}

@@ -73,7 +73,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
-  def cascade(user, post = "belongs_to :user")
+  def cascade(user, post = "def owner = User")
     {
       "config/application.rb" => "module Shop; class Application; end; end\n",
       "app/models/user.rb" => "class User\n  #{user}\nend\n",
@@ -98,8 +98,8 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
 
   it "says how many edges to cut carry a dependent: option, and that there are more than it shows" do
     user = "has_many :posts, dependent: :destroy\n  has_many :notes, dependent: :nullify"
-    notes = { "app/models/note.rb" => "class Note\n  belongs_to :user\nend\n" }
-    cycle = carried(cascade(user, "belongs_to :user\n  def n = Note").merge(notes))
+    notes = { "app/models/note.rb" => "class Note\n  def owner = User\nend\n" }
+    cycle = carried(cascade(user, "def owner = User\n  def n = Note").merge(notes))
     held = cycle.detail[:cut].map { [it[:from], it[:to], it[:guarantees].size] }
     expect(held).to(eq([["User", "Note", 1], ["User", "Post", 1]]))
     said = "2 of these edges carry a dependent: option (User -> Note: has_many :notes, dependent: :nullify at " \
@@ -109,7 +109,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
 
   it "marks a second dependent: option on the one edge to cut" do
     user = "has_many :posts, dependent: :destroy\n  has_many :drafts, class_name: \"Post\", dependent: :delete_all"
-    post = "belongs_to :user\n  belongs_to :editor, class_name: \"User\""
+    post = "def owner = User\n  def editor = User"
     expect(message(carried(cascade(user, post)))).to(
       include("User -> Post carries a dependent: option (has_many :posts, dependent: :destroy at models/user.rb:2, …)")
     )
@@ -322,6 +322,20 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "counts a constant once however it is spelled, relative or qualified" do
+    core = %w[Error Blob Clock Opts More].to_h { ["lib/app/#{it.downcase}.rb", "module App; class #{it}; end; end"] }
+    uses = ->(list) { "module App; module Adapters; class Pg; def go = [#{list}]; end; end; end\n" }
+    files = core.merge("lib/app/helpers.rb" => "module AppHelpers; end\n")
+    spelled = "Error, App::Error, Blob, ::App::Blob, Clock, App::Clock"
+    verdicts(files.merge("lib/app/adapters/pg.rb" => uses.call(spelled))) do |all|
+      expect(all.map(&:kind)).not_to(include("wide_edge"))
+    end
+    verdicts(files.merge("lib/app/adapters/pg.rb" => uses.call("#{spelled}, Opts, App::More"))) do |all|
+      expect(all.find { it.kind == "wide_edge" }.detail[:constants])
+        .to(eq(%w[App::Blob App::Clock App::Error App::More App::Opts]))
+    end
+  end
+
   it "counts a class and the types nested in it as one constant of an edge" do
     gate = "module App; module Core; class Gate; class Policy; end; class Exceeded; end; end; end; end\n"
     kit = "module App; module Core; module Kit; class One; end; class Two; end; end; end; end\n"
@@ -367,7 +381,7 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
       finding = all.find { it.kind == "roll_call" }
       expect(finding.digest).to(eq("blue,lime,red"))
       expect(message(finding)).to(eq(expected))
-      expect(finding.evidence).to(eq(["one/a.rb", "three/c.rb", "two/b.rb"]))
+      expect(finding.evidence).to(eq(["one/a.rb:1", "three/c.rb:1", "two/b.rb:1"]))
     end
   end
 

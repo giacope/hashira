@@ -8,6 +8,7 @@ require_relative "echo"
 require_relative "rule"
 require_relative "imbalance"
 require_relative "layering"
+require_relative "navigation"
 require_relative "wide_edge"
 
 class Hashira::Coupling::Report

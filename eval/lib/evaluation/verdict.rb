@@ -11,7 +11,7 @@ class Evaluation::Verdict
 
   def checks
     return [broken] unless @outcome.status.zero?
-    [*edges, *absent, *cycles, *cuts]
+    [*edges, *absent, *cycles, *pairs, *cuts]
   end
 
   private
@@ -38,6 +38,12 @@ class Evaluation::Verdict
   def cycles
     wanted = @expect["cycles"]
     wanted ? [check("cycles", wanted.map(&:sort).sort, knots)] : []
+  end
+
+  def pairs
+    wanted = @expect["pairs"]
+    paired = @outcome.kinds("bidirectional_association").map { it["package"] }.sort
+    wanted ? [check("bidirectional associations", wanted.sort, paired)] : []
   end
 
   def cuts = @outcome.kinds("cycle").flat_map { cut(it.fetch("detail")) }

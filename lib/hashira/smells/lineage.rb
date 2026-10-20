@@ -31,6 +31,8 @@ class Hashira::Smells::Lineage
 
   def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
+  def mixins(type) = named(type, MIXINS).filter_map { resolve(type.name, Hashira::Analysis::Syntax.segments(it)) }
+
   def messages(type) = sweep(type).filter_map { message(it) }
 
   private
@@ -119,7 +121,16 @@ class Hashira::Smells::Lineage
 
   def written = @_written ||= {}.compare_by_identity
 
-  def setters(node) = Hashira::Smells::Scope.sweep(node).select { SETTERS.include?(it.class) }.map(&:name)
+  def setters(node)
+    swept = Hashira::Smells::Scope.sweep(node)
+    swept.select { SETTERS.include?(it.class) }.map(&:name) + swept.filter_map { injected(it) }
+  end
+
+  def injected(node)
+    return unless node.is_a?(Prism::CallNode) && node.name == :instance_variable_set
+    first = node.arguments&.arguments&.first
+    Hashira::Analysis::Syntax.symbol(first) if Hashira::Analysis::Syntax.word?(first)
+  end
 
   def attributes(type)
     named(type, WRITERS).select { it.is_a?(Prism::SymbolNode) || it.is_a?(Prism::StringNode) }.map { :"@#{Hashira::Analysis::Syntax.text(it)}" }

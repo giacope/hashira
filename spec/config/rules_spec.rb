@@ -16,8 +16,8 @@ RSpec.describe(Hashira::Config::Rules) do
 
   it "leaves measured kinds on and low-precision kinds off when nothing is said, and all of them on for all" do
     defaults = Hashira::Config::Rules::NONE
-    expect(%w[complexity duplication nil_check dead_code change_coupling].map { defaults.enabled?(it) })
-      .to(eq([true, true, false, true, false]))
+    expect(%w[complexity duplication nil_check indirection dead_code change_coupling].map { defaults.enabled?(it) })
+      .to(eq([true, true, true, false, true, false]))
     expect(defaults.threshold("complexity", 10)).to(eq(10))
     expect(%w[nil_check indirection].map { parse("all").enabled?(it) }).to(eq([true, true]))
     expect(parse("nil_check" => true).enabled?("nil_check")).to(be(true))
@@ -33,7 +33,7 @@ RSpec.describe(Hashira::Config::Rules) do
   it "turns every kind on with all: true, beside settings that still move or drop one" do
     rules = parse("all" => true, "nil_check" => false, "complexity" => { "threshold" => 4 })
     switches = %w[feature_envy nil_check dead_code].map { rules.enabled?(it) }
-    switches += [parse("all" => false), parse("complexity" => true)].map { it.enabled?("nil_check") }
+    switches += [parse("all" => false), parse("complexity" => true)].map { it.enabled?("indirection") }
     expect(switches + [rules.threshold("complexity", 10)]).to(eq([true, false, true, false, false, 4]))
   end
 

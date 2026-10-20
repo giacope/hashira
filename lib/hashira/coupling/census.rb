@@ -39,9 +39,11 @@ class Hashira::Coupling::Census
 
   def owner(path) = scope.owner(path)
 
+  def vias(path) = scope.vias.fetch(path, [])
+
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
 
-  def charge(file, nesting) = translate(placement.charge(file, nesting))
+  def charge(file, nesting) = (homes[file] if nesting.empty?) || translate(placement.charge(file, nesting))
 
   def aside?(package) = placement.aside?(package)
 

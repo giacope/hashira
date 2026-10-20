@@ -28,7 +28,7 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
   def homes = sightings.to_h { |file, home, _words| [file, home] }
 
   def entry(roll)
-    words, files, packages = roll.deconstruct
-    finding(package: packages.first, digest: words.join(","), evidence: files, detail: { words:, files:, packages: })
+    words, files, packages, sites = roll.deconstruct
+    finding(package: packages.first, digest: words.join(","), evidence: sites, detail: { words:, files:, packages: })
   end
 end

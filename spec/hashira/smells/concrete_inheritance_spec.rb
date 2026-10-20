@@ -46,8 +46,11 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance) do
     expect(concrete(reports.sub("def rows = [1]", "def rows = [1]\n    def twin = self.class.new"))).to(be_empty)
   end
 
-  it "counts a bare new in the parent's own class methods as building it" do
-    expect(concrete(reports.sub("def rows = [1]", "def self.build = new\n    def rows = [1]")).size).to(eq(1))
+  it "counts a bare new in the parent's class methods as building it only when the parent is sent that method" do
+    factories = ["def self.build = new", "class << self\n      def build = new\n    end", "def self.build = Report.new"]
+    sources = factories.map { reports.sub("def rows = [1]", "#{it}\n    def rows = [1]") }
+    callers = %w[Report.build Daily.build].map { built(it) }
+    expect(sources.product(callers).map { |source, caller| concrete(source, caller).size }).to(eq([1, 0, 1, 0, 1, 1]))
   end
 
   it "leaves a parent alone that announces itself abstract by name, a hook left unimplemented, or a marker" do

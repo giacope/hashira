@@ -35,7 +35,9 @@ class Hashira::Smells::Provenance
 
   def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
 
-  def own?(name) = answers.include?(name.to_s.delete_suffix("=")) || @subject.ownership.vocabulary.speaks?(name)
+  def own?(name) = answers.include?(name.to_s.delete_suffix("=")) || @subject.neighbors.include?(name) || hosted?(name)
+
+  def hosted?(name) = @subject.host == :module && @subject.ownership.vocabulary.speaks?(name)
 
   def answers = @_answers ||= @subject.ownership.repertoire.of(@subject.owner.split("::"))
 

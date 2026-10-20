@@ -215,7 +215,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
             end
 
             def together(rows)
-              rows.map { [it.name, it.name] }
+              rows.map { [it.name, it.name, it.name] }
             end
 
             def captured(node, rows)
@@ -225,7 +225,12 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 2 (line 22)"]))
+    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 3 (line 22)"]))
+  end
+
+  it "takes a read of it twice for style, as it does a named block variable's" do
+    findings = repeated("class Thing\n  def pair(rows) = rows.map { [it.name, it.name] }\nend\n")
+    expect(findings).to(be_empty)
   end
 
   it "counts a variable reassigned between two calls as two values" do

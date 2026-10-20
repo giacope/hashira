@@ -11,7 +11,7 @@ class Hashira::Duplication::Fragment
     class_node module_node statements_node arguments_node assoc_node block_node
     array_node hash_node keyword_hash_node constant_read_node constant_path_node constant_write_node
     symbol_node string_node interpolated_string_node regular_expression_node
-    integer_node float_node true_node false_node nil_node
+    integer_node float_node true_node false_node nil_node block_argument_node
   ].freeze
 
   OPENED = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze
@@ -116,7 +116,16 @@ class Hashira::Duplication::Fragment
 
   def bare?(node) = node.is_a?(Prism::CallNode) && [node.receiver, node.arguments, node.block].none?
 
-  def constant?(call) = !call.arguments && !call.block && fixed?(call)
+  def constant?(call) = !call.arguments && (thawed?(call) || (!call.block && fixed?(call)))
+
+  def thawed?(call)
+    passed = call.block
+    passed.is_a?(Prism::BlockArgumentNode) && frozen?(passed.expression) && named?(call.receiver)
+  end
+
+  def frozen?(expression) = expression.is_a?(Prism::SymbolNode) && expression.unescaped == "freeze"
+
+  def named?(receiver) = receiver.is_a?(Prism::ConstantReadNode) || receiver.is_a?(Prism::ConstantPathNode)
 
   def fixed?(call)
     held = Hashira::Duplication::Literal.new(call.receiver)

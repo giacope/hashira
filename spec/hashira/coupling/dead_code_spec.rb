@@ -140,6 +140,138 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     )
   end
 
+  it "reads a ::-rooted class inside a module as the top-level class it reopens, not a nested one" do
+    rooted = rails.merge(
+      "app/models/drops.rb" => <<~RUBY
+        module Drops
+          class ::MatchData
+            def to_liquid = :drop
+          end
+
+          class ::ActiveRecord::Relation
+            def to_liquid = :relation
+          end
+
+          def self.wrap(match) = match.to_liquid
+        end
+      RUBY
+    )
+    expect(dead(rooted, directories: %w[app lib]))
+      .to(eq(%w[Drops Drops.wrap Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "counts a constant read through a module that includes its owner as used, and that module too" do
+    included = rails.merge(
+      "app/models/keys.rb" => "module Keys\n  MUTEX = 1\n  STALE = 2\nend\n",
+      "app/models/store.rb" => "module Store\n  include Keys\nend\n",
+      "app/models/job.rb" => "class Job < ApplicationRecord\n  def key = Store::MUTEX\nend\n"
+    )
+    expect(dead(included, directories: %w[app lib]))
+      .to(eq(%w[Keys::STALE Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "reaches the names a string or symbol builds around a literal prefix or suffix, methods and constants alike" do
+    built = rails.merge(
+      "app/models/dataset.rb" => <<~RUBY,
+        class Dataset
+          def select_limit_sql = "TOP 1"
+          def limit_s = 1
+          def limit_ab = 1
+          def limit_tail = 1
+        end
+      RUBY
+      "app/jobs/sql_job.rb" => <<~RUBY,
+        class SqlJob
+          def perform(type)
+            set = Dataset.new
+            [set.public_send(:"\#{type}_limit_sql"), set.public_send("\#{type}_s"), set.public_send("\#{type}_ab")]
+          end
+        end
+      RUBY
+      "app/helpers/present_helper.rb" =>
+        "module PresentHelper\n  def show(x) = [\"\#{x.class}Presenter\", \"Auth::\#{x}\"].map(&:constantize)\nend\n",
+      "app/presenters/user_presenter.rb" => "class UserPresenter\nend\n",
+      "app/models/auth/seb_key.rb" => "module Auth\n  class SebKey\n  end\nend\n",
+      "app/models/stray.rb" => "class Stray\nend\n"
+    )
+    expect(dead(built, directories: %w[app lib]))
+      .to(eq(%w[Dataset#limit_s Dataset#limit_tail Order#stale_scope Stray Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "takes a module handed to a library, or to a hosted class, from outside its body for one the framework calls" do
+    handed = rails.merge(
+      "lib/safe_dig.rb" => "module SafeDig\n  def dig_one = 1\nend\nJsonPath::Dig.prepend(SafeDig)\n",
+      "lib/filters.rb" => "module Filters\n  def hex = 1\nend\nLiquid::Environment.default.register_filter(Filters)\n",
+      "lib/plain.rb" => "Liquid::Template.registered\nPricing.include(Comparable)\n",
+      "lib/discounts.rb" => "module Discounts\n  def discount = 1\nend\nOrder.include(Discounts)\n",
+      "lib/rates.rb" => "module Rates\n  def rate = 1\nend\nPricing.singleton_class.include(Rates)\n",
+      "lib/hooked.rb" => "module Hooked\n  def self.included(base) = base.prepend(Hooks)\nend\n",
+      "lib/hooks.rb" => "module Hooks\n  def hook = 1\nend\n",
+      "lib/watchdog/worker.rb" => "module Watchdog\n  module Worker\n    def reserve = 1\n  end\nend\n",
+      "lib/watchdog/core.rb" => "module Watchdog\n  module Core\n    def quit = 1\n  end\nend\n",
+      "lib/watchdog/timer.rb" => "module Watchdog\n  module Timer\n    def tick = 1\n  end\nend\n",
+      "config/initializers/jobs.rb" => <<~RUBY
+        Delayed::Worker.prepend(Watchdog::Worker)
+        Delayed::Master.prepend ::Watchdog::Core
+        Delayed::Clock.prepend Timer
+      RUBY
+    )
+    expect(dead(handed, directories: %w[app lib]))
+      .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
+  end
+
+  it "leaves to the framework the constants a hosted class declares, the hooks it calls, and polymorphic reads" do
+    framed = rails.merge(
+      "app/dashboards/user_dashboard.rb" => <<~RUBY,
+        class UserDashboard < Administrate::BaseDashboard
+          TYPES = {}.freeze
+          HIDDEN = 1
+          private_constant :HIDDEN
+        end
+      RUBY
+      "lib/filter.rb" => <<~RUBY,
+        class Filter
+          KIND = "base".freeze
+          LIMIT = 3
+          STALE = 4
+          def kind = self.class::KIND
+          def self.limit = self::LIMIT
+          def other(x) = x.factory::STALE.object_id
+        end
+      RUBY
+      "lib/admin_constraint.rb" => "class AdminConstraint\n  def self.matches?(request) = request\nend\n",
+      "lib/quiet_runner.rb" => "class QuietRunner < RuboCop::Runner\n  private\n\n  def file_finished(*) = 1\nend\n",
+      "app/jobs/use_job.rb" =>
+        "class UseJob\n  def perform = [Filter.new.kind, Filter.limit, QuietRunner, AdminConstraint]\nend\n"
+    )
+    expect(dead(framed, directories: %w[app lib]))
+      .to(eq(%w[UserDashboard::HIDDEN Order#stale_scope Filter::STALE Filter#other Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "takes a const_get with a computed name for reaching every constant under its receiver" do
+    loaded = rails.merge(
+      "lib/extensions.rb" => <<~RUBY,
+        module Extensions
+          def self.load_all(names) = names.map { const_get(it) }
+          class Audit; end
+        end
+      RUBY
+      "lib/plugins.rb" => "module Plugins\n  class Mailer; end\nend\n",
+      "lib/static.rb" => "module Static\n  class Kept; end\n  class Lost; end\nend\n",
+      "lib/registry.rb" => "module Registry\n  def self.find(name) = const_get(name)\n  class Entry; end\nend\n",
+      "lib/loader.rb" => <<~RUBY
+        class Loader
+          def plugin(name) = [Plugins.const_get(name), Static.const_get(:Kept), name.const_get(name), Static::Kept]
+          def all = Extensions.load_all([])
+          def none = const_get
+        end
+        const_get(ENV.fetch("X"))
+      RUBY
+    )
+    expected = %w[Order#stale_scope Loader Loader#plugin Loader#all Loader#none Pricing]
+    expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Registry Static::Lost]))
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end

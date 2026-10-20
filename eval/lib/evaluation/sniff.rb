@@ -21,7 +21,11 @@ class Evaluation::Sniff
 
   def named(want) = [want["kind"], want["package"]].compact.join(" ")
 
-  def matching(want) = @findings.select { it["kind"] == want["kind"] && [nil, it["package"]].include?(want["package"]) }
+  def matching(want) = @findings.select { it["kind"] == want["kind"] && names?(it, want["package"]) }
+
+  def names?(finding, package)
+    [nil, finding["package"]].include?(package) || finding["evidence"].any? { it.to_s.start_with?("#{package} (") }
+  end
 
   def evidence
     @expect.fetch("evidence", []).map do |kind|

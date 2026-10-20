@@ -26,7 +26,20 @@ class Hashira::Config::Layers
       end
     end
 
-  def self.parse(raw, home = ".") = new(Array(raw).map { Entry.new(item: it, home:).layer }).tap(&:vet)
+  RAILS = [
+    {
+      "web" => %w[
+        app/controllers app/views app/helpers app/components app/serializers app/presenters app/decorators
+        app/policies app/avo app/dashboards
+      ]
+    },
+    { "app" => %w[app/jobs app/workers app/mailers app/services app/channels app/mailboxes] },
+    { "domain" => %w[app/models app/validators lib] }
+  ].freeze
+
+  def self.parse(raw, home = ".")
+    new(Array(raw == "rails" ? RAILS : raw).map { Entry.new(item: it, home:).layer }).tap(&:vet)
+  end
 
   def initialize(list)
     @list = list

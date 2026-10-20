@@ -23,6 +23,8 @@ class Hashira::Coupling::Catalog
 
   def territory = @_territory ||= Hashira::Coupling::Territory.new(self)
 
+  def claimed?(full) = strip(full).then { it.empty? || territory.owned?(it) }
+
   private
 
   def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)

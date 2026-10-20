@@ -22,7 +22,7 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && assigned && assumed.any?
+  def smelly? = subject.kind == :class && subject.claimed? && assigned && assumed.any?
 
   def assigned = subject.assigned
 

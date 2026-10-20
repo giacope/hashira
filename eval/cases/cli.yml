@@ -212,16 +212,17 @@
 
 - name: an opt-in kind stays out of the report unless asked for
   files:
-    lib/app/cart.rb: |
-      class Cart
-        def initialize(items) = @items = items
-        def total = @items.sum
-        def price(item) = item.amount.round
+    lib/app/post.rb: |
+      class Post
+        def initialize(mode) = @mode = mode
+        def title = @mode == :draft ? "Draft" : "Post"
+        def color = @mode == :draft ? "grey" : "black"
+        def icon = @mode == :draft ? "pencil" : "check"
       end
   args: [lib/app, --json]
   status: 0
   json:
-    kinds.utility_function: null
+    kinds.repeated_conditional: null
 
 - name: a baseline from before a kind was renamed still ratchets clean
   files:

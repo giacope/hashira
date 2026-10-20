@@ -35,17 +35,23 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
   before them lists their findings as not ratcheted until `--update-baseline`.
   change_coupling reads git history, so a CI job that gates it needs the full
   history (`fetch-depth: 0`).
-- **Every design smell is now opt-in.** A heuristic kind is on by default only
-  when its blind precision, over the sample and the holdout together, clears
-  one in three: duplication (42 of 100) does, and fragmentation, measured by its
-  own study, joins it beside the measurements (complexity and the coupling
-  kinds). feature_envy (7 of 34), manual_dispatch (8 of 26), data_clump,
-  repeated_call, control_parameter, utility_function, repeated_conditional,
-  state_sprawl, nil_check, assumed_state, boundary_sprawl, module_initialize and
-  indirection need `checks: all`, a `checks:` setting of their own, `--kind` or
-  `--fail-on`. Add `checks: all` to
-  `.hashira.yml` to keep every kind; a baseline recorded without it sees the
-  opt-in kinds' findings resolved.
+- **The design smells are on by default**, but `repeated_conditional`,
+  `middle_man`, `indirection` and `boundary_sprawl`. A kind is on when hashira
+  reads the facts behind it correctly and its advice follows hashira's aim
+  (objects that own their state, no nil passed around, no type switches, no
+  reaching through); agreement with Rails or Ruby convention is not a
+  criterion, and volume is handled by grouping and the ratchet rather than by
+  switching a kind off. A field test on ten more MIT-licensed codebases
+  (sequel, graphql-ruby, yard, ruby-lsp, fastlane, chatwoot, feedbin, huginn,
+  human-essentials, coursemology2) fixed what the smells misread first (see
+  Fixed). `nil_check` is one finding per nil source and `message_chain` one per
+  pair of classes reached through, each with every site as evidence. A
+  baseline recorded before lists the newly on kinds' findings as not ratcheted
+  until `--update-baseline`; `checks: { nil_check: false }` turns one back off.
+- In a Rails app, an association declared both ways (`has_many :posts` and
+  `belongs_to :user`) no longer closes a cycle: it is a
+  `bidirectional_association` finding. Recorded cycles made only of such pairs
+  resolve, and the pairs appear under the new kind.
 - Baselines are schema 7 and record the kinds the recording hashira knew.
   Findings of a newer kind (`indirection` here) are listed as not ratcheted
   instead of failing the build until `--update-baseline`. Baselines from
@@ -79,6 +85,25 @@ Across the fifteen field repos, findings fell from 15,557 to 12,711. Every
 true positive the earlier triage confirmed still fires.
 
 ### Added
+
+- **bidirectional_association** (on): two packages whose classes each declare
+  an association to the other, one finding per pair, naming the owning side
+  (`has_many`, `has_one`) to drop and any `dependent:` option it carries,
+  which has to move before the side does. Those declarations stay out of the
+  cycle search, so a cycle is code reaching back (a pair whose code also
+  reaches both ways is still in it), and the pair's edges out of the SDP
+  check, where one direction of a mutual pair always pointed at the less
+  stable side.
+- `layers: rails` declares the conventional layering: `web` (controllers,
+  views, helpers, components, serializers, presenters, decorators, policies,
+  avo, dashboards), `app` (jobs, workers, mailers, services, channels,
+  mailboxes) and `domain` (models, validators, `lib`).
+- With no code in `lib/`, hashira reads where the gemspecs' `require_paths`
+  say the code lives, globs included (fastlane's `Dir["*/lib"]`).
+- `nil_check` and `message_chain` group their findings: one per nil source
+  (`Account@owner`, `Account#current`: "may be nil, and 3 methods check for
+  it") and one per pair of classes (`Order → Customer`), each site listed as
+  evidence. A check on a local or an argument stays on its method.
 
 - A cycle's cut names the `dependent:` options its edges carry. `has_many
   :messages, dependent: :destroy` is a guarantee as well as a reference:
@@ -432,6 +457,45 @@ true positive the earlier triage confirmed still fires.
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+From the field test on ten MIT-licensed codebases:
+
+- Constants resolve the way Ruby does: a `::`-rooted class written inside a
+  module is the top-level one; a qualified constant is looked up through the
+  ancestors of the type it names; `Error` and `Sequel::Error` are one constant
+  to wide_edge and mixed_audience; a framework adapter's superclass resolves
+  where it is written, so a namespace mirroring a library's no longer hides
+  real cycles.
+- dead_code: top-level code in a file that defines a type is charged to that
+  type; names built around a literal suffix or namespace prefix reach what they
+  can name; modules handed to a library are hosted; constants of a class whose
+  ancestry leaves the project are hosted; `self.class::X` reads `X`; a private
+  method of a class extending a library type may fill a template hook;
+  documented Devise, FriendlyId and routing-constraint hooks are contracts; a
+  computed `const_get` reaches the constants under its receiver.
+- fragmentation follows only private helpers one method calls, so a public API
+  is no longer advised merged into its caller, reports a knot once, and past
+  fifteen private steps names the object hiding in the class instead.
+- Smells judge only what the project owns: a reopened core or library class
+  is its owner's (manual_dispatch over `Array` and `Symbol`, assumed_state on
+  `Gem::DocManager`); a bare call's nil is the project's only when the class
+  answers it; `instance_variable_set` assigns.
+- low_cohesion reads an inherited constructor; concrete_inheritance tells a
+  factory only subclasses call from one that builds the parent; duplication
+  reads `CONST.each_value(&:freeze)` as part of a declaration and two short
+  lists that share only their shape are not a clone; utility_function's role
+  exemption reads roles peers get from mixins.
+- Cognitive complexity charges each change of boolean operator in a mixed run,
+  in source order, as the SonarSource specification does (`a || b && c || d`
+  is +3).
+- roll_call needs the shared words to be most of every list, ignores column
+  and schema words (`id`, `created_at`, `type`, `properties`), and names each
+  list's file and line.
+- A grouped message_chain of one method says it "reaches", not "reach".
+- repeated_call reads `it`, Ruby 3.4's implicit block parameter, as the local
+  it is: `it.name` twice is style, as `row.name` twice already was.
+- With no code in `lib/`, hashira no longer stops at "no lib/ directory" when
+  a gemspec says where the code lives.
 
 - The duplication exemption for calls into an abstraction the project already
   has now covers a test block: `test "..." do`, `it`, `specify` and `example`

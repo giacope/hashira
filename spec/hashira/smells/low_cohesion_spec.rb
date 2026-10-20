@@ -26,6 +26,32 @@ RSpec.describe(Hashira::Smells::LowCohesion) do
     end
   RUBY
 
+  it "joins the fields an inherited constructor takes from one argument, as it does its own" do
+    base = <<~RUBY
+      class Policy
+        def initialize(context, record)
+          @user = context[:user]
+          @account = context[:account]
+          @membership = context[:membership]
+          @record = record
+        end
+      end
+
+    RUBY
+    portal = <<~RUBY
+      class PortalPolicy < Policy
+        def update? = @membership.admin?
+        def edit? = @membership.admin?
+        def destroy? = @membership.owner?
+        def index? = @account.active? && @user.verified?
+        def show? = @account.active?
+        def status? = @user.verified?
+      end
+    RUBY
+    apart = base.sub("context, record", "user, account, membership, record").gsub(/context\[:(\w+)\]/, '\\1')
+    expect([split(base + portal), split(apart + portal)].map(&:size)).to(eq([0, 1]))
+  end
+
   it "flags a class whose methods fall into groups that share no field and never call each other" do
     finding = split(account).first
     expect([finding.package, finding.detail, finding.evidence]).to(

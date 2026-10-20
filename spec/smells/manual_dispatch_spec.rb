@@ -1,6 +1,27 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::ManualDispatch) do
+  it "leaves a ladder over core classes alone even where the project reopens them" do
+    files = {
+      "lib/app/core_ext.rb" => "class Symbol\n  def sql = to_s\nend\n\nclass Array\n  def sql = join\nend\n",
+      "lib/app/key.rb" => <<~RUBY
+        module App
+          class Key
+            def initialize(sink) = @sink = sink
+
+            def add(key)
+              case key
+              when Array then @sink.concat(key)
+              when Symbol then @sink << key
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch")).to(be_empty)
+  end
+
   it "flags respond_to? probes and lists every probing line" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY

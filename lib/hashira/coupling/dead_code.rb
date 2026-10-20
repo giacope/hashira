@@ -1,24 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "contracts"
 require_relative "rule"
 
 class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   KIND = "dead_code"
 
-  HOOKS = %w[
-    initialize initialize_copy initialize_dup initialize_clone inherited included extended prepended
-    method_added method_removed method_undefined singleton_method_added const_missing method_missing
-    respond_to_missing? marshal_dump marshal_load _dump _load encode_with init_with to_json as_json
-    to_param to_partial_path to_model to_key serializable_hash coerce call perform up down change
-    table_name_prefix table_name_suffix model_name policy_class
-  ].to_set.freeze
-
-  ENTRIES = %w[
-    controllers helpers views channels mailboxes components policies graphql admin inputs validators jobs workers
-    mailers
-  ].freeze
-
-  LEVELS = %w[ClassMethods InstanceMethods].freeze
+  include Hashira::Coupling::Contracts
 
   def list = (constants + methods).sort_by(&:place).map { entry(it) }
 
@@ -38,23 +26,37 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def live?(member)
     path = member.path
-    used?(path) || mentioned?(path.last) || LEVELS.include?(path.last) || rooted?(member) || registered?(path) ||
-      hosted?(path)
+    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member)
   end
+
+  def named?(path) = used?(path) || mentioned?(path.last) || assembled?(path)
+
+  def framework?(member) = registered?(member.path) || hosted?(member.path) || housed?(member) || reflected?(member)
+
+  def reflected?(member) = reflection.reached?(member.path)
+
+  def reflection
+    @_reflection ||= Hashira::Coupling::Reflection.new(mentions.reflected, graph.census, surface.openings)
+  end
+
+  def housed?(member) = member.hosts.any? { hosted?(it) }
 
   def used?(path) = referenced.include?(path.join("::"))
 
   def referenced
     @_referenced ||=
       graph.sightings.each_with_object(Set.new) do |sighting, found|
-        path = sighting.path
-        path.size.times { found << path.first(it + 1).join("::") }
+        trail(sighting.path).each { |path| path.size.times { found << path.first(it + 1).join("::") } }
       end
   end
 
+  def trail(path) = [path, *graph.census.vias(path)]
+
   def mentioned?(name) = mentions.names.include?(name) || words.include?(name)
 
-  def words = @_words ||= Hashira::Coupling::Outside.new(project).words
+  def words = outside.words
+
+  def outside = @_outside ||= Hashira::Coupling::Outside.new(project)
 
   def registered?(path)
     surface.ancestors(path).any? { inheriting.include?(it) || mentions.registries.include?(it.last) }
@@ -75,9 +77,14 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     Hashira::Analysis::UNIVERSAL.include?(name.to_sym) || Hashira::Analysis::VALUES.include?(name.to_sym)
   end
 
-  def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) }
+  def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { name.end_with?(it) }
 
-  def framed?(member) = member.exposed && hosted?(member.owner)
+  def assembled?(path)
+    name = path.join("::")
+    mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
+  end
+
+  def framed?(member) = member.exposed ? hosted?(member.owner) : surface.outside?(member.owner)
 
   def hosted?(path) = (@_hosted ||= {}).fetch(path) { settle(path) }
 
@@ -86,7 +93,13 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     @_hosted[path] = lineage(path).any? { surface.outside?(it) } || hosting?(path)
   end
 
-  def hosting?(path) = surface.mixers(path).any? { hosted?(it) || entered?(it) }
+  def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
+
+  def hosts(path) = surface.mixers(path) + handover.hosts(path)
+
+  def foreign?(host) = host == Hashira::Coupling::Handover::FOREIGN
+
+  def handover = @_handover ||= Hashira::Coupling::Handover.new(mentions.handed, graph.census, outside.handed)
 
   def entered?(path) = surface.types.fetch(path, []).any? { entry?(it.file) }
 

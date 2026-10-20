@@ -37,6 +37,8 @@ module Hashira
         !parent || rooted?(parent)
       end
 
+      def place(stack, path, roots) = rooted?(path) ? segments(path) : anchor(stack, segments(path), roots)
+
       def anchor(stack, segments, roots)
         return (stack.last || []) + segments if segments.length < 2 || !roots
         base = stack.reverse_each.find { roots.include?(it + segments.first(1)) }
@@ -60,6 +62,8 @@ module Hashira
       def option(call, key) = options(call).find { named?(it.key, key) }&.value
 
       def text(node) = node.unescaped.scrub
+
+      def word?(node) = node.is_a?(Prism::StringNode) || node.is_a?(Prism::SymbolNode)
 
       def symbol(node) = text(node).to_sym
 

@@ -14,6 +14,11 @@ RSpec.describe(Hashira::Complexity::CognitiveScore) do
     expect(scored.calls).to(eq(6))
   end
 
+  it "charges each change of boolean operator in source order, through parentheses, once per run" do
+    runs = ["a || b && c || d", "(a || b) && c", "a && (b && c)", "a && !(b || c)", "a and b && c"]
+    expect(runs.map { total("def m(a, b, c, d)\n  #{it}\nend") }).to(eq([3, 2, 1, 2, 1]))
+  end
+
   it "scores a single conditional at one point" do
     expect(total("def m(a)\n x if a\nend")).to(eq(1))
   end

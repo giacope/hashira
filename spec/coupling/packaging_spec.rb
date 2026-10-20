@@ -37,6 +37,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
   end
 
+  it "charges top-level code in a file that defines a type to that type's package, not to the root" do
+    policy =
+      lambda { |name|
+        "class #{name}Policy < ApplicationPolicy\n  def edit? = show?\nend\n\n#{name}Policy.prepend_mod\n"
+      }
+    files = %w[Account Article Category Company Contact].to_h { ["app/policies/#{it.downcase}.rb", policy.call(it)] }
+    base = "class ApplicationPolicy\n  def show? = true\nend\n"
+    files = Fixtures::RAILS_FILES.merge(files, "app/policies/application_policy.rb" => base)
+    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
+      expect(graph.packages).not_to(include("(root)"))
+      expect(graph.edges.map(&:to_s).grep(/Policy/)).to(be_empty)
+    end
+  end
+
   describe "top-level statements that write a namespaced constant" do
     def payments(source)
       files = Fixtures::RAILS_FILES.merge(
@@ -110,6 +124,36 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
         expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Billing", "Report -> Solo"))
       end
+    end
+
+    it "resolves an adapter's superclass where it is written, so a namespace mirroring a library's owns nothing" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/extensions/audit/active_record/base.rb" =>
+          "module Extensions::Audit::ActiveRecord::Base\n  def a = 1\nend\n",
+        "app/models/solo.rb" => "class Solo < ::ActiveRecord::Base\nend\n",
+        "app/models/ledger.rb" => "class Ledger < ApplicationRecord\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Solo, Ledger, ApplicationRecord]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Solo"))
+        expect(census.folds.map(&:from)).not_to(include("Ledger"))
+      end
+    end
+
+    def lexical(parent)
+      files = {
+        "app/models/extensions/active_record/base.rb" => "module Extensions::ActiveRecord::Base\nend\n",
+        "app/models/extensions/record.rb" => "module Extensions\n  class ::Record < #{parent}\n  end\nend\n",
+        "app/models/ledger.rb" => "class Ledger < Record\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = Record\nend\n"
+      }
+      analyze(Fixtures::RAILS_FILES.merge(files), directories: ["app"], packaging: :namespace) do |*, graph|
+        graph.edges.map(&:to_s).grep(/\AReport/)
+      end
+    end
+
+    it "resolves an unrooted superclass lexically and a rooted one from the top, wherever the class is written" do
+      expect(["::ActiveRecord::Base", "ActiveRecord::Base"].map { lexical(it) }).to(eq([[], ["Report -> Record"]]))
     end
 
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do

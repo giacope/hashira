@@ -11,7 +11,11 @@ class Hashira::Coupling::Graph
 
   def unfolded = @_unfolded ||= self.class.new(@project, @trees, @census.unfolded)
 
-  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(links, self)
+  def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(code, self)
+
+  def pairs = edges.map(&:deconstruct).select { paired?(*it) }.map(&:sort).uniq
+
+  def declarations(from, to) = noted(from, to, map.declared)
 
   def home(file) = @census.home(file)
 
@@ -40,7 +44,7 @@ class Hashira::Coupling::Graph
 
   def evidence(from, to) = map.evidence[[from, to]]
 
-  def guarantees(from, to) = evidence(from, to).filter_map { map.pledges[it] }
+  def guarantees(from, to) = noted(from, to, map.pledges)
 
   def domain = edges.reject { aside?(it.from) || aside?(it.to) }
 
@@ -61,7 +65,9 @@ class Hashira::Coupling::Graph
 
   def metrics = packages.to_h { [it, metric(it)] }
 
-  def violations = Hashira::Coupling::SdpCheck.new(links, metrics).violations.reject { cycles.tied?(*it) }
+  def violations
+    Hashira::Coupling::SdpCheck.new(links, metrics).violations.reject { cycles.tied?(*it) || paired?(*it) }
+  end
 
   def weight(from, to) = evidence(from, to).size
 
@@ -84,6 +90,16 @@ class Hashira::Coupling::Graph
   end
 
   def clients(package) = sources(links, package)
+
+  def code = @_code ||= links.to_h { |from, tos| [from, tos.reject { navigation?(from, it) }.to_set] }
+
+  def navigation?(from, to) = declares?(to, from) && evidence(from, to).all? { map.declared.key?(it) }
+
+  def declares?(from, to) = declarations(from, to).any?
+
+  def paired?(from, to) = declares?(from, to) && declares?(to, from)
+
+  def noted(from, to, notes) = evidence(from, to).filter_map { notes[it] }
 
   def sources(targets, package) = packages.select { targets[it].include?(package) }.sort
 
