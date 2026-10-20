@@ -37,6 +37,8 @@ module Hashira
         !parent || rooted?(parent)
       end
 
+      def place(stack, path, roots) = rooted?(path) ? segments(path) : anchor(stack, segments(path), roots)
+
       def anchor(stack, segments, roots)
         return (stack.last || []) + segments if segments.length < 2 || !roots
         base = stack.reverse_each.find { roots.include?(it + segments.first(1)) }

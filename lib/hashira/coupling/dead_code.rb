@@ -47,10 +47,11 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def referenced
     @_referenced ||=
       graph.sightings.each_with_object(Set.new) do |sighting, found|
-        path = sighting.path
-        path.size.times { found << path.first(it + 1).join("::") }
+        trail(sighting.path).each { |path| path.size.times { found << path.first(it + 1).join("::") } }
       end
   end
+
+  def trail(path) = [path, *graph.census.vias(path)]
 
   def mentioned?(name) = mentions.names.include?(name) || words.include?(name)
 

@@ -39,6 +39,8 @@ class Hashira::Coupling::Census
 
   def owner(path) = scope.owner(path)
 
+  def vias(path) = scope.vias.fetch(path, [])
+
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
 
   def charge(file, nesting) = translate(placement.charge(file, nesting))

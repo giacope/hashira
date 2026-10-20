@@ -140,6 +140,36 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     )
   end
 
+  it "reads a ::-rooted class inside a module as the top-level class it reopens, not a nested one" do
+    rooted = rails.merge(
+      "app/models/drops.rb" => <<~RUBY
+        module Drops
+          class ::MatchData
+            def to_liquid = :drop
+          end
+
+          class ::ActiveRecord::Relation
+            def to_liquid = :relation
+          end
+
+          def self.wrap(match) = match.to_liquid
+        end
+      RUBY
+    )
+    expect(dead(rooted, directories: %w[app lib]))
+      .to(eq(%w[Drops Drops.wrap Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "counts a constant read through a module that includes its owner as used, and that module too" do
+    included = rails.merge(
+      "app/models/keys.rb" => "module Keys\n  MUTEX = 1\n  STALE = 2\nend\n",
+      "app/models/store.rb" => "module Store\n  include Keys\nend\n",
+      "app/models/job.rb" => "class Job < ApplicationRecord\n  def key = Store::MUTEX\nend\n"
+    )
+    expect(dead(included, directories: %w[app lib]))
+      .to(eq(%w[Keys::STALE Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end

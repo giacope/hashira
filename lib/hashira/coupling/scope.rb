@@ -19,6 +19,8 @@ class Hashira::Coupling::Scope
 
   def pinpoint(segments) = resolve(segments, [])
 
+  def vias = @_vias ||= Hash.new { |hash, path| hash[path] = Set.new }
+
   private
 
   def bind(link, reach)
@@ -28,11 +30,24 @@ class Hashira::Coupling::Scope
   end
 
   def descend(entry, segments, reach)
-    segments.length.downto(reach).lazy.map { @catalog.strip(entry + segments.first(it)) }.find { known?(it) }
+    cuts(segments, reach).filter_map { settle(@catalog.strip(entry + segments.first(it)), segments.drop(it)) }.first
   end
 
   def top(segments, reach)
-    segments.length.downto(reach).lazy.filter_map { @catalog.rooted(segments.first(it)) }.find { known?(it) }
+    cuts(segments, reach).filter_map { settle(@catalog.rooted(segments.first(it)), segments.drop(it)) }.first
+  end
+
+  def cuts(segments, reach) = segments.length.downto(reach).lazy
+
+  def settle(path, rest)
+    return unless path && known?(path)
+    rest.empty? ? path : ancestral(path, rest) || path
+  end
+
+  def ancestral(path, rest)
+    found = lineage(path).lazy.filter_map { descend(it, rest, rest.length) }.first
+    vias[found] << path if found
+    found
   end
 
   def known?(path) = @registry.exact(path) && @catalog.territory.owned?(path)

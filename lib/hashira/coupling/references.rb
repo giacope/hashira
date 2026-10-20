@@ -42,7 +42,7 @@ class Hashira::Coupling::References
 
   def claimed(node)
     target = written(node)
-    target ? [syntax.anchor(nesting, syntax.segments(target), @roots)] : []
+    target ? [syntax.place(nesting, target, @roots)] : []
   end
 
   def spread(node, scope)
@@ -82,7 +82,7 @@ class Hashira::Coupling::References
     inside(opened) { collect(node.body) }
   end
 
-  def anchor(node) = syntax.anchor(nesting, syntax.segments(node.constant_path), @roots)
+  def anchor(node) = syntax.place(nesting, node.constant_path, @roots)
 
   def inside(scope)
     scopes << scope

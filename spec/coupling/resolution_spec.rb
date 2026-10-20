@@ -34,6 +34,19 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve") do
     end
   end
 
+  it "looks a qualified constant up through the ancestors of the type it names, as Ruby does" do
+    files = {
+      "lib/app/jobs/job.rb" => "module App\n  class Job\n    def key = Store::MUTEX\n  end\nend\n",
+      "lib/app/store/store.rb" => "module App\n  module Store\n    include Keys\n  end\nend\n",
+      "lib/app/keys/keys.rb" => "module App\n  module Keys\n    MUTEX = 1\n  end\nend\n"
+    }
+    analyze(files) do |_project, census, graph|
+      expect(graph.sightings.map(&:path)).to(include(%w[Keys MUTEX]))
+      expect(census.vias(%w[Keys MUTEX])).to(eq(Set[%w[Store]]))
+      expect(census.vias(%w[Store])).to(eq([]))
+    end
+  end
+
   it "walks outward through enclosing namespaces before falling back to top level" do
     files = {
       "lib/app/alpha/one.rb" => "module App\n  module Alpha\n    class One\n      def a = Helper\n    end\n  end\nend",

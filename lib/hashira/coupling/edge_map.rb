@@ -16,7 +16,7 @@ class Hashira::Coupling::EdgeMap
   def record(source, file, tree)
     references = Hashira::Coupling::References.new(@census.roots, @census.associations)
     references.sightings(tree).each do |segments, line, nesting, home|
-      note(@census.charge(file, home), locate(segments, nesting), segments, "#{source}:#{line}")
+      note(@census.charge(file, home), segments, nesting, "#{source}:#{line}")
     end
     (@_pledges ||= {}).merge!(references.guarantees.to_h { |at, said| ["#{source}:#{at}", "#{source}:#{said}"] })
   end
@@ -29,10 +29,11 @@ class Hashira::Coupling::EdgeMap
     nesting ? @census.resolve(segments, nesting) : @census.pinpoint(segments)
   end
 
-  def note(from, to, segments, site)
+  def note(from, segments, nesting, site)
+    to = locate(segments, nesting)
     return unless to && to != from
     dependencies[from] << to
     evidence[[from, to]] << "#{site}: #{segments.join("::")}"
-    usage[[from, to]] << @census.holder(segments)
+    usage[[from, to]] << @census.holder(@census.locate(segments, nesting || []))
   end
 end

@@ -322,6 +322,20 @@ RSpec.describe(Hashira::Pipeline, "#findings") do
     end
   end
 
+  it "counts a constant once however it is spelled, relative or qualified" do
+    core = %w[Error Blob Clock Opts More].to_h { ["lib/app/#{it.downcase}.rb", "module App; class #{it}; end; end"] }
+    uses = ->(list) { "module App; module Adapters; class Pg; def go = [#{list}]; end; end; end\n" }
+    files = core.merge("lib/app/helpers.rb" => "module AppHelpers; end\n")
+    spelled = "Error, App::Error, Blob, ::App::Blob, Clock, App::Clock"
+    verdicts(files.merge("lib/app/adapters/pg.rb" => uses.call(spelled))) do |all|
+      expect(all.map(&:kind)).not_to(include("wide_edge"))
+    end
+    verdicts(files.merge("lib/app/adapters/pg.rb" => uses.call("#{spelled}, Opts, App::More"))) do |all|
+      expect(all.find { it.kind == "wide_edge" }.detail[:constants])
+        .to(eq(%w[App::Blob App::Clock App::Error App::More App::Opts]))
+    end
+  end
+
   it "counts a class and the types nested in it as one constant of an edge" do
     gate = "module App; module Core; class Gate; class Policy; end; class Exceeded; end; end; end; end\n"
     kit = "module App; module Core; module Kit; class One; end; class Two; end; end; end; end\n"

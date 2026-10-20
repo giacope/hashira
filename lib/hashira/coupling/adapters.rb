@@ -11,7 +11,7 @@ class Hashira::Coupling::Adapters
 
   def names = @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
 
-  def framed?(group) = group.all? { !owned?(parent(it)) } && group.any? { adapter?(it) }
+  def framed?(group) = group.all? { !owned?(it) } && group.any? { adapter?(it) }
 
   def classes = @_classes ||= @catalog.select(&:klass?)
 
@@ -21,9 +21,17 @@ class Hashira::Coupling::Adapters
 
   def heirs = @_heirs ||= classes.map { parent(it) }.reject(&:empty?)
 
-  def owned?(segments) = segments.empty? || paths.any? { ends?(it, segments) }
+  def owned?(definition)
+    segments = parent(definition)
+    segments.empty? || candidates(definition, segments).any? { paths.include?(it) }
+  end
 
-  def paths = @_paths ||= @catalog.map(&:path)
+  def candidates(definition, segments)
+    return [segments] if Hashira::Analysis::Syntax.rooted?(definition.superclass)
+    [*definition.scope[...-1].reverse.map { it + segments }, segments]
+  end
+
+  def paths = @_paths ||= @catalog.to_set(&:path)
 
   def ends?(path, segments) = path.last(segments.size) == segments
 end

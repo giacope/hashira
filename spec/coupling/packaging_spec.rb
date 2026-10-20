@@ -112,6 +112,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
       end
     end
 
+    it "resolves an adapter's superclass where it is written, so a namespace mirroring a library's owns nothing" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/extensions/audit/active_record/base.rb" =>
+          "module Extensions::Audit::ActiveRecord::Base\n  def a = 1\nend\n",
+        "app/models/solo.rb" => "class Solo < ::ActiveRecord::Base\nend\n",
+        "app/models/ledger.rb" => "class Ledger < ApplicationRecord\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Solo, Ledger, ApplicationRecord]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Solo"))
+        expect(census.folds.map(&:from)).not_to(include("Ledger"))
+      end
+    end
+
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do
       within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).rails?).to(be(true)) }
       within(Fixtures::CYCLIC_FILES) { expect(Hashira::Project.new(["lib/app"]).rails?).to(be(false)) }

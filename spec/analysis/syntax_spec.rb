@@ -51,6 +51,15 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     end
   end
 
+  describe ".place" do
+    def path(source) = parse(source).statements.body.first
+
+    it "takes a ::-rooted path as written, whatever scope encloses it, and anchors any other" do
+      placed = %w[::MatchData ::A::B C].map { described_class.place([%w[Drops]], path(it), Set[%w[Drops]]) }
+      expect(placed).to(eq([%w[MatchData], %w[A B], %w[Drops C]]))
+    end
+  end
+
   describe ".anchor" do
     it "anchors compact paths at the innermost scope that defines the root, else top level, else in place" do
       expect(described_class.anchor([%w[Baz]], %w[Baz Bar], Set[%w[Baz Baz]])).to(eq(%w[Baz Baz Bar]))
