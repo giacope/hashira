@@ -258,6 +258,7 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       RUBY
       "lib/plugins.rb" => "module Plugins\n  class Mailer; end\nend\n",
       "lib/static.rb" => "module Static\n  class Kept; end\n  class Lost; end\nend\n",
+      "lib/registry.rb" => "module Registry\n  def self.find(name) = const_get(name)\n  class Entry; end\nend\n",
       "lib/loader.rb" => <<~RUBY
         class Loader
           def plugin(name) = [Plugins.const_get(name), Static.const_get(:Kept), name.const_get(name), Static::Kept]
@@ -268,7 +269,7 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       RUBY
     )
     expected = %w[Order#stale_scope Loader Loader#plugin Loader#all Loader#none Pricing]
-    expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Static::Lost]))
+    expect(dead(loaded, directories: %w[app lib])).to(eq(expected + %w[Pricing#quote Pricing.rate Registry Static::Lost]))
   end
 
   it "adds the roots a Rails app names to the framework's" do

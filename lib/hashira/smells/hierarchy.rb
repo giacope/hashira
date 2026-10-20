@@ -76,23 +76,21 @@ class Hashira::Smells::Hierarchy
     node.compact_child_nodes.each do |child|
       next if FENCES.include?(child.class)
       found << [child, factory] if child.is_a?(Prism::CallNode) && child.name == :new
-      news(child, lifted(child, factory), found)
+      news(child, child.is_a?(Prism::DefNode) ? child.name : factory, found)
     end
     found
-  end
-
-  def lifted(node, factory)
-    return true if node.is_a?(Prism::SingletonClassNode)
-    node.is_a?(Prism::DefNode) ? node.name : factory
   end
 
   def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.name, factory)
 
   def summoned?(name, selector) = invocations.any? { |owner, call| call.name == selector && born(owner, call) == name }
 
-  def invocations = @_invocations ||= @types.flat_map { |type| sent(type).map { [type, it] } }
-
-  def sent(type) = Hashira::Smells::Scope.sweep(type.node).grep(Prism::CallNode).select(&:receiver)
+  def invocations
+    @_invocations ||=
+      @types.flat_map do |type|
+        Hashira::Smells::Scope.sweep(type.node).grep(Prism::CallNode).select(&:receiver).map { [type, it] }
+      end
+  end
 
   def born(type, call)
     return type.name unless call.receiver
