@@ -40,6 +40,12 @@ RSpec.describe(Hashira::Smells::Grouping) do
     expect(message(chain)).to(eq(said))
   end
 
+  it "says a lone method reaches through the edge" do
+    files = { "lib/app/shop.rb" => shop, "lib/app/desk.rb" => desk("Desk").sub(/^.*def go.*\n/, "") }
+    said = "Order → Customer — 1 method reaches through Order into Customer"
+    expect(message(grouped(files, "message_chain").first)).to(start_with(said))
+  end
+
   def account = <<~RUBY
     module Shop
       class Account

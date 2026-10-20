@@ -3,7 +3,8 @@
 # sets up another model's association through two hops (both shapes
 # rubygems.org raters judged worth changing). Left alone: a library's node
 # (node.loc.selector), a Data value's reader, a builder that answers its own
-# class, a collection's element, and one hop.
+# class, a collection's element, and one hop. Chains are grouped by the
+# classes crossed, so a method is found among its edge's evidence.
 present:
   - {kind: message_chain, package: "App::Yank#notify"}
   - {kind: message_chain, package: "App::LinksetJob#perform"}

@@ -99,7 +99,7 @@ fail-on: cycles
 package-by: namespace
 checks:
   duplication: false               # turn a kind off
-  nil_check: true                  # or an opt-in kind on
+  middle_man: true                 # or an opt-in kind on
   complexity: { threshold: 12 }    # or move a threshold
   fragmentation: { helpers: 6 }    # fragmentation has two limits
   indirection: { threshold: 3 }    # (a setting turns an opt-in kind on too)
@@ -121,53 +121,43 @@ the file, and a key the command line rules out sits that run out (`fail-on` unde
 
 ### Which kinds are on by default
 
-A kind is on by default when it reports a measurement (`complexity` and the
-coupling kinds), or when its precision, measured independently, clears one in
-three. Two raters labelled findings on rubocop, faraday and rubygems.org without
-knowing which version of hashira had reported them: a sample drawn before the
-rules below were last changed, and a fresh holdout drawn after (they agreed on
-92% and 87%, κ 0.65 and 0.66; see [eval/results](eval/results/README.md)). The
-raters were independent AI reviewers: separate model instances that saw only the
-shuffled, version-blind findings and the corpus source, not hashira's code or
-labels. No human has relabelled them yet. True findings, per rater:
+A kind is on by default when hashira reads the facts behind it correctly and
+its advice is the philosophy's: objects that own their state and behavior, no
+nil passed around, no type switches, no dead weight, no reaching through other
+objects. Whether Rails or idiomatic Ruby agrees is not a criterion: a habit a
+framework makes easy (an association chain, a nil-tolerant reader, a callback
+that sets state) stays a finding. A contract a framework dictates (a hook it
+calls by name, a constant it reads) is not the project's to redesign and is
+left alone.
 
-| kind | sample | holdout | pooled | default |
-| --- | --- | --- | --- | --- |
-| duplication | 11/25, 9/25 | 11/25, 11/25 | 42/100 (42%) | on |
-| manual_dispatch | 4/11, 4/11 | 0/2, 0/2 | 8/26 (31%) | opt-in |
-| data_clump | 0/2, 1/2 | 2/5, 1/5 | 4/14 (29%) | opt-in |
-| repeated_call | 6/25, 4/25 | 8/25, 9/25 | 27/100 (27%) | opt-in |
-| control_parameter | 0/4, 2/4 | — | 2/8 (25%) | opt-in |
-| feature_envy | 3/10, 4/10 | 0/7, 0/7 | 7/34 (21%) | opt-in |
-| utility_function | 1/15, 2/15 | 2/15, 6/15 | 11/60 (18%) | opt-in |
-| repeated_conditional | 1/12, 4/12 | 0/2, 0/2 | 5/28 (18%) | opt-in |
-| state_sprawl | 1/11, 2/11 | 1/9, 0/9 | 4/40 (10%) | opt-in |
-| nil_check | 1/25, 1/25 | 5/25, 1/25 | 8/100 (8%) | opt-in |
-| indirection | — | 2/2, 0/2 | 2/4 | opt-in |
-| dead_code | 13/13, 13/13 | — | 26/26 (100%) | on |
-| change_coupling | 1/3, 2/3 | — | 3/6 | opt-in |
+Volume is not a reason to switch a kind off. It is handled by grouping, so a
+finding is one thing to fix — one `nil_check` per nil source with every check
+of it as evidence, one `message_chain` per pair of classes reached through, one
+`fragmentation` per knot of helpers — and by the [ratchet](#ci), which records
+what is there today and fails only on what gets worse.
 
-Six class-level kinds came later and were measured the same way, on every
-finding the corpus gives them up to 25, by one independent rater (an AI
-reviewer that saw only the shuffled findings and the corpus source). None
-clears the bar, so all six are opt-in:
+So everything is on but five kinds:
 
-| kind | corpus findings | true |
-| --- | --- | --- |
-| message_chain | 81 | 2/25 (8%) |
-| concrete_inheritance | 5 | 1/5 |
-| refused_bequest | 1 | 0/1 |
-| low_cohesion | 3 | 0/3 |
-| data_class | 1 | 0/1 |
-| middle_man | 0 | — |
+| kind | why it waits for you |
+| --- | --- |
+| `middle_man` | forwarding is what `message_chain` asks for; turn it on to find classes that only forward |
+| `indirection` | a thin named step is what an explanatory helper is; `fragmentation` reports the knots that hurt |
+| `repeated_conditional` | `manual_dispatch` already reports the type and status switches; plain value tests may be fine |
+| `boundary_sprawl` | an interpreter of a foreign model is legitimate; declare the ones you mean (see [CI](#ci)) |
+| `change_coupling` | needs the git history, which a shallow CI checkout lacks |
 
-`fragmentation` is on: a separate blind readability study measured it (see
-[Complexity and fragmentation](#complexity-and-fragmentation)). `assumed_state`,
-`boundary_sprawl` and `module_initialize` are too rare in the corpus to measure,
-so they are opt-in too, and so is `change_coupling`: three findings at its
-limits, and 5 of 34 labels true on a looser sample (degree 30% and over).
-`layer_violation` is on whenever `layers:` are declared. `--kind` and `--fail-on` turn on the kinds they name,
-and a `checks:` setting for a kind turns it on.
+`layer_violation` is on whenever `layers:` are declared. `--kind` and
+`--fail-on` turn on the kinds they name, and a `checks:` setting for a kind
+turns it on.
+
+The earlier policy switched kinds on by a precision measured on labels. Those
+labels are in [eval/results](eval/results/README.md): two independent AI
+raters, version-blind, on rubocop, faraday and rubygems.org, judging whether a
+strict reviewer would ask for the change. Most false labels were misreads —
+a library's contract, a public argument, a coincidental shape, a remedy with no
+owned destination — and the rules have since stopped reporting those; the
+field test on ten Ruby and Rails codebases fixed the rest it found. The labels
+stay as the regression record for what hashira must not report.
 
 hashira finds the file, and the baseline, in the analyzed project's root: the
 nearest folder at or above the analyzed directory that is where hashira runs or
@@ -307,9 +297,19 @@ misses dead code rather than report live code. Also left alone:
   of its descendants.
 - Subclasses registered through an `inherited` hook or found with
   `.subclasses` or `.descendants`.
-- A `ClassMethods` module, and the public methods of a class whose ancestry
-  leaves the project (`< ActiveRecord::Base`, `include Sidekiq::Job`) or of a
-  module mixed into one: the framework calls them.
+- A `ClassMethods` module, and the public methods and constants of a class
+  whose ancestry leaves the project (`< ActiveRecord::Base`, `include
+  Sidekiq::Job`, Administrate's `ATTRIBUTE_TYPES`) or of a module mixed into
+  one: the framework calls them. So are a private method of such a class, which
+  may fill the library's template hook (`RuboCop::Runner#file_finished`), and
+  the override points frameworks document by name (Devise's
+  `active_for_authentication?`, FriendlyId's `should_generate_new_friendly_id?`,
+  a routing constraint's `matches?`).
+- A module handed to a library from outside its own body (`Lib.prepend(M)`,
+  `register_filter(M)`), and every constant a computed `const_get` can reach
+  under its receiver, the constant-world twin of `send(name)`. A name built
+  around a literal (`"#{kind}Presenter".constantize`, `:"#{a}_sql"`) reaches
+  every constant or method that ends, or starts, with the literal.
 - A class the project reopens but [leaves to its owner](#coupling): Ruby's
   (`class String`), or one opened in a library's namespace
   (`class ActionText::Content::Filters`) that the project does not otherwise
@@ -553,8 +553,8 @@ other drifts.
 
 RuboCop measures one method at a time; these are about how objects treat each
 other. Each is reported only where its advice applies to code the project owns.
-None clears the precision bar on independent labels, so all of them are opt-in
-(see [which kinds are on by default](#which-kinds-are-on-by-default)).
+All are on but `repeated_conditional`, `middle_man` and `boundary_sprawl` (see
+[which kinds are on by default](#which-kinds-are-on-by-default)).
 
 <!-- example: smells lib/app --kind smells -->
 ```console
@@ -640,7 +640,10 @@ Findings (3):
   guard asserts against the nil), and a one-line predicate that answers a nil
   test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
   to nil is the caller's option, not the codebase's nil. A predicate that fetches
-  a record only to test it for nil is told to ask `exists?`.
+  a record only to test it for nil is told to ask `exists?`. Checks of one
+  nil source — an instance variable, a method that can return nil — are one
+  finding, named for the source (`Account@owner`, `Account#current`), with
+  each method that checks it as evidence: settle it where the nil is made.
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing
   adapter. A program that interprets a foreign model on purpose can declare it
@@ -687,8 +690,10 @@ project's own, so a framework's base classes stay out of all of them.
   alone: a library's objects (`node.loc.selector`), core collections
   (`items.first`), a hop with arguments or a block (builders, queries), a hop
   back to the same class (fluent APIs), a Struct or Data value's readers, and
-  messages every object answers (`to_s`, `==`). This is separate from
-  `repeated_call`, which reports a chain read twice whatever its types.
+  messages every object answers (`to_s`, `==`). Chains through the same two
+  classes are one finding (`Order → Customer`), with each method that reaches
+  through as evidence. This is separate from `repeated_call`, which reports a
+  chain read twice whatever its types.
 - **data_class** — a class with two or more fields and nothing but attribute
   macros, hand-written readers and writers, and a constructor that only stores
   its arguments. Left alone: `Struct` and `Data` (a value declared as one),

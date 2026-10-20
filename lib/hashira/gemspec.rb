@@ -9,7 +9,7 @@ class Hashira::Gemspec
 
   private
 
-  def globs = written.flat_map { strings(it.arguments&.arguments.to_a.first) }
+  def globs = written.flat_map { strings(it.arguments.arguments.first) }
 
   def written = nodes(Prism.parse_file(@path).value).grep(Prism::CallNode).select { it.name == :require_paths= }
 

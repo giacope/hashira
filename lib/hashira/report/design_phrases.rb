@@ -32,7 +32,7 @@ module Hashira::Report::Phrases
     plain(finding, "#{reaching(finding.detail[:places])} #{near} into #{far}", advice)
   end
 
-  def reaching(places) = places ? "— #{count(places, "method")} reach through" : "reaches through"
+  def reaching(places) = places ? "— #{count(places, "method")} reach#{"es" if places == 1} through" : "reaches through"
 
   def on_data_class(finding)
     plain(finding, "holds #{quoted(finding.detail[:fields])} and does nothing else", DATA_CLASS)
