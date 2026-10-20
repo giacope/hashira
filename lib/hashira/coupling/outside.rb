@@ -60,6 +60,6 @@ class Hashira::Coupling::Outside
   def read(path, words, handed)
     text = File.binread(path)
     text.scan(WORD) { words << it.force_encoding(Encoding::UTF_8) }
-    text.scan(HANDED) { |(name)| handed << name.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
+    text.scan(HANDED).flatten.each { handed << it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
   end
 end
