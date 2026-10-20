@@ -50,11 +50,13 @@ class Hashira::Smells::Hierarchy
         lineage = Hashira::Smells::Lineage.new(@types)
         @types.group_by(&:name).to_h do |name, openings|
           node = openings.filter_map { it.node.superclass if it.kind == :class }.first
-          parent = lineage.resolve(name, Hashira::Analysis::Syntax.segments(node))
+          parent = owned(lineage.resolve(name, Hashira::Analysis::Syntax.segments(node)))
           [name, Kin.new(parent:, foreign: !node.nil? && !parent, openings:)]
         end
       end
   end
+
+  def owned(parent) = (parent unless Hashira::Analysis::CORE.include?(parent))
 
   def marked?(type)
     Hashira::Analysis::Syntax.statements(type.node).any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }

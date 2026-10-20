@@ -6,9 +6,15 @@ class Hashira::Smells::Ownership
     @catalog = catalog
   end
 
-  def owned?(segments)
+  def owned?(segments, owner = nil, rooted: false)
     surveyed
-    @_suffixes.include?(segments.join("::"))
+    return @_defined.include?(segments.join("::")) if rooted
+    return true if lexical(segments, owner).any? { @_defined.include?(it) }
+    !builtin?(segments.first) && @_suffixes.include?(segments.join("::"))
+  end
+
+  def owns?(node, owner = nil)
+    owned?(Hashira::Analysis::Syntax.segments(node), owner, rooted: Hashira::Analysis::Syntax.rooted?(node))
   end
 
   def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
@@ -34,6 +40,7 @@ class Hashira::Smells::Ownership
     return if @_surveyed
     @_surveyed = true
     @_suffixes = Set.new
+    @_defined = Set.new
     @_tables = {}
     @trees.each { survey(it) }
   end
@@ -53,8 +60,16 @@ class Hashira::Smells::Ownership
   end
 
   def absorb(path)
+    @_defined << path.join("::")
     @_suffixes.merge(suffixes(path))
   end
+
+  def lexical(segments, owner)
+    parts = owner.to_s.split("::")
+    parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
+  end
+
+  def builtin?(name) = Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
 
   def chart(path, value)
     return unless value.is_a?(Prism::HashNode)

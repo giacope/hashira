@@ -50,7 +50,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def named(name)
-    Hashira::Smells::Naming.types(name.to_s.delete_prefix("@")).map(&:first).find { ownership.owned?([it]) }
+    Hashira::Smells::Naming.types(name.to_s.delete_prefix("@")).map(&:first).find { ownership.owned?([it], subject.owner) }
   end
 
   def path(node)
