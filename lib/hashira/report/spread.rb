@@ -1,6 +1,13 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Spread
+  STRUCTURAL = %w[
+    cycle layer_violation sdp_violation mixed_audience wide_edge roll_call bidirectional_association dead_code
+    change_coupling
+  ].freeze
+
+  LOCAL = %w[repeated_call duplication].freeze
+
   def initialize(findings)
     @findings = findings
   end
@@ -9,7 +16,16 @@ class Hashira::Report::Spread
 
   private
 
-  def piles = @_piles ||= @findings.group_by(&:kind).values.map { ranked(it) }
+  def piles
+    @_piles ||=
+      @findings.group_by(&:kind).each_with_index.sort_by { |(kind, _), at| [tier(kind), at] }
+        .map { |(_, pile), _| ranked(pile) }
+  end
+
+  def tier(kind)
+    return 0 if STRUCTURAL.include?(kind)
+    LOCAL.include?(kind) ? 2 : 1
+  end
 
   def deepest = piles.map(&:size).max.to_i
 

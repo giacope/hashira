@@ -66,7 +66,9 @@ class Hashira::Smells::Course
 
   def sorted = @_sorted ||= nodes.group_by(&:class)
 
-  def returns = sorted.fetch(Prism::ReturnNode, [])
+  def returns = sorted.fetch(Prism::ReturnNode, []) + sorted.fetch(Prism::AndNode, []).select { jump?(it.right) }
+
+  def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.raise?(node)
 
   def loops = sorted.values_at(*LOOPS).compact.flatten
 

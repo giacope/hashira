@@ -40,7 +40,7 @@ class Hashira::Smells::Foreign
   end
 
   def reaches
-    tests { true }.reject { @ownership.owned?(it) }.map(&:first).uniq
+    tests { true }.reject { @ownership.owned?(it, @subject.owner) }.map(&:first).uniq
   end
 
   def entering?(node)
@@ -72,7 +72,7 @@ class Hashira::Smells::Foreign
 
   def fenced?(name)
     tested = tests { it == name }
-    tested.any? && (tested.none? { @ownership.owned?(it) } || indexed?(name))
+    tested.any? && (tested.none? { @ownership.owned?(it, @subject.owner) } || indexed?(name))
   end
 
   def indexed?(name) = body.grep(Prism::CallNode).any? { local?(it.receiver) { it == name } && keyed?(it) }
@@ -125,7 +125,7 @@ class Hashira::Smells::Foreign
   def snares(name) = body.grep(Prism::RescueNode).select { it.reference&.name == name }
 
   def alien?(exceptions)
-    exceptions.map { Hashira::Analysis::Syntax.segments(it) }.none? { @ownership.owned?(it) }
+    exceptions.none? { @ownership.owns?(it, @subject.owner) }
   end
 
   def spawned?(value) = value.is_a?(Prism::CallNode) && stranger?(value.receiver)
@@ -138,7 +138,7 @@ class Hashira::Smells::Foreign
     end
   end
 
-  def unowned?(node) = !@ownership.owned?(Hashira::Analysis::Syntax.segments(node))
+  def unowned?(node) = !@ownership.owns?(node, @subject.owner)
 
   def tests(&) = checks.of(&)
 

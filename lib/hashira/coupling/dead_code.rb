@@ -19,10 +19,16 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def roots = @_roots ||= Array(@rules.limit(KIND, "roots", []))
 
   def constants
-    dead = surface.constants.reject { live?(it) }
+    dead = surface.constants.reject { live?(it) || holding?(it.path) }
     names = dead.to_set(&:path)
     dead.reject { |member| (1...member.path.size).any? { names.include?(member.path.first(it)) } }
   end
+
+  def holding?(path) = held.any? { it.first(path.size) == path }
+
+  def held = @_held ||= surface.constants.select { held?(it) }.map(&:path)
+
+  def held?(member) = rooted?(member) || registered?(member.path) || hosted?(member.path) || housed?(member)
 
   def live?(member)
     path = member.path

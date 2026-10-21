@@ -103,7 +103,7 @@ class Hashira::Coupling::Mentions
     if own?(receiver)
       reflected << [owner, nil] if owner
     elsif Hashira::Analysis::Syntax.static?(receiver)
-      reflected << [nil, Hashira::Analysis::Syntax.segments(receiver)]
+      reflected << [(owner unless Hashira::Analysis::Syntax.rooted?(receiver)), Hashira::Analysis::Syntax.segments(receiver)]
     end
   end
 

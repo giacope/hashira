@@ -281,6 +281,22 @@ RSpec.describe(Hashira::CI::Ratchet) do
     Hashira::Analysis::Finding.new(kind:, package:, evidence: [], detail: { site: "a.rb:1" }, shape:)
   end
 
+  it "reads per-method repeated calls and per-pair associations a baseline recorded as the grouped findings now" do
+    with_graph do |graph|
+      io = StringIO.new
+      recorded = [
+        "repeated_call:Shop#tax", "repeated_call:Shop.levy", "bidirectional_association:Post ⇄ User",
+        "repeated_call:Gone#x", "nil_check:Shop#tax"
+      ]
+      seed(findings: recorded.to_h { [it, nil] })
+      grouped = %w[repeated_call:Shop bidirectional_association:User nil_check:Shop#tax].map { smell(*it.split(":")) }
+
+      expect(ratchet(graph, grouped, "baseline.json", io:).check(sweeping)).to(eq(3))
+      expect(io.string).to(start_with("Findings resolved (improvement!): repeated_call:Gone#x\n"))
+      expect(io.string).not_to(include("NEW", "Shop", "Post"))
+    end
+  end
+
   it "carries a finding across a rename instead of calling it resolved and new at once" do
     with_graph do |graph|
       io = StringIO.new

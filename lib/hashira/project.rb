@@ -7,6 +7,8 @@ class Hashira::Project
 
   TESTS = %w[test spec].freeze
 
+  TEMPLATES = %r{/generators/(?:.+/)?\w*templates?/}
+
   def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
     @boundaries = boundaries
@@ -18,9 +20,11 @@ class Hashira::Project
 
   def directories = @_directories ||= resolved
 
-  def rails? = directories.any? { config?(File.expand_path(it)) }
+  def rails? = application? || !engine.nil?
 
-  def files = directories.flat_map { Dir["#{it}/**/*.rb"] }.sort
+  def engine = (@_engine ||= [(engines.first if engines.one? && !application?)]).first
+
+  def files = directories.flat_map { Dir["#{it}/**/*.rb"] }.grep_v(TEMPLATES).sort
 
   def package(path)
     home = parent(path)
@@ -102,6 +106,10 @@ class Hashira::Project
   end
 
   def nested?(path, pairs) = pairs.any? { path.start_with?("#{it.last}/") }
+
+  def application? = directories.any? { config?(File.expand_path(it)) }
+
+  def engines = directories.flat_map { Dir["#{it}/**/engine.rb"] }.filter_map { Hashira::Engine.namespace(it) }.uniq
 
   def config?(directory)
     ["config/application.rb", "../config/application.rb"].any? { File.exist?(File.expand_path(it, directory)) }

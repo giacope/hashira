@@ -23,12 +23,41 @@ RSpec.describe(Hashira::Coupling::Navigation) do
       eq(
         [
           [
-            "bidirectional_association", "Post ⇄ User",
-            { parent: "User", child: "Post", guarantees: [pledge] }
+            "bidirectional_association", "User",
+            { parent: "User", children: ["Post"], guarantees: [pledge] }
           ]
         ]
       )
     )
+  end
+
+  def owning = "has_many :posts\n  has_many :comments\n  has_one :trn_request, class_name: \"Trs::TrnRequest\""
+
+  def crowd
+    models(owning, "belongs_to :user").merge(
+      "app/models/comment.rb" => "class Comment\n  belongs_to :user\nend\n",
+      "app/models/trs/trn_request.rb" => "module Trs\n  class TrnRequest\n    belongs_to :user\n  end\nend\n"
+    )
+  end
+
+  it "reports a model once for every model it is navigated both ways with, naming each class, namespaced or not" do
+    finding = found(crowd).first
+    said = "User is navigated both ways by 3 models, Comment, Post, Trs::TrnRequest: each declares an association " \
+      "to the other (user.rb:2), which ties them together. Drop User's side of each and query the model " \
+      "where it is needed."
+    expect([finding.package, finding.detail[:children], finding.evidence.size, message(finding)])
+      .to(eq(["User", %w[Comment Post Trs::TrnRequest], 6, said]))
+  end
+
+  it "packages a Rails engine by the classes under its namespace and pairs its models" do
+    files = {
+      "lib/cms/engine.rb" => "module Cms\n  class Engine < ::Rails::Engine\n  end\nend\n",
+      "lib/ext/string.rb" => "class String\n  def shout = upcase\nend\n",
+      "app/models/cms/site.rb" => "module Cms\n  class Site\n    has_many :posts\n  end\nend\n",
+      "app/models/cms/post.rb" => "module Cms\n  class Post\n    belongs_to :site\n  end\nend\n"
+    }
+    found = within(files) { Hashira::Pipeline.new(Hashira::Project.new(%w[app lib])).findings }
+    expect(found.select { it.kind == "bidirectional_association" }.map(&:package)).to(eq(%w[Site]))
   end
 
   it "says which side to drop and what to hand on first" do

@@ -29,7 +29,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def switchboard = @_switchboard ||= Hashira::Smells::Switches.new(subject.node, subject.ownership)
+  def switchboard = @_switchboard ||= Hashira::Smells::Switches.new(subject.node, subject.ownership, subject.owner)
 
   def switches = switchboard.typed + switchboard.statuses
 

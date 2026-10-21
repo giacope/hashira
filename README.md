@@ -77,13 +77,25 @@ folders the gemspec's `require_paths` lists or globs (fastlane's
 `config/application.rb`) `app` and `lib`. One directory is descended through
 single-folder wrappers, so `hashira`, `hashira lib` and `hashira lib/gem/core`
 land on the same packages. With one directory files are named relative to it;
-with several, as you would open them from where hashira runs.
+with several, as you would open them from where hashira runs. Templates a
+generator copies into an app (`lib/generators/**/templates/`) are not the
+project's code and are left out.
+
+A Rails engine is a Rails app: a project with no `config/application.rb` that
+holds exactly one `class Engine < Rails::Engine` (camaleon-cms, a gem's
+`lib/<gem>/engine.rb`) gets the Rails handling — namespace packages, Zeitwerk
+folder namespaces, associations, the framework's dead-code roots — and is
+packaged by the classes under the engine's module (`CamaleonCms::Post` is the
+`Post` package), not as one package named after it. A repository holding several
+engines (rails itself) is read as libraries.
 
 The text report is the coupling tables, the complexity tables, the hotspot
 rollup and the findings, capped at 25 packages and findings and 10 methods and
 files; every capped list says what it withheld, and `--top N` moves every cap.
-Findings are dealt out across kinds, worst first within a kind, and a capped
-list opens with one line per kind, so hundreds of findings of one kind read as
+Findings are dealt out across kinds, worst first within a kind, structural
+kinds (cycles, layers, dead code, associations) before the design smells and
+the local ones (`repeated_call`, `duplication`) last, and a capped list opens
+with one line per kind, so hundreds of findings of one kind read as
 one fact. Anything hashira had to work around (no git history, a file Prism
 could not parse) goes to stderr.
 
@@ -251,10 +263,12 @@ layers:
 
 In a Rails app, `layers: rails` declares the conventional three: `web`
 (`app/controllers`, `views`, `helpers`, `components`, `serializers`,
-`presenters`, `decorators`, `policies`, `avo`, `dashboards`), `app`
-(`app/jobs`, `workers`, `mailers`, `services`, `channels`, `mailboxes`) and
-`domain` (`app/models`, `app/validators`, `lib`). A model that enqueues a job
-or sends mail from a callback then points outward, which is the point.
+`presenters`, `decorators`, `policies`, `avo`, `dashboards`, and the other
+delivery mechanisms: `mailers`, `mailboxes`, `channels`), `app` (`app/jobs`,
+`workers`, `services`) and `domain` (`app/models`, `app/validators`, `lib`). A
+model that enqueues a job or sends mail from a callback then points outward,
+which is the point. Where one namespace spans two layers, the edge to cut names
+the layer at each end (`Archived (domain) -> Archived (web)`).
 
 A layer may use the layers declared inside it, never one outside it.
 **layer_violation** reports every reference that points outward, one finding
@@ -364,7 +378,7 @@ User                1   1   1  0.50  -
 (web)               1   0   1  1.00  -
 ...
 Findings (1):
-  bidirectional_association: User and Billing each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Billing where it is needed.
+  bidirectional_association: User and Billing::Invoice each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Billing::Invoice where it is needed.
       · models/user.rb:2: has_many Billing::Invoice
       · models/billing/invoice.rb:3: belongs_to User
 ```
@@ -379,8 +393,10 @@ Findings (1):
   check: a cycle means a method, a constant or a one-sided association closes
   the loop. It is still
   two classes that know each other, and **bidirectional_association** reports
-  it once: drop the owning side (`has_many`, `has_one`) and query the other
-  where it is needed. A pair whose code also reaches both ways is in the cycle
+  it: one finding per owning model, naming every model it is navigated both
+  ways with ("Edition is navigated both ways by 9 models"), each by its class
+  even inside a namespace package. Drop the owning side (`has_many`,
+  `has_one`) and query the other where it is needed. A pair whose code also reaches both ways is in the cycle
   search as well.
 - **Dropping a side can drop a guarantee.** `has_many :posts, dependent:
   :destroy` is more than a reference: deleting the user deletes the posts (or
@@ -524,7 +540,8 @@ bands over those names rather than skipped.
 What is not counted:
 
 - **Lists and declarations.** A run of identically shaped statements (requires,
-  routes, registrations), a `case` of three or more same-shaped arms, a class
+  routes, registrations, the rows of a keyword table, whose literal lists may
+  differ in length), a `case` of three or more same-shaped arms, a class
   body of macros with literal arguments (`has_many`, `validates`, `attribute`),
   constants holding literals or frozen lists of constants, and a constructor
   that only stores its arguments.
@@ -583,18 +600,27 @@ Findings (3):
   fill a role peers share stay quiet.
 - **control_parameter** — an argument used only to pick a path, where some
   caller passes it as a literal flag (`true`, `false`, a symbol) by position or
-  keyword. An argument that callers compute, a configured style, an argument a
-  branch only maps to a value (`flag ? "on" : "off"`), and one compared with
-  another value are data. Only a method callers outside the class can reach
+  keyword. A caller counts only when its receiver is the method's class: a bare
+  or `self` call inside it, the class itself (`Database.build(:pg)`), an object
+  it builds (`Cart.new`, a local assigned one), a variable named for it
+  (`@cart` is a `Cart`), or a literal of a core class the project reopens
+  (`"x".camelize(:lower)`). A same-named method elsewhere (`@items.build(:line)`)
+  is not evidence. An argument that callers compute, a configured style, an
+  argument a branch only maps to a value (`flag ? "on" : "off"`) or to a built
+  object (a factory: `name == "pg" ? Postgres.new : Null.new`), and one compared
+  with another value are data. Only a method callers outside the class can reach
   counts: a private or protected helper's flag sits behind the explicit public
   methods that call it.
 - **data_clump** — the same three or more parameters travel together through
   three or more methods, one handing the group to another.
 - **repeated_call** — the identical call made twice in one method; name the
-  result. Identity is by value: a local counts by its binding, a literal block is
+  result. One finding per class, with every repeated call and its method as
+  evidence ("repeats 14 calls in 6 methods"). Identity is by value: a local counts by its binding, a literal block is
   part of the call, a reassignment between makes two values. Left alone: calls
   that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a command whose
-  result is thrown away, two reads no single run reaches both of, a read after a
+  result is thrown away, two reads no single run reaches both of (`return`,
+  `raise` and the `render :index and return` idiom end a run; `x or return`
+  is a guard the run passes), a read after a
   command on the receiver, a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
@@ -619,7 +645,11 @@ Findings (3):
   its constructor fields together is one handle.
 - **assumed_state** — an instance variable read that nothing the class can reach
   ever assigns: a typo, or a fragile base class waiting for subclasses to install
-  its state.
+  its state. Assigning counts wherever Ruby does it on the instance: a method,
+  an attribute writer (also one minted from a list the class declares,
+  `attr_accessor(*OPTIONS)`), `instance_variable_set`, and a block the class
+  body hands its own DSL (`start { @mode = :text }`, `before_action { … }`),
+  which the framework runs on the instance.
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
@@ -638,8 +668,9 @@ Findings (3):
   answer (a node's absent receiver, a URI's missing scheme) are someone else's
   contract. A validator's guard on an attribute a presence validation already
   reports, a check replaced by its default, a check whose branch raises (the
-  guard asserts against the nil), and a one-line predicate that answers a nil
-  test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
+  guard asserts against the nil), memoization in any of its spellings (`@x ||=
+  v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that
+  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
   to nil is the caller's option, not the codebase's nil. A predicate that fetches
   a record only to test it for nil is told to ask `exists?`. Checks of one
   nil source — an instance variable, a method that can return nil — are one

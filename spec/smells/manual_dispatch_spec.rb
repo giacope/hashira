@@ -22,6 +22,53 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     expect(sniffed(files, "manual_dispatch")).to(be_empty)
   end
 
+  it "reads a core class written beside an owned class of the same name the way Ruby resolves it" do
+    files = {
+      "lib/app/types.rb" => "module App\n  module Types\n    class String; end\n    class Array; end\n    " \
+        "class Add; end\n  end\nend\n",
+      "lib/app/key.rb" => <<~RUBY
+        module App
+          class Key
+            def add(key) = (case key when Array then key when String then key.to_s end)
+            def sort(key) = (case key when Pick then key when Add then key.to_s end)
+          end
+
+          module Types
+            class Pick
+              def add(key) = (case key when Array then key when String then key.to_s end)
+            end
+
+            class Grip
+              def add(key) = (case key when ::Pick then key when ::Add then key.to_s end)
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Key#sort App::Types::Pick#add]))
+  end
+
+  it "lets a rescued library exception be probed even where its name reads as an owned class" do
+    files = {
+      "lib/app/client.rb" => <<~RUBY
+        module App
+          class Failure
+            def retry? = true
+          end
+
+          class Client
+            def call
+              run
+            rescue Faraday::Error => failure
+              failure.respond_to?(:retry?) ? 1 : 2
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch")).to(be_empty)
+  end
+
   it "flags respond_to? probes and lists every probing line" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY

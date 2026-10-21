@@ -44,7 +44,7 @@ class Hashira::Smells::Probe
 
   def unknown? = !SELVES.include?(receiver.class) && !(named? && typed?)
 
-  def typed? = @foreign.kinds(holder).any? { @subject.ownership.owned?(it) }
+  def typed? = @foreign.kinds(holder).any? { @subject.ownership.owned?(it, @subject.owner) }
 
   def named? = NAMED.include?(receiver.class)
 

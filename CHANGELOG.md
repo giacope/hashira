@@ -84,8 +84,29 @@ once after upgrading, after reading what the ratchet reports:
 Across the fifteen field repos, findings fell from 15,557 to 12,711. Every
 true positive the earlier triage confirmed still fires.
 
+A second field test on twenty more MIT-licensed codebases (rails, mongoid,
+rouge, apply-for-teacher-training, camaleon-cms, whitehall, …) changed three
+things a baseline sees:
+
+- `repeated_call` is one finding per class and `bidirectional_association` one
+  per owning model. A baseline's per-method and per-pair keys read as the
+  grouped findings, so neither needs a re-baseline; a class whose every
+  repeat is gone reports as resolved.
+- A project holding one Rails engine (no `config/application.rb`) now gets
+  the Rails handling and namespace packages, so an engine's baseline sees its
+  packages and edges move: run `--update-baseline` once.
+- Ownership and caller resolution fixes (below) retire findings in
+  `manual_dispatch`, `concrete_inheritance`, `control_parameter`,
+  `dead_code`, `assumed_state`, `nil_check`, `repeated_call` and
+  `duplication`; `--update-baseline` records the smaller set.
+
 ### Added
 
+- **Rails engines** are Rails: a project with no `config/application.rb` that
+  holds exactly one `class Engine < Rails::Engine` is packaged by the classes
+  under the engine's module and gets associations, Zeitwerk folder namespaces
+  and the framework's dead-code roots (camaleon-cms: layer folders no longer
+  read as packages; 9 model pairs found where there were none).
 - **bidirectional_association** (on): two packages whose classes each declare
   an association to the other, one finding per pair, naming the owning side
   (`has_many`, `has_one`) to drop and any `dependent:` option it carries,
@@ -265,6 +286,18 @@ true positive the earlier triage confirmed still fires.
 
 ### Changed
 
+- **repeated_call is one finding per class** ("repeats 14 calls in 6
+  methods"), each method's repeated calls as evidence, and
+  **bidirectional_association one per owning model** ("Edition is navigated
+  both ways by 9 models"), named by class even inside a namespace package.
+- The capped text report deals structural kinds (cycles, layers, dead code,
+  associations) first and `repeated_call` and `duplication` last in every
+  round.
+- `layers: rails` puts mailers, mailboxes and channels in `web` with the
+  other delivery mechanisms; an edge whose ends share a package names the
+  layer at each end.
+- Templates a generator copies (`lib/generators/**/templates/`) are not
+  analyzed.
 - **A cycle's cut follows the dependency direction when weights tie.** Among
   cuts of the same weight it keeps the edges into the packages more others
   depend on (the higher Ca) and cuts the ones out of them. It used to break
@@ -457,6 +490,39 @@ true positive the earlier triage confirmed still fires.
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+From the second field test (twenty MIT-licensed codebases):
+
+- Ownership is resolution: a constant is the project's only if the project
+  defines it as Ruby would resolve it (lexical nesting, `::` cbase), never by
+  a suffix. `case x when ::String` beside an owned `Types::String` is not
+  manual dispatch (rails 106, mongoid 38 findings), and a subclass of a core
+  class the project reopens (`class Label < String`) is not concrete
+  inheritance.
+- dead_code: Zeitwerk folder namespaces under `app/*` are modelled, so a
+  compact `class Wizard::Step` inside `module Steps` lands where Rails puts
+  it; a library's mixin under a namespace the project also uses stays the
+  library's (its hooks are not dead); a namespace that only wraps a hosted
+  class (`module RuboCop; module Cop; class MyCop < Base`) is not dead;
+  `Backends.const_get(name)` inside a module reaches what sits under
+  `Backends`; several directories share one project root, whatever their
+  order (rails' frameworks read each other's tests).
+- control_parameter counts a caller only where its receiver is the method's
+  class (self, the class, an object it builds, a variable named for it); an
+  unrelated `@items.build(:line)` no longer turns a factory's argument into a
+  flag, and a branch that only builds an object maps to a value.
+- assumed_state counts writers an `attr_accessor(*OPTIONS)` mints from a list
+  the class declares, and writes in a block the class body hands its DSL
+  (`start { @mode = … }`, `before_action { … }`).
+- repeated_call reads `render … and return` as leaving the method.
+- repeated_call sees a value change between two calls when an instance
+  variable is assigned between them (`flips[@active]` before and after
+  `@active = id`), and when the first call sits in a trailing `if`/`unless`
+  whose statement writes what it reads (`at += 1 if @source[at] == "^"` runs
+  the condition first).
+- nil_check reads `@x = v if @x.nil?` as memoization.
+- duplication reads the rows of a literal table as a list even when their
+  literal lists differ in length.
 
 From the field test on ten MIT-licensed codebases:
 

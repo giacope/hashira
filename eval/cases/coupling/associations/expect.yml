@@ -4,7 +4,8 @@
 # statuses -> Status, analyses -> Analysis) plus the app's own irregular
 # inflection; a polymorphic belongs_to names no class. Author and Post, and
 # Category and Post, each declare the other: two bidirectional associations,
-# not a cycle, since no code reaches back.
+# not a cycle, since no code reaches back. Each is reported once, under its
+# owning model (has_many), so the findings are Author and Category.
 args: [app]
 edges:
   - "Author -> Post"
@@ -19,4 +20,4 @@ edges:
   - "Team -> Person"
 absent: ["Remark -> Commentable"]
 cycles: []
-pairs: ["Author ⇄ Post", "Category ⇄ Post"]
+pairs: ["Author", "Category"]

@@ -99,7 +99,11 @@ RSpec.describe(Hashira::Smells::Report) do
           end
         end
       RUBY
-      "lib/app/zone/caller.rb" => "class Caller\n def run = [mixed, mixed(1, true, 2, delta: :d), sneaky(:x)]\nend\n"
+      "lib/app/zone/caller.rb" => <<~RUBY
+        class Caller
+          def run(thing = App::Zone::Thing.new) = [thing.mixed, thing.mixed(1, true, 2, delta: :d), thing.sneaky(:x)]
+        end
+      RUBY
     }
     findings = sniffed(files, "control_parameter")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))

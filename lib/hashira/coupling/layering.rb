@@ -9,6 +9,11 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
     Data.define(:sighting, :source, :target, :to) do
       def outward? = source > target
 
+      def ends(names)
+        pair = [sighting.from, to]
+        pair.uniq.one? ? pair.zip([source, target]).map { "#{it.first} (#{names[it.last]})" } : pair
+      end
+
       def site = sighting.site
     end
 
@@ -59,7 +64,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   end
 
   def edges(group)
-    weights = group.map { [it.sighting.from, it.to] }.tally
+    weights = group.map { it.ends(names) }.tally
     weights.map { |(from, to), weight| weighed(from, to, weight) }.sort_by { it.values_at(:weight, :from, :to) }
   end
 

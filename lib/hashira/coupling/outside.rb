@@ -2,7 +2,7 @@
 
 class Hashira::Coupling::Outside
   EXTENSIONS = %w[
-    .rb .rake .gemspec .ru .erb .haml .slim .builder .jbuilder .rabl .arb .yml .yaml .rbs .rbi .thor
+    .rb .rake .gemspec .ru .erb .haml .slim .builder .jbuilder .rabl .arb .yml .yaml .json .rbs .rbi .thor .tt
   ].freeze
 
   NAMES = %w[Rakefile Gemfile Guardfile Capfile Thorfile Steepfile].freeze

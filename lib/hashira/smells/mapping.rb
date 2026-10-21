@@ -17,6 +17,15 @@ module Hashira::Smells::Mapping
     found.one? && value?(found.first)
   end
 
+  def built?(branch)
+    found = outcome(branch)
+    found.one? && made?(found.first)
+  end
+
+  def made?(node)
+    node.is_a?(Prism::CallNode) && node.name == :new && Hashira::Smells::Factory.constant?(node.receiver)
+  end
+
   def outcome(branch)
     case branch
     when Prism::StatementsNode then branch.body

@@ -43,9 +43,16 @@ module Hashira::Report::Phrases
 
   def on_bidirectional_association(finding)
     detail = finding.detail
-    parent, child = detail.values_at(:parent, :child)
+    parent, children = detail.values_at(:parent, :children)
+    return paired(finding, parent, children.first) if children.one?
+    "#{parent} is navigated both ways by #{children.size} models, #{children.join(", ")}: each declares an " \
+      "association to the other (#{finding.anchors.first}), which ties them together. Drop #{parent}'s side of each " \
+      "and query the model where it is needed.#{carried(detail)}"
+  end
+
+  def paired(finding, parent, child)
     "#{parent} and #{child} each declare an association to the other (#{finding.anchors.first}) — navigating both " \
-      "ways ties them together. Drop #{parent}'s side and query #{child} where it is needed.#{carried(detail)}"
+      "ways ties them together. Drop #{parent}'s side and query #{child} where it is needed.#{carried(finding.detail)}"
   end
 
   def carried(detail)

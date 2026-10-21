@@ -6,9 +6,15 @@ class Hashira::Smells::Ownership
     @catalog = catalog
   end
 
-  def owned?(segments)
+  def owned?(segments, owner = nil, rooted: false)
     surveyed
-    @_suffixes.include?(segments.join("::"))
+    return @_defined.include?(segments.join("::")) if rooted
+    return true if lexical(segments, owner).any? { @_defined.include?(it) }
+    !builtin?(segments.first) && @_suffixes.include?(segments.join("::"))
+  end
+
+  def owns?(node, owner = nil)
+    owned?(Hashira::Analysis::Syntax.segments(node), owner, rooted: Hashira::Analysis::Syntax.rooted?(node))
   end
 
   def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
@@ -17,7 +23,12 @@ class Hashira::Smells::Ownership
 
   def values = @_values ||= Hashira::Smells::Values.new(@trees)
 
-  def calls(name) = sent.fetch(name, [])
+  def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
+
+  def resolve(segments, owner, rooted:)
+    surveyed
+    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { @_written.include?(it) }
+  end
 
   def keys(segments)
     surveyed
@@ -26,20 +37,19 @@ class Hashira::Smells::Ownership
 
   private
 
-  def sent = @_sent ||= @trees.flat_map { called(it) }.group_by(&:name)
-
-  def called(tree) = Hashira::Analysis::NodeWalk.collect(tree).grep(Prism::CallNode)
-
   def surveyed
     return if @_surveyed
     @_surveyed = true
     @_suffixes = Set.new
+    @_defined = Set.new
+    @_written = Set.new
     @_tables = {}
     @trees.each { survey(it) }
   end
 
   def survey(tree)
     Hashira::Analysis::TypeWalk.each(tree) do |node, full|
+      @_written << full.join("::")
       next unless claimed?(full)
       absorb(full)
       Hashira::Analysis::Syntax.constants(node).each { record(full, it) }
@@ -49,11 +59,21 @@ class Hashira::Smells::Ownership
   def record(full, constant)
     path = full + [constant.name.to_s]
     absorb(path)
-    chart(path, thaw(constant.value))
+    chart(path, Hashira::Analysis::Syntax.thaw(constant.value))
   end
 
   def absorb(path)
+    @_defined << path.join("::")
     @_suffixes.merge(suffixes(path))
+  end
+
+  def lexical(segments, owner)
+    parts = owner.to_s.split("::")
+    parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
+  end
+
+  def builtin?(name)
+    Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
   end
 
   def chart(path, value)
@@ -62,12 +82,6 @@ class Hashira::Smells::Ownership
     return if keys.empty? || keys.any?(&:nil?)
     suffixes(path).each { @_tables[it] = keys }
   end
-
-  def thaw(value)
-    frozen?(value) ? value.receiver : value
-  end
-
-  def frozen?(value) = value.is_a?(Prism::CallNode) && value.name == :freeze
 
   def spine(element)
     return unless element.is_a?(Prism::AssocNode)

@@ -30,10 +30,10 @@ class Hashira::Config::Layers
     {
       "web" => %w[
         app/controllers app/views app/helpers app/components app/serializers app/presenters app/decorators
-        app/policies app/avo app/dashboards
+        app/policies app/avo app/dashboards app/mailers app/mailboxes app/channels
       ]
     },
-    { "app" => %w[app/jobs app/workers app/mailers app/services app/channels app/mailboxes] },
+    { "app" => %w[app/jobs app/workers app/services] },
     { "domain" => %w[app/models app/validators lib] }
   ].freeze
 

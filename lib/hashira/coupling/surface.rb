@@ -112,7 +112,9 @@ class Hashira::Coupling::Surface
 
   def located(node, nesting)
     return unless Hashira::Analysis::Syntax.static?(node)
-    @census.locate(Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node) ? [] : nesting)
+    segments = Hashira::Analysis::Syntax.segments(node)
+    found = @census.locate(segments, Hashira::Analysis::Syntax.rooted?(node) ? [] : nesting)
+    found if found&.last == segments.last
   end
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }

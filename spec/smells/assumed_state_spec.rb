@@ -385,6 +385,49 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     expect(findings.first.evidence).to(eq(["@state", "@token"]))
   end
 
+  it "counts the writers an attribute macro mints from a splatted list the class declares" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            EXTRA = %i[limit].freeze
+            OPTIONS = %i[host port].freeze
+            MODES = [:mode, 1]
+            LIMIT = 3
+            attr_accessor(*OPTIONS)
+            attr_writer(*MODES, *LIMIT, *Missing, *options, label)
+
+            def report = [@host, @port, @mode, @limit]
+          end
+        end
+      end
+    RUBY
+    expect(findings.first.evidence).to(eq(["@limit"]))
+  end
+
+  it "takes a block the class body hands its own DSL for instance code, as a lexer or controller runs it" do
+    findings = assumed(<<~RUBY)
+      module App
+        module Zone
+          class Base
+            def self.start(&block) = (@starts ||= []) << block
+            def self.rule(&) = nil
+          end
+
+          class Thing < Base
+            start { @content_type = "text/plain" }
+            rule do
+              @debug = true
+            end
+
+            def mimetype = [@content_type, @debug, @missing]
+          end
+        end
+      end
+    RUBY
+    expect(findings.first.evidence).to(eq(["@missing"]))
+  end
+
   it "recognizes string-named attribute writers" do
     findings = assumed(<<~RUBY)
       module App

@@ -1,6 +1,7 @@
 # A start/stop timer reads the clock twice on purpose: the second read is
 # measured against the first. A repeated lookup with nothing between is a
-# real repeat.
+# real repeat. repeated_call is one finding per class; each method it names
+# is matched in the evidence.
 absent:
   - {kind: repeated_call, package: "App::Stopwatch#measure"}
   - {kind: repeated_call, package: "App::Stopwatch#lap"}

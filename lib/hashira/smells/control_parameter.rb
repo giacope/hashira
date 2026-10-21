@@ -14,7 +14,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     [name, lines] unless lines.empty? || !picks.picked?(name)
   end
 
-  def picks = @_picks ||= subject.node.then { Hashira::Smells::Picks.new(it, subject.ownership.calls(it.name)) }
+  def picks = @_picks ||= Hashira::Smells::Picks.new(subject.node, subject.ownership.callers.of(subject))
 
   def spots(name)
     Hashira::Smells::ParamCheck.new(subject.node, name).matches.map { it.location.start_line }

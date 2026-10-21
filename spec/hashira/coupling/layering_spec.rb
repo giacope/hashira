@@ -62,6 +62,13 @@ RSpec.describe(Hashira::Coupling::Layering) do
       .to(eq([edge("jobs", "web", 1), edge("domain", "web", 2)]))
   end
 
+  it "names the layer at each end of an edge whose two ends share a package" do
+    split = { "lib/app/web/core.rb" => type("Web", "Core", "def x = Web::Page") }
+    layers = [{ "outer" => %w[lib/app/web/page.rb] }, { "inner" => %w[lib/app/web/core.rb domain] }]
+    expect(layered(layers, split).first.detail.cut)
+      .to(eq([edge("web (inner)", "web (outer)", 1), edge("domain", "web", 2)]))
+  end
+
   def rails
     {
       "config/application.rb" => "module Shop\n  class Application < Rails::Application\n  end\nend\n",

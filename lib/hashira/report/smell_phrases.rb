@@ -28,7 +28,12 @@ module Hashira::Report::Phrases
 
   def on_data_clump(finding) = plain(finding, "passes the same parameters between methods", DATA_CLUMP)
 
-  def on_repeated_call(finding) = plain(finding, "repeats identical calls", REPEATED_CALL)
+  def on_repeated_call(finding)
+    detail = finding.detail
+    places = detail[:places]
+    return plain(finding, "repeats identical calls", REPEATED_CALL) unless places
+    plain(finding, "repeats #{count(detail[:calls], "call")} in #{count(places, "method")}", REPEATED_CALL)
+  end
 
   def on_manual_dispatch(finding)
     via = finding.detail[:via]

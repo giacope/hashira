@@ -5,17 +5,19 @@ class Hashira::Smells::Grouping
 
   ABSENT = "nil_check"
 
+  REPEATS = "repeated_call"
+
   OWNER = /[#.][^#.]+\z/
 
   def initialize(findings)
     @findings = findings
   end
 
-  def findings = @findings.reject { grouped?(it) } + edges + sources
+  def findings = @findings.reject { grouped?(it) } + edges + sources + Hashira::Smells::Repeats.new(@findings).findings
 
   private
 
-  def grouped?(finding) = finding.kind == CHAIN || sourced?(finding)
+  def grouped?(finding) = [CHAIN, REPEATS].include?(finding.kind) || sourced?(finding)
 
   def sourced?(finding) = finding.kind == ABSENT && finding.detail[:sources].to_a.any?
 

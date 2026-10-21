@@ -9,7 +9,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
 
   def defined(source) = Hashira::Analysis::NodeWalk.collect(Prism.parse(source).value).grep(Prism::DefNode)
 
-  def called(definition) = "#{definition.name}(#{flags(definition)})"
+  def called(definition) = "App::Zone::Thing.new.#{definition.name}(#{flags(definition)})"
 
   def flags(definition) = Hashira::Smells::Parameters.parts(definition).map { flag(it) }.join(", ")
 
@@ -18,9 +18,81 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
   it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
     source = "class Writer\n  def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)\n\n  " \
       "def emit(raw:) = raw ? @a : @b\nend\n"
-    calls = ["write(@quoted)\n  emit(raw: compute)", "write(false)\n  emit(raw: :yes)", "self.write(:on)"]
-    found = calls.map { flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go\n  #{it}\n end\nend\n") }
+    calls = ["w.write(@quoted)\n  w.emit(raw: compute)", "w.write(false)\n  w.emit(raw: :yes)", "Writer.new.write(:on)"]
+    found =
+      calls.map do
+        flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go(w = Writer.new)\n  #{it}\n end\nend\n")
+      end
     expect(found.map { it.map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+  end
+
+  it "counts a caller only where its receiver is the method's class, never a same-named method elsewhere" do
+    source = <<~RUBY
+      class Database
+        def self.build(name) = name == "pg" ? @pool.checkout : @pool.idle
+        def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)
+      end
+    RUBY
+    calls = [
+      "@items.build(:line)\n  @db.write(true)\n  write(false)\n  self.write(:on)", "::Database.build(:pg)",
+      "db = Database.new\n  db.write(true)",
+      "db = items\n  db.write(true)\n  db.build(:x)\n  Cart.new.write(:on)\n end\n def other\n  db = Database.new",
+      "@database.write(true)", "database.write(true)", "main_database = items\n  main_database.write(:on)",
+      "items.first(2).write(true)\n  Database.write(true)\n  [Database].first.build(:pg)"
+    ]
+    found =
+      calls.map do
+        flagged("lib/app/d.rb" => source, "lib/app/c.rb" => "class Cart\n  def go\n  #{it}\n end\nend\n")
+      end
+    expect(found.map { it.map(&:package) })
+      .to(eq([[], %w[Database.build], %w[Database#write], [], *[%w[Database#write]] * 3, []]))
+  end
+
+  it "resolves the receiver from where the call sits, and a ::-rooted one from the top" do
+    top = <<~RUBY
+      class Database
+        def self.build(name) = name == "pg" ? @pool.checkout : @pool.idle
+      end
+
+      class Store
+        def self.open(name) = name == :a ? @pool.checkout : @pool.idle
+        def other = @pool.open(:a)
+      end
+    RUBY
+    shop = <<~RUBY
+      module Shop
+        class Database
+          def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)
+        end
+
+        class Cart
+          def go = [@database.write(true), ::Database.build(:pg)]
+        end
+      end
+    RUBY
+    found = flagged("lib/app/top.rb" => top, "lib/app/shop.rb" => shop).map(&:package)
+    expect(found).to(eq(%w[Shop::Database#write Database.build]))
+  end
+
+  it "types a literal receiver by its core class, where the project reopens that class" do
+    reopened = "class String\n  def camelize(first = :upper) = first == :upper ? capitalize : downcase\nend\n"
+    calls = ["\"x\".camelize(:lower)", "[1].camelize(:lower)"]
+    caller = "module App\n  class String; end\n  class C\n    def go = %s\n  end\nend\n"
+    found = calls.map { flagged("lib/app/s.rb" => reopened, "lib/app/c.rb" => format(caller, it)) }
+    expect(found.map { it.map(&:package) }).to(eq([%w[String#camelize], []]))
+  end
+
+  it "leaves a factory alone whose every branch only builds an object: the switch maps a name to a strategy" do
+    source = <<~RUBY
+      module App
+        class Store
+          def self.build(name) = name == :pg ? Postgres.new(name) : Null.new
+          def self.open(name) = name == :pg ? Postgres.new.tap(&:connect) : Null.new
+        end
+      end
+    RUBY
+    caller = "module App\n  class Cart\n    def go = [Store.build(:pg), Store.open(:pg)]\n  end\nend\n"
+    expect(flagged("lib/app/store.rb" => source, "lib/app/cart.rb" => caller).map(&:package)).to(eq(%w[App::Store.open]))
   end
 
   it "leaves a private or protected helper's flag alone: the explicit public methods in front are the interface" do

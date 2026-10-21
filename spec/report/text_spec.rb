@@ -165,6 +165,18 @@ RSpec.describe(Hashira::Report::Text) do
       )
     end
 
+    it "deals structural kinds first and the local ones last in every round" do
+      mixed =
+        %w[repeated_call:r1 duplication:d1 nil_check:n1 cycle:c1 repeated_call:r2 cycle:c2].map do
+          smell(*it.split(":"))
+        end
+      expect(packages(Hashira::Report::Spread.new(mixed).to_a)).to(eq(%w[A#c1 A#n1 A#r1 A#d1 A#c2 A#r2]))
+    end
+
+    it "knows every structural kind the pipeline runs" do
+      expect(Hashira::Report::Spread::STRUCTURAL.sort).to(eq(Hashira::Pipeline::STRUCTURAL.sort))
+    end
+
     it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do
       doubted = complex("doubted", 50).with(confidence: :low)
       dealt = Hashira::Report::Spread.new([doubted, complex("plain", 12), smell("nil_check", "n1")]).to_a

@@ -24,8 +24,10 @@ class Evaluation::Sniff
   def matching(want) = @findings.select { it["kind"] == want["kind"] && names?(it, want["package"]) }
 
   def names?(finding, package)
-    [nil, finding["package"]].include?(package) || finding["evidence"].any? { it.to_s.start_with?("#{package} (") }
+    [nil, finding["package"]].include?(package) || finding["evidence"].any? { it.to_s.start_with?(*heads(package)) }
   end
+
+  def heads(package) = ["#{package} (", "#{package}: "]
 
   def evidence
     @expect.fetch("evidence", []).map do |kind|

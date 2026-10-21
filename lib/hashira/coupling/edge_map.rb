@@ -1,6 +1,15 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::EdgeMap
+  Link =
+    Data.define(:from, :to, :site, :macro) do
+      def said = site.sub(": ", ": #{macro} ")
+
+      def anchor = site[/\A.+?:\d+/]
+
+      def line = site[/:(\d+):/, 1].to_i
+    end
+
   def initialize(census)
     @census = census
   end
@@ -15,6 +24,8 @@ class Hashira::Coupling::EdgeMap
 
   def declared = @_declared ||= {}
 
+  def links = @_links ||= []
+
   def record(source, file, tree)
     references = Hashira::Coupling::References.new(@census.roots, @census.associations)
     references.sightings(tree).each { sighted(source, file, it) }
@@ -27,8 +38,16 @@ class Hashira::Coupling::EdgeMap
 
   def sighted(source, file, sighting)
     segments, line, nesting, home, macro = sighting
-    said = note(@census.charge(file, home), segments, nesting, "#{source}:#{line}")
-    declared[said] = "#{source}:#{line}: #{macro} #{segments.join("::")}" if said && macro
+    site = "#{source}:#{line}"
+    said = note(@census.charge(file, home), segments, nesting, site)
+    return unless macro
+    named = "#{site}: #{segments.join("::")}"
+    declared[said] = named.sub(": ", ": #{macro} ")
+    link(home.last, @census.locate(segments, nesting || []), named, macro)
+  end
+
+  def link(from, to, site, macro)
+    links << Link.new(from: @census.strip(from).join("::"), to: to.join("::"), site:, macro:) if from && to
   end
 
   def locate(segments, nesting)

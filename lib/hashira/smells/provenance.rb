@@ -29,7 +29,7 @@ class Hashira::Smells::Provenance
   def answered?(call)
     receiver = call.receiver
     return own?(call.name) if receiver.nil? || receiver.is_a?(Prism::SelfNode)
-    return @subject.ownership.owned?(Hashira::Analysis::Syntax.segments(receiver)) if constant?(receiver)
+    return @subject.ownership.owns?(receiver, @subject.owner) if constant?(receiver)
     receiver.is_a?(Prism::LocalVariableReadNode) && (@foreign.built?(receiver.name) || typed?(receiver.name, call.name))
   end
 

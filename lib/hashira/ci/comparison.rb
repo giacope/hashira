@@ -8,7 +8,10 @@ class Hashira::CI::Comparison
 
   def diff
     moved = renamed
-    Hashira::CI::Diff.new(added: fresh - moved.keys, removed: gone - moved.values, worsened: worsened(moved))
+    grouped = Hashira::CI::Regroup.new(gone, @current)
+    Hashira::CI::Diff.new(
+      added: fresh - moved.keys - grouped.into, removed: gone - moved.values - grouped.from, worsened: worsened(moved)
+    )
   end
 
   private

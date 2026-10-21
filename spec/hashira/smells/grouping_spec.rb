@@ -81,6 +81,46 @@ RSpec.describe(Hashira::Smells::Grouping) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }
+
+  def counter
+    <<~RUBY
+      module Shop
+        class Till
+          def ring(io) = [io.tick(1), io.tick(1)]
+          def open(io) = [io.tick(2), io.tick(2), io.read(3), io.read(3)]
+          def self.boot(io) = [io.tick(4), io.tick(4)]
+        end
+
+        class Desk
+          def ring(io) = [io.tick(1), io.tick(1)]
+        end
+
+        class Shelf
+          def count(io) = [io.size, io.size, io.size]
+        end
+      end
+    RUBY
+  end
+
+  it "reports one repeated-call finding per class, doubted only when every repeat in it is" do
+    expect([repeats.keys.sort, repeats.values.select(&:doubted?).map(&:package)])
+      .to(eq([%w[Shop::Desk Shop::Shelf Shop::Till], %w[Shop::Shelf]]))
+  end
+
+  it "lists each method's repeated calls as evidence and counts calls and methods" do
+    till = repeats["Shop::Till"]
+    said = "Shop::Till repeats 4 calls in 3 methods (till.rb:3). Name the result in a local variable."
+    expect([till.evidence.first(2), message(till), message(repeats["Shop::Desk"])]).to(
+      eq(
+        [
+          ["Shop::Till#ring: io.tick(1) × 2 (line 3)", "Shop::Till#open: io.tick(2) × 2 (line 4)"], said,
+          "Shop::Desk repeats 1 call in 1 method (till.rb:9). Name the result in a local variable."
+        ]
+      )
+    )
+  end
+
   it "speaks of one checking method in the singular" do
     expect(message(nils["Shop::Account#current"])).to(include("may be nil, and 1 method checks for it"))
   end

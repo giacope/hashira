@@ -476,6 +476,52 @@ RSpec.describe(Hashira::Smells::NilCheck) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[limit cache]))
   end
 
+  it "reads a guard whose only statement fills the value it tests as memoization, like ||=" do
+    findings = checked(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def flag(name)
+              @invalid = Set.new if @invalid.nil?
+              @invalid << name
+            end
+
+            def local(name)
+              seen = @store.read(name)
+              seen = Set.new if seen == nil
+              seen
+            end
+
+            def other(name)
+              @marks = Set.new if @invalid.nil?
+              @marks << name
+            end
+
+            def twice(name)
+              if @notes.nil?
+                @notes = Set.new
+                @log.write(name)
+              end
+            end
+
+            def otherwise(name)
+              if @tags.nil?
+                @tags = Set.new
+              else
+                @log.write(name)
+              end
+            end
+
+            def shared(name)
+              @seen = Set.new if @seen.nil? && name
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[other twice otherwise shared]))
+  end
+
   it "flags unless on a value the codebase leaves nil, but not on a flag or a method's result" do
     findings = checked(<<~RUBY)
       module App
