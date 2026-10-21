@@ -70,7 +70,10 @@ RSpec.describe(Hashira::Project) do
   end
 
   it "leaves out the templates a generator copies into an app" do
-    files = { "lib/app/a.rb" => "", "lib/app/generators/x/templates/setup.rb" => "", "lib/app/b/c.rb" => "" }
+    files = {
+      "lib/app/a.rb" => "", "lib/app/generators/x/templates/setup.rb" => "",
+      "lib/app/generators/x/theme_template/helper.rb" => "", "lib/app/b/c.rb" => ""
+    }
     within(files) { expect(described_class.new(["lib/app"]).files).to(eq(%w[lib/app/a.rb lib/app/b/c.rb])) }
   end
 

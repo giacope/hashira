@@ -7,7 +7,7 @@ class Hashira::Project
 
   TESTS = %w[test spec].freeze
 
-  TEMPLATES = %r{/generators/(?:.+/)?templates/}
+  TEMPLATES = %r{/generators/(?:.+/)?\w*templates?/}
 
   def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
