@@ -71,7 +71,17 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
   end
 
-  def repeats = @_repeats ||= outermost(together(found)).reject { |_, nodes| excused?(nodes) }
+  def repeats = @_repeats ||= collapsed(outermost(together(found)).reject { |_, nodes| excused?(nodes) })
+
+  def collapsed(groups)
+    held = Set.new.compare_by_identity.merge(groups.values.flatten)
+    groups.reject { |_handle, nodes| nodes.all? { prefixed?(it, held) } }
+  end
+
+  def prefixed?(node, held)
+    receiver = node.receiver
+    receiver.is_a?(Prism::CallNode) && (held.include?(receiver) || prefixed?(receiver, held))
+  end
 
   def found = alike(usual).merge(alike(whole))
 
@@ -121,7 +131,11 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def blocks = @_blocks ||= Hashira::Smells::Scope.inside(subject.node).select { SCOPES.include?(it.class) }
 
-  def handle(node) = "#{title(node)}#{signature(node)}"
+  def handle(node) = index?(node) ? indexed(node) : "#{title(node)}#{signature(node)}"
+
+  def indexed(node) = "#{node.receiver.slice}[#{node.arguments.slice}]"
+
+  def index?(node) = node.name == :[] && node.receiver && node.arguments
 
   def title(node)
     [node.receiver&.slice, node.name].compact.join(node.safe_navigation? ? "&." : ".")
