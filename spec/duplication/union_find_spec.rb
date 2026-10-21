@@ -6,6 +6,10 @@ RSpec.describe(Hashira::Duplication::UnionFind) do
     expect(sets.clusters).to(eq([%i[c b a], %i[x y]]))
   end
 
+  it "orders a cluster by first appearance, not by the walk that found it" do
+    expect(described_class.new([%i[a d], %i[b c], %i[c d]]).clusters).to(eq([%i[a d b c]]))
+  end
+
   it "finds no cluster without a pair" do
     expect(described_class.new([]).clusters).to(eq([]))
   end
