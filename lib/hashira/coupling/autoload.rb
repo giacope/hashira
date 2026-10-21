@@ -10,9 +10,9 @@ class Hashira::Coupling::Autoload
 
   def roots = Hashira::Analysis::TypeWalk.roots(@trees) | namespaces
 
-  private
+  def namespaces = @_namespaces ||= @project.rails? ? @trees.keys.flat_map { implied(it) }.to_set : Set.new
 
-  def namespaces = @project.rails? ? @trees.keys.flat_map { implied(it) }.to_set : Set.new
+  private
 
   def implied(file)
     parts = file.split("/")

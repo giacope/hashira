@@ -14,7 +14,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def surface = @_surface ||= Hashira::Coupling::Surface.new(project, graph.trees, graph.census)
 
-  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees).found
+  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees, graph.census.roots).found
 
   def roots = @_roots ||= Array(@rules.limit(KIND, "roots", []))
 
@@ -28,12 +28,17 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def held = @_held ||= surface.constants.select { held?(it) }.map(&:path)
 
-  def held?(member) = rooted?(member) || registered?(member.path) || hosted?(member.path) || housed?(member)
+  def held?(member)
+    path = member.path
+    rooted?(member) || registered?(path) || hosted?(path) || housed?(member) || loaded?(path)
+  end
 
   def live?(member)
     path = member.path
-    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member)
+    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member) || loaded?(path)
   end
+
+  def loaded?(path) = surface.types.fetch(path, []).any?(&:loads?)
 
   def named?(path) = used?(path) || mentioned?(path.last) || assembled?(path)
 

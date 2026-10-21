@@ -5,6 +5,10 @@ require "prism"
 class Hashira::Smells::Installs
   WRITERS = %i[attr_writer attr_accessor].freeze
 
+  CASTS = %i[to_sym intern].freeze
+
+  INTERPOLATED = [Prism::InterpolatedStringNode, Prism::InterpolatedSymbolNode].freeze
+
   SETTERS = [
     Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode,
     Prism::InstanceVariableAndWriteNode, Prism::InstanceVariableOperatorWriteNode,
@@ -39,7 +43,14 @@ class Hashira::Smells::Installs
   def injected(node)
     return unless node.is_a?(Prism::CallNode) && node.name == :instance_variable_set
     first = node.arguments&.arguments&.first
-    Hashira::Analysis::Syntax.symbol(first) if Hashira::Analysis::Syntax.word?(first)
+    Hashira::Analysis::Syntax.word?(first) ? Hashira::Analysis::Syntax.symbol(first) : prefix(first)
+  end
+
+  def prefix(name)
+    name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
+    head = name.parts.first if INTERPOLATED.include?(name.class)
+    text = Hashira::Analysis::Syntax.text(head) if head.is_a?(Prism::StringNode)
+    text if text&.start_with?("@")
   end
 
   def words(node)

@@ -17,8 +17,13 @@ class Hashira::Coupling::Handover
 
   def gifts
     @_gifts ||=
-      @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, given), found|
-        found[@census.locate(given, [])] << ((host && @census.locate(host, [])) || FOREIGN)
+      @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, hosting, given, nesting), found|
+        found[exact(given, nesting)] << ((host && exact(host, hosting)) || FOREIGN)
       end
+  end
+
+  def exact(segments, nesting)
+    found = @census.locate(segments, nesting)
+    found if found&.last == segments.last
   end
 end

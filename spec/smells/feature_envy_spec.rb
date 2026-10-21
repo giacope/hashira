@@ -610,7 +610,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     findings = envy(<<~RUBY)
       module App
         module Zone
-          class Local
+          class Local < Lexicon
           end
 
           class Thing

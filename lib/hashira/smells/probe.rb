@@ -12,6 +12,8 @@ class Hashira::Smells::Probe
 
   SELVES = [NilClass, Prism::SelfNode].freeze
 
+  LITERAL = [Prism::SymbolNode, Prism::StringNode].freeze
+
   NAMED = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 
   def initialize(call, subject, foreign)
@@ -22,7 +24,7 @@ class Hashira::Smells::Probe
 
   def line = @call.location.start_line
 
-  def excused? = asked?(PROTOCOLS) || unspoken? || foreign? || unknown?
+  def excused? = asked?(PROTOCOLS) || unspoken? || computed? || foreign? || unknown?
 
   def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
 
@@ -38,13 +40,15 @@ class Hashira::Smells::Probe
 
   def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
 
+  def computed? = !message.nil? && !LITERAL.include?(message.class)
+
   def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.symbol(message))
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
   def unknown? = !SELVES.include?(receiver.class) && !(named? && typed?)
 
-  def typed? = @foreign.kinds(holder).any? { @subject.ownership.owned?(it, @subject.owner) }
+  def typed? = @foreign.kinds(holder).any?
 
   def named? = NAMED.include?(receiver.class)
 

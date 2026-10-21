@@ -55,6 +55,8 @@ class Hashira::Project
 
   def layers = rules.layers
 
+  def dependencies = @_dependencies ||= Hashira::Dependencies.new(home)
+
   private
 
   def resolved

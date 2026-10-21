@@ -433,4 +433,81 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
       )
     )
   end
+
+  def devise(gemfile)
+    rails.merge(
+      "Gemfile" => gemfile,
+      "app/models/user.rb" => "class User < ApplicationRecord\n  devise :passwordless_authenticatable\nend\n",
+      "lib/devise/models/passwordless_authenticatable.rb" =>
+        "module Devise\n  module Models\n    module PasswordlessAuthenticatable\n    end\n  end\nend\n",
+      "lib/devise/strategies/passwordless.rb" =>
+        "module Devise\n  module Strategies\n    class Passwordless < Authenticatable\n      " \
+        "def authenticate! = 1\n    end\n  end\nend\n"
+    )
+  end
+
+  it "leaves a dependency's namespace to the dependency, whatever the project's paths or subclasses say" do
+    found = ["gem \"rails\"\n", "gem \"rails\"\ngem \"devise\"\n"].map { dead(devise(it), directories: %w[app lib]) }
+    expect(found.map { it - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate] }).to(eq([%w[Devise::Models], []]))
+  end
+
+  it "resolves a constant handed to a library from inside a namespace the way Ruby reads it there, self included" do
+    handed = rails.merge(
+      "app/controllers/admin_controller.rb" => "class AdminController\n  include Audit::Hooks\nend\n",
+      "lib/audit.rb" => <<~RUBY,
+        module Audit
+          module Hooks
+          end
+
+          module Trail
+            def user_for_paper_trail = 1
+          end
+
+          module Routes
+            def wizard_scope = 1
+
+            ::ActionDispatch::Routing::Mapper.include(self)
+          end
+
+          def self.install
+            Hooks.include Trail
+            ::Audit::Hooks.include(::Audit::Missing)
+            Hooks.include(Trail.dup)
+          end
+        end
+      RUBY
+      "lib/stray.rb" => "Kernel.include(self)\n"
+    )
+    expect(dead(handed, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
+      .to(eq(%w[Audit.install]))
+  end
+
+  it "leaves the classes under a parent that aliases a framework class to the framework, and follows an owned alias" do
+    aliased = rails.merge(
+      "app/models/parents.rb" => <<~RUBY,
+        module Parents
+          Framework = ENV["PARENT"] ? Object.const_get(ENV["PARENT"]) : ActiveRecord::Base
+          Own = Totals
+          Built = Class.new(ApplicationRecord)
+          Loop = Loop
+        end
+      RUBY
+      "app/models/base_record.rb" => "class BaseRecord < Parents::Framework\n  def self.prune = 1\nend\n",
+      "app/models/job.rb" => "class Job < BaseRecord\n  def run = 1\nend\n",
+      "app/models/plan.rb" => "class Plan < Parents::Built\n  include Parents::Own\n  def lost = 1\nend\n",
+      "app/models/cycle.rb" => "class Cycle < Parents::Loop\n  def spin = 1\nend\n"
+    )
+    expect(dead(aliased, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
+      .to(eq(%w[Plan Plan#lost]))
+  end
+
+  it "counts a type whose body runs code at load, a hook registration or a hand-over, as used" do
+    hooked = rails.merge(
+      "lib/hooks/two_step.rb" => "module Hooks\n  module TwoStep\n    Warden::Manager.after_user { 1 }\n  end\nend\n",
+      "lib/hooks/later.rb" => "module Hooks\n  module Later\n    ActiveSupport.on_load(:job).call { 1 }\n  end\nend\n",
+      "lib/hooks/quiet.rb" => "module Hooks\n  module Quiet\n    self.flag = true\n    extend self\n  end\nend\n"
+    )
+    expect(dead(hooked, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
+      .to(eq(%w[Hooks::Quiet]))
+  end
 end

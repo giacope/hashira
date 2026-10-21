@@ -6,12 +6,9 @@ class Hashira::Smells::Ownership
     @catalog = catalog
   end
 
-  def owned?(segments, owner = nil, rooted: false)
-    surveyed
-    return @_defined.include?(segments.join("::")) if rooted
-    return true if lexical(segments, owner).any? { @_defined.include?(it) }
-    !builtin?(segments.first) && @_suffixes.include?(segments.join("::"))
-  end
+  def owned?(segments, owner = nil, rooted: false) = !place(segments, owner, rooted:).nil?
+
+  def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
 
   def owns?(node, owner = nil)
     owned?(Hashira::Analysis::Syntax.segments(node), owner, rooted: Hashira::Analysis::Syntax.rooted?(node))
@@ -25,10 +22,7 @@ class Hashira::Smells::Ownership
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
 
-  def resolve(segments, owner, rooted:)
-    surveyed
-    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { @_written.include?(it) }
-  end
+  def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
 
   def keys(segments)
     surveyed
@@ -37,10 +31,23 @@ class Hashira::Smells::Ownership
 
   private
 
+  def among(known, segments, owner, rooted)
+    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }
+  end
+
+  def defined
+    surveyed
+    @_defined
+  end
+
+  def written
+    surveyed
+    @_written
+  end
+
   def surveyed
     return if @_surveyed
     @_surveyed = true
-    @_suffixes = Set.new
     @_defined = Set.new
     @_written = Set.new
     @_tables = {}
@@ -62,18 +69,11 @@ class Hashira::Smells::Ownership
     chart(path, Hashira::Analysis::Syntax.thaw(constant.value))
   end
 
-  def absorb(path)
-    @_defined << path.join("::")
-    @_suffixes.merge(suffixes(path))
-  end
+  def absorb(path) = @_defined << path.join("::")
 
   def lexical(segments, owner)
     parts = owner.to_s.split("::")
     parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
-  end
-
-  def builtin?(name)
-    Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
   end
 
   def chart(path, value)

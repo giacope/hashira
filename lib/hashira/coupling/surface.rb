@@ -7,6 +7,8 @@ class Hashira::Coupling::Surface
 
   HIDDEN = %i[private protected].freeze
 
+  ALIASES = 3
+
   Member =
     Data.define(:name, :path, :owner, :site, :file, :exposed, :selector, :overrides) do
       def place = [file, site[/\d+\z/].to_i]
@@ -110,12 +112,20 @@ class Hashira::Coupling::Surface
     end
   end
 
-  def located(node, nesting)
+  def located(node, nesting, depth = ALIASES)
     return unless Hashira::Analysis::Syntax.static?(node)
     segments = Hashira::Analysis::Syntax.segments(node)
     found = @census.locate(segments, Hashira::Analysis::Syntax.rooted?(node) ? [] : nesting)
-    found if found&.last == segments.last
+    aliased(found, depth) if found&.last == segments.last
   end
+
+  def aliased(path, depth)
+    value, nesting = aliases.of(path)
+    return path unless value
+    located(value, nesting, depth - 1) if depth.positive?
+  end
+
+  def aliases = @_aliases ||= Hashira::Coupling::Aliases.new(openings)
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 

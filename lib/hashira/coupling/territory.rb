@@ -13,25 +13,34 @@ class Hashira::Coupling::Territory
 
   def named = @_named ||= @definitions.reject { it.path.empty? }
 
-  def claimed?(definition) = definition.created? || !foreign?(root(definition))
+  def claimed?(definition)
+    definition.created? || dependencies.own?(definition.scope.last) || !foreign?(root(definition))
+  end
 
   def foreign?(root) = verdicts.fetch(root) { verdicts[root] = abroad?(root) }
 
   def verdicts = @_verdicts ||= {}
 
-  def abroad?(root) = builtin?(root) || !(homes.include?(root) || founded.include?(root))
+  def abroad?(root) = builtin?(root) || dependencies.foreign?(root) || !opened.include?(root)
 
   def builtin?(root) = Hashira::Analysis::CORE.include?(root) || Hashira::Analysis::LIBRARIES.include?(root.downcase)
 
-  def founded = @_founded ||= @definitions.select { it.klass? && it.created? }.to_set { root(it) }
+  def opened
+    @_opened ||= [
+      *@definitions.select do
+        defining?(it)
+      end.map { it.scope.last }, *@definitions.implied, @definitions.prefix.first(1)
+    ]
+      .select(&:one?).to_set(&:first)
+  end
 
-  def homes = @_homes ||= named.select { home?(it) }.to_set { root(it) }
+  def defining?(definition)
+    definition.created? || Hashira::Analysis::Syntax.statements(definition.node).any? { !autoload?(it) }
+  end
 
-  def home?(definition) = places(definition.file).include?(plain(root(definition)))
+  def autoload?(statement) = statement.is_a?(Prism::CallNode) && statement.name == :autoload
 
-  def places(file) = file.delete_suffix(".rb").split("/").map { plain(it) }
+  def dependencies = @definitions.dependencies
 
   def root(definition) = definition.scope.last.first
-
-  def plain(name) = name.downcase.delete("_")
 end
