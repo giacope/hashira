@@ -251,10 +251,12 @@ layers:
 
 In a Rails app, `layers: rails` declares the conventional three: `web`
 (`app/controllers`, `views`, `helpers`, `components`, `serializers`,
-`presenters`, `decorators`, `policies`, `avo`, `dashboards`), `app`
-(`app/jobs`, `workers`, `mailers`, `services`, `channels`, `mailboxes`) and
-`domain` (`app/models`, `app/validators`, `lib`). A model that enqueues a job
-or sends mail from a callback then points outward, which is the point.
+`presenters`, `decorators`, `policies`, `avo`, `dashboards`, and the other
+delivery mechanisms: `mailers`, `mailboxes`, `channels`), `app` (`app/jobs`,
+`workers`, `services`) and `domain` (`app/models`, `app/validators`, `lib`). A
+model that enqueues a job or sends mail from a callback then points outward,
+which is the point. Where one namespace spans two layers, the edge to cut names
+the layer at each end (`Archived (domain) -> Archived (web)`).
 
 A layer may use the layers declared inside it, never one outside it.
 **layer_violation** reports every reference that points outward, one finding
