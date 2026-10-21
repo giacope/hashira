@@ -583,9 +583,14 @@ Findings (3):
   fill a role peers share stay quiet.
 - **control_parameter** — an argument used only to pick a path, where some
   caller passes it as a literal flag (`true`, `false`, a symbol) by position or
-  keyword. An argument that callers compute, a configured style, an argument a
-  branch only maps to a value (`flag ? "on" : "off"`), and one compared with
-  another value are data. Only a method callers outside the class can reach
+  keyword. A caller counts only when its receiver is the method's class: a bare
+  or `self` call inside it, the class itself (`Database.build(:pg)`), an object
+  it builds (`Cart.new`, a local assigned one), or a variable named for it
+  (`@cart` is a `Cart`). A same-named method elsewhere (`@items.build(:line)`)
+  is not evidence. An argument that callers compute, a configured style, an
+  argument a branch only maps to a value (`flag ? "on" : "off"`) or to a built
+  object (a factory: `name == "pg" ? Postgres.new : Null.new`), and one compared
+  with another value are data. Only a method callers outside the class can reach
   counts: a private or protected helper's flag sits behind the explicit public
   methods that call it.
 - **data_clump** — the same three or more parameters travel together through

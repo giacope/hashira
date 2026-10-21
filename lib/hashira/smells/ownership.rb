@@ -23,7 +23,12 @@ class Hashira::Smells::Ownership
 
   def values = @_values ||= Hashira::Smells::Values.new(@trees)
 
-  def calls(name) = sent.fetch(name, [])
+  def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
+
+  def resolve(segments, owner = nil, rooted: false)
+    surveyed
+    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { @_written.include?(it) }
+  end
 
   def keys(segments)
     surveyed
@@ -32,21 +37,19 @@ class Hashira::Smells::Ownership
 
   private
 
-  def sent = @_sent ||= @trees.flat_map { called(it) }.group_by(&:name)
-
-  def called(tree) = Hashira::Analysis::NodeWalk.collect(tree).grep(Prism::CallNode)
-
   def surveyed
     return if @_surveyed
     @_surveyed = true
     @_suffixes = Set.new
     @_defined = Set.new
+    @_written = Set.new
     @_tables = {}
     @trees.each { survey(it) }
   end
 
   def survey(tree)
     Hashira::Analysis::TypeWalk.each(tree) do |node, full|
+      @_written << full.join("::")
       next unless claimed?(full)
       absorb(full)
       Hashira::Analysis::Syntax.constants(node).each { record(full, it) }

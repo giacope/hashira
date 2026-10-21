@@ -9,7 +9,7 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
 
   def defined(source) = Hashira::Analysis::NodeWalk.collect(Prism.parse(source).value).grep(Prism::DefNode)
 
-  def called(definition) = "#{definition.name}(#{flags(definition)})"
+  def called(definition) = "App::Zone::Thing.new.#{definition.name}(#{flags(definition)})"
 
   def flags(definition) = Hashira::Smells::Parameters.parts(definition).map { flag(it) }.join(", ")
 
@@ -18,9 +18,46 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
   it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
     source = "class Writer\n  def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)\n\n  " \
       "def emit(raw:) = raw ? @a : @b\nend\n"
-    calls = ["write(@quoted)\n  emit(raw: compute)", "write(false)\n  emit(raw: :yes)", "self.write(:on)"]
-    found = calls.map { flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go\n  #{it}\n end\nend\n") }
+    calls = ["w.write(@quoted)\n  w.emit(raw: compute)", "w.write(false)\n  w.emit(raw: :yes)", "Writer.new.write(:on)"]
+    found =
+      calls.map do
+        flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go(w = Writer.new)\n  #{it}\n end\nend\n")
+      end
     expect(found.map { it.map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+  end
+
+  it "counts a caller only where its receiver is the method's class, never a same-named method elsewhere" do
+    source = <<~RUBY
+      class Database
+        def self.build(name) = name == "pg" ? @pool.checkout : @pool.idle
+        def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)
+      end
+    RUBY
+    calls = [
+      "@items.build(:line)\n  @db.write(true)\n  write(false)\n  self.write(:on)", "::Database.build(:pg)",
+      "db = Database.new\n  db.write(true)", "db = items\n  db.write(true)\n  db.build(:x)\n  Cart.new.write(:on)",
+      "@database.write(true)", "database.write(true)", "main_database = items\n  main_database.write(:on)",
+      "items.first.write(true)"
+    ]
+    found =
+      calls.map do
+        flagged("lib/app/d.rb" => source, "lib/app/c.rb" => "class Cart\n  def go\n  #{it}\n end\nend\n")
+      end
+    expect(found.map { it.map(&:package) })
+      .to(eq([[], %w[Database.build], %w[Database#write], [], *[%w[Database#write]] * 3, []]))
+  end
+
+  it "leaves a factory alone whose every branch only builds an object: the switch maps a name to a strategy" do
+    source = <<~RUBY
+      module App
+        class Store
+          def self.build(name) = name == :pg ? Postgres.new(name) : Null.new
+          def self.open(name) = name == :pg ? Postgres.new.tap(&:connect) : Null.new
+        end
+      end
+    RUBY
+    caller = "module App\n  class Cart\n    def go = [Store.build(:pg), Store.open(:pg)]\n  end\nend\n"
+    expect(flagged("lib/app/store.rb" => source, "lib/app/cart.rb" => caller).map(&:package)).to(eq(%w[App::Store.open]))
   end
 
   it "leaves a private or protected helper's flag alone: the explicit public methods in front are the interface" do

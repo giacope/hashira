@@ -59,7 +59,7 @@ class Hashira::Smells::ParamCheck
 
   def mapped? = tested.any? && !Hashira::Smells::Conditions.couple?(@node) && branches.compact.all? { literal?(it) }
 
-  def literal?(branch) = Hashira::Smells::Mapping.literal?(branch)
+  def literal?(branch) = Hashira::Smells::Mapping.literal?(branch) || Hashira::Smells::Mapping.built?(branch)
 
   def reads(nodes) = nodes.grep(Prism::LocalVariableReadNode).select { it.name == @name }
 end
