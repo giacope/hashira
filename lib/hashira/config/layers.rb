@@ -66,7 +66,7 @@ class Hashira::Config::Layers
 
   def names = @list.map(&:name)
 
-  def allows?(order) = !@preset || order.index(INNER.first) < order.index(INNER.last)
+  def allows?(order) = !@preset || order.intersection(INNER) == INNER
 
   def rank(file, package)
     key = [file, package]

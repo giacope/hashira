@@ -52,4 +52,14 @@ RSpec.describe(Hashira::Config::Layers) do
       )
     )
   end
+
+  it "keeps the rails preset's extra folders to the preset" do
+    plain = described_class.new([described_class::Layer.new(name: "app", parts: [], home: "/srv")])
+    expect(
+      [
+        rank(%w[web jobs domain], "/srv/lib/mailers/previews/a.rb", "A"),
+        plain.allows?(%w[web domain app])
+      ]
+    ).to(eq([nil, true]))
+  end
 end

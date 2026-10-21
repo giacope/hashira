@@ -110,10 +110,16 @@ RSpec.describe(Hashira::Project) do
       { "app/models/devise/x.rb" => "", "lib/devise/rails.rb" => rails },
       { "app/models/shop/x.rb" => "", "lib/shop/wiring.rb" => isolated },
       { "app/models/x.rb" => "", "app/models/engine.rb" => rails },
-      { "app/models/x.rb" => "", "lib/odd.rb" => "isolate_namespace Odd\n" }
+      { "app/models/x.rb" => "", "lib/odd.rb" => "isolate_namespace Odd\n" },
+      { "engines/shop/app/models/shop/x.rb" => "", "engines/shop/lib/shop/engine.rb" => rails.sub("Devise", "Shop") }
     ]
-    found = projects.map { |files| within(files) { described_class.new(["app"]).engine } }
-    expect(found).to(eq(["Devise", "Shop::Admin", nil, nil]))
+    found =
+      projects.map do |files|
+        within(files) do
+          described_class.new([files.key?("engines/shop/lib/shop/engine.rb") ? "engines/shop" : "app"]).engine
+        end
+      end
+    expect(found).to(eq(["Devise", "Shop::Admin", nil, nil, "Shop"]))
   end
 
   it "takes a project holding one Rails engine for Rails, named by the module around its engine" do

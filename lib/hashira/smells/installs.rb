@@ -49,8 +49,7 @@ class Hashira::Smells::Installs
   def prefix(name)
     name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
     head = name.parts.first if INTERPOLATED.include?(name.class)
-    text = Hashira::Analysis::Syntax.text(head) if head.is_a?(Prism::StringNode)
-    text if text&.start_with?("@")
+    Hashira::Analysis::Syntax.text(head) if head.is_a?(Prism::StringNode)
   end
 
   def words(node)

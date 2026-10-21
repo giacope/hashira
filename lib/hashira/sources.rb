@@ -32,8 +32,7 @@ class Hashira::Sources
   end
 
   def vendored?(path)
-    home = @directories.find { path.start_with?("#{it}/") }
-    home ? path.delete_prefix("#{home}/").split("/")[...-1].include?(VENDOR) : false
+    path.delete_prefix("#{@directories.find { path.start_with?("#{it}/") }}/").split("/")[...-1].include?(VENDOR)
   end
 
   def generated?(path) = GRAMMARS.any? { File.exist?(path.delete_suffix(".rb") + it) } || head(path).match?(GENERATED)

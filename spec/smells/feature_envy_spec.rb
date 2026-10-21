@@ -1106,4 +1106,22 @@ RSpec.describe(Hashira::Smells::FeatureEnvy) do
     RUBY
     expect(findings.map(&:package)).to(eq(["App::Zone::FakeLauncher#check"]))
   end
+
+  it "takes a case/in pattern on a library class for the type, over the variable's name" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def total(item)
+              @seen = true
+              case item
+              in Prism::CallNode[name:] then item.net + item.tax + item.fee
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end

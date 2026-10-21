@@ -474,17 +474,24 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
             ::ActionDispatch::Routing::Mapper.include(self)
           end
 
+          module Trail2
+            def stray = 1
+          end
+
           def self.install
+            ::Hooks.include ::Trail2
             Hooks.include Trail
             ::Audit::Hooks.include(::Audit::Missing)
             Hooks.include(Trail.dup)
           end
         end
       RUBY
-      "lib/stray.rb" => "Kernel.include(self)\n"
+      "lib/stray.rb" => "Kernel.include(self)\n",
+      "lib/hooks.rb" => "module Hooks\nend\nmodule Trail2\n  def kept = 1\nend\n",
+      "app/controllers/hooked_controller.rb" => "class HookedController\n  include Hooks\nend\n"
     )
     expect(dead(handed, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
-      .to(eq(%w[Audit.install]))
+      .to(eq(%w[Audit::Trail2 Audit::Trail2#stray Audit.install]))
   end
 
   it "leaves the classes under a parent that aliases a framework class to the framework, and follows an owned alias" do
@@ -527,5 +534,22 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
         "module Shop\n  class OrdersController\n    def index = Order\n  end\nend\n"
     }
     expect(dead(engine, directories: %w[app lib])).to(eq(%w[Shop::Order#total Shop::Config#hidden]))
+  end
+
+  it "reads a folder Zeitwerk makes a namespace of as the project's, and survives a lone class for a root" do
+    implied = rails.merge("app/models/admin/report.rb" => "class Admin::Report\n  def total = 1\nend\n")
+    lone = {
+      "config/application.rb" => "",
+      "app/models/wizard_router.rb" => "class WizardRouter\n  module Ext\n  end\nend\n"
+    }
+    found = [dead(implied, directories: %w[app lib]), dead(lone, directories: %w[app])]
+    expect(found).to(
+      eq(
+        [
+          %w[Admin::Report Admin::Report#total Order#stale_scope Pricing Pricing#quote Pricing.rate],
+          %w[WizardRouter::Ext]
+        ]
+      )
+    )
   end
 end

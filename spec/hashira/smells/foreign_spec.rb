@@ -82,7 +82,7 @@ RSpec.describe(Hashira::Smells::Foreign) do
   end
 
   it "leaves a probe on an exception rescued from a splatted list alone, as it does a library's" do
-    rescued = "def show\n  Item.new.name\nrescue *FAILURES => error\n  error.respond_to?(:name)\nend"
+    rescued = "def show\n  Item.new.name\nrescue *FAILURES => item\n  item.respond_to?(:name)\nend"
     expect(probed(rescued)).to(be_empty)
   end
 
@@ -159,5 +159,23 @@ RSpec.describe(Hashira::Smells::Foreign) do
     found = names.map { sniffed({ "lib/app/compute.rb" => format(compute, it) }, "utility_function").map(&:package) }
     both = %w[RecordingMock Spare].map { |name| ["App::Compute::#{name}#list_flavors", "App::Compute::#{name}#reset_data"] }
     expect(found).to(eq([["App::Compute::Mock#reset_data"], both.first, ["App::Compute::Fake#reset_data"], both.last]))
+  end
+
+  it "links a computed send only to the methods both its literal ends spell, and to none when it has neither" do
+    router = <<~RUBY
+      module App
+        class Router
+          def a(x) = @a = x
+          def on_a_done = @a
+          def b(x) = @b = x
+          def on_b = @b
+          def c(x) = @c = x
+          def c_done = @c
+          def go(kind) = send("on_\#{kind}_done")
+          def any(kind) = send("\#{kind}")
+        end
+      end
+    RUBY
+    expect(sniffed({ "lib/app/router.rb" => router }, "low_cohesion").map { it.detail[:count] }).to(eq([3]))
   end
 end

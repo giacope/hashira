@@ -18,7 +18,7 @@ class Hashira::Coupling::Handover
   def gifts
     @_gifts ||=
       @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, hosting, given, nesting), found|
-        found[exact(given, nesting)] << ((host && exact(host, hosting)) || FOREIGN)
+        found[exact(given, nesting)] << (exact(host, hosting) || FOREIGN)
       end
   end
 
