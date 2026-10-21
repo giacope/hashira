@@ -599,7 +599,9 @@ Findings (3):
   result. Identity is by value: a local counts by its binding, a literal block is
   part of the call, a reassignment between makes two values. Left alone: calls
   that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a command whose
-  result is thrown away, two reads no single run reaches both of, a read after a
+  result is thrown away, two reads no single run reaches both of (`return`,
+  `raise` and the `render :index and return` idiom end a run; `x or return`
+  is a guard the run passes), a read after a
   command on the receiver, a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
@@ -647,8 +649,9 @@ Findings (3):
   answer (a node's absent receiver, a URI's missing scheme) are someone else's
   contract. A validator's guard on an attribute a presence validation already
   reports, a check replaced by its default, a check whose branch raises (the
-  guard asserts against the nil), and a one-line predicate that answers a nil
-  test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
+  guard asserts against the nil), memoization in any of its spellings (`@x ||=
+  v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that
+  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
   to nil is the caller's option, not the codebase's nil. A predicate that fetches
   a record only to test it for nil is told to ask `exists?`. Checks of one
   nil source — an instance variable, a method that can return nil — are one

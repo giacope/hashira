@@ -14,8 +14,6 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   FINDERS = %i[find_by].freeze
 
-  RAISES = %i[raise fail].freeze
-
   BRANCHES = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode].freeze
 
   private
@@ -91,7 +89,11 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def cases = body.grep(Prism::CaseNode)
 
-  def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check)
+  def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check) || memo?(check)
+
+  def memo?(check)
+    body.grep(Prism::IfNode).any? { it.predicate.equal?(check) && Hashira::Smells::Memo.fills?(it, tested(check)) }
+  end
 
   def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raise?(it) } }
 
@@ -99,7 +101,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def asserts?(node, check) = BRANCHES.first(2).include?(node.class) && within(node.predicate).any? { it.equal?(check) }
 
-  def raise?(node) = node.is_a?(Prism::CallNode) && !node.receiver && RAISES.include?(node.name)
+  def raise?(node) = Hashira::Smells::Exits.raise?(node)
 
   def answering?(check) = predicate? && body.none? { BRANCHES.include?(it.class) } && !fetching?(check)
 

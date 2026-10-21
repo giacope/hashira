@@ -773,6 +773,37 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
   end
 
+  it "reads `call and return` and `call and raise` as an exit, but `or return` as a guard the run passes" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def create(file)
+              rows = begin
+                file.read.lines
+              rescue IOError
+                @view.render(:index) and return
+              end
+              @store.save(rows) ? @view.redirect : @view.render(:index)
+            end
+
+            def strict(rows)
+              @io.tick(1) and raise(ArgumentError) if rows
+              @io.tick(1) and fail
+            end
+
+            def guard(rows)
+              @io.tick(2) or return
+              @io.tick(2) && @log.write(rows)
+              @io.tick(2) and @log.rows.raise
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(2) × 3 (lines 19, 20, 21)"]))
+  end
+
   it "excuses a call inside an exit's value and its twin after the exit, which never both run" do
     findings = repeated(<<~RUBY)
       module App
