@@ -515,6 +515,11 @@ From the second field test (twenty MIT-licensed codebases):
   the class declares, and writes in a block the class body hands its DSL
   (`start { @mode = … }`, `before_action { … }`).
 - repeated_call reads `render … and return` as leaving the method.
+- repeated_call sees a value change between two calls when an instance
+  variable is assigned between them (`flips[@active]` before and after
+  `@active = id`), and when the first call sits in a trailing `if`/`unless`
+  whose statement writes what it reads (`at += 1 if @source[at] == "^"` runs
+  the condition first).
 - nil_check reads `@x = v if @x.nil?` as memoization.
 - duplication reads the rows of a literal table as a list even when their
   literal lists differ in length.

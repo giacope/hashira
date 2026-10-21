@@ -287,6 +287,77 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     )
   end
 
+  # A modifier's condition runs before the statement written ahead of it, and
+  # an instance variable assigned between two calls hands them two values.
+  it "counts a variable written before a trailing condition, or an instance variable reassigned, as two values" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def opening(at)
+              at += 1 if @source.char(at) == "^"
+              @source.char(at) == "]" ? at + 1 : at
+            end
+
+            def unbumped(count)
+              count += 1 unless @log.seen(count)
+              @log.seen(count)
+            end
+
+            def active=(id)
+              @flips.fetch(@active).reveal
+              @active = id
+              @flips.fetch(@active).conceal
+            end
+
+            def bumped
+              @calls += 1
+              @out.puts(@flips.fetch(@calls))
+              @out.puts(@flips.fetch(@calls))
+            end
+
+            def asked(at)
+              @source.char(at) if @source.char(at)
+            end
+
+            def stepped(at)
+              first = @source.char(at)
+              at += 1
+              second = @source.char(at)
+              at += 1
+              [first, second, @source.char(at)]
+            end
+
+            def refetched(count)
+              seen = @log.seen(count)
+              @out.puts(seen) if (count = @log.next) && @log.seen(count)
+            end
+
+            def shadowed(node)
+              first = node.name(1)
+              @rows.each { |node| node = node.parent }
+              [first, node.name(1)]
+            end
+
+            def bare(at)
+              if @source.char(at)
+              end
+              @source.char(at)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "@flips.fetch(@calls) × 2 (lines 22, 23)", "@source.char(at) × 2 (line 27)",
+          "node.name(1) × 2 (lines 44, 46)", "@source.char(at) × 2 (lines 50, 52)"
+        ]
+      )
+    )
+  end
+
   it "excuses constructors, bare calls, and calls that differ in arguments" do
     findings = repeated(<<~RUBY)
       module App
