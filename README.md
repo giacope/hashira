@@ -524,7 +524,8 @@ bands over those names rather than skipped.
 What is not counted:
 
 - **Lists and declarations.** A run of identically shaped statements (requires,
-  routes, registrations), a `case` of three or more same-shaped arms, a class
+  routes, registrations, the rows of a keyword table, whose literal lists may
+  differ in length), a `case` of three or more same-shaped arms, a class
   body of macros with literal arguments (`has_many`, `validates`, `attribute`),
   constants holding literals or frozen lists of constants, and a constructor
   that only stores its arguments.

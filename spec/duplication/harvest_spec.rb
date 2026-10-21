@@ -28,6 +28,16 @@ RSpec.describe(Hashira::Duplication::Harvest) do
     expect(ranges).to(be_empty)
   end
 
+  it "skips rows of a table whose literal lists differ in length, and keeps rows that differ in code" do
+    rows = [
+      "b[\"A\"] = Set.new [\"x\", \"y\"]", "b[\"B\"] = Set.new [\"x\", \"y\", \"z\"]",
+      "b[\"C\"] = Set.new [\"x\"]", "b[\"D\"] = Set.new({ \"x\" => 1 })"
+    ]
+    expect(ranges("m.rb" => "#{rows.join("\n")}\n").uniq).to(contain_exactly("m.rb:4-4"))
+    code = ["b[\"A\"] = Set.new [x, y]", "b[\"B\"] = Set.new [x, y, z]", "b[\"C\"] = Set.new [x]"]
+    expect(ranges("m.rb" => "#{code.join("\n")}\n").uniq).to(include("m.rb:1-3"))
+  end
+
   it "skips the list even when a statement of another shape follows it" do
     ranges = ranges("m.rb" => "require \"a\"\nrequire \"b\"\nrequire \"c\"\ndef m\nend\n").uniq
     expect(ranges).to(contain_exactly("m.rb:4-5"))

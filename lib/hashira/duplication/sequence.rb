@@ -7,6 +7,7 @@ class Hashira::Duplication::Sequence
   MAX_STATEMENTS = 12
   LIST_RUN = 3
   SCOPES = [Prism::ClassNode, Prism::ModuleNode, Prism::SingletonClassNode].freeze
+  TABLES = [Prism::ArrayNode, Prism::HashNode, Prism::KeywordHashNode].freeze
 
   def initialize(file, statements, walks, setting)
     @file = file
@@ -27,15 +28,17 @@ class Hashira::Duplication::Sequence
 
   def runs = shaped.slice_when { |left, right| left.last != right.last }.map { it.map(&:first) }
 
-  def shaped = @statements.map { [it, fragment([it]).types] }
+  def shaped = @statements.map { [it, outline(it)] }
+
+  def outline(node) = [node.type] + (table?(node) ? [] : node.compact_child_nodes.flat_map { outline(it) })
+
+  def table?(node) = TABLES.include?(node.class) && Hashira::Duplication::Literal.new(node).literal?
 
   def windows(segment) = lengths(segment).flat_map { |length| slide(segment, length) }
 
   def lengths(segment) = MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min
 
-  def slide(segment, length) = spans(segment, length).map { fragment(segment[it, length]) }.reject(&:sectioned?)
-
-  def spans(segment, length) = 0..(segment.size - length)
+  def slide(segment, length) = (0..(segment.size - length)).map { fragment(segment[it, length]) }.reject(&:sectioned?)
 
   def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots, @walks, @setting)
 end
