@@ -14,21 +14,57 @@ class Hashira::Complexity::CognitiveScore
   LABELS = { Prism::WhileNode => "while", Prism::UntilNode => "until" }
     .merge(Prism::ForNode => "for", Prism::CaseNode => "case", Prism::CaseMatchNode => "case").freeze
 
+  Walk =
+    Data.define(:increments, :calls, :levels) do
+      def nesting = levels.size
+
+      def visit(node)
+        return unless node
+        __send__(HANDLERS.fetch(node.class, :descend), node)
+      end
+
+      def add(node, cost, label)
+        increments << Hashira::Complexity::Increment.new(line: node.location.start_line, cost:, label:)
+      end
+
+      def deeper
+        levels.push(nil)
+        yield
+        levels.pop
+      end
+      private
+      def descend(node) = node.compact_child_nodes.each { visit(it) }
+
+      def on_call(node)
+        calls.push(nil)
+        descend(node)
+      end
+
+      def on_block(node) = deeper { descend(node) }
+
+      def on_nester(node)
+        add(node, 1 + nesting, LABELS.fetch(node.class))
+        deeper { descend(node) }
+      end
+
+      def on_if(node) = Hashira::Complexity::IfChain.new(self).apply(node)
+
+      def on_unless(node) = Hashira::Complexity::IfChain.new(self).negated(node)
+
+      def on_begin(node) = Hashira::Complexity::RescueScan.new(self).apply(node)
+
+      def on_rescue(node) = Hashira::Complexity::RescueScan.new(self).modifier(node)
+
+      def on_boolean(node) = Hashira::Complexity::BooleanRun.new(self).apply(node)
+    end
+
   def initialize(node)
     @node = node
   end
 
-  def increments
-    walked
-    @_increments
-  end
+  def increments = walked.increments
 
-  def calls
-    walked
-    @_calls
-  end
-
-  def nesting = @_nesting
+  def calls = walked.calls.size
 
   def total = increments.sum(&:cost)
 
@@ -37,57 +73,7 @@ class Hashira::Complexity::CognitiveScore
     { cognitive: all.sum(&:cost), calls:, increments: all }
   end
 
-  def visit(node)
-    return unless node
-    __send__(HANDLERS.fetch(node.class, :descend), node)
-  end
-
-  def add(node, cost, label)
-    @_increments << Hashira::Complexity::Increment.new(line: node.location.start_line, cost:, label:)
-  end
-
-  def deeper
-    @_nesting += 1
-    yield
-    @_nesting -= 1
-  end
-
   private
 
-  def walked
-    return if @_walked
-    @_walked = true
-    blank
-    visit(@node.body)
-  end
-
-  def blank
-    @_increments = []
-    @_calls = 0
-    @_nesting = 0
-  end
-
-  def descend(node) = node.compact_child_nodes.each { visit(it) }
-
-  def on_call(node)
-    @_calls += 1
-    descend(node)
-  end
-
-  def on_block(node) = deeper { descend(node) }
-
-  def on_nester(node)
-    add(node, 1 + @_nesting, LABELS.fetch(node.class))
-    deeper { descend(node) }
-  end
-
-  def on_if(node) = Hashira::Complexity::IfChain.new(self).apply(node)
-
-  def on_unless(node) = Hashira::Complexity::IfChain.new(self).negated(node)
-
-  def on_begin(node) = Hashira::Complexity::RescueScan.new(self).apply(node)
-
-  def on_rescue(node) = Hashira::Complexity::RescueScan.new(self).modifier(node)
-
-  def on_boolean(node) = Hashira::Complexity::BooleanRun.new(self).apply(node)
+  def walked = @_walked ||= Walk.new(increments: [], calls: [], levels: []).tap { it.visit(@node.body) }
 end
