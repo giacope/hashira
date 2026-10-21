@@ -519,8 +519,6 @@ From the second field test (twenty MIT-licensed codebases):
 - duplication reads the rows of a literal table as a list even when their
   literal lists differ in length.
 
-From the first field test:
-
 From the field test on ten MIT-licensed codebases:
 
 - Constants resolve the way Ruby does: a `::`-rooted class written inside a
