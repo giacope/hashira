@@ -49,6 +49,22 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling) do
     expect(said).to(eq([", and one refers to the other ", ", though neither refers to the other "]))
   end
 
+  def registered(source)
+    within(files.merge("lib/app/d/p.rb" => source)) do
+      history
+      return found(true).map(&:digest)
+    end
+  end
+
+  it "leaves out a pair where one file only loads the other, or lists its path, as a registration" do
+    named = [
+      "require_relative \"../e/q\"\n", "require \"app/e/q\"\n", "load \"e/q.rb\"\n", "FILES = %w[app/e/q.rb].freeze\n"
+    ]
+    apart = ["require\nrequire_relative \"../c/z\"\nrequire_relative \"e/q\"\n", "NAME = \"e/q\"\n"]
+    used = "require_relative \"../e/q\"\nmodule App; module D; class P; def q = E::Q; end; end; end\n"
+    expect((named + apart + [used]).map { registered(it).size }).to(eq([1, 1, 1, 1, 2, 2, 2]))
+  end
+
   it "moves the commits, the share and the size of a commit worth counting" do
     limits = coupled({ "commits" => 6 }, { "degree" => 67 }, { "files" => 1 }).map { it.map(&:digest) }
     expect(limits).to(eq([[], ["a/x.rb <-> b/y.rb"], []]))

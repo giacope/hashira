@@ -113,7 +113,8 @@ could not parse) goes to stderr.
 ## Configuration
 
 A `.hashira.yml` holds the flags you would pass every time, each key a flag
-without its dashes, plus `directories` and `checks`:
+without its dashes, plus `directories`, `checks`, `layers` and `boundaries`
+(an [interpreted model](#ci) you declare):
 
 ```yaml
 directories: [app, lib]
@@ -897,6 +898,17 @@ named entrypoint.
 "boundaries": [
   {"root": "Prism", "role": "interpreted_model", "entrypoint": "lib/my_tool/trees.rb", "reason": "the Prism AST is the input model"}
 ]
+```
+
+A declaration is structure, not debt, so it can live in `.hashira.yml` instead,
+where a codebase with no baseline keeps it (both lists apply when both exist):
+
+```yaml
+boundaries:
+  - root: Prism
+    role: interpreted_model
+    entrypoint: lib/my_tool/trees.rb
+    reason: the Prism AST is the input model
 ```
 
 ## Other formats

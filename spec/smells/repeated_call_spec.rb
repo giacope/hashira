@@ -117,6 +117,62 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
   end
 
+  it "takes the same call again, in the arm a test of its first answer falls back from, for a retry" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def settle(job)
+              outcome = attempt(job, first: true)
+              outcome.lost? ? attempt(job, first: true) : outcome
+            end
+
+            def kept(job)
+              outcome = attempt(job, first: true)
+              unless outcome.lost?
+                outcome
+              else
+                @log.write(:again)
+                attempt(job, first: true)
+              end
+            end
+
+            def twice(job)
+              outcome = attempt(job, first: true)
+              job.lost? ? attempt(job, first: true) : outcome
+            end
+
+            def reuse(job)
+              outcome = attempt(job, first: true)
+              outcome.lost? ? attempt(job, first: true).to_s : outcome
+            end
+
+            def bare(job)
+              outcome = attempt(job, first: true)
+              outcome.lost? ? attempt(job, first: true) : job
+            end
+
+            def empty(job)
+              outcome = attempt(job, first: true)
+              if outcome.lost?
+                attempt(job, first: true)
+              elsif outcome.slow?
+                outcome
+              else
+              end
+            end
+
+            def nested(job)
+              outcome = attempt(job, first: !plan.quick?)
+              outcome.lost? ? attempt(job, first: !plan.quick?) : outcome
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[twice reuse bare empty]))
+  end
+
   it "tracks safe navigation, receiverless argument calls, and block passes" do
     findings = repeated(<<~RUBY)
       module App

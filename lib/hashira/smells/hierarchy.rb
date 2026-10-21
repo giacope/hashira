@@ -33,6 +33,8 @@ class Hashira::Smells::Hierarchy
 
   def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
 
+  def mixed(name) = table.fetch(name, NONE).openings.flat_map { lineage.mixins(it) }.flat_map { definitions(it) }
+
   def abstract?(name)
     return true if ABSTRACT.match?(name.split("::").last)
     table.fetch(name, NONE).openings.any? do |type|

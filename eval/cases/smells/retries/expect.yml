@@ -1,0 +1,7 @@
+# settle asks the runner again only when the first verdict was lost, and keeps
+# the first one otherwise: a retry (kimera's IsolatedVerdict#settle). describe
+# asks twice for the same answer it already has: a repeat.
+present:
+  - {kind: repeated_call, package: "App::Verdicts#describe"}
+absent:
+  - {kind: repeated_call, package: "App::Verdicts#settle"}

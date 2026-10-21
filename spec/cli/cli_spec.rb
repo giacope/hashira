@@ -73,6 +73,18 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "reads an interpreted model declared in .hashira.yml, with no baseline to hold it" do
+    declared = <<~YAML
+      boundaries:
+        - {root: Prism, role: interpreted_model, entrypoint: lib/app/trees.rb, reason: the input}
+    YAML
+    files = interpretation.except("hashira_baseline.json")
+    arguments = %w[lib/app --kind boundary_sprawl --skip duplication,complexity,coupling]
+    kept = within(files.merge(".hashira.yml" => declared)) { capture { described_class.new(arguments).status } }
+    bare = within(files) { capture { described_class.new(arguments).status } }
+    expect([kept, bare].map { it[/Findings \(\d+\)/] }).to(eq(["Findings (0)", "Findings (1)"]))
+  end
+
   it "refuses to ratchet without a baseline" do
     within(Fixtures::CYCLIC_FILES) do
       status = nil

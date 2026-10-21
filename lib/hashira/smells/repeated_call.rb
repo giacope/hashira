@@ -107,7 +107,11 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
 
-  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !course.parted?(pair) }
+  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !parted?(pair) }
+
+  def parted?(pair) = course.parted?(pair) || retries.retry?(*pair)
+
+  def retries = @_retries ||= Hashira::Smells::Retries.new(subject.node)
 
   def course = @_course ||= Hashira::Smells::Course.new(subject.node, every, discards, branches)
 

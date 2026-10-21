@@ -108,6 +108,9 @@ things a baseline sees:
   turns no opt-in kind on. A codebase at zero findings gates with it instead of
   keeping a baseline for `--ratchet`, and the gate's verdict lists the kinds it
   covered.
+- `.hashira.yml` takes `boundaries:`, the interpreted-model declarations the
+  baseline holds, so a codebase without a baseline can still declare one. Both
+  lists apply when both exist.
 
 - **Rails engines** are Rails: a project with no `config/application.rb` that
   holds exactly one `class Engine < Rails::Engine` is packaged by the classes
@@ -522,6 +525,19 @@ From the third field test (thirty MIT-licensed codebases):
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+- Read on the trifecta's own code (self-hosting):
+  - `low_cohesion` links a class's methods through the project modules it
+    includes, whose methods call back into the class (kimera's
+    `Baseline::Entry` reaches `matching` through `IgnoreList::Drift`), and a
+    computed send (`__send__(command(name))`) to every method the class names as
+    a symbol, its dispatch table.
+  - `repeated_call` takes the same call again, in the arm of a test of its first
+    answer that falls back from it (`outcome.lost? ? attempt(job) : outcome`),
+    for a retry, not a repeat.
+  - `change_coupling` leaves out a pair where one file only loads the other or
+    lists its path (a registration such as a list of harness-critical files);
+    with a constant reference between them it stays an explicit finding.
 
 From the third field test (thirty MIT-licensed codebases):
 

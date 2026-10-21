@@ -42,10 +42,14 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def components
     joined = pieces.reduce([]) { |found, piece| fuse(found, piece) }
-    joined.map { |piece| [piece.names.compact, piece.fields.select { kept.include?(it) }] }
+    joined.map { |piece| [piece.names.select { names.include?(it) }, piece.fields.select { kept.include?(it) }] }
   end
 
-  def pieces = methods.map { |method| piece(method.node.name, method.node, []) } + setup.map { piece(nil, it, inputs) }
+  def pieces = (methods + mixed).map { piece(it.node.name, it.node, []) } + setup.map { piece(nil, it, inputs) }
+
+  def mixed = @_mixed ||= family.mixed(subject.subject)
+
+  def known = @_known ||= names | mixed.to_set { it.node.name }
 
   def piece(name, node, given)
     found = Hashira::Analysis::NodeWalk.collect(node)
@@ -82,7 +86,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] }
 
-  def calls(found) = (selves(found).map(&:name) + sent(found)).select { names.include?(it) }.uniq
+  def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 
   def selves(found) = found.grep(Prism::CallNode).select { inward?(it.receiver) }
 
@@ -93,11 +97,20 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   end
 
   def aimed(name)
-    return [symbol(name)].compact unless INTERPOLATED.include?(name.class)
+    return [] unless name
+    return [Hashira::Analysis::Syntax.symbol(name)] if Hashira::Analysis::Syntax.word?(name)
+    INTERPOLATED.include?(name.class) ? affixed(name) : tabled
+  end
+
+  def affixed(name)
     head, tail = Hashira::Coupling::Affixes.new(name.parts).to_a
-    return [] if head.empty? && tail.empty?
+    return tabled if head.empty? && tail.empty?
     names.select { it.start_with?(head) && it.end_with?(tail) }
   end
+
+  def tabled = @_tabled ||= names.select { listed.include?(it) }
+
+  def listed = Hashira::Analysis::Syntax.symbol_names(sweep).to_set(&:to_sym)
 
   def symbol(node) = (Hashira::Analysis::Syntax.symbol(node) if Hashira::Analysis::Syntax.word?(node))
 

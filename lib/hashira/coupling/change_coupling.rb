@@ -32,7 +32,15 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
   def pair(files, shared)
     return if shared < limit("commits", COMMITS)
     found = Pair.new(files:, shared:, revisions: files.map { revisions[it] })
-    found if found.degree >= limit("degree", DEGREE) && apart?(files)
+    found if found.degree >= limit("degree", DEGREE) && apart?(files) && !registration?(files)
+  end
+
+  def registration?(files) = registered?(files) && !explicit?(files.map { sources.fetch(it) })
+
+  def registered?(files) = [files, files.reverse].any? { |from, to| manifest(from).names?(to) }
+
+  def manifest(file)
+    (@_manifests ||= {})[file] ||= Hashira::Coupling::Manifest.new(file, graph.trees.fetch(sources.fetch(file)))
   end
 
   def limit(name, default) = @rules.limit(KIND, name, default)

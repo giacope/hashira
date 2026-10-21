@@ -97,8 +97,29 @@ RSpec.describe(Hashira::Smells::LowCohesion) do
   end
 
   it "joins nothing through a send without a literal name, or a bare delegator" do
-    source = account("extend Forwardable\n  def_delegators\n  def audit = [send, public_send(name), method]")
+    delegators = "extend Forwardable\n  def_delegators\n  def_delegators :@mailer, *NAMES"
+    source = account("#{delegators}\n  def audit = [send, public_send(name), method]")
     expect(split(source).size).to(eq(1))
+  end
+
+  it "joins a computed send to the methods the class names as symbols, its dispatch table" do
+    table = "COMMANDS = { \"remind\" => :remind, \"deposit\" => :deposit }.freeze\n  "
+    tabled = account("#{table}def run(name) = __send__(COMMANDS.fetch(name))")
+    built = account("#{table}def run(name) = public_send(\"\#{name}\")")
+    listed = account("def run(name) = public_send(name)\n  def names = %i[ping]")
+    literal = account("def audit = [send(:balance), :ping]")
+    bare = account("def run = send\n  def names = %i[balance remind]")
+    expect([split(tabled), split(built), split(listed).size, split(literal).size, split(bare).size])
+      .to(eq([[], [], 1, 1, 1]))
+  end
+
+  it "joins methods through a project module the class includes, whose methods call back into the class" do
+    bridge = "module Bridge\n  def bridge = [balance, ping]\nend\n"
+    joined = bridge + account("include Bridge\n  def audit = bridge")
+    foreign = account("include Comparable\n  def audit = bridge")
+    held = "module Held\n  def held = @balance\nend\n" + account("include Held\n  def audit = [held, ping]")
+    groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping (@mailer)"]
+    expect([split(joined), split(held), split(foreign).first.evidence]).to(eq([[], [], groups]))
   end
 
   it "keeps groups apart that a constructor only stores separately" do

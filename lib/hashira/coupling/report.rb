@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "manifest"
 require_relative "change_coupling"
 require_relative "cycle"
 require_relative "dead_code"

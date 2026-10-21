@@ -317,7 +317,8 @@ RSpec.describe(Hashira::CLI::Options) do
         "skip:\n" => "--skip needs a value",
         "top: 0\n" => '--top "0" is not a positive whole number',
         "skip: coupling\nfail-on: cycles\n" => "--fail-on cycle needs the coupling analyzer, but --skip drops it",
-        "layers: [web]\n" => "layers needs at least two layers to order"
+        "layers: [web]\n" => "layers needs at least two layers to order",
+        "boundaries: Prism\n" => "boundaries takes a list of declarations (root, role, entrypoint, reason)"
       }.each do |yaml, message|
         configured(yaml) { expect { described_class.parse([]) }.to(raise_error(Hashira::Error, ".hashira.yml: #{message}")) }
       end
