@@ -602,8 +602,9 @@ Findings (3):
   caller passes it as a literal flag (`true`, `false`, a symbol) by position or
   keyword. A caller counts only when its receiver is the method's class: a bare
   or `self` call inside it, the class itself (`Database.build(:pg)`), an object
-  it builds (`Cart.new`, a local assigned one), or a variable named for it
-  (`@cart` is a `Cart`). A same-named method elsewhere (`@items.build(:line)`)
+  it builds (`Cart.new`, a local assigned one), a variable named for it
+  (`@cart` is a `Cart`), or a literal of a core class the project reopens
+  (`"x".camelize(:lower)`). A same-named method elsewhere (`@items.build(:line)`)
   is not evidence. An argument that callers compute, a configured style, an
   argument a branch only maps to a value (`flag ? "on" : "off"`) or to a built
   object (a factory: `name == "pg" ? Postgres.new : Null.new`), and one compared
