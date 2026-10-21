@@ -26,7 +26,8 @@ module Hashira::CLI
         "exit 1 if findings exist; comma-separated",
         "kinds: cycles, sdp, mixed_audience, wide_edge,",
         "roll_call, complexity, duplication, smells (all",
-        "of them), or one smell kind such as feature_envy"
+        "of them), or one smell kind such as feature_envy;",
+        "all gates every kind the run checks"
       ]
     ),
     Flag.new(
@@ -44,7 +45,7 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
-      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind"),
+      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind", FailOn::KINDS),
       text: [
         "keep only the findings of these kinds, named",
         "as for --fail-on; comma-separated. The tables",

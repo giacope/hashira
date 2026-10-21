@@ -40,13 +40,20 @@ RSpec.describe(Hashira::CLI::Options) do
       expect(options.fail_on).to(eq(%w[cycle sdp_violation]))
     end
 
+    it "reads --fail-on all as every kind the run checks, whatever else the list names" do
+      expect(described_class.parse(%w[lib --fail-on all]).fail_on).to(eq(%w[all]))
+      expect(described_class.parse(%w[lib --fail-on cycles,all]).fail_on).to(eq(%w[all]))
+      expect(described_class.parse(%w[lib --fail-on all --skip coupling --kind smells]).mode).to(eq(:fail_on))
+      expect { described_class.parse(%w[lib --kind all]) }.to(raise_error(Hashira::Error, /unknown --kind "all"/))
+    end
+
     it "accepts every friendly --fail-on alias" do
       options = described_class.parse(%w[--fail-on cycle,sdp_violation])
       expect(options.fail_on).to(eq(%w[cycle sdp_violation]))
     end
 
     it "rejects an unknown --fail-on kind, listing the valid ones" do
-      expected = "unknown --fail-on \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")})"
+      expected = "unknown --fail-on \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")}, all)"
       expect { described_class.parse(%w[--fail-on typos]) }.to(raise_error(Hashira::Error, expected))
     end
 

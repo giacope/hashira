@@ -280,3 +280,34 @@
   writes:
     project/hashira_baseline.json: true
     elsewhere/hashira_baseline.json: false
+
+- name: fail-on all gates the kinds the run checks and turns no opt-in kind on
+  files:
+    .hashira.yml: |
+      fail-on: all
+      checks:
+        utility_function: false
+    lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+        def label(item) = item.name
+        def code(item) = item.sku
+      end
+  args: [lib/app]
+  status: 0
+  includes: ["Gate OK: no findings of kind"]
+  excludes: ["utility_function", "middle_man", "repeated_conditional"]
+
+- name: fail-on all fails on a default kind's finding
+  files:
+    lib/app/cart.rb: |
+      class Cart
+        def initialize(items) = @items = items
+        def total = @items.sum
+        def price(item) = item.amount.round
+      end
+  args: [lib/app, --fail-on, all]
+  status: 1
+  includes: ["Gate FAILED: 1 finding(s) — utility_function 1."]

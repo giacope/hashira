@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Kinds
-  def initialize(flag)
+  def initialize(flag, names)
     @flag = flag
+    @names = names
   end
 
   def parse(list)
@@ -14,7 +15,5 @@ class Hashira::CLI::Kinds
 
   private
 
-  def names = Hashira::CLI::FailOn::KINDS
-
-  def kind(name) = names.fetch(name) { raise(Hashira::CLI::Choice.unknown(@flag, name, names.keys)) }
+  def kind(name) = @names.fetch(name) { raise(Hashira::CLI::Choice.unknown(@flag, name, @names.keys)) }
 end

@@ -170,8 +170,8 @@ So everything is on but five kinds:
 | `change_coupling` | needs the git history, which a shallow CI checkout lacks |
 
 `layer_violation` is on whenever `layers:` are declared. `--kind` and
-`--fail-on` turn on the kinds they name, and a `checks:` setting for a kind
-turns it on.
+`--fail-on` turn on the kinds they name (`--fail-on all` names none: it gates
+what the run checks), and a `checks:` setting for a kind turns it on.
 
 The earlier policy switched kinds on by a precision measured on labels. Those
 labels are in [eval/results](eval/results/README.md): two independent AI
@@ -818,9 +818,18 @@ codebase is the same letter on every row.
 ## CI
 
 `--fail-on` fails the build when findings of a kind exist at all (`cycles`,
-`sdp` and `dupe` are shorthands; `smells` is every smell kind). It suits a
-codebase that starts clean. The **ratchet** suits every other one: record what
-is true now, and fail when it grows.
+`sdp` and `dupe` are shorthands; `smells` is every smell kind). `--fail-on all`
+gates every kind the run checks: the default kinds, the ones `checks:` turns on,
+less what `--skip` drops and narrowed to `--kind` when it is given. It turns no
+opt-in kind on by itself. That is the gate for a codebase at zero findings, with
+no baseline to keep:
+
+```sh
+hashira --fail-on all            # fail on any finding this run reports
+```
+
+It suits a codebase that starts clean. The **ratchet** suits every other one:
+record what is true now, and fail when it grows.
 
 ```sh
 hashira --update-baseline        # record today's edges and findings

@@ -173,6 +173,18 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "gates --fail-on all on every kind the run checks, without turning an opt-in kind on" do
+    within(Fixtures::CYCLIC_FILES) do
+      gate = capture { expect(described_class.new(%w[lib/app --fail-on all]).status).to(eq(1)) }
+      expect(gate).to(include("Gate FAILED: 5 finding(s) — utility_function 4, cycle 1."))
+      narrowed = capture { expect(described_class.new(%w[lib/app --fail-on all --kind sdp]).status).to(eq(0)) }
+      expect(narrowed).to(eq("Gate OK: no findings of kind sdp_violation.\n"))
+      measured = %w[lib/app --fail-on all --skip coupling,smells,duplication]
+      expect(capture { expect(described_class.new(measured).status).to(eq(0)) })
+        .to(eq("Gate OK: no findings of kind complexity, fragmentation.\n"))
+    end
+  end
+
   it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
     within(Fixtures::CYCLIC_FILES) do
       capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }

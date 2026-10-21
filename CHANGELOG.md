@@ -102,6 +102,13 @@ things a baseline sees:
 
 ### Added
 
+- `--fail-on all` (and `fail-on: all` in `.hashira.yml`) gates every kind the
+  run checks: the default kinds, the ones `checks:` turns on, less what
+  `--skip` drops, narrowed to `--kind` when given. Unlike naming a kind, it
+  turns no opt-in kind on. A codebase at zero findings gates with it instead of
+  keeping a baseline for `--ratchet`, and the gate's verdict lists the kinds it
+  covered.
+
 - **Rails engines** are Rails: a project with no `config/application.rb` that
   holds exactly one `class Engine < Rails::Engine` is packaged by the classes
   under the engine's module and gets associations, Zeitwerk folder namespaces

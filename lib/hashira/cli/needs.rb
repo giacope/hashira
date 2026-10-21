@@ -16,7 +16,7 @@ module Hashira::CLI::Needs
 
   def gates(options)
     skip = options.skip
-    gate("--fail-on", options.fail_on, skip)
+    gate("--fail-on", named(options), skip)
     gate("--kind", options.kinds, skip)
   end
 
@@ -28,7 +28,7 @@ module Hashira::CLI::Needs
 
   def sorting(options, mode)
     focusing("--kind", mode)
-    unheard = (options.fail_on - options.kinds).first
+    unheard = (named(options) - options.kinds).first
     raise(Hashira::Error, "--fail-on #{unheard} can never fire, since --kind leaves it out") if unheard
   end
 
@@ -52,6 +52,8 @@ module Hashira::CLI::Needs
     return unless blind
     raise(Hashira::Error, "#{flag} #{blind} needs the #{owner(blind)} analyzer, but --skip drops it")
   end
+
+  def named(options) = Hashira::CLI::FailOn.named(options.fail_on)
 
   def owner(kind) = Hashira::CLI::FailOn.owner(kind)
 end
