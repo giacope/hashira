@@ -17,6 +17,10 @@ class Hashira::Coupling::Graph
 
   def declarations(from, to) = noted(from, to, map.declared)
 
+  def associations = map.links
+
+  def pledges = map.pledges
+
   def home(file) = @census.home(file)
 
   def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a

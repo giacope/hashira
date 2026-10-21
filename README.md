@@ -82,8 +82,10 @@ with several, as you would open them from where hashira runs.
 The text report is the coupling tables, the complexity tables, the hotspot
 rollup and the findings, capped at 25 packages and findings and 10 methods and
 files; every capped list says what it withheld, and `--top N` moves every cap.
-Findings are dealt out across kinds, worst first within a kind, and a capped
-list opens with one line per kind, so hundreds of findings of one kind read as
+Findings are dealt out across kinds, worst first within a kind, structural
+kinds (cycles, layers, dead code, associations) before the design smells and
+the local ones (`repeated_call`, `duplication`) last, and a capped list opens
+with one line per kind, so hundreds of findings of one kind read as
 one fact. Anything hashira had to work around (no git history, a file Prism
 could not parse) goes to stderr.
 
@@ -366,7 +368,7 @@ User                1   1   1  0.50  -
 (web)               1   0   1  1.00  -
 ...
 Findings (1):
-  bidirectional_association: User and Billing each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Billing where it is needed.
+  bidirectional_association: User and Billing::Invoice each declare an association to the other (models/user.rb:2) — navigating both ways ties them together. Drop User's side and query Billing::Invoice where it is needed.
       · models/user.rb:2: has_many Billing::Invoice
       · models/billing/invoice.rb:3: belongs_to User
 ```
@@ -381,8 +383,10 @@ Findings (1):
   check: a cycle means a method, a constant or a one-sided association closes
   the loop. It is still
   two classes that know each other, and **bidirectional_association** reports
-  it once: drop the owning side (`has_many`, `has_one`) and query the other
-  where it is needed. A pair whose code also reaches both ways is in the cycle
+  it: one finding per owning model, naming every model it is navigated both
+  ways with ("Edition is navigated both ways by 9 models"), each by its class
+  even inside a namespace package. Drop the owning side (`has_many`,
+  `has_one`) and query the other where it is needed. A pair whose code also reaches both ways is in the cycle
   search as well.
 - **Dropping a side can drop a guarantee.** `has_many :posts, dependent:
   :destroy` is more than a reference: deleting the user deletes the posts (or
@@ -599,7 +603,8 @@ Findings (3):
 - **data_clump** — the same three or more parameters travel together through
   three or more methods, one handing the group to another.
 - **repeated_call** — the identical call made twice in one method; name the
-  result. Identity is by value: a local counts by its binding, a literal block is
+  result. One finding per class, with every repeated call and its method as
+  evidence ("repeats 14 calls in 6 methods"). Identity is by value: a local counts by its binding, a literal block is
   part of the call, a reassignment between makes two values. Left alone: calls
   that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a command whose
   result is thrown away, two reads no single run reaches both of (`return`,
