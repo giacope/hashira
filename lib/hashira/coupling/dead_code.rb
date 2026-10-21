@@ -14,7 +14,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def surface = @_surface ||= Hashira::Coupling::Surface.new(project, graph.trees, graph.census)
 
-  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees).found
+  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees, graph.census.roots).found
 
   def roots = @_roots ||= Array(@rules.limit(KIND, "roots", []))
 
@@ -28,12 +28,17 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def held = @_held ||= surface.constants.select { held?(it) }.map(&:path)
 
-  def held?(member) = rooted?(member) || registered?(member.path) || hosted?(member.path) || housed?(member)
+  def held?(member)
+    path = member.path
+    rooted?(member) || registered?(path) || hosted?(path) || housed?(member) || loaded?(path)
+  end
 
   def live?(member)
     path = member.path
-    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member)
+    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member) || loaded?(path)
   end
+
+  def loaded?(path) = surface.types.fetch(path, []).any?(&:loads?)
 
   def named?(path) = used?(path) || mentioned?(path.last) || assembled?(path)
 
@@ -92,12 +97,11 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def framed?(member) = member.exposed ? hosted?(member.owner) : surface.outside?(member.owner)
 
-  def hosted?(path) = (@_hosted ||= {}).fetch(path) { settle(path) }
+  def hosted?(path) = hosted[path]
 
-  def settle(path)
-    @_hosted[path] = false
-    @_hosted[path] = lineage(path).any? { surface.outside?(it) } || hosting?(path)
-  end
+  def hosted = @_hosted ||= Hash.new { |found, path| found.store(path, false) || found[path] = settle(path) }
+
+  def settle(path) = lineage(path).any? { surface.outside?(it) } || hosting?(path)
 
   def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
 
@@ -135,9 +139,13 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def absolute(file) = File.expand_path(file, project.directories.then { it.one? ? it.first : "." })
 
-  def api?(member) = library? && member.exposed && owner_exposed?(member)
+  def api?(member) = (library? || engine_library?(member.file)) && member.exposed && owner_exposed?(member)
 
   def library? = !project.rails? && roots.empty?
+
+  def engine_library?(file) = !project.engine.nil? && roots.empty? && shipped?(file)
+
+  def shipped?(file) = absolute(file).delete_prefix("#{File.expand_path(project.home)}/").start_with?("lib/")
 
   def owner_exposed?(member) = exposure.fetch(member.owner, true)
 

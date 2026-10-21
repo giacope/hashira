@@ -790,7 +790,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.flat_map(&:evidence)).to(eq(["Other.new.name × 2 (line 8)"]))
   end
 
-  it "reports a repeated chain once, not again for each prefix repeated on the same calls" do
+  it "reports a repeated chain once, not again for each prefix repeated on the same calls, and a wider prefix alone" do
     findings = repeated(<<~RUBY)
       module App
         module Zone
@@ -806,10 +806,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     RUBY
     expect(findings.flat_map(&:evidence)).to(
       eq(
-        [
-          "DateTime.now.utc × 2 (line 4)", "format(@params[:id]) × 2 (line 6)",
-          "Time.now.utc × 2 (line 8)", "Time.now × 3 (line 8)"
-        ]
+        ["DateTime.now.utc × 2 (line 4)", "format(@params[:id]) × 2 (line 6)", "Time.now × 3 (line 8)"]
       )
     )
   end
@@ -1300,5 +1297,25 @@ RSpec.describe(Hashira::Smells::RepeatedCall) do
     expect(findings.map { [it.package, it.confidence] }).to(
       eq([["App::Zone::Thing#run", :low], ["App::Zone::Thing#twice", nil], ["App::Zone::Thing#plain", nil]])
     )
+  end
+
+  it "collapses chains that share a repeated prefix into the prefix, which one local fixes, and prints an index read" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def deliver(qm)
+              [qm.message.scope, qm.message.scope, qm.message.rcpt_to, qm.message.rcpt_to, qm.message.id]
+            end
+
+            def show = [params[:user], params[:user]]
+
+            def keep(qm) = [qm.message.scope, qm.message.scope]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence))
+      .to(eq(["qm.message × 5 (line 5)", "params[:user] × 2 (line 8)", "qm.message.scope × 2 (line 10)"]))
   end
 end

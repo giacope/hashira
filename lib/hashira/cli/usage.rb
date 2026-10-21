@@ -10,7 +10,8 @@ module Hashira::CLI::Usage
 
     Coupling, cognitive-complexity, duplication, and code-smell metrics
     for Ruby, via Prism, rolled up per file as a ranked list of hotspots.
-    With no directory, auto-detects lib/<gem>.
+    With no directory, auto-detects every lib/<gem> (with its entry file),
+    or app and lib in a Rails root.
 
     Options:
   TEXT

@@ -26,6 +26,16 @@ module Hashira
 
         def mixins = %i[include prepend].flat_map { calls(it) }.flat_map { it.arguments.arguments }
 
+        def assignments
+          Hashira::Analysis::Syntax.constants(node).map { [path + [it.name.to_s], it.value, stack + [full]] }
+        end
+
+        def loads? = statements.grep(Prism::CallNode).any? { outward?(it.receiver) }
+
+        def outward?(receiver)
+          receiver.is_a?(Prism::CallNode) ? outward?(receiver.receiver) : Hashira::Analysis::Syntax.static?(receiver)
+        end
+
         def site(node) = "#{file}:#{node.location.start_line}"
 
         def links = supers + included

@@ -16,9 +16,15 @@ class Hashira::Coupling::Definitions
 
   def engine = @project.engine.to_s.split("::")
 
-  def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
+  def roots = @_roots ||= autoload.roots
+
+  def implied = autoload.namespaces
+
+  def dependencies = @project.dependencies
 
   private
+
+  def autoload = @_autoload ||= Hashira::Coupling::Autoload.new(@project, @trees)
 
   def path(full, node) = node.is_a?(Prism::ConstantWriteNode) ? full + [node.name.to_s] : full
 

@@ -9,6 +9,9 @@ module Hashira::Coupling::Contracts
     table_name_prefix table_name_suffix model_name policy_class matches? should_generate_new_friendly_id?
     send_devise_notification send_reset_password_instructions_notification active_for_authentication?
     inactive_message password_required? email_required? after_confirmation timeout_in
+    before_validation after_validation before_save around_save after_save before_create around_create after_create
+    before_update around_update after_update before_destroy around_destroy after_destroy after_commit
+    after_rollback after_initialize after_find after_touch
   ].to_set.freeze
 
   ENTRIES = %w[

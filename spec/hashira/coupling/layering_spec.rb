@@ -32,15 +32,20 @@ RSpec.describe(Hashira::Coupling::Layering) do
 
   def edge(from, to, weight) = { from:, to:, weight: }
 
-  it "reports each inner layer's references to an outer one, with the package edges to cut, cheapest first" do
+  it "reports each inner layer's references to an outer one, with the class edges to cut, cheapest first" do
     expect(summary(layered(%w[web jobs domain]))).to(
-      eq([["domain -> web", 2, [edge("domain", "web", 2)], 2], ["domain -> jobs", 1, [edge("domain", "jobs", 1)], 1]])
+      eq(
+        [
+          ["domain -> web", 2, [edge("Domain::Order", "Web::Page", 2)], 2],
+          ["domain -> jobs", 1, [edge("Domain::Order", "Jobs::Run", 1)], 1]
+        ]
+      )
     )
   end
 
   it "says what depends on what, and what to cut" do
     said = "domain depends on web, an outer layer, through 2 refs — a layer may depend only on the layers declared " \
-      "inside it. Cut domain -> web (2 refs)."
+      "inside it. Cut Domain::Order -> Web::Page (2 refs)."
     expect(message(layered(%w[web jobs domain]).first)).to(eq(said))
   end
 
@@ -59,14 +64,24 @@ RSpec.describe(Hashira::Coupling::Layering) do
   it "lists a pair's edges by weight" do
     linked = { "lib/app/jobs/link.rb" => type("Jobs", "Link", "def x = Web::Page") }
     expect(layered(["web", { "inner" => %w[domain jobs] }], linked).first.detail.cut)
-      .to(eq([edge("jobs", "web", 1), edge("domain", "web", 2)]))
+      .to(eq([edge("Jobs::Link", "Web::Page", 1), edge("Domain::Order", "Web::Page", 2)]))
   end
 
-  it "names the layer at each end of an edge whose two ends share a package" do
-    split = { "lib/app/web/core.rb" => type("Web", "Core", "def x = Web::Page") }
-    layers = [{ "outer" => %w[lib/app/web/page.rb] }, { "inner" => %w[lib/app/web/core.rb domain] }]
-    expect(layered(layers, split).first.detail.cut)
-      .to(eq([edge("web (inner)", "web (outer)", 1), edge("domain", "web", 2)]))
+  it "names the classes at each end of an edge, not the package they share, nor a file's or the namespace's code" do
+    split = {
+      "lib/app/web/core.rb" => type("Web", "Core", "def x = Web::Page"),
+      "lib/app/domain/boot.rb" => "App::Web::Page.new\n",
+      "lib/app/domain/wiring.rb" => "module App\n  PAGE = Web::Page\nend\n"
+    }
+    layers = [{ "outer" => %w[lib/app/web/page.rb] }, { "inner" => %w[lib/app/web/core.rb lib/app/domain] }]
+    expect(layered(layers, split).first.detail.cut).to(
+      eq(
+        [
+          edge("App", "Web::Page", 1), edge("Web::Core", "Web::Page", 1), edge("domain/boot.rb", "Web::Page", 1),
+          edge("Domain::Order", "Web::Page", 2)
+        ]
+      )
+    )
   end
 
   def rails
@@ -86,13 +101,14 @@ RSpec.describe(Hashira::Coupling::Layering) do
   end
 
   it "places a type by the namespace package it joins in a Rails app, folds included" do
-    expect(namespaced.map { it.detail.cut }).to(eq([[edge("(web)", "Invoice", 2)]]))
+    expect(namespaced.map { it.detail.cut })
+      .to(eq([[edge("InvoicesController", "Invoice", 1), edge("InvoicesController", "InvoicePolicy", 1)]]))
   end
 
-  it "names a constant two packages claim by its namespace" do
+  it "names a constant two packages claim by its class" do
     shared = { "lib/app/extra/page.rb" => type("Web", "Page", "def y = 2") }
     layers = [{ "outer" => %w[web extra] }, { "inner" => %w[domain jobs] }]
-    expect(layered(layers, shared).first.detail.cut).to(eq([edge("domain", "Web", 2)]))
+    expect(layered(layers, shared).first.detail.cut).to(eq([edge("Domain::Order", "Web::Page", 2)]))
   end
 
   def more = { "lib/app/domain/more.rb" => type("Domain", "More", "def x = [Web::Page, Web::Page]") }
@@ -101,7 +117,8 @@ RSpec.describe(Hashira::Coupling::Layering) do
 
   it "notes when the code leans the other way" do
     said = message(layered(%w[web domain], more).first)
-    expect(said[/Cut .*/].sub("declared order", "order")).to(eq("Cut domain -> web (4 refs). #{leaning}"))
+    cut = "Cut Domain::More -> Web::Page (2 refs) and Domain::Order -> Web::Page (2 refs)."
+    expect(said[/Cut .*/].sub("declared order", "order")).to(eq("#{cut} #{leaning}"))
   end
 
   it "keeps the declared order among the layers the references leave free" do

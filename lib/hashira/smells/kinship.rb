@@ -12,7 +12,9 @@ class Hashira::Smells::Kinship
 
   private
 
-  def kindred(name) = spoken(reach(name, ancestry) + reach(name, descent) + rivals.of(name)) + peers(name)
+  def kindred(name)
+    spoken(reach(name, ancestry) + reach(name, descent) + rivals.of(name) + rivals.sides(name)) + peers(name)
+  end
 
   def rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
 

@@ -2,8 +2,16 @@
 
 class Hashira::Config::Layers
   Layer =
-    Data.define(:name, :parts, :home) do
-      def holds?(file, package) = parts.include?(package) || places.any? { file == it || file.start_with?("#{it}/") }
+    Data.define(:name, :parts, :home, :marks, :rest) do
+      def initialize(marks: [], rest: [], **) = super
+
+      def holds?(file, package)
+        parts.include?(package) || places.any? { file == it || file.start_with?("#{it}/") } || marks.any? do
+          file.match?(it)
+        end
+      end
+
+      def covers?(file) = rest.any? { file.start_with?("#{File.expand_path(it, home)}/") }
 
       def places = parts.map { File.expand_path(it, home) }
     end
@@ -37,17 +45,28 @@ class Hashira::Config::Layers
     { "domain" => %w[app/models app/validators lib] }
   ].freeze
 
+  PREVIEWS = [%r{/mailers/previews/}, /_preview\.rb\z/].freeze
+
+  PRESET = { "web" => { marks: PREVIEWS }, "app" => { rest: ["app"] } }.freeze
+
+  INNER = %w[app domain].freeze
+
   def self.parse(raw, home = ".")
-    new(Array(raw == "rails" ? RAILS : raw).map { Entry.new(item: it, home:).layer }).tap(&:vet)
+    preset = raw == "rails"
+    layers = Array(preset ? RAILS : raw).map { Entry.new(item: it, home:).layer }
+    new(preset ? layers.map { it.with(**PRESET.fetch(it.name, {})) } : layers, preset:).tap(&:vet)
   end
 
-  def initialize(list)
+  def initialize(list, preset: false)
     @list = list
+    @preset = preset
   end
 
   def any? = @list.any?
 
   def names = @list.map(&:name)
+
+  def allows?(order) = !@preset || order.intersection(INNER) == INNER
 
   def rank(file, package)
     key = [file, package]
@@ -64,7 +83,7 @@ class Hashira::Config::Layers
 
   def ranks = @_ranks ||= {}
 
-  def ranked(path, package) = @list.index { it.holds?(path, package) }
+  def ranked(path, package) = @list.index { it.holds?(path, package) } || @list.index { it.covers?(path) }
 
   def repeated(words) = words.tally.find { |_, count| count > 1 }&.first
 end

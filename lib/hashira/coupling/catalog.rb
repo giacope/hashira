@@ -17,6 +17,10 @@ class Hashira::Coupling::Catalog
 
   def roots = @definitions.roots
 
+  def implied = @definitions.implied
+
+  def dependencies = @definitions.dependencies
+
   def folders = @definitions.packages
 
   def lineage = @_lineage ||= Hashira::Coupling::Lineage.new(self)

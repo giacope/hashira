@@ -10,6 +10,10 @@ class Hashira::Smells::TypeTests
 
   LOOKUPS = %i[[] fetch].freeze
 
+  CASES = [Prism::CaseNode, Prism::CaseMatchNode].freeze
+
+  SHAPED = [Prism::ArrayPatternNode, Prism::FindPatternNode, Prism::HashPatternNode].freeze
+
   def initialize(body, ownership)
     @body = body
     @ownership = ownership
@@ -26,7 +30,12 @@ class Hashira::Smells::TypeTests
   def probes(&) = calls.select { CHECKS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
 
   def arms(&)
-    @body.grep(Prism::CaseNode).select { local?(it.predicate, &) }.flat_map(&:conditions).flat_map(&:conditions)
+    switches = @body.select { CASES.include?(it.class) && local?(it.predicate, &) }
+    switches.flat_map(&:conditions).flat_map do |arm|
+      next arm.conditions unless arm.is_a?(Prism::InNode)
+      pattern = arm.pattern
+      [SHAPED.include?(pattern.class) ? pattern.constant : pattern]
+    end
   end
 
   def lookups(&)

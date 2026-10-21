@@ -24,6 +24,8 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   SENDS = Hashira::Analysis::Syntax::SENDS
 
+  INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
+
   private
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
@@ -87,10 +89,17 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def sent(found)
-    selves(found).select { SENDS.include?(it.name) }.filter_map { symbol(Array(it.arguments&.arguments).first) }
+    selves(found).select { SENDS.include?(it.name) }.flat_map { aimed(Array(it.arguments&.arguments).first) }
   end
 
-  def symbol(node) = (Hashira::Analysis::Syntax.symbol(node) if node.is_a?(Prism::SymbolNode))
+  def aimed(name)
+    return [symbol(name)].compact unless INTERPOLATED.include?(name.class)
+    head, tail = Hashira::Coupling::Affixes.new(name.parts).to_a
+    return [] if head.empty? && tail.empty?
+    names.select { it.start_with?(head) && it.end_with?(tail) }
+  end
+
+  def symbol(node) = (Hashira::Analysis::Syntax.symbol(node) if Hashira::Analysis::Syntax.word?(node))
 
   def sweep = @_sweep ||= subject.sweep
 

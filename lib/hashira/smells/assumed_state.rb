@@ -26,9 +26,11 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
 
   def assigned = subject.assigned
 
-  def assumed = @_assumed ||= (read - assigned).uniq.sort.reject { cache?(it) }
+  def assumed = @_assumed ||= (read - assigned).uniq.sort.reject { cache?(it) || computed?(it) }
 
   def cache?(name) = name.start_with?("@_")
+
+  def computed?(name) = assigned.grep(String).any? { name.start_with?(it) }
 
   def read = subject.owned.flat_map { Harvest.reads(it.node) }
 

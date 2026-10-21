@@ -34,6 +34,11 @@ class Hashira::Pipeline
 
   def unparsed = parsed.unparsed
 
+  def unlayered
+    layers = @project.layers
+    layers.any? && enabled?(:coupling) ? graph.census.unlayered(layers, @project.files) : []
+  end
+
   def graph = coupling.graph
 
   def complexity = @_complexity ||= analyzed(:complexity, Hashira::Complexity::Scores, rules, parsed)
@@ -67,7 +72,7 @@ class Hashira::Pipeline
 
   def rules = @project.rules
 
-  def parsed = @_parsed ||= Hashira::Trees.new(@project)
+  def parsed = @_parsed ||= Hashira::Trees.new(@project, @only)
 
   def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all, @project.home)
 

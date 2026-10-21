@@ -14,11 +14,20 @@ RSpec.describe(Hashira::Config::Layers) do
     expect([rank(raw, "/srv/app/models/user.rb", "User"), rank(raw, "/srv/app/jobs/a.rb", "A")]).to(eq([1, nil]))
   end
 
-  it "reads rails as the conventional web, app and domain folders, outermost first" do
-    files = %w[app/views/a.rb app/mailers/a.rb app/jobs/a.rb lib/a.rb app/assets/a.rb].map { "/srv/#{it}" }
+  it "reads rails as the conventional web, app and domain folders, outermost first, other app folders as app" do
+    files = %w[
+      app/views/a.rb app/mailers/a.rb app/jobs/a.rb lib/a.rb app/forms/a.rb lib/mailers/previews/a.rb
+      spec/mailers/b_preview.rb config/a.rb
+    ].map { "/srv/#{it}" }
     expect([described_class.parse("rails").names, files.map { rank("rails", it, "A") }]).to(
-      eq([%w[web app domain], [0, 0, 1, 2, nil]])
+      eq([%w[web app domain], [0, 0, 1, 2, 1, 0, 0, nil]])
     )
+  end
+
+  it "never proposes an order that puts the rails preset's app below its domain" do
+    orders = [%w[web app domain], %w[web domain app]]
+    found = ["rails", %w[web app domain]].map { |raw| orders.map { described_class.parse(raw).allows?(it) } }
+    expect(found).to(eq([[true, false], [true, true]]))
   end
 
   it "stands for no layers when none are declared" do
@@ -42,5 +51,15 @@ RSpec.describe(Hashira::Config::Layers) do
         ]
       )
     )
+  end
+
+  it "keeps the rails preset's extra folders to the preset" do
+    plain = described_class.new([described_class::Layer.new(name: "app", parts: [], home: "/srv")])
+    expect(
+      [
+        rank(%w[web jobs domain], "/srv/lib/mailers/previews/a.rb", "A"),
+        plain.allows?(%w[web domain app])
+      ]
+    ).to(eq([nil, true]))
   end
 end

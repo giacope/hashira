@@ -22,7 +22,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     expect(sniffed(files, "manual_dispatch")).to(be_empty)
   end
 
-  it "reads a core class written beside an owned class of the same name the way Ruby resolves it" do
+  it "reads a core class beside an owned namesake, and an owned name out of sight, the way Ruby resolves it" do
     files = {
       "lib/app/types.rb" => "module App\n  module Types\n    class String; end\n    class Array; end\n    " \
         "class Add; end\n  end\nend\n",
@@ -45,7 +45,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Key#sort App::Types::Pick#add]))
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Types::Pick#add]))
   end
 
   it "lets a rescued library exception be probed even where its name reads as an owned class" do
@@ -95,7 +95,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
     expect(findings.first.evidence).to(eq(["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]))
   end
 
-  it "flags a bare capability check, but not a proxy's method_missing and respond_to_missing? pair" do
+  it "flags a bare capability check, but not a computed message, which no definition in the codebase can answer for" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY
         module App
@@ -119,9 +119,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(
-      eq(%w[App::Zone::Thing#probe App::Zone::Half#method_missing])
-    )
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Zone::Thing#probe]))
   end
 
   def dispatched(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "manual_dispatch")
@@ -158,7 +156,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#named App::Zone::Thing#blank]))
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#blank]))
   end
 
   it "lets a rescued library exception or another library object be probed, but not one the codebase raises" do

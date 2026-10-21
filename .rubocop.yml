@@ -37,6 +37,7 @@ Kata/RealWords:
     - hotspots
     - rollup
     - sdp
+    - vendored
 
 Kata/ProsePlacement:
   Enabled: true

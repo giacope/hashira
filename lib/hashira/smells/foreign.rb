@@ -51,7 +51,11 @@ class Hashira::Smells::Foreign
 
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
 
-  def kinds(local) = known(local).reject { it.last == own }
+  def kinds(local)
+    known(local).filter_map do
+      @ownership.place(it, @subject.owner)
+    end.uniq.reject { it == @subject.owner }.map { it.split("::") }
+  end
 
   def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
 
@@ -90,15 +94,15 @@ class Hashira::Smells::Foreign
 
   def sources(local) = writes(local.name).map(&:value) + yielders(local)
 
-  def known(local) = sources(local).map { made(it) } + declared(local.name)
-
-  def declared(name) = caught(name) + tests { it == name } + Hashira::Smells::Naming.types(name)
+  def known(local)
+    name = local.name
+    tested = (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
+    tested.empty? ? Hashira::Smells::Naming.types(name) : tested
+  end
 
   def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.segments(value.receiver) : []
 
   def caught(name) = snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.segments(it) } }
-
-  def own = @subject.owner.split("::").last
 
   def yielders(local)
     scope = local.scope

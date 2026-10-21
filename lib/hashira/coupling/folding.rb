@@ -64,7 +64,7 @@ class Hashira::Coupling::Folding
     @_singles ||= lone.select(&:klass?).group_by(&:name).transform_values { it.find(&:superclass) || it.last }
   end
 
-  def lone = @_lone ||= @definitions.reject(&:nested?).reject { anchored.include?(it.name) }
+  def lone = @_lone ||= @definitions.reject { it.nested? || it.path.empty? || anchored.include?(it.name) }
 
   def anchored = @_anchored ||= @definitions.select(&:nested?).to_set(&:name)
 

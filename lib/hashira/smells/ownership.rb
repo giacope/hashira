@@ -6,12 +6,9 @@ class Hashira::Smells::Ownership
     @catalog = catalog
   end
 
-  def owned?(segments, owner = nil, rooted: false)
-    surveyed
-    return @_defined.include?(segments.join("::")) if rooted
-    return true if lexical(segments, owner).any? { @_defined.include?(it) }
-    !builtin?(segments.first) && @_suffixes.include?(segments.join("::"))
-  end
+  def owned?(segments, owner = nil, rooted: false) = !place(segments, owner, rooted:).nil?
+
+  def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
 
   def owns?(node, owner = nil)
     owned?(Hashira::Analysis::Syntax.segments(node), owner, rooted: Hashira::Analysis::Syntax.rooted?(node))
@@ -25,46 +22,38 @@ class Hashira::Smells::Ownership
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
 
-  def resolve(segments, owner, rooted:)
-    surveyed
-    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { @_written.include?(it) }
-  end
+  def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
 
-  def keys(segments)
-    surveyed
-    @_tables.fetch(segments.join("::"), [])
-  end
+  def keys(segments) = tables.fetch(segments.join("::"), [])
 
   private
 
-  def surveyed
-    return if @_surveyed
-    @_surveyed = true
-    @_suffixes = Set.new
-    @_defined = Set.new
-    @_written = Set.new
-    @_tables = {}
-    @trees.each { survey(it) }
+  def among(known, segments, owner, rooted)
+    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }
   end
 
-  def survey(tree)
-    Hashira::Analysis::TypeWalk.each(tree) do |node, full|
-      @_written << full.join("::")
-      next unless claimed?(full)
-      absorb(full)
-      Hashira::Analysis::Syntax.constants(node).each { record(full, it) }
+  def defined = @_defined ||= claimed.flat_map { |node, full| [full, *named(node, full)] }.to_set { it.join("::") }
+
+  def written = @_written ||= walked.to_set { |_node, full| full.join("::") }
+
+  def tables
+    @_tables ||= claimed.flat_map { |node, full| charted(node, full) }
+      .flat_map { |path, keys| suffixes(path).map { [it, keys] } }.to_h
+  end
+
+  def walked
+    @_walked ||= @trees.flat_map { Hashira::Analysis::TypeWalk.to_enum(:each, it).map { |node, full| [node, full] } }
+  end
+
+  def claimed = @_claimed ||= walked.select { |_node, full| claimed?(full) }
+
+  def named(node, full) = Hashira::Analysis::Syntax.constants(node).map { full + [it.name.to_s] }
+
+  def charted(node, full)
+    Hashira::Analysis::Syntax.constants(node).filter_map do |constant|
+      keys = chart(Hashira::Analysis::Syntax.thaw(constant.value))
+      [full + [constant.name.to_s], keys] if keys
     end
-  end
-
-  def record(full, constant)
-    path = full + [constant.name.to_s]
-    absorb(path)
-    chart(path, Hashira::Analysis::Syntax.thaw(constant.value))
-  end
-
-  def absorb(path)
-    @_defined << path.join("::")
-    @_suffixes.merge(suffixes(path))
   end
 
   def lexical(segments, owner)
@@ -72,15 +61,10 @@ class Hashira::Smells::Ownership
     parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
   end
 
-  def builtin?(name)
-    Hashira::Analysis::CORE.include?(name) || Hashira::Analysis::LIBRARIES.include?(name.to_s.downcase)
-  end
-
-  def chart(path, value)
+  def chart(value)
     return unless value.is_a?(Prism::HashNode)
     keys = value.elements.map { spine(it) }
-    return if keys.empty? || keys.any?(&:nil?)
-    suffixes(path).each { @_tables[it] = keys }
+    keys unless keys.empty? || keys.any?(&:nil?)
   end
 
   def spine(element)

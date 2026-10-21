@@ -8,7 +8,7 @@ class Hashira::Coupling::Census
     @folded = folded
   end
 
-  def unfolded = self.class.new(@project, @trees, packaging: @packaging, folded: false)
+  def unfolded = @_unfolded ||= self.class.new(@project, @trees, packaging: @packaging, folded: false)
 
   def packaging = placement.mode
 
@@ -55,6 +55,8 @@ class Hashira::Coupling::Census
 
   def owned?(path) = territory.owned?(path)
 
+  def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
+
   def inflection
     @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
   end
@@ -69,28 +71,9 @@ class Hashira::Coupling::Census
 
   def placement = @_placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
 
-  def roster
-    settled
-    @_roster
-  end
+  def roster = @_roster ||= tally
 
-  def folding
-    settled
-    @_folding
-  end
-
-  def settled
-    return if @_settled
-    @_settled = true
-    @_folding = Hashira::Coupling::NoFolding
-    @_roster = tally
-    refold if @folded
-  end
-
-  def refold
-    @_folding = placement.folding(self)
-    @_roster = tally
-  end
+  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding
 
   def type?(segments) = roster.type?(segments)
 

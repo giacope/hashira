@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Smells::Rivals
-  STAND_IN = /\A(?:Fake|Null|Stub|Dummy)(?:s?\z|[[:upper:]])|[[:lower:]](?:Stub|Fake|Double)s?\z/
+  STAND_IN = /\A(?:Fake|Null|Stub|Dummy|Mock)(?:s?\z|[[:upper:]])|[[:lower:]](?:Stub|Fake|Double|Mock)s?\z/
 
   FORKS = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode].freeze
 
@@ -13,6 +13,8 @@ class Hashira::Smells::Rivals
   end
 
   def of(name) = links.fetch(name, Set.new)
+
+  def sides(name) = (@_sides ||= Hashira::Smells::Sides.new(surface)).of(name)
 
   private
 
