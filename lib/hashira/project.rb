@@ -28,6 +28,8 @@ class Hashira::Project
 
   def scope = [files.size, label, skipped]
 
+  def tree(path) = parser.tree(path)
+
   def package(path)
     home = parent(path)
     return "#{shown(home)}#{ROOT_PACKAGE}" if entry?(path, home)
@@ -61,6 +63,8 @@ class Hashira::Project
   def dependencies = @_dependencies ||= Hashira::Dependencies.new(home)
 
   private
+
+  def parser = @_parser ||= Hashira::Trees.new(self)
 
   def resolution = @_resolution ||= Hashira::Directories.new(@requested)
 

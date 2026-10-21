@@ -15,13 +15,9 @@ class Hashira::Coupling::Outside
 
   WORD = /[A-Za-z_][A-Za-z0-9_]*[?!]?/
 
-  CALLED = /(?:&?:|\.)([a-z_]\w*[?!=]?)|\b([a-z_]\w*[?!]?)\(|\b([A-Z]\w*)/
-
   MATCHERS = { "be" => "%s?", "have" => "has_%s?" }.freeze
 
-  MATCHER = /\b(be|have)_(?:an?_)?([a-z]\w*)/
-
-  HELPERS = /\b(?:let!?|let_it_be|subject|given!?)\(\s*:\w+/
+  MATCHER = /\A(be|have)_(?:an?_)?([a-z]\w*)\z/
 
   SPECS = %r{\A(?!.*/factories/)(?:.*/)?(?:spec|test)/|_(?:spec|test)\.rb\z}
 
@@ -49,11 +45,7 @@ class Hashira::Coupling::Outside
 
   def spec?(path) = path.delete_prefix("#{home}/").match?(SPECS)
 
-  def called(text, words)
-    text = text.gsub(HELPERS, "")
-    text.scan(CALLED) { |found| words << found.compact.first.force_encoding(Encoding::UTF_8) }
-    text.scan(MATCHER) { |kind, name| words << format(MATCHERS.fetch(kind), name).force_encoding(Encoding::UTF_8) }
-  end
+  def called(path, words) = words.merge(Hashira::Coupling::SpecWords.new(@project.tree(path)).to_a)
 
   def listed
     tracked = IO.popen(["git", "-C", home, *LISTING], err: File::NULL, &:read).split("\0")
@@ -83,7 +75,7 @@ class Hashira::Coupling::Outside
 
   def read(path, words, handed)
     text = File.binread(path)
-    spec?(path) ? called(text, words) : text.scan(WORD) { words << it.force_encoding(Encoding::UTF_8) }
+    spec?(path) ? called(path, words) : text.scan(WORD) { words << it.force_encoding(Encoding::UTF_8) }
     text.scan(HANDED).flatten.each { handed << it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
   end
 end

@@ -9,6 +9,8 @@ class Hashira::Sources
 
   HEAD = 10
 
+  COMMENT = /\A\s*(?:#|\z)/
+
   VENDOR = "vendor"
 
   def initialize(directories, entries: [])
@@ -36,5 +38,7 @@ class Hashira::Sources
 
   def generated?(path) = GRAMMARS.any? { File.exist?(path.delete_suffix(".rb") + it) } || head(path).match?(GENERATED)
 
-  def head(path) = File.file?(path) ? File.open(path, "rb") { |io| io.each_line.first(HEAD).join } : ""
+  def head(path) = File.file?(path) ? File.open(path, "rb") { |io| header(io.each_line.first(HEAD)) } : ""
+
+  def header(lines) = lines.take_while { it.match?(COMMENT) }.join
 end
