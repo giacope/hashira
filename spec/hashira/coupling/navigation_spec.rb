@@ -52,6 +52,7 @@ RSpec.describe(Hashira::Coupling::Navigation) do
   it "packages a Rails engine by the classes under its namespace and pairs its models" do
     files = {
       "lib/cms/engine.rb" => "module Cms\n  class Engine < ::Rails::Engine\n  end\nend\n",
+      "lib/ext/string.rb" => "class String\n  def shout = upcase\nend\n",
       "app/models/cms/site.rb" => "module Cms\n  class Site\n    has_many :posts\n  end\nend\n",
       "app/models/cms/post.rb" => "module Cms\n  class Post\n    belongs_to :site\n  end\nend\n"
     }

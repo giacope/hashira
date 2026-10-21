@@ -25,7 +25,7 @@ class Hashira::Smells::Ownership
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
 
-  def resolve(segments, owner = nil, rooted: false)
+  def resolve(segments, owner, rooted:)
     surveyed
     (rooted ? [segments.join("::")] : lexical(segments, owner)).find { @_written.include?(it) }
   end

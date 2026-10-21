@@ -390,6 +390,7 @@ RSpec.describe(Hashira::Smells::AssumedState) do
       module App
         module Zone
           class Thing
+            EXTRA = %i[limit].freeze
             OPTIONS = %i[host port].freeze
             MODES = [:mode, 1]
             LIMIT = 3

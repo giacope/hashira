@@ -42,7 +42,7 @@ class Hashira::Coupling::EdgeMap
     said = note(@census.charge(file, home), segments, nesting, site)
     return unless macro
     named = "#{site}: #{segments.join("::")}"
-    declared[said] = named.sub(": ", ": #{macro} ") if said
+    declared[said] = named.sub(": ", ": #{macro} ")
     link(home.last, @census.locate(segments, nesting || []), named, macro)
   end
 

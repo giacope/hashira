@@ -5,7 +5,12 @@ require "prism"
 class Hashira::Smells::Callers
   WRITES = [Prism::LocalVariableWriteNode, Prism::OptionalParameterNode].freeze
 
-  HELD = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
+  NAMED = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode, Prism::CallNode].freeze
+
+  LITERALS = {
+    Prism::StringNode => "String", Prism::InterpolatedStringNode => "String", Prism::SymbolNode => "Symbol",
+    Prism::ArrayNode => "Array", Prism::HashNode => "Hash", Prism::IntegerNode => "Integer", Prism::FloatNode => "Float"
+  }.freeze
 
   Site =
     Data.define(:call, :home, :definition) do
@@ -18,25 +23,31 @@ class Hashira::Smells::Callers
 
       def kinds(receiver, singleton)
         return constant(receiver) if singleton
-        (Hashira::Smells::Mapping.made?(receiver) ? [receiver] : writes(receiver)).flat_map { constant(it.receiver) } +
-          Hashira::Smells::Naming.types(word(receiver)).map { [it, false] }
+        sources(receiver).flat_map { constant(it.receiver) } + named(receiver) + literal(receiver)
       end
+
+      def named(receiver) = Hashira::Smells::Naming.types(word(receiver)).map { [it, false] }
+
+      def literal(receiver) = LITERALS.filter_map { |type, name| [[name], true] if receiver.is_a?(type) }
 
       def constant(node)
         return [] unless Hashira::Smells::Factory.constant?(node)
         [[Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node)]]
       end
 
-      def writes(receiver)
-        return [] unless receiver.is_a?(Prism::LocalVariableReadNode) && definition
-        Hashira::Analysis::NodeWalk.collect(definition).select { WRITES.include?(it.class) && it.name == receiver.name }
+      def sources(receiver)
+        case receiver
+        when Prism::LocalVariableReadNode then writes(receiver.name)
+        else [receiver].select { Hashira::Smells::Mapping.made?(it) }
+        end
+      end
+
+      def writes(name)
+        Hashira::Analysis::NodeWalk.collect(definition).select { WRITES.include?(it.class) && it.name == name }
           .map(&:value).select { Hashira::Smells::Mapping.made?(it) }
       end
 
-      def word(receiver)
-        return receiver.name.to_s.delete_prefix("@") if HELD.include?(receiver.class)
-        receiver.is_a?(Prism::CallNode) && !receiver.receiver ? receiver.name.to_s : ""
-      end
+      def word(receiver) = NAMED.include?(receiver.class) ? receiver.name.to_s.delete_prefix("@") : ""
     end
 
   def initialize(trees, ownership)
@@ -48,7 +59,7 @@ class Hashira::Smells::Callers
 
   private
 
-  def sites = @_sites ||= @trees.flat_map { visit(it, [], nil) }.group_by { it.call.name }
+  def sites = @_sites ||= @trees.flat_map { visit(it, [], it) }.group_by { it.call.name }
 
   def visit(node, stack, definition, found = [])
     found << Site.new(node, Array(stack.last).join("::"), definition) if node.is_a?(Prism::CallNode)

@@ -35,9 +35,10 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
     RUBY
     calls = [
       "@items.build(:line)\n  @db.write(true)\n  write(false)\n  self.write(:on)", "::Database.build(:pg)",
-      "db = Database.new\n  db.write(true)", "db = items\n  db.write(true)\n  db.build(:x)\n  Cart.new.write(:on)",
+      "db = Database.new\n  db.write(true)",
+      "db = items\n  db.write(true)\n  db.build(:x)\n  Cart.new.write(:on)\n end\n def other\n  db = Database.new",
       "@database.write(true)", "database.write(true)", "main_database = items\n  main_database.write(:on)",
-      "items.first.write(true)"
+      "items.first(2).write(true)\n  Database.write(true)\n  [Database].first.build(:pg)"
     ]
     found =
       calls.map do
@@ -45,6 +46,40 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
       end
     expect(found.map { it.map(&:package) })
       .to(eq([[], %w[Database.build], %w[Database#write], [], *[%w[Database#write]] * 3, []]))
+  end
+
+  it "resolves the receiver from where the call sits, and a ::-rooted one from the top" do
+    top = <<~RUBY
+      class Database
+        def self.build(name) = name == "pg" ? @pool.checkout : @pool.idle
+      end
+
+      class Store
+        def self.open(name) = name == :a ? @pool.checkout : @pool.idle
+        def other = @pool.open(:a)
+      end
+    RUBY
+    shop = <<~RUBY
+      module Shop
+        class Database
+          def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)
+        end
+
+        class Cart
+          def go = [@database.write(true), ::Database.build(:pg)]
+        end
+      end
+    RUBY
+    found = flagged("lib/app/top.rb" => top, "lib/app/shop.rb" => shop).map(&:package)
+    expect(found).to(eq(%w[Shop::Database#write Database.build]))
+  end
+
+  it "types a literal receiver by its core class, where the project reopens that class" do
+    reopened = "class String\n  def camelize(first = :upper) = first == :upper ? capitalize : downcase\nend\n"
+    calls = ["\"x\".camelize(:lower)", "[1].camelize(:lower)"]
+    caller = "module App\n  class String; end\n  class C\n    def go = %s\n  end\nend\n"
+    found = calls.map { flagged("lib/app/s.rb" => reopened, "lib/app/c.rb" => format(caller, it)) }
+    expect(found.map { it.map(&:package) }).to(eq([%w[String#camelize], []]))
   end
 
   it "leaves a factory alone whose every branch only builds an object: the switch maps a name to a strategy" do

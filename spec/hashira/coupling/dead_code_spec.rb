@@ -333,6 +333,11 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     )
   end
 
+  it "keeps a namespace that holds a declared root" do
+    kit = files.merge("lib/app/kit.rb" => "module Kit\n  class Tool; end\n  class Lost; end\nend\n")
+    expect(dead(kit, roots: %w[Kit::Tool]).grep(/Kit/)).to(eq(%w[Kit::Lost]))
+  end
+
   it "adds the roots a Rails app names to the framework's" do
     expect(dead(rails, roots: %w[lib/pricing.rb], directories: %w[app lib])).to(eq(%w[Order#stale_scope]))
   end
