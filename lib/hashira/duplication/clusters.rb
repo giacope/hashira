@@ -30,11 +30,8 @@ class Hashira::Duplication::Clusters
   def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
 
   def sets
-    @_sets ||=
-      Hashira::Duplication::UnionFind.new.tap do |found|
-        fragments.group_by(&:types).each_value { |group| group.each_cons(2) { |left, right| found.union(left, right) } }
-        Hashira::Duplication::NearMiss.new(fragments).pairs.each { |left, right| found.union(left, right) }
-      end
+    shaped = fragments.group_by(&:types).each_value.flat_map { it.each_cons(2).to_a }
+    @_sets ||= Hashira::Duplication::UnionFind.new(shaped + Hashira::Duplication::NearMiss.new(fragments).pairs)
   end
 
   def sized = sets.clusters.flat_map { admitted(it) }

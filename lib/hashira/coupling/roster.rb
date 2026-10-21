@@ -6,13 +6,14 @@ class Hashira::Coupling::Roster
   end
 
   def registry
-    admitted
-    @_registry
+    @_registry ||=
+      Hashira::Coupling::ConstantRegistry.new.tap do |found|
+        admitted.each { |definition, package| found.register(definition.path, package) }
+      end
   end
 
   def types
-    admitted
-    @_types
+    @_types ||= Hash.new(0).merge(admitted.select { it.first.counted? }.uniq { it.first.path }.map(&:last).tally)
   end
 
   def origins = registry.origins
@@ -23,31 +24,9 @@ class Hashira::Coupling::Roster
 
   private
 
-  def admitted
-    return if @_admitted
-    @_admitted = true
-    blank
-    fill
-  end
-
-  def blank
-    @_registry = Hashira::Coupling::ConstantRegistry.new
-    @_types = Hash.new(0)
-  end
+  def admitted = @_admitted ||= @placed.select(&:last)
 
   def typed
-    @_typed ||= @placed.filter_map { |definition, package| definition.path if package && definition.type? }.to_set
-  end
-
-  def fill
-    counted = Set.new
-    @placed.each { |definition, package| admit(definition, package, counted) }
-  end
-
-  def admit(definition, package, counted)
-    return unless package
-    path = definition.path
-    @_registry.register(path, package)
-    @_types[package] += 1 if definition.counted? && counted.add?(path)
+    @_typed ||= admitted.filter_map { |definition, _| definition.path if definition.type? }.to_set
   end
 end

@@ -17,17 +17,13 @@ class Hashira::Coupling::Ordering
   end
 
   def choices
-    return @_choices if @_choices
-    costs = [0]
-    @_choices = [nil]
-    (1...(1 << @nodes.size)).each { |set| settle(set, costs) }
-    @_choices
+    @_choices ||= (1...(1 << @nodes.size)).each_with_object([[0], [nil]]) do |set, (costs, found)|
+      costs[set], found[set] = cheapest(set, costs)
+    end.last
   end
 
-  def settle(set, costs)
-    cost, last = @nodes.each_index.select { set[it] == 1 }.map { [costs[set ^ (1 << it)] + back(it, set), it] }.min
-    costs[set] = cost
-    @_choices[set] = last
+  def cheapest(set, costs)
+    @nodes.each_index.filter_map { [costs[set ^ (1 << it)] + back(it, set), it] if set[it] == 1 }.min
   end
 
   def back(index, set) = outgoing[index].sum { |bit, weight| set.anybits?(bit) ? weight : 0 }

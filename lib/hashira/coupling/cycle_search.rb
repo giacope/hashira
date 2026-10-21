@@ -7,35 +7,27 @@ class Hashira::Coupling::CycleSearch
   end
 
   def path
-    unwind([@package]) if cycle?
+    links = predecessors
+    unwind([@package], links) if links.key?(@package)
   end
 
   private
 
-  def prepare
-    @_predecessor = {}
-    @_queue = @dependencies[@package].to_a.each { @_predecessor[it] = @package }
-  end
-
-  def cycle?
-    prepare
-    while (node = @_queue.shift)
-      return true if node == @package
-      visit(node)
+  def predecessors
+    found = {}
+    queue = @dependencies[@package].to_a.each { found[it] = @package }
+    until queue.empty? || found.key?(@package)
+      node = queue.shift
+      fresh = @dependencies[node].reject { found.key?(it) }.uniq
+      fresh.each { found[it] = node }
+      queue.concat(fresh)
     end
+    found
   end
 
-  def visit(node)
-    @dependencies[node].each do |neighbor|
-      next if @_predecessor.key?(neighbor)
-      @_predecessor[neighbor] = node
-      @_queue << neighbor
-    end
-  end
-
-  def unwind(path)
+  def unwind(path, links)
     first = path.first
     return path if first == @package && path.size > 1
-    unwind(path.unshift(@_predecessor[first]))
+    unwind([links.fetch(first), *path], links)
   end
 end

@@ -20,15 +20,15 @@ class Hashira::Smells::Branches
   def trail(node) = trails.fetch(node)
 
   def trails
-    return @_trails if @_trails
-    @_trails = {}.compare_by_identity
-    chart(@root, [])
-    @_trails
-  end
-
-  def chart(node, trail)
-    @_trails[node] = trail
-    node.compact_child_nodes.each { chart(it, trail + taken(node, it)) }
+    @_trails ||=
+      {}.compare_by_identity.tap do |found|
+        pending = [[@root, []]]
+        until pending.empty?
+          node, trail = pending.pop
+          found[node] = trail
+          pending.concat(node.compact_child_nodes.map { [it, trail + taken(node, it)] })
+        end
+      end
   end
 
   def taken(node, child)
