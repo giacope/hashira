@@ -17,11 +17,11 @@ class Hashira::Smells::Repeats
 
   def merged(owner, group)
     Hashira::Analysis::Finding.new(
-      kind: KIND, package: owner, evidence: group.flat_map { told(it, owner) }, anchors: group.flat_map(&:anchors).uniq,
+      kind: KIND, package: owner, evidence: group.flat_map { told(it) }, anchors: group.flat_map(&:anchors).uniq,
       detail: { site: group.first.detail[:site], places: group.size, calls: group.sum { it.evidence.size } },
       confidence: (:low if group.all?(&:doubted?))
     )
   end
 
-  def told(finding, owner) = finding.evidence.map { "#{finding.package.delete_prefix(owner)}: #{it}" }
+  def told(finding) = finding.evidence.map { "#{finding.package}: #{it}" }
 end

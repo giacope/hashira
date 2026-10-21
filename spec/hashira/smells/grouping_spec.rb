@@ -114,7 +114,7 @@ RSpec.describe(Hashira::Smells::Grouping) do
     expect([till.evidence.first(2), message(till), message(repeats["Shop::Desk"])]).to(
       eq(
         [
-          ["#ring: io.tick(1) × 2 (line 3)", "#open: io.tick(2) × 2 (line 4)"], said,
+          ["Shop::Till#ring: io.tick(1) × 2 (line 3)", "Shop::Till#open: io.tick(2) × 2 (line 4)"], said,
           "Shop::Desk repeats 1 call in 1 method (till.rb:9). Name the result in a local variable."
         ]
       )
