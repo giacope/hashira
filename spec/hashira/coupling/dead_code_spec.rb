@@ -510,4 +510,17 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     expect(dead(hooked, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
       .to(eq(%w[Hooks::Quiet]))
   end
+
+  it "judges an engine's app code as Rails code and its lib code as a library, whose public surface is API" do
+    engine = {
+      "shop.gemspec" => "",
+      "lib/shop/rails.rb" => "module Shop\n  class Engine < ::Rails::Engine\n    isolate_namespace Shop\n  end\nend\n",
+      "lib/shop/config.rb" =>
+        "module Shop\n  module Config\n    def self.reset_model = 1\n\n    private\n\n    def hidden = 1\n  end\nend\n",
+      "app/models/shop/order.rb" => "module Shop\n  class Order\n    def total = 1\n  end\nend\n",
+      "app/controllers/shop/orders_controller.rb" =>
+        "module Shop\n  class OrdersController\n    def index = Order\n  end\nend\n"
+    }
+    expect(dead(engine, directories: %w[app lib])).to(eq(%w[Shop::Order#total Shop::Config#hidden]))
+  end
 end

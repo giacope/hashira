@@ -6,7 +6,7 @@ class Hashira::Layout
   def targets
     return RAILS_TARGETS.select { Dir.exist?(it) } if File.exist?("config/application.rb")
     return required unless Dir["lib/*/"].any? || Dir["lib/*.rb"].any?
-    [["lib", library].compact.join("/")]
+    libraries.empty? ? ["lib"] : libraries.map { "lib/#{it}" }
   end
 
   def suggestion(files) = ["hashira", *scope(files), "--only", files.join(",")].join(" ")
@@ -23,9 +23,7 @@ class Hashira::Layout
 
   def required = Dir["*.gemspec"].flat_map { Hashira::Gemspec.new(it).paths }.uniq
 
-  def library
-    named = Dir["lib/*.rb"].map { File.basename(it, ".rb") }.select { Dir.exist?("lib/#{it}") }
-    return named.first if named.one?
-    (Dir["*.gemspec"].map { File.basename(it, ".gemspec") } & named).first
+  def libraries
+    @_libraries ||= Dir["lib/*.rb"].map { File.basename(it, ".rb") }.select { Dir.exist?("lib/#{it}") }.sort
   end
 end

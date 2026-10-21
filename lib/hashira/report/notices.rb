@@ -3,6 +3,8 @@
 class Hashira::Report::Notices
   ISSUES = "https://github.com/giacope/hashira/issues"
 
+  OPT_IN = "pass the directory, or --only a file, to analyse them"
+
   def initialize(io: $stderr)
     @io = io
   end
@@ -19,6 +21,12 @@ class Hashira::Report::Notices
     @io.puts("hashira: internal error — #{error.class}: #{error.message}")
     @io.puts("  at #{error.backtrace.first}")
     @io.puts("  this is a bug in hashira — please report it at #{ISSUES}")
+  end
+
+  def skipped(count, label, left)
+    return if left.empty?
+    counts = left.map { |reason, files| "#{files.size} #{reason}" }.join(" and ")
+    @io.puts("hashira: analysed #{count} files in #{label}; skipped #{counts} (#{OPT_IN})")
   end
 
   def unparsed(count, sample)

@@ -140,9 +140,13 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def absolute(file) = File.expand_path(file, project.directories.then { it.one? ? it.first : "." })
 
-  def api?(member) = library? && member.exposed && owner_exposed?(member)
+  def api?(member) = (library? || engine_library?(member.file)) && member.exposed && owner_exposed?(member)
 
   def library? = !project.rails? && roots.empty?
+
+  def engine_library?(file) = !project.engine.nil? && roots.empty? && shipped?(file)
+
+  def shipped?(file) = absolute(file).delete_prefix("#{File.expand_path(project.home)}/").start_with?("lib/")
 
   def owner_exposed?(member) = exposure.fetch(member.owner, true)
 

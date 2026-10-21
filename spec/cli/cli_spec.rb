@@ -260,6 +260,18 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "says how many files it analysed and which vendored or generated ones it left out" do
+    files = {
+      "lib/app/good.rb" => "class Good; def a = 1; end\n", "lib/app/vendor/x.rb" => "",
+      "lib/app/y.rb" => "# @generated\n"
+    }
+    said = "hashira: analysed 1 files in lib/app; skipped 1 vendored and 1 generated " \
+      "(pass the directory, or --only a file, to analyse them)"
+    within(files) do
+      capture { expect { described_class.new(["lib/app"]).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
+    end
+  end
+
   it "says when a file did not parse, instead of quietly analyzing a partial tree" do
     files = {
       "lib/app/good.rb" => "class Good; def a = 1; end\n",

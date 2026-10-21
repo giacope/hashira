@@ -67,7 +67,7 @@ class Hashira::Pipeline
 
   def rules = @project.rules
 
-  def parsed = @_parsed ||= Hashira::Trees.new(@project)
+  def parsed = @_parsed ||= Hashira::Trees.new(@project, @only)
 
   def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all, @project.home)
 

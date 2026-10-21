@@ -7,8 +7,6 @@ class Hashira::Project
 
   TESTS = %w[test spec].freeze
 
-  TEMPLATES = %r{/generators/(?:.+/)?\w*templates?/}
-
   def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
     @requested = requested
     @boundaries = boundaries
@@ -18,16 +16,21 @@ class Hashira::Project
 
   attr_reader :boundaries, :home, :rules
 
-  def directories = @_directories ||= resolved
+  def directories = @_directories ||= resolution.resolved
 
   def rails? = application? || !engine.nil?
 
   def engine = (@_engine ||= [(engines.first if engines.one? && !application?)]).first
 
-  def files = directories.flat_map { Dir["#{it}/**/*.rb"] }.grep_v(TEMPLATES).sort
+  def files = sources.files
+
+  def skipped = sources.skipped
+
+  def scope = [files.size, label, skipped]
 
   def package(path)
     home = parent(path)
+    return "#{shown(home)}#{ROOT_PACKAGE}" if entry?(path, home)
     first, rest = path.delete_prefix("#{home}/").delete_suffix(".rb").split("/", 2)
     return "#{shown(home)}#{ROOT_PACKAGE}" unless rest || Dir.exist?("#{home}/#{first}")
     contested.include?(first) ? "#{home}/#{first}" : first
@@ -35,7 +38,7 @@ class Hashira::Project
 
   def relative(path)
     home = parent(path)
-    "#{shown(home)}#{path.delete_prefix("#{home}/")}"
+    "#{shown(home)}#{entry?(path, home) ? "../#{File.basename(path)}" : path.delete_prefix("#{home}/")}"
   end
 
   def test?(path) = (@_tests ||= files.select { tested?(it) }.to_set).include?(path)
@@ -59,59 +62,15 @@ class Hashira::Project
 
   private
 
-  def resolved
-    chosen = distinct(named)
-    survivors = chosen.one? ? [descend(chosen.first)] : chosen
-    raise(Hashira::Error, "no Ruby files under #{survivors.join(", ")}") if bare?(survivors)
-    survivors
-  end
+  def resolution = @_resolution ||= Hashira::Directories.new(@requested)
 
-  def named
-    chosen = (@requested.empty? ? defaults : @requested).map { tidy(it) }
-    vet(chosen)
-    chosen
-  end
+  def sources = @_sources ||= Hashira::Sources.new(directories, entries: resolution.entries(directories))
 
-  def tidy(path) = path.delete_suffix("/").delete_prefix("#{Dir.pwd}/").delete_prefix("./")
-
-  def bare?(survivors) = survivors.flat_map { Dir["#{it}/**/*.rb"] }.empty?
-
-  def defaults
-    found = Hashira::Layout.new.targets
-    raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly") if found.empty?
-    found
-  end
-
-  def descend(directory)
-    child = sole(directory)
-    return directory unless child && Dir["#{child}/*/"].any? && (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty?
-    descend(child)
-  end
-
-  def sole(directory)
-    subdirectories = Dir["#{directory}/*/"]
-    subdirectories.size == 1 ? subdirectories.first.delete_suffix("/") : nil
-  end
-
-  def vet(directories)
-    files = directories.select { File.file?(it) }
-    raise(Hashira::Error, "#{files.first} is a file — hashira takes directories (try: #{hint(files)})") if files.any?
-    missing = directories.reject { Dir.exist?(it) }
-    raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
-  end
-
-  def hint(files) = Hashira::Layout.new.suggestion(files)
-
-  def distinct(directories)
-    pairs = directories.map { [it, File.realpath(it)] }.uniq(&:last)
-    pairs.filter_map { |dir, path| dir unless nested?(path, pairs) }
-  end
-
-  def nested?(path, pairs) = pairs.any? { path.start_with?("#{it.last}/") }
+  def entry?(path, home) = path == "#{home}.rb"
 
   def application? = directories.any? { config?(File.expand_path(it)) }
 
-  def engines = directories.flat_map { Dir["#{it}/**/engine.rb"] }.filter_map { Hashira::Engine.namespace(it) }.uniq
+  def engines = Hashira::Engine.namespaces(directories, home)
 
   def config?(directory)
     ["config/application.rb", "../config/application.rb"].any? { File.exist?(File.expand_path(it, directory)) }
@@ -131,7 +90,7 @@ class Hashira::Project
   end
 
   def parent(path)
-    directories.find { path.start_with?("#{it}/") } ||
+    directories.find { path.start_with?("#{it}/") || entry?(path, it) } ||
       raise(Hashira::Error, "#{path} is outside the analyzed directories")
   end
 end

@@ -51,6 +51,7 @@ class Hashira::CLI::Run
   def notices
     told = Hashira::Report::Notices.new
     told.churn(@pipeline.project.label) unless @pipeline.churn.history?
+    told.skipped(*@pipeline.project.scope)
     broken = @pipeline.unparsed
     told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
   end

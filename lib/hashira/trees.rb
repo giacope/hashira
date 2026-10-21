@@ -7,8 +7,9 @@ class Hashira::Trees
 
   def self.parse(path) = new(nil).tree(path)
 
-  def initialize(project)
+  def initialize(project, kept = [])
     @project = project
+    @kept = kept
   end
 
   def all = @_all ||= results.transform_values(&:value)
@@ -23,7 +24,9 @@ class Hashira::Trees
 
   private
 
-  def results = @_results ||= @project.files.to_h { [it, legible(parse(it))] }
+  def results = @_results ||= sources.to_h { [it, legible(parse(it))] }
+
+  def sources = (@project.files | (@kept & @project.skipped.values.flatten)).sort
 
   def parse(path)
     Prism.parse_file(path)
