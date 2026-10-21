@@ -7,14 +7,6 @@ class Hashira::Smells::Lineage
 
   EXTENSIONS = %i[extend].freeze
 
-  WRITERS = %i[attr_writer attr_accessor].freeze
-
-  SETTERS = [
-    Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode,
-    Prism::InstanceVariableAndWriteNode, Prism::InstanceVariableOperatorWriteNode,
-    Prism::InstanceVariableTargetNode
-  ].freeze
-
   def initialize(types)
     @types = types
   end
@@ -117,24 +109,9 @@ class Hashira::Smells::Lineage
     parts.size.downto(0).map { parts.first(it) }
   end
 
-  def writes(type) = remember(written, type.node) { definitions(type).flat_map { setters(it) } + attributes(type) }
+  def writes(type) = remember(written, type.node) { Hashira::Smells::Installs.new(type, sweep(type)).names }
 
   def written = @_written ||= {}.compare_by_identity
-
-  def setters(node)
-    swept = Hashira::Smells::Scope.sweep(node)
-    swept.select { SETTERS.include?(it.class) }.map(&:name) + swept.filter_map { injected(it) }
-  end
-
-  def injected(node)
-    return unless node.is_a?(Prism::CallNode) && node.name == :instance_variable_set
-    first = node.arguments&.arguments&.first
-    Hashira::Analysis::Syntax.symbol(first) if Hashira::Analysis::Syntax.word?(first)
-  end
-
-  def attributes(type)
-    named(type, WRITERS).select { it.is_a?(Prism::SymbolNode) || it.is_a?(Prism::StringNode) }.map { :"@#{Hashira::Analysis::Syntax.text(it)}" }
-  end
 
   def named(type, names) = passed(calls(type).select { names.include?(it.name) })
 

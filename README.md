@@ -624,7 +624,11 @@ Findings (3):
   its constructor fields together is one handle.
 - **assumed_state** — an instance variable read that nothing the class can reach
   ever assigns: a typo, or a fragile base class waiting for subclasses to install
-  its state.
+  its state. Assigning counts wherever Ruby does it on the instance: a method,
+  an attribute writer (also one minted from a list the class declares,
+  `attr_accessor(*OPTIONS)`), `instance_variable_set`, and a block the class
+  body hands its own DSL (`start { @mode = :text }`, `before_action { … }`),
+  which the framework runs on the instance.
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a

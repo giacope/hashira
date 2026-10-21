@@ -73,6 +73,8 @@ module Hashira
 
       def constants(type) = statements(type).grep(Prism::ConstantWriteNode)
 
+      def thaw(value) = value.is_a?(Prism::CallNode) && value.name == :freeze ? value.receiver : value
+
       def statements(type)
         body = type.body
         body.is_a?(Prism::StatementsNode) ? body.body : [body]

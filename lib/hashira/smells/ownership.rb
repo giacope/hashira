@@ -59,7 +59,7 @@ class Hashira::Smells::Ownership
   def record(full, constant)
     path = full + [constant.name.to_s]
     absorb(path)
-    chart(path, thaw(constant.value))
+    chart(path, Hashira::Analysis::Syntax.thaw(constant.value))
   end
 
   def absorb(path)
@@ -82,12 +82,6 @@ class Hashira::Smells::Ownership
     return if keys.empty? || keys.any?(&:nil?)
     suffixes(path).each { @_tables[it] = keys }
   end
-
-  def thaw(value)
-    frozen?(value) ? value.receiver : value
-  end
-
-  def frozen?(value) = value.is_a?(Prism::CallNode) && value.name == :freeze
 
   def spine(element)
     return unless element.is_a?(Prism::AssocNode)
