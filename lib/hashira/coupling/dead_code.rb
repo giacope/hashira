@@ -97,12 +97,11 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def framed?(member) = member.exposed ? hosted?(member.owner) : surface.outside?(member.owner)
 
-  def hosted?(path) = (@_hosted ||= {}).fetch(path) { settle(path) }
+  def hosted?(path) = hosted[path]
 
-  def settle(path)
-    @_hosted[path] = false
-    @_hosted[path] = lineage(path).any? { surface.outside?(it) } || hosting?(path)
-  end
+  def hosted = @_hosted ||= Hash.new { |found, path| found.store(path, false) || found[path] = settle(path) }
+
+  def settle(path) = lineage(path).any? { surface.outside?(it) } || hosting?(path)
 
   def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
 

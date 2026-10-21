@@ -43,7 +43,7 @@ class Hashira::Coupling::Outside
 
   def files = listed.map { File.join(home, it) }.select { wanted?(it) }.reject { analyzed?(it) }
 
-  def spec?(path) = path.delete_prefix("#{home}/").match?(SPECS)
+  def spec?(path) = path.end_with?(".rb") && path.delete_prefix("#{home}/").match?(SPECS)
 
   def called(path, words) = words.merge(Hashira::Coupling::SpecWords.new(@project.tree(path)).to_a)
 

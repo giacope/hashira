@@ -2,22 +2,26 @@
 
 require "prism"
 
-module Hashira::Coupling::Gift
-  module_function
-
-  def of(call, nesting)
-    host = root(call.receiver)
-    Array(call.arguments&.arguments).filter_map { offered(it, nesting) }
-      .map { [*(host ? lexical(host, nesting) : [nil, []]), *it] }
+class Hashira::Coupling::Gift
+  def initialize(call, nesting)
+    @call = call
+    @nesting = nesting
   end
 
-  def offered(given, nesting)
-    return ([nesting.last, []] if nesting.any?) if given.is_a?(Prism::SelfNode)
-    lexical(given, nesting) if Hashira::Analysis::Syntax.static?(given)
+  def to_a
+    host = root(@call.receiver)
+    Array(@call.arguments&.arguments).filter_map { offered(it) }.map { [*(host ? lexical(host) : [nil, []]), *it] }
   end
 
-  def lexical(node, nesting)
-    [Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node) ? [] : nesting]
+  private
+
+  def offered(given)
+    return ([@nesting.last, []] if @nesting.any?) if given.is_a?(Prism::SelfNode)
+    lexical(given) if Hashira::Analysis::Syntax.static?(given)
+  end
+
+  def lexical(node)
+    [Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node) ? [] : @nesting]
   end
 
   def root(node)

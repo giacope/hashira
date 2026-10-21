@@ -91,7 +91,7 @@ class Hashira::Coupling::Mentions
   end
 
   def passed(call, owner, nesting)
-    handed.concat(Hashira::Coupling::Gift.of(call, nesting)) if handing?(call)
+    handed.concat(Hashira::Coupling::Gift.new(call, nesting).to_a) if handing?(call)
     mirror(call.receiver, owner) if call.name == :const_get && computed?(call)
   end
 
@@ -117,7 +117,7 @@ class Hashira::Coupling::Mentions
   def said(text) = text.scan(TOKEN) { names << it }
 
   def built(parts)
-    head, tail = Hashira::Coupling::Affixes.of(parts)
+    head, tail = Hashira::Coupling::Affixes.new(parts).to_a
     prefixes << head unless head.empty?
     suffixes << tail unless tail.empty?
   end

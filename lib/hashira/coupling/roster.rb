@@ -17,10 +17,7 @@ class Hashira::Coupling::Roster
 
   def origins = registry.origins
 
-  def type?(path)
-    admitted
-    @_typed.include?(path)
-  end
+  def type?(path) = typed.include?(path)
 
   def packages = types.keys | registry.packages
 
@@ -36,7 +33,10 @@ class Hashira::Coupling::Roster
   def blank
     @_registry = Hashira::Coupling::ConstantRegistry.new
     @_types = Hash.new(0)
-    @_typed = Set.new
+  end
+
+  def typed
+    @_typed ||= @placed.filter_map { |definition, package| definition.path if package && definition.type? }.to_set
   end
 
   def fill
@@ -48,7 +48,6 @@ class Hashira::Coupling::Roster
     return unless package
     path = definition.path
     @_registry.register(path, package)
-    @_typed << path if definition.type?
     @_types[package] += 1 if definition.counted? && counted.add?(path)
   end
 end

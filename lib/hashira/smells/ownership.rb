@@ -24,10 +24,7 @@ class Hashira::Smells::Ownership
 
   def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
 
-  def keys(segments)
-    surveyed
-    @_tables.fetch(segments.join("::"), [])
-  end
+  def keys(segments) = tables.fetch(segments.join("::"), [])
 
   private
 
@@ -35,52 +32,39 @@ class Hashira::Smells::Ownership
     (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }
   end
 
-  def defined
-    surveyed
-    @_defined
+  def defined = @_defined ||= claimed.flat_map { |node, full| [full, *named(node, full)] }.to_set { it.join("::") }
+
+  def written = @_written ||= walked.to_set { |_node, full| full.join("::") }
+
+  def tables
+    @_tables ||= claimed.flat_map { |node, full| charted(node, full) }
+      .flat_map { |path, keys| suffixes(path).map { [it, keys] } }.to_h
   end
 
-  def written
-    surveyed
-    @_written
+  def walked
+    @_walked ||= @trees.flat_map { Hashira::Analysis::TypeWalk.to_enum(:each, it).map { |node, full| [node, full] } }
   end
 
-  def surveyed
-    return if @_surveyed
-    @_surveyed = true
-    @_defined = Set.new
-    @_written = Set.new
-    @_tables = {}
-    @trees.each { survey(it) }
-  end
+  def claimed = @_claimed ||= walked.select { |_node, full| claimed?(full) }
 
-  def survey(tree)
-    Hashira::Analysis::TypeWalk.each(tree) do |node, full|
-      @_written << full.join("::")
-      next unless claimed?(full)
-      absorb(full)
-      Hashira::Analysis::Syntax.constants(node).each { record(full, it) }
+  def named(node, full) = Hashira::Analysis::Syntax.constants(node).map { full + [it.name.to_s] }
+
+  def charted(node, full)
+    Hashira::Analysis::Syntax.constants(node).filter_map do |constant|
+      keys = chart(Hashira::Analysis::Syntax.thaw(constant.value))
+      [full + [constant.name.to_s], keys] if keys
     end
   end
-
-  def record(full, constant)
-    path = full + [constant.name.to_s]
-    absorb(path)
-    chart(path, Hashira::Analysis::Syntax.thaw(constant.value))
-  end
-
-  def absorb(path) = @_defined << path.join("::")
 
   def lexical(segments, owner)
     parts = owner.to_s.split("::")
     parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
   end
 
-  def chart(path, value)
+  def chart(value)
     return unless value.is_a?(Prism::HashNode)
     keys = value.elements.map { spine(it) }
-    return if keys.empty? || keys.any?(&:nil?)
-    suffixes(path).each { @_tables[it] = keys }
+    keys unless keys.empty? || keys.any?(&:nil?)
   end
 
   def spine(element)

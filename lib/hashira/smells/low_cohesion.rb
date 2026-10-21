@@ -94,7 +94,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def aimed(name)
     return [symbol(name)].compact unless INTERPOLATED.include?(name.class)
-    head, tail = Hashira::Coupling::Affixes.of(name.parts)
+    head, tail = Hashira::Coupling::Affixes.new(name.parts).to_a
     return [] if head.empty? && tail.empty?
     names.select { it.start_with?(head) && it.end_with?(tail) }
   end

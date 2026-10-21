@@ -18,7 +18,7 @@ class Hashira::Coupling::SpecWords
       case node
       when Prism::CallNode then node.name.to_s.then { [(it unless node.variable_call?), matched(it)] }
       when Prism::SymbolNode then named.include?(node) ? [] : [Hashira::Analysis::Syntax.text(node)]
-      when Prism::ConstantReadNode then [node.name.name]
+      when Prism::ConstantReadNode, Prism::ConstantPathNode then [node.name.name]
       else []
       end
     end.compact

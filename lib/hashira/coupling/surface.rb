@@ -38,9 +38,11 @@ class Hashira::Coupling::Surface
 
   def mixers(path) = (@_mixers ||= mixed).fetch(path, [])
 
-  def outside?(path) = (@_outside ||= {}).fetch(path) { @_outside[path] = types.fetch(path, []).any? { hosted?(it) } }
+  def outside?(path) = outside[path]
 
   private
+
+  def outside = @_outside ||= Hash.new { |found, path| found[path] = types.fetch(path, []).any? { hosted?(it) } }
 
   def opened(file, tree)
     found = []
