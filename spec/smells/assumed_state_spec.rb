@@ -28,6 +28,48 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
   end
 
+  it "counts a computed instance_variable_set only where the class's construction reaches it" do
+    core = <<~'RUBY'
+      module Core
+        def initialize(options) = setup(options)
+        def setup(options) = options.each { |key, value| instance_variable_set("@shop_#{key}", value) }
+        def reset = options.each { |key| instance_variable_set("@other_#{key}", nil) }
+      end
+    RUBY
+    classes = <<~'RUBY'
+      class Real
+        include Core
+        def initialize(options) = super
+        def url = [@shop_key, @other_key]
+      end
+
+      class Mock
+        include Core
+        def initialize(options) = @data = options
+        def url = [@shop_key, @data]
+      end
+
+      class Built
+        include Core
+        def url = [@shop_key, @other_key]
+      end
+
+      class Gate
+        include Core
+        def initialize(options) = self.setup(options)
+        def url = @shop_key
+      end
+
+      class Hooked
+        define_method(:load) { |key| instance_variable_set("@hook_#{key}", 1) }
+        def url = @hook_key
+      end
+    RUBY
+    found = sniffed({ "lib/app/core.rb" => core, "lib/app/classes.rb" => classes }, "assumed_state")
+    expect(found.to_h { [it.package, it.evidence] })
+      .to(eq("Real" => ["@other_key"], "Mock" => ["@shop_key"], "Built" => ["@other_key"]))
+  end
+
   it "flags instance variables read but never assigned anywhere in the class" do
     findings = assumed(<<~RUBY)
       module App

@@ -1,0 +1,9 @@
+# An engine gem whose engine lives in lib/shop/rails.rb: packaged by the
+# classes under Shop. The Engine class and the ADAPTERS table belong to the
+# namespace itself, the (root) package, not to packages of their own.
+args: [app, lib]
+edges:
+  - "User -> (root)"
+  - "User -> Session"
+absent: ["User -> ADAPTERS", "Engine -> (root)"]
+cycles: []

@@ -102,24 +102,27 @@ RSpec.describe(Hashira::Smells::LowCohesion) do
     expect(split(source).size).to(eq(1))
   end
 
-  it "joins a computed send to the methods the class names as symbols, its dispatch table" do
+  def dispatched
     table = "COMMANDS = { \"remind\" => :remind, \"deposit\" => :deposit }.freeze\n  "
-    tabled = account("#{table}def run(name) = __send__(COMMANDS.fetch(name))")
-    built = account("#{table}def run(name) = public_send(\"\#{name}\")")
-    listed = account("def run(name) = public_send(name)\n  def names = %i[ping]")
-    literal = account("def audit = [send(:balance), :ping]")
-    bare = account("def run = send\n  def names = %i[balance remind]")
-    expect([split(tabled), split(built), split(listed).size, split(literal).size, split(bare).size])
-      .to(eq([[], [], 1, 1, 1]))
+    [
+      "#{table}def run(name) = __send__(COMMANDS.fetch(name))", "#{table}def run(name) = public_send(\"\#{name}\")",
+      "def run(name) = public_send(name)\n  def names = %i[ping]", "def audit = [send(:balance), :ping]",
+      "def run = send\n  def names = %i[balance remind]"
+    ]
   end
 
+  it "joins a computed send to the methods the class names as symbols, its dispatch table" do
+    expect(dispatched.map { split(account(it)).size }).to(eq([0, 0, 1, 1, 1]))
+  end
+
+  def mixed(body, head = "") = "#{head}#{account("#{body}\n  def audit = [bridge, held, ping]")}"
+
   it "joins methods through a project module the class includes, whose methods call back into the class" do
-    bridge = "module Bridge\n  def bridge = [balance, ping]\nend\n"
-    joined = bridge + account("include Bridge\n  def audit = bridge")
-    foreign = account("include Comparable\n  def audit = bridge")
-    held = "module Held\n  def held = @balance\nend\n" + account("include Held\n  def audit = [held, ping]")
-    groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping (@mailer)"]
-    expect([split(joined), split(held), split(foreign).first.evidence]).to(eq([[], [], groups]))
+    bridge = "module Bridge\n  def bridge = [balance, ping]\nend\nmodule Held\n  def held = @balance\nend\n"
+    groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, audit (@mailer)"]
+    found = [mixed("include Bridge", bridge), mixed("include Held", bridge), mixed("include Comparable")]
+      .map { split(it) }
+    expect([found[0], found[1], found[2].first.evidence]).to(eq([[], [], groups]))
   end
 
   it "keeps groups apart that a constructor only stores separately" do

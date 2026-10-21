@@ -36,13 +36,17 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def home(definition)
     file = definition.file
-    return definition.name unless apart?(file)
+    return package(definition.name) unless apart?(file)
     (tested?(file) ? TEST : WEB) unless claimed.include?(definition.path)
   end
 
+  def package(name) = held.include?(name) ? project.root : name
+
+  def held = @_held ||= catalog.reject(&:nested?).select { it.value? || it.engine? }.to_set(&:name)
+
   def domain = @_domain ||= catalog.reject { apart?(it.file) }
 
-  def names = @_names ||= domain.to_set(&:name)
+  def names = @_names ||= domain.to_set(&:name) - held
 
   def claimed = @_claimed ||= domain.to_set(&:path)
 

@@ -29,6 +29,18 @@ RSpec.describe(Hashira::Coupling::Census, "#charge") do
     end
   end
 
+  it "keeps an engine class and a namespace's value constants in the root package, not packages of their own" do
+    hub = "  class Hub\n    def adapters = ADAPTERS\n  end\n"
+    files = {
+      "lib/app/rails.rb" => "module App\n  class Engine < ::Rails::Engine\n  end\nend\n",
+      "lib/app/setup.rb" => "module App\n  ADAPTERS = {}\n  Point = Data.define(:x)\n#{hub}end\n"
+    }
+    analyze(Fixtures::CYCLIC_FILES.merge(files), packaging: :namespace) do |_project, census, graph|
+      expect(census.packages).to(contain_exactly("Alpha", "Beta", "Core", "Hub", "Point", "(root)"))
+      expect(graph.edges.map(&:to_s)).to(include("Hub -> (root)"))
+    end
+  end
+
   it "charges top-level code to the root package" do
     files = Fixtures::RAILS_FILES.merge("app/models/boot.rb" => "Billing::Invoice.new\n")
     analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|

@@ -538,6 +538,14 @@ From the third field test (thirty MIT-licensed codebases):
   - `change_coupling` leaves out a pair where one file only loads the other or
     lists its path (a registration such as a list of harness-critical files);
     with a constant reference between them it stays an explicit finding.
+- Namespace packaging keeps an engine's `Engine` class and a namespace's value
+  constants (rails_admin's `EXTENSIONS`, `AUTHORIZATION_ADAPTERS`) in the
+  namespace's own `(root)` package instead of making each a package.
+- `assumed_state` counts a computed `instance_variable_set("@#{key}", …)` as
+  assigning only where the class's construction reaches it: through its
+  `initialize`, `super` and the methods they call. fog's `Real` services, whose
+  `initialize` runs `setup`, stay quiet; the `Mock` services, whose
+  `initialize` never does, are reported again.
 
 From the third field test (thirty MIT-licensed codebases):
 

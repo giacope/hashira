@@ -23,6 +23,12 @@ module Hashira
         def created? = node.is_a?(Prism::ConstantWriteNode) || (klass? && !superclass.nil?)
 
         def counted? = klass? || (module? && !Hashira::Analysis::Syntax.direct(node).empty?)
+
+        def value? = node.is_a?(Prism::ConstantWriteNode) && !Hashira::Coupling::Body.new(node.value).built?
+
+        def engine? = klass? && Hashira::Coupling::Definition::ENGINES.include?(superclass&.slice)
       end
+
+    Definition::ENGINES = %w[Rails::Engine ::Rails::Engine].freeze
   end
 end
