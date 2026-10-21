@@ -272,6 +272,18 @@ RSpec.describe(Hashira::CLI::Session) do
     end
   end
 
+  it "says how many files sit in no declared layer, and in which folders" do
+    files = {
+      ".hashira.yml" => "layers: rails\n", "config/application.rb" => "",
+      "app/models/user.rb" => "class User; def a = 1; end\n", "config/initializers/a.rb" => "",
+      "app/forms/sign_up.rb" => "class SignUp; def a = User; end\n"
+    }
+    said = "hashira: 2 of 4 files sit in no layer (config/initializers 1, config 1) — layer_violation"
+    within(files) do
+      capture { expect { described_class.new(%w[app config]).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
+    end
+  end
+
   it "says when a file did not parse, instead of quietly analyzing a partial tree" do
     files = {
       "lib/app/good.rb" => "class Good; def a = 1; end\n",

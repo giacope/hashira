@@ -55,6 +55,8 @@ class Hashira::Coupling::Census
 
   def owned?(path) = territory.owned?(path)
 
+  def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
+
   def inflection
     @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
   end

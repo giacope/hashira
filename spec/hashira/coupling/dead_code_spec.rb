@@ -55,7 +55,12 @@ RSpec.describe(Hashira::Coupling::DeadCode) do
     RUBY
   end
 
-  def files = { "lib/app/shop.rb" => shop, "lib/app/user.rb" => user, "spec/shop_spec.rb" => "it { outside_only }\n" }
+  def files
+    {
+      "lib/app/shop.rb" => shop, "lib/app/user.rb" => user,
+      "spec/shop_spec.rb" => "it { shop.outside_only }\nit { stale }\n"
+    }
+  end
 
   def dead(tree = files, roots: nil, directories: ["lib/app"])
     within(tree) do

@@ -9,10 +9,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
     Data.define(:sighting, :source, :target, :to) do
       def outward? = source > target
 
-      def ends(names)
-        pair = [sighting.from, to]
-        pair.uniq.one? ? pair.zip([source, target]).map { "#{it.first} (#{names[it.last]})" } : pair
-      end
+      def ends = [sighting.holder, to]
 
       def site = sighting.site
     end
@@ -52,7 +49,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def place(path)
     ranks = census.files(path).filter_map { layers.rank(it, census.home(it)) }.uniq
-    [ranks.first, census.owner(path) || path.first] if ranks.one?
+    [ranks.first, census.holder(path)] if ranks.one?
   end
 
   def entry(inner, outer, group)
@@ -64,7 +61,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   end
 
   def edges(group)
-    weights = group.map { it.ends(names) }.tally
+    weights = group.map(&:ends).tally
     weights.map { |(from, to), weight| weighed(from, to, weight) }.sort_by { it.values_at(:weight, :from, :to) }
   end
 
@@ -74,7 +71,8 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def leaning
     against = cut.cost
-    against < declared ? { leaning: cut.order, against: } : {}
+    order = cut.order
+    against < declared && layers.allows?(order) ? { leaning: order, against: } : {}
   end
 
   def declared = outward.size

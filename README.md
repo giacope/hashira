@@ -264,26 +264,30 @@ layers:
 In a Rails app, `layers: rails` declares the conventional three: `web`
 (`app/controllers`, `views`, `helpers`, `components`, `serializers`,
 `presenters`, `decorators`, `policies`, `avo`, `dashboards`, and the other
-delivery mechanisms: `mailers`, `mailboxes`, `channels`), `app` (`app/jobs`,
-`workers`, `services`) and `domain` (`app/models`, `app/validators`, `lib`). A
-model that enqueues a job or sends mail from a callback then points outward,
-which is the point. Where one namespace spans two layers, the edge to cut names
-the layer at each end (`Archived (domain) -> Archived (web)`).
+delivery mechanisms: `mailers`, `mailboxes`, `channels`, and mailer previews
+wherever they sit: `**/mailers/previews/**`, `*_preview.rb`), `app` (`app/jobs`,
+`workers`, `services`, and every other `app/` folder: `forms`, `queries`,
+`wizards`, …) and `domain` (`app/models`, `app/validators`, `lib`). A model that
+enqueues a job or sends mail from a callback then points outward, which is the
+point. The finding never proposes an order that puts the preset's `app` below
+its `domain`.
 
 A layer may use the layers declared inside it, never one outside it.
 **layer_violation** reports every reference that points outward, one finding
-per pair of layers, with the package edges to cut, the cheapest first:
+per pair of layers, with the class edges to cut (the class that refers, the
+class it names), the cheapest first:
 
 <!-- example: layers app --kind layer_violation -->
 ```console
 Findings (1):
-  layer_violation: billing depends on web, an outer layer, through 1 ref — a layer may depend only on the layers declared inside it. Cut billing -> web (1 ref).
+  layer_violation: billing depends on web, an outer layer, through 1 ref — a layer may depend only on the layers declared inside it. Cut Billing::Ledger -> Web::InvoicesPage (1 ref).
       · billing/ledger.rb:5: Web::InvoicesPage
 ```
 
 A file is in the layer whose path holds it or whose package it charges, a
 constant in the layer of the files that define it (one defined in two layers is
-left alone), and a file in no layer is not judged. The ratchet holds a pair by
+left alone), and a file in no layer is not judged: hashira says on stderr how
+many files sit in no layer, and in which folders. The ratchet holds a pair by
 its count of references, so a new one fails the build. When the code leans the
 other way (another order of the same layers, found by the same exact search as
 a cycle's cheapest cut, would leave fewer references pointing outward), the

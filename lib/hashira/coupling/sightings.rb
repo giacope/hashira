@@ -2,7 +2,7 @@
 
 class Hashira::Coupling::Sightings
   Sighting =
-    Data.define(:file, :from, :path, :site, :label) do
+    Data.define(:file, :from, :path, :site, :label, :holder) do
       def name = path.join("::")
 
       def evidence = "#{site}: #{label}"
@@ -18,6 +18,15 @@ class Hashira::Coupling::Sightings
 
   private
 
+  def holder(nesting, source)
+    inner = Array(nesting).last
+    if inner
+      @census.strip(inner).join("::").then { it.empty? ? inner.join("::") : it }
+    else
+      source
+    end
+  end
+
   def seen(file, tree)
     source = @project.relative(file)
     references = Hashira::Coupling::References.new(@census.roots, @census.associations)
@@ -26,7 +35,7 @@ class Hashira::Coupling::Sightings
       next unless path
       Sighting.new(
         file:, from: @census.charge(file, home), path:, site: "#{source}:#{line}",
-        label: segments.join("::")
+        label: segments.join("::"), holder: holder(nesting, source)
       )
     end
   end
