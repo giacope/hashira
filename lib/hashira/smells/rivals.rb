@@ -14,6 +14,8 @@ class Hashira::Smells::Rivals
 
   def of(name) = links.fetch(name, Set.new)
 
+  def sides(name) = (@_sides ||= Hashira::Smells::Sides.new(surface)).of(name)
+
   private
 
   def links = @_links ||= pairs.each_with_object({}) { |pair, found| bind(found, *pair) }

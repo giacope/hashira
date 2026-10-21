@@ -14,7 +14,8 @@ RSpec.describe(Hashira::Coupling::Outside) do
 
   def spec
     "subject.in_spec?\nin_local = in_call(1)\nexpect(it).to be_in_matcher\n" \
-      "[:in_symbol].map(&:in_proc)\nit { InRecord }\n"
+      "[:in_symbol].map(&:in_proc)\nit { InRecord }\nlet(:in_let) { 1 }\nlet!( :in_bang) { 1 }\n" \
+      "subject(:in_subject) { 1 }\n"
   end
 
   def read = %w[in_call in_edge in_factory in_json in_matcher? in_proc in_rakefile in_script in_spec? in_symbol]

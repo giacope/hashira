@@ -137,7 +137,7 @@ RSpec.describe(Hashira::Smells::Foreign) do
     expect(sniffed({ "lib/app/matcher.rb" => matcher }, "low_cohesion")).to(be_empty)
   end
 
-  it "exempts a Mock's side of a protocol, as it does a Fake's" do
+  it "exempts a bare Mock's or Fake's side of the protocol it shares with a class beside it" do
     compute = <<~RUBY
       module App
         class Compute
@@ -148,6 +148,7 @@ RSpec.describe(Hashira::Smells::Foreign) do
 
           class %s
             def list_flavors(_options = {}) = Response.new(200, "flavors" => [])
+            def reset_data(key) = key.to_s
           end
 
           Response = Struct.new(:status, :body)
@@ -156,6 +157,7 @@ RSpec.describe(Hashira::Smells::Foreign) do
     RUBY
     names = %w[Mock RecordingMock Fake Spare]
     found = names.map { sniffed({ "lib/app/compute.rb" => format(compute, it) }, "utility_function").map(&:package) }
-    expect(found).to(eq([[], [], [], ["App::Compute::Spare#list_flavors"]]))
+    both = %w[RecordingMock Spare].map { |name| ["App::Compute::#{name}#list_flavors", "App::Compute::#{name}#reset_data"] }
+    expect(found).to(eq([["App::Compute::Mock#reset_data"], both.first, ["App::Compute::Fake#reset_data"], both.last]))
   end
 end

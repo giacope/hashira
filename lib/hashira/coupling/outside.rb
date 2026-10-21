@@ -21,6 +21,8 @@ class Hashira::Coupling::Outside
 
   MATCHER = /\b(be|have)_(?:an?_)?([a-z]\w*)/
 
+  HELPERS = /\b(?:let!?|let_it_be|subject|given!?)\(\s*:\w+/
+
   SPECS = %r{\A(?!.*/factories/)(?:.*/)?(?:spec|test)/|_(?:spec|test)\.rb\z}
 
   DOCS = %r{\A(?:docs?/.*\.md|README[^/]*)\z}
@@ -48,6 +50,7 @@ class Hashira::Coupling::Outside
   def spec?(path) = path.delete_prefix("#{home}/").match?(SPECS)
 
   def called(text, words)
+    text = text.gsub(HELPERS, "")
     text.scan(CALLED) { |found| words << found.compact.first.force_encoding(Encoding::UTF_8) }
     text.scan(MATCHER) { |kind, name| words << format(MATCHERS.fetch(kind), name).force_encoding(Encoding::UTF_8) }
   end
