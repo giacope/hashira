@@ -47,7 +47,7 @@ class Hashira::Coupling::EdgeMap
   end
 
   def link(from, to, site, macro)
-    links << Link.new(from: from.join("::"), to: to.join("::"), site:, macro:) if from && to
+    links << Link.new(from: @census.strip(from).join("::"), to: to.join("::"), site:, macro:) if from && to
   end
 
   def locate(segments, nesting)

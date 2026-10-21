@@ -77,7 +77,17 @@ folders the gemspec's `require_paths` lists or globs (fastlane's
 `config/application.rb`) `app` and `lib`. One directory is descended through
 single-folder wrappers, so `hashira`, `hashira lib` and `hashira lib/gem/core`
 land on the same packages. With one directory files are named relative to it;
-with several, as you would open them from where hashira runs.
+with several, as you would open them from where hashira runs. Templates a
+generator copies into an app (`lib/generators/**/templates/`) are not the
+project's code and are left out.
+
+A Rails engine is a Rails app: a project with no `config/application.rb` that
+holds exactly one `class Engine < Rails::Engine` (camaleon-cms, a gem's
+`lib/<gem>/engine.rb`) gets the Rails handling — namespace packages, Zeitwerk
+folder namespaces, associations, the framework's dead-code roots — and is
+packaged by the classes under the engine's module (`CamaleonCms::Post` is the
+`Post` package), not as one package named after it. A repository holding several
+engines (rails itself) is read as libraries.
 
 The text report is the coupling tables, the complexity tables, the hotspot
 rollup and the findings, capped at 25 packages and findings and 10 methods and

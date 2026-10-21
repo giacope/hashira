@@ -5,7 +5,9 @@ class Hashira::Coupling::Naming
     @definitions = definitions
   end
 
-  def segments = @_segments ||= Hashira::Coupling::NamespacePrefix.infer(@definitions)
+  def segments
+    @_segments ||= @definitions.engine.then { it.empty? ? Hashira::Coupling::NamespacePrefix.infer(@definitions) : it }
+  end
 
   def rooted(path) = (strip(path) if path.first(segments.length) == segments || segments.first(path.length) == path)
 

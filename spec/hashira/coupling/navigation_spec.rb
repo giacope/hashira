@@ -49,6 +49,16 @@ RSpec.describe(Hashira::Coupling::Navigation) do
       .to(eq(["User", %w[Comment Post Trs::TrnRequest], 6, said]))
   end
 
+  it "packages a Rails engine by the classes under its namespace and pairs its models" do
+    files = {
+      "lib/cms/engine.rb" => "module Cms\n  class Engine < ::Rails::Engine\n  end\nend\n",
+      "app/models/cms/site.rb" => "module Cms\n  class Site\n    has_many :posts\n  end\nend\n",
+      "app/models/cms/post.rb" => "module Cms\n  class Post\n    belongs_to :site\n  end\nend\n"
+    }
+    found = within(files) { Hashira::Pipeline.new(Hashira::Project.new(%w[app lib])).findings }
+    expect(found.select { it.kind == "bidirectional_association" }.map(&:package)).to(eq(%w[Site]))
+  end
+
   it "says which side to drop and what to hand on first" do
     said = "User and Post each declare an association to the other (models/user.rb:2) — navigating both ways ties " \
       "them together. Drop User's side and query Post where it is needed. It carries has_many :posts, dependent: " \

@@ -69,6 +69,24 @@ RSpec.describe(Hashira::Project) do
     end
   end
 
+  it "leaves out the templates a generator copies into an app" do
+    files = { "lib/app/a.rb" => "", "lib/app/generators/x/templates/setup.rb" => "", "lib/app/b/c.rb" => "" }
+    within(files) { expect(described_class.new(["lib/app"]).files).to(eq(%w[lib/app/a.rb lib/app/b/c.rb])) }
+  end
+
+  it "takes a project holding one Rails engine for Rails, named by the module around its engine" do
+    engine = "module Cms\n  class Engine < ::Rails::Engine\n  end\n\n  class Setup; end\nend\n"
+    other = "module Blog\n  class Engine < Rails::Engine; end\nend\n"
+    projects = [
+      { "app/models/cms/post.rb" => "", "lib/cms/engine.rb" => engine },
+      { "app/models/cms/post.rb" => "", "lib/cms/engine.rb" => engine, "lib/blog/engine.rb" => other },
+      { "app/models/post.rb" => "", "lib/engine.rb" => "class Engine < Rails::Railtie; end\n" },
+      { "app/models/post.rb" => "", "lib/cms/engine.rb" => engine, "config/application.rb" => "" }
+    ]
+    found = projects.map { |files| within(files) { described_class.new(%w[app lib]).then { [it.rails?, it.engine] } } }
+    expect(found).to(eq([[true, "Cms"], [false, nil], [false, nil], [true, nil]]))
+  end
+
   describe "#package" do
     it "uses the first folder under the target directory" do
       within("lib/app/alpha/deep/x.rb" => "", "lib/app/beta/y.rb" => "") do

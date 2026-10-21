@@ -14,6 +14,8 @@ class Hashira::Coupling::Definitions
 
   def packages = @trees.keys.map { @project.package(it) }.uniq
 
+  def engine = @project.engine.to_s.split("::")
+
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
 
   private
