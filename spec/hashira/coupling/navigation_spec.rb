@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::Navigation) do
+RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
   def models(one, two)
     {
       "config/application.rb" => "module Shop; class Application; end; end\n",
@@ -79,7 +79,7 @@ RSpec.describe(Hashira::Coupling::Navigation) do
     owned = %w[Session Device Token].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  belongs_to :user\nend\n"] }
     files = models("has_many :posts", "belongs_to :user\n  has_many :tags").merge(owned)
     tags = { "app/models/tag.rb" => "class Tag\n  def post = Post\nend\n" }
-    expect(found(files.merge(tags), "sdp_violation")).to(be_empty)
+    expect(found(files.merge(tags), "unstable_dependency")).to(be_empty)
   end
 
   it "keeps a declared pair in the cycle search when code reaches both ways besides the declarations" do

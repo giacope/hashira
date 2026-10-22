@@ -6,7 +6,7 @@ class Hashira::Report::Confidence
   LOW = "low"
 
   MEASURED = %w[
-    cycle sdp_violation mixed_audience wide_edge roll_call complexity layer_violation bidirectional_association
+    cycle unstable_dependency mixed_audience wide_edge roll_call complexity layer_violation bidirectional_association
   ].freeze
 
   NARROW = %i[identical literal message constant].freeze

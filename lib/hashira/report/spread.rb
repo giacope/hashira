@@ -2,7 +2,7 @@
 
 class Hashira::Report::Spread
   STRUCTURAL = %w[
-    cycle layer_violation sdp_violation mixed_audience wide_edge roll_call bidirectional_association dead_code
+    cycle layer_violation unstable_dependency mixed_audience wide_edge roll_call bidirectional_association dead_code
     change_coupling
   ].freeze
 

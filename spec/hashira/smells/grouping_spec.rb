@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::Grouping) do
+RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   def grouped(files, kind)
     within(files) do
       rules = Hashira::Config::Rules.parse({ kind => true }, Hashira::Pipeline::KINDS)

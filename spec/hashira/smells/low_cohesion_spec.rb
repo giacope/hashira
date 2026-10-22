@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::LowCohesion) do
+RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
   def split(source, rules = Fixtures::NONE)
     within("lib/app/account.rb" => source) do
       project = Hashira::Project.new(["lib/app"])

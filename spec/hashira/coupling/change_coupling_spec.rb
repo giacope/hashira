@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::ChangeCoupling) do
+RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
   def commit(touched)
     touched.each { |path| File.write(path, "#{File.read(path)}# #{rand}\n") }
     git("add", *touched)

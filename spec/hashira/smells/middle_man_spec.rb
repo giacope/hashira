@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::MiddleMan) do
+RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
   let(:names) { %w[read write drop] }
 
   def relayed(source, rules = Fixtures::NONE)

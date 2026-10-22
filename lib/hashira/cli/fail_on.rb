@@ -8,7 +8,8 @@ module Hashira::CLI::FailOn
 
   EVERY = "all"
 
-  KINDS = { "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication" }
+  KINDS = { "cycles" => "cycle", "sdp" => "unstable_dependency", "sdp_violation" => "unstable_dependency" }
+    .merge("dupe" => "duplication")
     .merge(Hashira::Pipeline::STRUCTURAL.to_h { [it, it] })
     .merge(MEASURES.to_h { [it, it] })
     .merge(%w[fragmentation indirection].to_h { [it, it] })

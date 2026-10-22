@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Trees) do
+RSpec.describe(Hashira::Trees, :aggregate_failures) do
   it "lists the files Prism could not parse, even when asked before any tree" do
     within("lib/app/good.rb" => "class Good; end\n", "lib/app/bad.rb" => "class Bad\n") do
       expect(described_class.new(Hashira::Project.new(["lib/app"])).unparsed).to(eq(["lib/app/bad.rb"]))

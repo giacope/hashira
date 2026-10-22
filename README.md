@@ -255,7 +255,7 @@ Findings:
   the bottom. It is exact for knots of up to twelve packages; beyond that it is
   a heuristic, and the message says "the cheapest cut found". The evidence is
   the references on those edges — the lines to change.
-- **sdp_violation** — a stable package depends on a less stable one, against
+- **unstable_dependency** — a stable package depends on a less stable one, against
   the Stable Dependencies Principle. It needs a gap of at least 0.10 and three
   edges at each end; edges inside a cycle are the cycle's.
 - **mixed_audience** — a package whose constants split into parts that disjoint

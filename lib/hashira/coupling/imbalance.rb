@@ -3,7 +3,7 @@
 require_relative "rule"
 
 class Hashira::Coupling::Imbalance < Hashira::Coupling::Rule
-  KIND = "sdp_violation"
+  KIND = "unstable_dependency"
 
   Gap = Data.define(:from, :to, :from_instability, :to_instability)
 

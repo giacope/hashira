@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::Outside) do
+RSpec.describe(Hashira::Coupling::Outside, :aggregate_failures) do
   def files
     {
       "lib/app/a.rb" => "in_code\n", "lib/app/view.erb" => "in_view\n", "spec/a_spec.rb" => spec,

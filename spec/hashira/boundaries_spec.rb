@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Boundaries) do
+RSpec.describe(Hashira::Boundaries, :aggregate_failures) do
   def declaration(**changes)
     {
       "root" => "Prism", "role" => "interpreted_model",

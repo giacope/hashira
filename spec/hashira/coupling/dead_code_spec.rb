@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::DeadCode) do
+RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
   def shop
     <<~RUBY
       module App

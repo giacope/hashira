@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Pipeline) do
+RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
   def run(enabled, boundaries: [])
     within(Fixtures::CYCLIC_FILES) do
       yield(described_class.new(Hashira::Project.new(["lib/app"], boundaries:), enabled:))

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::Layering) do
+RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
   def type(space, name, body) = "module App; module #{space}; class #{name}; #{body}; end; end; end\n"
 
   def files

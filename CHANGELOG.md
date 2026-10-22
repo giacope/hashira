@@ -30,6 +30,11 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- `sdp_violation` is now `unstable_dependency`, in the text and JSON reports and
+  in `--kind`/`--fail-on`. `sdp` and `sdp_violation` still name it on the
+  command line and in `.hashira.yml`, and baselines that recorded it read it
+  under the new name.
+
 - `dead_code` is on by default and `layer_violation` is on once `layers:` are
   declared; `checks: all` also turns on `change_coupling`. A baseline recorded
   before them lists their findings as not ratcheted until `--update-baseline`.

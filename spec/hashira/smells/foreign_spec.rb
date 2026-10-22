@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::Foreign) do
+RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
   def tree
     <<~RUBY
       module App

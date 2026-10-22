@@ -8,7 +8,7 @@ class Hashira::CI::Baseline
 
   RENAMES = {
     "duplicate_method_call" => "repeated_call", "too_many_instance_variables" => "state_sprawl",
-    "instance_variable_assumption" => "assumed_state"
+    "instance_variable_assumption" => "assumed_state", "sdp_violation" => "unstable_dependency"
   }.freeze
 
   INTRODUCED = { "indirection" => 7, "fragmentation" => 7 }.freeze

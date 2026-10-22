@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Config::Layers) do
+RSpec.describe(Hashira::Config::Layers, :aggregate_failures) do
   def rank(raw, file, package) = described_class.parse(raw, "/srv").rank(file, package)
 
   it "reads layers outermost first, each a package name or a name with packages and paths" do

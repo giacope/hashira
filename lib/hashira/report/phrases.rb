@@ -60,7 +60,7 @@ class Hashira::Report::Phrases
     " (#{folded.one? ? "#{folded.first} is" : "#{roster(folded)} are"} in it only through folded types)"
   end
 
-  def on_sdp_violation(finding)
+  def on_unstable_dependency(finding)
     detail = finding.detail
     from, to = detail.deconstruct
     "#{from} (I=#{score(detail.from_instability)}) depends on the LESS stable #{to} " \
