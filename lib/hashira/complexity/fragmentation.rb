@@ -35,7 +35,22 @@ class Hashira::Complexity::Fragmentation
 
   def helpers(family) = (@_helpers ||= {})[family] ||= table(family).select { |name, site| helper?(family, name, site) }
 
-  def helper?(family, name, site) = !exposed.include?(site.node) && callers(family)[name] == 1
+  def helper?(family, name, site) = !exposed.include?(site.node) && callers(family)[name] == 1 && !hook?(family, name)
+
+  def hook?(family, name)
+    owner = family.delete_suffix("#").delete_suffix(".").split("::")
+    overrides.any? { |parent, names| owner.last(parent.size) == parent && names.include?(name) }
+  end
+
+  def overrides
+    @_overrides ||=
+      @trees.flat_map do |tree|
+        Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).filter_map do |type, *|
+          parent = Hashira::Analysis::Syntax.new(type.superclass).segments if type.is_a?(Prism::ClassNode)
+          [parent, Hashira::Analysis::Syntax.new(type).direct.map(&:name)] unless Array(parent).empty?
+        end
+      end
+  end
 
   def callers(family)
     (@_callers ||= {})[family] ||=

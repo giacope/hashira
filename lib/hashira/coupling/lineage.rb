@@ -21,11 +21,9 @@ class Hashira::Coupling::Lineage
   def links
     @_links ||=
       @definitions.select(&:type?).group_by(&:path).transform_values do |openings|
-        openings.flat_map { [ancestor(it), *mixins(it)].compact }
+        openings.flat_map { [(link(it.superclass, it.scope[...-1]) if it.klass?), *mixins(it)].compact }
       end
   end
-
-  def ancestor(definition) = (link(definition.superclass, definition.scope[...-1]) if definition.klass?)
 
   def mixins(definition)
     calls = syntax(definition.node).statements.grep(Prism::CallNode).select { mixin?(it) }

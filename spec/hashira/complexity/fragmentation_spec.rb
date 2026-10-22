@@ -104,6 +104,14 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
     expect([twice, shared, exposed, recursive].map { found(it).size }).to(eq([0, 0, 0, 1]))
   end
 
+  it "leaves a helper a subclass overrides out of the path, a hook rather than a fragment" do
+    hooked = "#{walk}class Fast < Walk\n  def second(rows) = 0\nend\n"
+    nested = "module App\n  #{walk.gsub("\n", "\n  ")}end\nclass Quick < App::Walk\n  def fourth(rows) = 1\nend\n"
+    plain = "#{walk}class Lone < Object\n  def second(rows) = 0\nend\nclass Bare\n  def second(rows) = 0\nend\n"
+    found = [hooked, nested, plain].map { split("lib/app/walk.rb" => it).size }
+    expect(found).to(eq([0, 0, 1]))
+  end
+
   it "leaves named predicates out of the count, and lists them as not counted" do
     asked = walk.gsub("fourth(rows)", "fourth?(rows)")
     fifth = asked.sub("def second(rows) = rows.size", "def second(rows) = fifth(rows)\n  def fifth(rows) = rows.size")

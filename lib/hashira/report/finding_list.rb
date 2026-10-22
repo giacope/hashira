@@ -22,11 +22,10 @@ class Hashira::Report::FindingList
 
   def rest = @findings.size - shown.size
 
-  def rows = @_rows ||= Hashira::Report::Tally.new(@findings).rows
-
   def listed = shown.each { Hashira::Report::FindingLines.new(it, indent: "  ", io: @io).emit }
 
   def tally
+    rows = Hashira::Report::Tally.new(@findings).rows
     wide = rows.map { it.kind.length }.max
     tall = rows.first.count.to_s.length
     rows.each { @io.puts(it.line(wide, tall)) }

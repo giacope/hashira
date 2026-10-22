@@ -67,15 +67,14 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def sites(group) = group.map { it.sighting.evidence }.uniq.sort
 
-  def cut = @_cut ||= Hashira::Coupling::Cut.new(names, links, names.each_with_index.to_h)
+  def cut
+    links = crossings.map { [names[it.source], names[it.target]] }.tally.map { |(from, to), weight| [from, to, weight] }
+    @_cut ||= Hashira::Coupling::Cut.new(names, links, names.each_with_index.to_h)
+  end
 
   def leaning
     against = cut.cost
     order = cut.order
-    against < declared && layers.allows?(order) ? { leaning: order, against: } : {}
+    against < outward.size && layers.allows?(order) ? { leaning: order, against: } : {}
   end
-
-  def declared = outward.size
-
-  def links = @_links ||= crossings.map { [names[it.source], names[it.target]] }.tally.map { [*it.first, it.last] }
 end

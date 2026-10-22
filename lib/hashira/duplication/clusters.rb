@@ -12,6 +12,7 @@ class Hashira::Duplication::Clusters
   end
 
   def sorted
+    sized = sets.clusters.flat_map { admitted(it) }
     Hashira::Duplication::Maximal.new(sized.reject { relay?(it) }).reduced.reject { inverse?(it) }.sort_by { -it.mass }
   end
 
@@ -27,33 +28,21 @@ class Hashira::Duplication::Clusters
 
   def definitions = @_definitions ||= @all.select { it.roots in [Prism::DefNode] }
 
-  def fragments = @_fragments ||= @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
-
   def sets
+    fragments = @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
     shaped = fragments.group_by(&:types).each_value.flat_map { it.each_cons(2).to_a }
     @_sets ||= Hashira::Duplication::UnionFind.new(shaped + Hashira::Duplication::NearMiss.new(fragments).pairs)
   end
 
-  def sized = sets.clusters.flat_map { admitted(it) }
-
   def admitted(group)
     whole = Hashira::Duplication::Grouping.new(group).cluster
-    whole && fits?(whole) ? [whole] : cores(group)
+    return [whole] if whole && fits?(whole)
+    group.group_by(&:types).values.filter_map { Hashira::Duplication::Grouping.new(it).cluster }.select { fits?(it) }
   end
 
-  def cores(group) = shaped(group).select { fits?(it) }
-
-  def shaped(group) = group.group_by(&:types).values.filter_map { Hashira::Duplication::Grouping.new(it).cluster }
-
-  def fits?(cluster) = cluster.mass >= floor(cluster)
-
-  def floor(cluster) = base(cluster) + penalty(cluster)
-
-  def base(cluster) = thin?(cluster) ? NEAR_MASS : BASE_MASS
-
-  def thin?(cluster) = !cluster.uniform? || cluster.structural?
-
-  def penalty(cluster) = recurrences(cluster) * PENALTY_PER_RECURRENCE
-
-  def recurrences(cluster) = cluster.convention? ? 0 : [cluster.size - PAIR, 0].max
+  def fits?(cluster)
+    base = !cluster.uniform? || cluster.structural? ? NEAR_MASS : BASE_MASS
+    recurrences = cluster.convention? ? 0 : [cluster.size - PAIR, 0].max
+    cluster.mass >= base + (recurrences * PENALTY_PER_RECURRENCE)
+  end
 end

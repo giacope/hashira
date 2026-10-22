@@ -102,14 +102,8 @@ class Hashira::Coupling::Surface
 
   def mixed
     found = Hash.new { |hash, key| hash[key] = [] }
-    openings.each { |opening| mix(opening, found) }
+    openings.each { |opening| opening.included.each { |node, nesting| found[located(node, nesting)] << opening.path } }
     found
-  end
-
-  def mix(opening, found)
-    opening.included.each do |node, nesting|
-      found[located(node, nesting)] << opening.path
-    end
   end
 
   def located(node, nesting, depth = ALIASES)

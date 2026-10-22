@@ -35,16 +35,12 @@ class Hashira::Smells::Check
 
   def rating = {}
 
-  def anchors(told) = [site, *spread(told.to_h[:site].to_s)].uniq
-
-  def spread(spot)
-    file, lines = spot.split(":", 2)
-    lines.to_s.split(", ").map { "#{file}:#{it}" }
+  def anchors(told)
+    file, lines = told.to_h[:site].to_s.split(":", 2)
+    [site, *lines.to_s.split(", ").map { "#{file}:#{it}" }].uniq
   end
 
-  def marks(found) = rating.merge(shape: (shape if found.empty?))
-
-  def shape = Hashira::Smells::Shape.new(subject.content).of
+  def marks(found) = rating.merge(shape: (Hashira::Smells::Shape.new(subject.content).of if found.empty?))
 
   def tally(name, lines) = "#{name} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
 end

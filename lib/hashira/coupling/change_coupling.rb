@@ -23,24 +23,26 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
       def key = files.join(" <-> ")
     end
 
-  def list = pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
+  def list
+    pairs = together.filter_map { |files, shared| pair(files, shared) }
+    pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
+  end
 
   private
 
-  def pairs = together.filter_map { |files, shared| pair(files, shared) }
-
   def pair(files, shared)
     return if shared < limit("commits", COMMITS)
+    revisions = @_revisions ||= changesets.flatten.tally
     found = Pair.new(files:, shared:, revisions: files.map { revisions[it] })
     found if found.degree >= limit("degree", DEGREE) && apart?(files) && !registration?(files)
   end
 
   def registration?(files) = registered?(files) && !explicit?(files.map { sources.fetch(it) })
 
-  def registered?(files) = [files, files.reverse].any? { |from, to| manifest(from).names?(to) }
-
-  def manifest(file)
-    (@_manifests ||= {})[file] ||= Hashira::Coupling::Manifest.new(file, graph.trees.fetch(sources.fetch(file)))
+  def registered?(files)
+    manifests =
+      @_manifests ||= Hash.new { |found, file| found[file] = Hashira::Coupling::Manifest.new(file, graph.trees.fetch(sources.fetch(file))) }
+    [files, files.reverse].any? { |from, to| manifests[from].names?(to) }
   end
 
   def limit(name, default) = @rules.limit(KIND, name, default)
@@ -53,8 +55,6 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def sources = @_sources ||= graph.trees.keys.to_h { [project.relative(it).b, it] }
 
-  def revisions = @_revisions ||= changesets.flatten.tally
-
   def together
     changesets.each_with_object(Hash.new(0)) do |changeset, counts|
       changeset.sort.combination(2) { counts[it] += 1 }
@@ -65,7 +65,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
     files.map { package(it) }.uniq.size == 2
   end
 
-  def package(file) = (@_packages ||= {})[file] ||= graph.census.home(sources.fetch(file))
+  def package(file) = (@_packages ||= {})[file] ||= graph.home(sources.fetch(file))
 
   def entry(pair)
     detail = described(pair)
@@ -88,14 +88,14 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
   def links
     @_links ||=
       graph.sightings.each_with_object(Set.new) do |sighting, found|
-        graph.census.files(sighting.path).each { found << [sighting.file, it] }
+        graph.files(sighting.path).each { found << [sighting.file, it] }
       end
   end
 
-  def anchors(pair) = pair.files.map { "#{shown(it)}:#{opening(sources.fetch(it))}" }
-
-  def opening(file)
-    first = graph.trees.fetch(file).statements.body.first
-    first ? first.location.start_line : 1
+  def anchors(pair)
+    pair.files.map do |file|
+      first = graph.trees.fetch(sources.fetch(file)).statements.body.first
+      "#{shown(file)}:#{first ? first.location.start_line : 1}"
+    end
   end
 end

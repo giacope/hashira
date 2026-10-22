@@ -45,20 +45,18 @@ class Hashira::Smells::Course
 
   private
 
-  def receivers(call) = sent(call).filter_map { it.receiver&.slice }
-
-  def sent(call) = beneath(call).grep(Prism::CallNode)
-
-  def beneath(node) = [node] + Hashira::Smells::Scope.new(node).inside
+  def receivers(call)
+    [call, *Hashira::Smells::Scope.new(call).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
+  end
 
   def left?(stretch)
     last = stretch.last
     !ensured?(last) && returns.any? { stretch.leaves?(it) && !looped?(it, last) }
   end
 
-  def looped?(exit, node) = loops.any? { covers?(it, exit) && covers?(it, node) }
+  def looped?(exit, node) = sorted.values_at(*LOOPS).compact.flatten.any? { covers?(it, exit) && covers?(it, node) }
 
-  def ensured?(node) = ensures.any? { covers?(it, node) }
+  def ensured?(node) = sorted.fetch(Prism::EnsureNode, []).any? { covers?(it, node) }
 
   def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
 
@@ -70,10 +68,6 @@ class Hashira::Smells::Course
 
   def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.new(node).raise?
 
-  def loops = sorted.values_at(*LOOPS).compact.flatten
-
-  def ensures = sorted.fetch(Prism::EnsureNode, [])
-
   def disturbed?(stretch)
     disturbs?(stretch, commands) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) }
   end
@@ -82,9 +76,10 @@ class Hashira::Smells::Course
 
   def commands = @_commands ||= @calls.select { @discards.include?(it) }
 
-  def steps = @_steps ||= commands + assignments.map(&:value).grep(Prism::CallNode)
-
-  def assignments = nodes.grep(Prism::StatementsNode).flat_map(&:body).select { WRITES.include?(it.class) }
+  def steps
+    @_steps ||= commands + nodes.grep(Prism::StatementsNode).flat_map(&:body).select { WRITES.include?(it.class) }
+      .map(&:value).grep(Prism::CallNode)
+  end
 
   def meets?(call, stretch) = stretch.ends.all? { @branches.together?([call, it]) }
 end

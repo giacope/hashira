@@ -28,8 +28,8 @@ class Hashira::Smells::Repertoire
   end
 
   def index
-    filings = @trees.flat_map { entries(it) }.flat_map { filed(it) }
-    @_index ||= filings.group_by(&:first).transform_values { |pairs| pairs.map(&:last) }
+    @_index ||=
+      @trees.flat_map { entries(it) }.flat_map { filed(it) }.group_by(&:first).transform_values { it.map(&:last) }
   end
 
   def filed(entry) = entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] }

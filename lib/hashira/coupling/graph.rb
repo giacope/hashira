@@ -23,6 +23,12 @@ class Hashira::Coupling::Graph
 
   def home(file) = @census.home(file)
 
+  def files(path) = @census.files(path)
+
+  def vias(path) = @census.vias(path)
+
+  def roots = @census.roots
+
   def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a
 
   def packages = (@census.packages | dependencies.keys)

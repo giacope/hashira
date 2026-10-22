@@ -8,13 +8,18 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   include Hashira::Coupling::Contracts
 
-  def list = (constants + methods).sort_by(&:place).map { entry(it) }
+  def list
+    (constants + methods).sort_by(&:place).map do |member|
+      noun = member.selector ? :method : :constant
+      finding(package: member.name, detail: { site: member.site, noun: }, evidence: [], anchors: [member.site])
+    end
+  end
 
   private
 
   def surface = @_surface ||= Hashira::Coupling::Surface.new(project, graph.trees, graph.census)
 
-  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees, graph.census.roots).found
+  def mentions = @_mentions ||= Hashira::Coupling::Mentions.new(graph.trees, graph.roots).found
 
   def roots = @_roots ||= Array(@rules.limit(KIND, "roots", []))
 
@@ -24,9 +29,10 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     dead.reject { |member| (1...member.path.size).any? { names.include?(member.path.first(it)) } }
   end
 
-  def holding?(path) = held.any? { it.first(path.size) == path }
-
-  def held = @_held ||= surface.constants.select { held?(it) }.map(&:path)
+  def holding?(path)
+    @_held ||= surface.constants.select { held?(it) }.map(&:path)
+    @_held.any? { it.first(path.size) == path }
+  end
 
   def held?(member)
     path = member.path
@@ -44,10 +50,9 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def framework?(member) = registered?(member.path) || hosted?(member.path) || housed?(member) || reflected?(member)
 
-  def reflected?(member) = reflection.reached?(member.path)
-
-  def reflection
+  def reflected?(member)
     @_reflection ||= Hashira::Coupling::Reflection.new(mentions.reflected, graph.census, surface.openings)
+    @_reflection.reached?(member.path)
   end
 
   def housed?(member) = member.hosts.any? { hosted?(it) }
@@ -57,15 +62,12 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def referenced
     @_referenced ||=
       graph.sightings.each_with_object(Set.new) do |sighting, found|
-        trail(sighting.path).each { |path| path.size.times { found << path.first(it + 1).join("::") } }
+        trail = [sighting.path, *graph.vias(sighting.path)]
+        trail.each { |path| path.size.times { found << path.first(it + 1).join("::") } }
       end
   end
 
-  def trail(path) = [path, *graph.census.vias(path)]
-
-  def mentioned?(name) = mentions.names.include?(name) || words.include?(name)
-
-  def words = outside.words
+  def mentioned?(name) = mentions.names.include?(name) || outside.words.include?(name)
 
   def outside = @_outside ||= Hashira::Coupling::Outside.new(project)
 
@@ -81,7 +83,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def called?(name)
     bare = name.delete_suffix("=")
-    HOOKS.include?(name) || protocol?(name) || mentioned?(name) || words.include?(bare) || dynamic?(name)
+    HOOKS.include?(name) || protocol?(name) || mentioned?(name) || outside.words.include?(bare) || dynamic?(name)
   end
 
   def protocol?(name)
@@ -105,19 +107,20 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
 
-  def hosts(path) = surface.mixers(path) + handover.hosts(path)
-
   def foreign?(host) = host == Hashira::Coupling::Handover::FOREIGN
+
+  def hosts(path) = surface.mixers(path) + handover.hosts(path)
 
   def handover = @_handover ||= Hashira::Coupling::Handover.new(mentions.handed, graph.census, outside.handed)
 
   def entered?(path) = surface.types.fetch(path, []).any? { entry?(it.file) }
 
-  def open?(member) = lineage(member.owner).any? { opened.include?(it) }
+  def open?(member)
+    @_opened ||= surface.openings.select { mentions.open.include?(it.node) }.to_set(&:path)
+    lineage(member.owner).any? { @_opened.include?(it) }
+  end
 
   def lineage(path) = [path, *surface.ancestors(path)]
-
-  def opened = @_opened ||= surface.openings.select { mentions.open.include?(it.node) }.to_set(&:path)
 
   def rooted?(member) = declared?(member) || entry?(member.file) || api?(member)
 
@@ -150,9 +153,4 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def owner_exposed?(member) = exposure.fetch(member.owner, true)
 
   def exposure = @_exposure ||= surface.constants.to_h { [it.path, it.exposed] }
-
-  def entry(member)
-    noun = member.selector ? :method : :constant
-    finding(package: member.name, detail: { site: member.site, noun: }, evidence: [], anchors: [member.site])
-  end
 end
