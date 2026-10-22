@@ -14,11 +14,14 @@ class Hashira::Coupling::Audiences
 
   def split? = parts.size >= 2
 
-  def parts = @_parts ||= [common, *slices].select { it.constants.size >= MIN && weight(it) >= FLOOR }
+  def parts
+    @_parts ||=
+      [common, *slices].select do |part|
+        part.constants.size >= MIN && part.users.sum { @sizes.fetch(it, FLOOR) } >= FLOOR
+      end
+  end
 
   private
-
-  def weight(part) = part.users.sum { @sizes.fetch(it, FLOOR) }
 
   def clients = @_clients ||= @usage.keys.sort
 
@@ -35,10 +38,11 @@ class Hashira::Coupling::Audiences
   end
 
   def slices
-    groups.sort_by(&:first).map { |members| Part.new(users: members, constants: pooled(members).sort, shared: false) }
+    groups.sort_by(&:first).map do |members|
+      pooled = members.reduce(Set.new) { |pool, client| pool | residue(client) }
+      Part.new(users: members, constants: pooled.sort, shared: false)
+    end
   end
-
-  def pooled(members) = members.reduce(Set.new) { |pool, client| pool | residue(client) }
 
   def residue(client) = @usage[client] - shared
 

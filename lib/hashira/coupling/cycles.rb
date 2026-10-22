@@ -18,11 +18,11 @@ class Hashira::Coupling::Cycles
 
   private
 
-  def component(package) = (reach(package, @dependencies) & reach(package, backward)).sort
+  def component(package) = (forward.from(package) & Hashira::Coupling::Reach.new(backward).from(package)).sort
 
-  def reach(package, links) = Hashira::Coupling::Reach.from(package, links)
+  def forward = @_forward ||= Hashira::Coupling::Reach.new(@dependencies)
 
-  def backward = @_backward ||= Hashira::Coupling::Reach.invert(@dependencies)
+  def backward = @_backward ||= Hashira::Coupling::Reach.new(@dependencies).inverted
 
   def dependents(members) = members.to_h { [it, @graph.metric(it).afferent] }
 

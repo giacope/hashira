@@ -14,7 +14,7 @@ module Hashira
 
         def shown = (class_level? ? full[...-1] : full).join("::")
 
-        def statements = Hashira::Analysis::Syntax.statements(node).compact
+        def statements = Hashira::Analysis::Syntax.new(node).statements.compact
 
         def hidden = calls(:private_constant).flat_map { symbols(it) }.to_set
 
@@ -22,18 +22,20 @@ module Hashira
           statements.grep(Prism::CallNode).select { it.name == name && it.receiver.nil? && it.arguments }
         end
 
-        def symbols(call) = Hashira::Analysis::Syntax.symbol_names(call.arguments.arguments)
+        def symbols(call)
+          call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+        end
 
         def mixins = %i[include prepend].flat_map { calls(it) }.flat_map { it.arguments.arguments }
 
         def assignments
-          Hashira::Analysis::Syntax.constants(node).map { [path + [it.name.to_s], it.value, stack + [full]] }
+          Hashira::Analysis::Syntax.new(node).constants.map { [path + [it.name.to_s], it.value, stack + [full]] }
         end
 
         def loads? = statements.grep(Prism::CallNode).any? { outward?(it.receiver) }
 
         def outward?(receiver)
-          receiver.is_a?(Prism::CallNode) ? outward?(receiver.receiver) : Hashira::Analysis::Syntax.static?(receiver)
+          receiver.is_a?(Prism::CallNode) ? outward?(receiver.receiver) : Hashira::Analysis::Syntax.new(receiver).static?
         end
 
         def site(node) = "#{file}:#{node.location.start_line}"

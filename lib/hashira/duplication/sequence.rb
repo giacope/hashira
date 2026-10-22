@@ -34,9 +34,7 @@ class Hashira::Duplication::Sequence
 
   def table?(node) = TABLES.include?(node.class) && Hashira::Duplication::Literal.new(node).literal?
 
-  def windows(segment) = lengths(segment).flat_map { |length| slide(segment, length) }
-
-  def lengths(segment) = MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min
+  def windows(segment) = (MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min).flat_map { slide(segment, it) }
 
   def slide(segment, length) = (0..(segment.size - length)).map { fragment(segment[it, length]) }.reject(&:sectioned?)
 

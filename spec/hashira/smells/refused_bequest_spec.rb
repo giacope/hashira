@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::RefusedBequest) do
+RSpec.describe(Hashira::Smells::RefusedBequest, :aggregate_failures) do
   def refused(source) = sniffed({ "lib/app/store.rb" => source }, "refused_bequest")
 
   def stores(override, inherited = "def save(row) = @rows << row") = <<~RUBY

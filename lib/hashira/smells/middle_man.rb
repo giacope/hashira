@@ -51,7 +51,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   end
 
   def sole(definition)
-    held = Hashira::Analysis::Syntax.statements(definition)
+    held = Hashira::Analysis::Syntax.new(definition).statements
     held.first if held.one? && held.first.is_a?(Prism::CallNode)
   end
 
@@ -64,7 +64,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def reader?(call) = !call.receiver && !call.arguments && readers.include?(call.name.to_s)
 
-  def readers = @_readers ||= Hashira::Smells::Attributes.declared(sweep, Hashira::Smells::Attributes::READERS)
+  def readers = @_readers ||= Hashira::Smells::Attributes.new(sweep).declared(Hashira::Smells::Attributes::READERS)
 
   def passed(node)
     case node

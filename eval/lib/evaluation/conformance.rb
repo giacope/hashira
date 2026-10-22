@@ -15,7 +15,7 @@ class Evaluation::Conformance
   end
 
   def checks
-    Evaluation::Sandbox.open(files) do |root|
+    Evaluation::Sandbox.new(files).open do |root|
       scored = scores(@tool.call(root, ARGUMENTS))
       @cases.each_with_index.flat_map { |item, index| verdicts(item, index, scored) }
     end

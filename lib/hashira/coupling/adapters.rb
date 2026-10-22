@@ -5,11 +5,12 @@ class Hashira::Coupling::Adapters
     @catalog = catalog
   end
 
-  def include?(name) = names.include?(name)
+  def include?(name)
+    @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
+    @_names.include?(name)
+  end
 
   private
-
-  def names = @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
 
   def framed?(group) = group.all? { !owned?(it) } && group.any? { adapter?(it) }
 
@@ -17,7 +18,7 @@ class Hashira::Coupling::Adapters
 
   def adapter?(definition) = heirs.any? { ends?(definition.path, it) }
 
-  def parent(definition) = Hashira::Analysis::Syntax.segments(definition.superclass)
+  def parent(definition) = Hashira::Analysis::Syntax.new(definition.superclass).segments
 
   def heirs = @_heirs ||= classes.map { parent(it) }.reject(&:empty?)
 
@@ -27,7 +28,7 @@ class Hashira::Coupling::Adapters
   end
 
   def candidates(definition, segments)
-    return [segments] if Hashira::Analysis::Syntax.rooted?(definition.superclass)
+    return [segments] if Hashira::Analysis::Syntax.new(definition.superclass).rooted?
     [*definition.scope[...-1].reverse.map { it + segments }, segments]
   end
 

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::MessageChain) do
+RSpec.describe(Hashira::Smells::MessageChain, :aggregate_failures) do
   def chained(body, extra = "")
     sniffed({ "lib/app/shop.rb" => shop(extra), "lib/app/desk.rb" => desk(body) }, "message_chain")
   end

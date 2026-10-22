@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Phrases
+class Hashira::Report::Phrases
   RETITLE = "keep each name, calling one shared method that takes"
 
   DUPLICATION_ADVICE = {
@@ -29,7 +29,7 @@ module Hashira::Report::Phrases
       "place, give it a name (a macro, a concern, a base class); otherwise leave it."
   ).freeze
 
-  module_function
+  private
 
   def on_duplication(finding)
     detail = finding.detail

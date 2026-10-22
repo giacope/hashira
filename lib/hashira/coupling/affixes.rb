@@ -12,7 +12,7 @@ class Hashira::Coupling::Affixes
   end
 
   def to_a
-    head, tail = [@parts.first, @parts.last].map { it.is_a?(Prism::StringNode) ? Hashira::Analysis::Syntax.text(it) : "" }
+    head, tail = [@parts.first, @parts.last].map { it.is_a?(Prism::StringNode) ? Hashira::Analysis::Syntax.new(it).text : "" }
     [(head if head.match?(STEM) || head.match?(NAMESPACE)).to_s, (tail if tail.length > 2 && tail.match?(TAIL)).to_s]
   end
 end

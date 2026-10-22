@@ -2,18 +2,24 @@
 
 require "prism"
 
-module Hashira::Smells::Attributes
+class Hashira::Smells::Attributes
   READERS = %i[attr_reader attr_accessor].freeze
 
   EVERY = %i[attr_reader attr_writer attr_accessor].freeze
 
-  module_function
+  def initialize(nodes)
+    @nodes = nodes
+  end
 
-  def declared(nodes, kinds = EVERY) = macros(nodes, kinds).flat_map { names(it) }
+  def declared(kinds = EVERY) = macros(kinds).flat_map { names(it) }
 
-  def macros(nodes, kinds) = nodes.grep(Prism::CallNode).select { kinds.include?(it.name) && !it.receiver }
+  def macros(kinds) = @nodes.grep(Prism::CallNode).select { kinds.include?(it.name) && !it.receiver }
 
-  def ivars(nodes, kinds) = nodes.select { kinds.include?(it.class) }.map(&:name)
+  def ivars(kinds) = @nodes.select { kinds.include?(it.class) }.map(&:name)
 
-  def names(call) = Hashira::Analysis::Syntax.symbol_names(Array(call.arguments&.arguments))
+  private
+
+  def names(call)
+    Array(call.arguments&.arguments).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+  end
 end

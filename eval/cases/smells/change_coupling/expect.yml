@@ -2,7 +2,9 @@
 # the other, yet most commits touching one touch the other: hidden change
 # coupling. Money and its rates change together too, but inside one package.
 # The API client changed with the rate only three times, under the five
-# commits a pair needs.
+# commits a pair needs. The guard lists the client's path among the files it
+# protects, so they change together by registration, not hidden coupling
+# (kimera's SelfProtection).
 history:
   - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
   - [lib/app/billing/invoice.rb, lib/app/shipping/rate.rb]
@@ -19,6 +21,11 @@ history:
   - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
   - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
   - [lib/app/api/client.rb, lib/app/shipping/rate.rb]
+  - [lib/app/guard/critical.rb, lib/app/api/client.rb]
+  - [lib/app/guard/critical.rb, lib/app/api/client.rb]
+  - [lib/app/guard/critical.rb, lib/app/api/client.rb]
+  - [lib/app/guard/critical.rb, lib/app/api/client.rb]
+  - [lib/app/guard/critical.rb, lib/app/api/client.rb]
 present:
   - {kind: change_coupling, package: billing}
 absent:

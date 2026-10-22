@@ -13,8 +13,6 @@ class Hashira::Coupling::Graph
 
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(code, self)
 
-  def pairs = edges.map(&:deconstruct).select { paired?(*it) }.map(&:sort).uniq
-
   def declarations(from, to) = noted(from, to, map.declared)
 
   def associations = map.links
@@ -22,6 +20,14 @@ class Hashira::Coupling::Graph
   def pledges = map.pledges
 
   def home(file) = @census.home(file)
+
+  def files(path) = @census.files(path)
+
+  def vias(path) = @census.vias(path)
+
+  def roots = @census.roots
+
+  def knots = cycles.knots
 
   def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a
 

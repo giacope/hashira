@@ -34,9 +34,5 @@ class Hashira::Trees
     raise(Hashira::Error, "cannot read #{path} (#{error.message})")
   end
 
-  def legible(result)
-    text = result.source.source
-    return result if text.encoding == Encoding::UTF_8 && text.valid_encoding?
-    Prism.parse(text.encode(Encoding::UTF_8, **REPLACED), encoding: false)
-  end
+  def legible(result) = Prism.parse(result.source.source.encode(Encoding::UTF_8, **REPLACED), encoding: false)
 end

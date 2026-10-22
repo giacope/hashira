@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Phrases
+class Hashira::Report::Phrases
   CONCRETE = "Extract what they share into an abstract base both extend, or compose instead."
 
   REFUSED = "Compose the parent instead of extending it, or move the refused methods to the subclasses that want them."
@@ -11,7 +11,9 @@ module Hashira::Report::Phrases
 
   MIDDLE_MAN = "Let callers talk to the delegate directly, or give the class work of its own."
 
-  module_function
+  private
+
+  def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
 
   def on_concrete_inheritance(finding)
     plain(finding, "inherits from #{finding.detail[:parent]}, a concrete class the project also builds", CONCRETE)

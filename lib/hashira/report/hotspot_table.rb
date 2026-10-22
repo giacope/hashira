@@ -26,7 +26,7 @@ class Hashira::Report::HotspotTable
 
   def withheld
     rest = files.size - ranked.size
-    @io.puts(Hashira::Report::Phrases.withheld(rest)) unless rest.zero?
+    @io.puts(Hashira::Report::Withheld.new(rest).to_s) unless rest.zero?
   end
 
   def legend

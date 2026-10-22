@@ -2,18 +2,22 @@
 
 require "prism"
 
-module Hashira::Smells::Refusal
+class Hashira::Smells::Refusal
   RAISES = %i[raise fail].freeze
 
-  module_function
+  def initialize(definition)
+    @definition = definition
+  end
 
-  def of(definition)
-    statements = Hashira::Analysis::Syntax.statements(definition).compact
+  def of
+    statements = Hashira::Analysis::Syntax.new(@definition).statements.compact
     return :nothing if statements.all?(Prism::NilNode)
     :raise if statements.one? && raise?(statements.first)
   end
 
-  def raise?(node) = node.is_a?(Prism::CallNode) && RAISES.include?(node.name) && !node.receiver
+  def unimplemented? = of == :raise && @definition.body.slice.include?("NotImplementedError")
 
-  def unimplemented?(definition) = of(definition) == :raise && definition.body.slice.include?("NotImplementedError")
+  private
+
+  def raise?(node) = node.is_a?(Prism::CallNode) && RAISES.include?(node.name) && !node.receiver
 end

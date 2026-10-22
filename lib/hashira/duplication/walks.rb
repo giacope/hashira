@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Duplication::Walks
-  def nodes(roots) = roots.flat_map { walked[it] ||= Hashira::Analysis::NodeWalk.collect(it) }
+  def nodes(roots) = roots.flat_map { walked[it] ||= Hashira::Analysis::NodeWalk.new(it).collect }
 
   def muted(roots) = roots.flat_map { quiet[it] ||= Hashira::Duplication::Quiet.new(nodes([it]), self).nodes }
 

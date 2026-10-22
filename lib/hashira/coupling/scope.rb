@@ -50,7 +50,7 @@ class Hashira::Coupling::Scope
     found
   end
 
-  def known?(path) = @registry.exact(path) && @catalog.territory.owned?(path)
+  def known?(path) = @registry.exact(path) && @catalog.owned?(path)
 
   def ancestors(innermost) = innermost ? lineage(@catalog.strip(innermost)) : []
 
@@ -64,7 +64,7 @@ class Hashira::Coupling::Scope
 
   def climb(path) = parents(path).flat_map { [it, *lineage(it)] }.uniq
 
-  def parents(path) = @catalog.lineage.parents(path).filter_map { bind(it, it.reach) }
+  def parents(path) = @catalog.parents(path).filter_map { bind(it, it.reach) }
 
   def qualify(found) = (found unless found == Hashira::Coupling::ConstantRegistry::AMBIGUOUS)
 end

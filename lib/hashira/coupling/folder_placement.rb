@@ -17,5 +17,5 @@ class Hashira::Coupling::FolderPlacement < Hashira::Coupling::Placement
 
   def test?(_package) = false
 
-  def folding(_census) = Hashira::Coupling::NoFolding
+  def folding(_census) = Hashira::Coupling::NoFolding.new
 end

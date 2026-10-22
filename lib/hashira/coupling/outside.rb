@@ -37,7 +37,18 @@ class Hashira::Coupling::Outside
 
   private
 
-  def scanned = @_scanned ||= files.each_with_object([Set.new, Set.new]) { |path, found| read(path, *found) }
+  def scanned = @_scanned ||= gathered
+
+  def gathered
+    words = Set.new
+    handed = Set.new
+    files.each do |path|
+      seen, given = read(path)
+      words.merge(seen)
+      handed.merge(given)
+    end
+    [words, handed]
+  end
 
   def home = File.expand_path(@project.home)
 
@@ -45,7 +56,7 @@ class Hashira::Coupling::Outside
 
   def spec?(path) = path.end_with?(".rb") && path.delete_prefix("#{home}/").match?(SPECS)
 
-  def called(path, words) = words.merge(Hashira::Coupling::SpecWords.new(@project.tree(path)).to_a)
+  def called(path) = Hashira::Coupling::SpecWords.new(@project.tree(path)).to_a
 
   def listed
     tracked = IO.popen(["git", "-C", home, *LISTING], err: File::NULL, &:read).split("\0")
@@ -73,9 +84,9 @@ class Hashira::Coupling::Outside
 
   def analyzed = @_analyzed ||= @project.files.to_set { File.expand_path(it) }
 
-  def read(path, words, handed)
+  def read(path)
     text = File.binread(path)
-    spec?(path) ? called(path, words) : text.scan(WORD) { words << it.force_encoding(Encoding::UTF_8) }
-    text.scan(HANDED).flatten.each { handed << it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
+    words = spec?(path) ? called(path) : text.scan(WORD).map { it.force_encoding(Encoding::UTF_8) }
+    [words, text.scan(HANDED).flatten.map { it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }]
   end
 end

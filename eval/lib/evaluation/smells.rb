@@ -10,13 +10,13 @@ class Evaluation::Smells
     @root = root
   end
 
-  def checks = Evaluation::Sandbox.expectations(@root).flat_map { verdicts(it) }
+  def checks = Evaluation::Sandbox.new(@root).expectations.flat_map { verdicts(it) }
 
   private
 
   def verdicts(fixture)
     expect = YAML.safe_load_file(File.join(fixture, "expect.yml"))
-    outcome = Evaluation::Sandbox.copy(File.join(fixture, "project")) { run(it, expect) }
+    outcome = Evaluation::Sandbox.new(File.join(fixture, "project")).copy { run(it, expect) }
     Evaluation::Sniff.new(File.basename(fixture), expect, outcome.findings).checks
   end
 

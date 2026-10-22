@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::LowCohesion) do
+RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
   def split(source, rules = Fixtures::NONE)
     within("lib/app/account.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
@@ -97,8 +97,32 @@ RSpec.describe(Hashira::Smells::LowCohesion) do
   end
 
   it "joins nothing through a send without a literal name, or a bare delegator" do
-    source = account("extend Forwardable\n  def_delegators\n  def audit = [send, public_send(name), method]")
+    delegators = "extend Forwardable\n  def_delegators\n  def_delegators :@mailer, *NAMES"
+    source = account("#{delegators}\n  def audit = [send, public_send(name), method]")
     expect(split(source).size).to(eq(1))
+  end
+
+  def dispatched
+    table = "COMMANDS = { \"remind\" => :remind, \"deposit\" => :deposit }.freeze\n  "
+    [
+      "#{table}def run(name) = __send__(COMMANDS.fetch(name))", "#{table}def run(name) = public_send(\"\#{name}\")",
+      "def run(name) = public_send(name)\n  def names = %i[ping]", "def audit = [send(:balance), :ping]",
+      "def run = send\n  def names = %i[balance remind]"
+    ]
+  end
+
+  it "joins a computed send to the methods the class names as symbols, its dispatch table" do
+    expect(dispatched.map { split(account(it)).size }).to(eq([0, 0, 1, 1, 1]))
+  end
+
+  def mixed(body, head = "") = "#{head}#{account("#{body}\n  def audit = [bridge, held, ping]")}"
+
+  it "joins methods through a project module the class includes, whose methods call back into the class" do
+    bridge = "module Bridge\n  def bridge = [balance, ping]\nend\nmodule Held\n  def held = @balance\nend\n"
+    groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, audit (@mailer)"]
+    found = [mixed("include Bridge", bridge), mixed("include Held", bridge), mixed("include Comparable")]
+      .map { split(it) }
+    expect([found[0], found[1], found[2].first.evidence]).to(eq([[], [], groups]))
   end
 
   it "keeps groups apart that a constructor only stores separately" do

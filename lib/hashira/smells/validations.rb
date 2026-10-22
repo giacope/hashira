@@ -28,16 +28,16 @@ class Hashira::Smells::Validations
   def macros(name) = calls.select { it.name == name }
 
   def calls
-    @_calls ||= Hashira::Analysis::Syntax.statements(@home).grep(Prism::CallNode).reject(&:receiver).select(&:arguments)
+    @_calls ||= Hashira::Analysis::Syntax.new(@home).statements.grep(Prism::CallNode).reject(&:receiver).select(&:arguments)
   end
 
-  def symbols(call) = Hashira::Analysis::Syntax.symbol_names(given(call)).map(&:to_sym)
+  def symbols(call) = given(call).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.map(&:to_sym)
 
   def option?(call, key)
-    options(call).any? { Hashira::Analysis::Syntax.symbol(it.key) == key && !OFF.include?(it.value.class) }
+    options(call).any? { Hashira::Analysis::Syntax.new(it.key).symbol == key && !OFF.include?(it.value.class) }
   end
 
-  def options(call) = Hashira::Analysis::Syntax.options(call).select { it.key.is_a?(Prism::SymbolNode) }
+  def options(call) = Hashira::Analysis::Syntax.new(call).options.select { it.key.is_a?(Prism::SymbolNode) }
 
   def given(call) = call.arguments.arguments
 end

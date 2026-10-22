@@ -25,13 +25,14 @@ class Hashira::Config::Rules
     )
   end
 
-  def initialize(table, chosen = CHOSEN, layers = Hashira::Config::Layers::NONE)
+  def initialize(table, chosen = CHOSEN, layers = Hashira::Config::Layers::NONE, boundaries = [])
     @table = table
     @chosen = chosen
     @layers = layers
+    @boundaries = boundaries
   end
 
-  attr_reader :layers
+  attr_reader :layers, :boundaries
 
   def enabled?(kind) = rule(kind).enabled
 
@@ -39,9 +40,11 @@ class Hashira::Config::Rules
 
   def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
 
-  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers)
+  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers, @boundaries)
 
-  def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers)
+  def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers, @boundaries)
+
+  def bounded(boundaries) = Hashira::Config::Rules.new(@table, @chosen, @layers, boundaries)
 
   private
 

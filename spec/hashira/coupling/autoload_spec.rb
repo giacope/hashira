@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::Autoload) do
+RSpec.describe(Hashira::Coupling::Autoload, :aggregate_failures) do
   def roots(files)
     within(files) do
       project = Hashira::Project.new(%w[app])

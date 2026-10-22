@@ -6,7 +6,10 @@ require_relative "kinds"
 module Hashira::CLI::FailOn
   MEASURES = (Hashira::Pipeline::ANALYZERS - %i[coupling smells]).map(&:to_s).freeze
 
-  KINDS = { "cycles" => "cycle", "sdp" => "sdp_violation", "dupe" => "duplication" }
+  EVERY = "all"
+
+  KINDS = { "cycles" => "cycle", "sdp" => "unstable_dependency", "sdp_violation" => "unstable_dependency" }
+    .merge("dupe" => "duplication")
     .merge(Hashira::Pipeline::STRUCTURAL.to_h { [it, it] })
     .merge(MEASURES.to_h { [it, it] })
     .merge(%w[fragmentation indirection].to_h { [it, it] })
@@ -20,10 +23,4 @@ module Hashira::CLI::FailOn
     **%w[fragmentation indirection].to_h { [it, :complexity] },
     **Hashira::Pipeline::SMELLS.to_h { [it, :smells] }
   }.freeze
-
-  module_function
-
-  def parse(list) = Hashira::CLI::Kinds.new("--fail-on").parse(list)
-
-  def owner(kind) = OWNERS.fetch(kind)
 end

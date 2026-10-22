@@ -17,7 +17,7 @@ class Evaluation::Behaviour
   private
 
   def verdicts(item)
-    Evaluation::Sandbox.open(item.fetch("files")) do |root|
+    Evaluation::Sandbox.new(item.fetch("files")).open do |root|
       outcome = @tool.call(File.join(root, item.fetch("cwd", ".")), item["args"])
       [
         status(item, outcome), *said(item, outcome, "includes", :said), *said(item, outcome, "excludes", :unsaid),

@@ -1,0 +1,116 @@
+# frozen_string_literal: true
+
+RSpec.describe(Hashira::Report::Phrases, :aggregate_failures) do
+  it "voices every finding kind the pipeline can emit, and no phantom kinds" do
+    kinds = Hashira::CLI::FailOn::KINDS.values.flatten.uniq.sort
+    voices = described_class.private_instance_methods(false).grep(/\Aon_/).map { it.to_s.delete_prefix("on_") }.sort
+    expect(voices).to(eq(kinds))
+  end
+
+  def smell(kind, **detail)
+    Hashira::Analysis::Finding.new(kind:, package: "Cart#price", evidence: [], detail: { site: "cart.rb:12", **detail })
+  end
+
+  def smells
+    {
+      smell("control_parameter", names: %w[quoted]) =>
+        "Cart#price is steered by 'quoted' (cart.rb:12). Split the method, or pass a strategy instead of a flag.",
+      smell("data_clump") =>
+        "Cart#price passes the same parameters between methods (cart.rb:12). Introduce a parameter object.",
+      smell("repeated_call") => "Cart#price repeats identical calls (cart.rb:12). Name the result in a local variable.",
+      smell("feature_envy", names: %w[item], count: 3, ego: 1) =>
+        "Cart#price refers to 'item' more than to self, 3 to 1 (cart.rb:12). The behavior may belong on item.",
+      smell("feature_envy", names: %w[item order line], types: %w[Item Order Line], count: 2, ego: 1) =>
+        "Cart#price refers to 'item', 'order', 'line' more than to self, 2 each to 1 (cart.rb:12). " \
+        "The behavior may belong on Item, Order or Line.",
+      smell("utility_function") =>
+        "Cart#price touches no instance state (cart.rb:12). Move it onto the object it serves, or make it private.",
+      smell("assumed_state", installed: [], unassigned: %w[@a]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Nothing ever assigns '@a', so it reads nil: a typo or a dead hook. " \
+        "Assign it where the object is built, or delete the read.",
+      smell("assumed_state", installed: %w[@a @b], unassigned: []) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Its subclasses are expected to install '@a', '@b'; pass them in instead.",
+      smell("assumed_state", installed: %w[@a], unassigned: %w[@b @c]) =>
+        "Cart#price reads instance variables nothing in the class assigns (cart.rb:12). " \
+        "Nothing ever assigns '@b', '@c', so they read nil: a typo or a dead hook. " \
+        "Assign them where the object is built, or delete the read. " \
+        "Its subclasses are expected to install '@a'; pass it in instead.",
+      smell("manual_dispatch", via: ["respond_to?"]) =>
+        "Cart#price dispatches manually via respond_to? (cart.rb:12). " \
+        "Trust the duck type, or split the callers into two adapters.",
+      smell("manual_dispatch", via: ["a status switch"]) =>
+        "Cart#price dispatches manually via a status switch (cart.rb:12). " \
+        "Move each branch onto the type or state it tests, and let polymorphism pick.",
+      smell("module_initialize") =>
+        "Cart#price defines initialize in a module (cart.rb:12). " \
+        "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead.",
+      smell("nil_check") => "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
+      smell("nil_check", origin: :absence) =>
+        "Cart#price checks for nil (cart.rb:12). " \
+        "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil.",
+      smell("repeated_conditional", count: 3) =>
+        "Cart#price branches on the same test 3 times (cart.rb:12). Replace the scattered checks with polymorphism.",
+      smell("state_sprawl", count: 5) =>
+        "Cart#price holds 5 instance variables (cart.rb:12). " \
+        "Split the class, or gather related fields into value objects."
+    }
+  end
+
+  it "names the method a smell sits in, where it is, and what to do about it" do
+    smells.each { |finding, said| expect(message(finding)).to(eq(said)) }
+  end
+
+  def effort
+    Hashira::Complexity::MethodFinding::Effort.new(cognitive: 10, calls: 12, site: "shop.rb:4", dominant: "elsif")
+  end
+
+  it "names the site of a complex method, and the advice its dominant construct earns" do
+    finding = Hashira::Analysis::Finding.new(kind: "complexity", package: "Shop#total", evidence: [], detail: effort)
+    expect(message(finding)).to(
+      eq("Shop#total — cognitive 10, 12 calls (shop.rb:4). #{described_class::COMPLEXITY_ADVICE["elsif"]}")
+    )
+  end
+
+  def clone(kind, hot:)
+    overlap = Hashira::Duplication::DuplicationFinding::Overlap.new(size: 3, mass: 45, kind:, hot:)
+    Hashira::Analysis::Finding.new(kind: "duplication", package: "a.rb:1", evidence: [], detail: overlap)
+  end
+
+  it "says how a clone family varies" do
+    expect(message(clone(:literal, hot: false))).to(
+      eq("3 similar fragments (mass 45) — differs only in literal values — extract a method, pass them as arguments.")
+    )
+  end
+
+  it "keeps every method name when the renamed copies differ inside too, rather than passing names as arguments" do
+    said = "differs in its method names and in literal values — keep each name, calling one shared method"
+    expect(message(clone(:renamed_literal, hot: false))).to(end_with("#{said} that takes the literals as arguments."))
+  end
+
+  it "asks for one decision about nil when the copies differ only in a safe navigation" do
+    expect(%i[nil_guard renamed_nil_guard].map { message(clone(it, hot: false)) }).to(
+      all(end_with("whether the receiver can be nil."))
+    )
+  end
+
+  it "names a convention as one, by the sites that follow it" do
+    expect(message(clone(:convention, hot: false))).to(
+      start_with("3 sites follow one convention (mass 45) — a convention the code repeats on purpose")
+    )
+  end
+
+  it "warns when both sites of a clone churn" do
+    expect(message(clone(:identical, hot: true))).to(
+      end_with("call it from each site. Both sites change often — fix one, miss the other.")
+    )
+  end
+
+  it "names a long cut in part, with its total, and says when it is a best effort" do
+    cut = ("a".."h").map { { from: it, to: "z", weight: 2 } }
+    detail = { members: %w[a z], folded: [], cut:, exact: false }
+    said = message(Hashira::Analysis::Finding.new(kind: "cycle", package: "a", evidence: [], detail:))
+    expect(said).to(include("The cheapest cut found is a -> z (2 refs)", "f -> z (2 refs) and 2 more (16 refs in all)"))
+  end
+end

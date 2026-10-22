@@ -2,18 +2,21 @@
 
 require "prism"
 require_relative "discards"
+require_relative "postfix"
 require_relative "scope"
 
 class Hashira::Smells::Recheck
   Change =
     Data.define(:call, :command) do
-      def settles?(atom, held) = held.include?(call.receiver.slice) && (follows?(atom) || locks?(atom))
+      def settles?(atom, held, moment) = held.include?(call.receiver.slice) && (follows?(atom, moment) || locks?(atom))
 
-      def follows?(atom) = command && call.location.end_offset <= atom.location.start_offset
+      def follows?(atom, moment)
+        command && call.location.start_offset < moment && !Hashira::Smells::Scope.new(call).covers?(atom)
+      end
 
       def locks?(atom)
         block = call.block
-        block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.covers?(block, atom)
+        block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.new(block).covers?(atom)
       end
     end
 
@@ -21,13 +24,24 @@ class Hashira::Smells::Recheck
     @method = method
   end
 
-  def settled?(atom, held) = Hashira::Smells::Scope.covers?(@method, atom) && changes.any? { it.settles?(atom, held) }
+  # A trailing condition is asked when its statement starts, before the statement runs.
+  def settled?(atom, held)
+    Hashira::Smells::Scope.new(@method).covers?(atom) &&
+      (trailing.find { it.covers?(atom) }&.start || atom.location.start_offset).then do |moment|
+        changes.any? { it.settles?(atom, held, moment) }
+      end
+  end
 
   private
 
-  def changes = @_changes ||= calls.select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
+  def trailing = @_trailing ||= inside.map { Hashira::Smells::Postfix.new(it) }.select(&:trailing?)
 
-  def calls = Hashira::Smells::Scope.inside(@method).grep(Prism::CallNode)
+  def changes
+    @_changes ||=
+      Hashira::Smells::Discards.new(@method).then do |discards|
+        inside.grep(Prism::CallNode).select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
+      end
+  end
 
-  def discards = @_discards ||= Hashira::Smells::Discards.new(@method)
+  def inside = @_inside ||= Hashira::Smells::Scope.new(@method).inside
 end

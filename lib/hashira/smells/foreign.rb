@@ -43,12 +43,6 @@ class Hashira::Smells::Foreign
     tests { true }.reject { @ownership.owned?(it, @subject.owner) }.map(&:first).uniq
   end
 
-  def entering?(node)
-    return inbound?(node) unless node.is_a?(Prism::LocalVariableReadNode)
-    sources = writes(node.name)
-    sources.any? && sources.all? { inbound?(it.value) }
-  end
-
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
 
   def kinds(local)
@@ -63,13 +57,13 @@ class Hashira::Smells::Foreign
 
   private
 
-  def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
+  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 
-  def tail = @_tail ||= Hashira::Analysis::Syntax.statements(@subject.node).compact.last
+  def tail = @_tail ||= Hashira::Analysis::Syntax.new(@subject.node).statements.compact.last
 
   def convert?
     tail.is_a?(Prism::CallNode) && tail.name == :new &&
-      Hashira::Analysis::Syntax.segments(tail.receiver).any? && stateless?
+      Hashira::Analysis::Syntax.new(tail.receiver).segments.any? && stateless?
   end
 
   def stateless? = body.none? { STATE.include?(it.class) }
@@ -97,12 +91,14 @@ class Hashira::Smells::Foreign
   def known(local)
     name = local.name
     tested = (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
-    tested.empty? ? Hashira::Smells::Naming.types(name) : tested
+    tested.empty? ? Hashira::Smells::Naming.new(name).types : tested
   end
 
-  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.segments(value.receiver) : []
+  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.new(value.receiver).segments : []
 
-  def caught(name) = snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.segments(it) } }
+  def caught(name)
+    snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.new(it).segments } }
+  end
 
   def yielders(local)
     scope = local.scope
@@ -111,14 +107,10 @@ class Hashira::Smells::Foreign
 
   def offered(block)
     given = block.parameters
-    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.names(given) : []
+    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.new(given).names : []
   end
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
-
-  def inbound?(node) = node.is_a?(Prism::CallNode) && (fetched?(node) || spawned?(node))
-
-  def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
   def keyed?(call) = KEYED_READS.include?(call.name) && KEYS.include?(key(call).class)
 

@@ -12,11 +12,9 @@ class Hashira::Complexity::Body
     @owner = owner
   end
 
-  def each(&) = children.each { visit(it, &) }
+  def each(&) = (@node ? @node.compact_child_nodes : []).each { visit(it, &) }
 
   private
-
-  def children = @node ? @node.compact_child_nodes : []
 
   def visit(child, &)
     case child
@@ -39,13 +37,11 @@ class Hashira::Complexity::Body
 
   def enter(child, &)
     case child
-    when Prism::SingletonClassNode then opened(child).each(&)
+    when Prism::SingletonClassNode then inner(child, @owner.lifted).each(&) if child.expression.is_a?(Prism::SelfNode)
     when Prism::ClassNode, Prism::ModuleNode then nil
     else inner(child, @owner.within(child)).each(&)
     end
   end
-
-  def opened(child) = child.expression.is_a?(Prism::SelfNode) ? inner(child, @owner.lifted) : []
 
   def inner(child, owner) = Hashira::Complexity::Body.new(child, owner)
 end

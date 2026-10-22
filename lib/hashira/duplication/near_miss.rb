@@ -7,11 +7,12 @@ class Hashira::Duplication::NearMiss
     @fragments = fragments
   end
 
-  def pairs = Hashira::Duplication::Index.new(opened).buckets.flat_map { |bucket| verified(bucket) }
+  def pairs
+    opened = @fragments.select(&:opened?).uniq(&:range)
+    Hashira::Duplication::Index.new(opened).buckets.flat_map { verified(it) }
+  end
 
   private
-
-  def opened = @fragments.select(&:opened?).uniq(&:range)
 
   def seen = @_seen ||= Set.new
 

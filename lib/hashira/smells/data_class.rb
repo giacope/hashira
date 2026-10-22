@@ -15,7 +15,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
 
   def unrelated? = subject.nodes.none?(&:superclass) && subject.family.children(subject.subject).empty?
 
-  def statements = @_statements ||= subject.nodes.flat_map { Hashira::Analysis::Syntax.statements(it) }.compact
+  def statements = @_statements ||= subject.nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
 
   def plain?(node)
     case node
@@ -25,7 +25,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
     end
   end
 
-  def body(definition) = Hashira::Analysis::Syntax.statements(definition).compact
+  def body(definition) = Hashira::Analysis::Syntax.new(definition).statements.compact
 
   def stores?(definition) = body(definition).all? { it.is_a?(Prism::InstanceVariableWriteNode) && given?(it.value) }
 
@@ -36,7 +36,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
     held.one? && (held.first.is_a?(Prism::InstanceVariableReadNode) || stores?(definition))
   end
 
-  def fields = @_fields ||= (Hashira::Smells::Attributes.declared(statements) + stored).uniq
+  def fields = @_fields ||= (Hashira::Smells::Attributes.new(statements).declared + stored).uniq
 
   def stored
     statements.grep(Prism::DefNode).flat_map { body(it) }.grep(Prism::InstanceVariableWriteNode).map { it.name.to_s.delete_prefix("@") }

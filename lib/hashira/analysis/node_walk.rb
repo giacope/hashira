@@ -2,17 +2,19 @@
 
 module Hashira
   module Analysis
-    module NodeWalk
-      module_function
-
-      def each(node, &)
-        yield(node)
-        node.compact_child_nodes.each { each(it, &) }
+    class NodeWalk
+      def initialize(node)
+        @node = node
       end
 
-      def collect(node)
+      def each(&)
+        yield(@node)
+        @node.compact_child_nodes.each { NodeWalk.new(it).each(&) }
+      end
+
+      def collect
         found = []
-        each(node) { found << it }
+        each { found << it }
         found
       end
     end

@@ -19,7 +19,7 @@ class Hashira::CLI::Session
   private
 
   def dispatch(options)
-    usage?(options) ? Hashira::CLI::Usage.public_send(options.mode) : timed(options)
+    usage?(options) ? Hashira::CLI::Usage.new.public_send(options.mode) : timed(options)
   end
 
   def usage?(options) = Hashira::CLI::Usage::PAGES.include?(options.mode)
@@ -28,7 +28,7 @@ class Hashira::CLI::Session
     started = clock.clock_gettime(Process::CLOCK_MONOTONIC)
     pipeline = options.pipeline
     Hashira::CLI::Run.new(pipeline, options).status.tap do
-      Hashira::Report::Notices.new.finished(pipeline.project.files.size, elapsed(started, clock))
+      Hashira::Report::Notices.new.finished(pipeline.size, elapsed(started, clock))
     end
   end
 

@@ -22,12 +22,10 @@ class Hashira::Complexity::MethodFinding
   def site = "#{@score.file}:#{@score.line}"
 
   def evidence
-    @score.increments.group_by(&:label).map { |label, increments| lines(label, increments) }
-  end
-
-  def lines(label, increments)
-    lines = increments.map(&:line).uniq
-    "#{label} +#{increments.sum(&:cost)} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
+    @score.increments.group_by(&:label).map do |label, increments|
+      lines = increments.map(&:line).uniq
+      "#{label} +#{increments.sum(&:cost)} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
+    end
   end
 
   def dominant

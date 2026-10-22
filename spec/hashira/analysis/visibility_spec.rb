@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Analysis::Visibility) do
+RSpec.describe(Hashira::Analysis::Visibility, :aggregate_failures) do
   def sections(source)
     type = Prism.parse(source).value.statements.body.first
     described_class.new(type).entries.map { |node, section| [node.name, section] }

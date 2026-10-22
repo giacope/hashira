@@ -6,20 +6,21 @@ class Hashira::Duplication::Similarity
     @right = right
   end
 
-  def ratio = normalized(subsequence)
+  def ratio
+    length = subsequence
+    length.zero? ? 0.0 : (2.0 * length) / (@left.size + @right.size)
+  end
 
   private
 
-  def normalized(length) = length.zero? ? 0.0 : (2.0 * length) / (@left.size + @right.size)
-
   def subsequence
     full = (1 << @right.size) - 1
-    ones(full) - ones(@left.reduce(full) { |state, token| step(state, masks.fetch(token, 0), full) })
-  end
-
-  def step(state, mask, full)
-    taken = state & mask
-    ((state + taken) | (state - taken)) & full
+    last =
+      @left.reduce(full) do |state, token|
+        taken = state & masks.fetch(token, 0)
+        ((state + taken) | (state - taken)) & full
+      end
+    ones(full) - ones(last)
   end
 
   def ones(bits) = bits.to_s(2).count("1")

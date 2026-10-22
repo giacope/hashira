@@ -37,8 +37,6 @@ class Hashira::Coupling::Census
 
   def locate(segments, nesting) = scope.locate(segments, nesting)
 
-  def owner(path) = scope.owner(path)
-
   def vias(path) = scope.vias.fetch(path, [])
 
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
@@ -49,13 +47,15 @@ class Hashira::Coupling::Census
 
   def test?(package) = placement.test?(package)
 
-  def home(file) = homes[file] || charge(file, [])
+  def home(file) = charge(file, [])
 
   def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
 
   def owned?(path) = territory.owned?(path)
 
   def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
+
+  def plural(word) = inflection.plural(word)
 
   def inflection
     @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
@@ -73,7 +73,7 @@ class Hashira::Coupling::Census
 
   def roster = @_roster ||= tally
 
-  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding
+  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding.new
 
   def type?(segments) = roster.type?(segments)
 

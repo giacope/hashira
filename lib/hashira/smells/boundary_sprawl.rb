@@ -34,16 +34,13 @@ class Hashira::Smells::BoundarySprawl
 
   def finding(root, contexts)
     files = contexts.map(&:file).uniq
-    build(root, contexts, files) if wide?(contexts.size, files.size)
-  end
-
-  def wide?(methods, files) = methods >= @rules.threshold(KIND, METHOD_FLOOR) && files >= FILE_FLOOR
-
-  def build(root, contexts, files)
+    return unless wide?(contexts.size, files.size)
     Hashira::Analysis::Finding.new(
       kind: KIND, package: root,
       detail: { count: contexts.size, files: files.size },
       evidence: contexts.first(SHOWN).map(&:site)
     )
   end
+
+  def wide?(methods, files) = methods >= @rules.threshold(KIND, METHOD_FLOOR) && files >= FILE_FLOOR
 end

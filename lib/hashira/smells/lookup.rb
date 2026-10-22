@@ -3,7 +3,7 @@
 require "prism"
 require_relative "foreign"
 
-module Hashira::Smells::Lookup
+class Hashira::Smells::Lookup
   KEYED = Hashira::Smells::Foreign::KEYED_READS
 
   KEYS = (Hashira::Smells::Foreign::KEYS + [Prism::IntegerNode]).freeze
@@ -13,11 +13,15 @@ module Hashira::Smells::Lookup
     Prism::InstanceVariableReadNode
   ].freeze
 
-  module_function
+  def initialize(call)
+    @call = call
+  end
 
-  def cheap?(call) = !call.block && (reader?(call) || keyed?(call)) && NEAR.include?(call.receiver.class)
+  def cheap? = !@call.block && (reader? || keyed?) && NEAR.include?(@call.receiver.class)
 
-  def reader?(call) = !call.arguments
+  private
 
-  def keyed?(call) = KEYED.include?(call.name) && call.arguments.arguments.all? { KEYS.include?(it.class) }
+  def reader? = !@call.arguments
+
+  def keyed? = KEYED.include?(@call.name) && @call.arguments.arguments.all? { KEYS.include?(it.class) }
 end

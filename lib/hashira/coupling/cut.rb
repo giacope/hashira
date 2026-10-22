@@ -25,6 +25,6 @@ class Hashira::Coupling::Cut
 
   def backward(order)
     place = order.each_with_index.to_h
-    @edges.select { |from, to, _weight| place.fetch(from) > place.fetch(to) }
+    @edges.select { |from, to, _weight| order.first(place.fetch(from)).include?(to) }
   end
 end

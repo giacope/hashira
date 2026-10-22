@@ -10,15 +10,14 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
     Prism::CallOrWriteNode, Prism::IndexOrWriteNode
   ].freeze
 
-  module Harvest
-    module_function
-
-    def reads(node)
-      return [] if MAYBES.include?(node.class)
-      below = node.compact_child_nodes.flat_map { reads(it) }
-      node.is_a?(Prism::InstanceVariableReadNode) ? below + [node.name] : below
+  Harvest =
+    Data.define(:node) do
+      def reads
+        return [] if MAYBES.include?(node.class)
+        below = node.compact_child_nodes.flat_map { Harvest.new(it).reads }
+        node.is_a?(Prism::InstanceVariableReadNode) ? below + [node.name] : below
+      end
     end
-  end
 
   private
 
@@ -32,7 +31,7 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
 
   def computed?(name) = assigned.grep(String).any? { name.start_with?(it) }
 
-  def read = subject.owned.flat_map { Harvest.reads(it.node) }
+  def read = subject.owned.flat_map { Harvest.new(it.node).reads }
 
   def installed = assumed & subject.heirs
 

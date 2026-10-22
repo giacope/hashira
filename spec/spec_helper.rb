@@ -3,7 +3,7 @@
 require "simplecov"
 SimpleCov.start do
   enable_coverage :branch
-  add_filter "/spec/"
+  skip "/spec/"
   minimum_coverage line: 100, branch: 100 unless ENV["KIMERA"]
 end
 
@@ -88,7 +88,17 @@ module Fixtures
     end
   end
 
-  def message(finding) = Hashira::Report::Phrases.message(finding)
+  def message(finding) = Hashira::Report::Phrases.new(finding).message
+
+  def spy_on(klass, method, log)
+    allow(klass).to(
+      receive(:new).and_wrap_original do |make, node|
+        made = make.call(node)
+        allow(made).to(receive(method).and_wrap_original { |call| (log << node) && call.call })
+        made
+      end
+    )
+  end
 
   def capture
     original = [$stdout, $stderr]
@@ -293,6 +303,8 @@ module Fixtures
     RUBY
   }.freeze
 end
+
+RSpec::Matchers.define_negated_matcher(:exclude, :include)
 
 RSpec.configure do |config|
   config.include(Fixtures)

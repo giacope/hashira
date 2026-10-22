@@ -8,59 +8,58 @@ class Hashira::Smells::Kinship
     @lineage = lineage
   end
 
-  def protocol(type) = shared[type.name]
+  def protocol(type)
+    name = type.name
+    sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
+    spoken = words(name)
+    hooks = adopted?(name) ? spoken - sent : Set.new
+    (spoken & kindred(name)) | hooks
+  end
 
   private
 
   def kindred(name)
-    spoken(reach(name, ancestry) + reach(name, descent) + rivals.of(name) + rivals.sides(name)) + peers(name)
+    rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
+    kin = reach(name, ancestry) + reach(name, descent) + rivals.of(name) + rivals.sides(name)
+    kin.map { words(it) }.reduce(Set.new, :|) + peers(name)
   end
-
-  def rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
 
   def index = @_index ||= @types.group_by(&:name)
 
   def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @lineage.pointed(it) }.compact.uniq }
 
-  def descent = @_descent ||= links.group_by(&:first).transform_values { it.map(&:last) }
-
-  def links = ancestry.flat_map { |child, parents| parents.map { [it, child] } }
+  def descent
+    @_descent ||=
+      ancestry.flat_map { |child, parents| parents.map { [it, child] } }.group_by(&:first)
+        .transform_values { it.map(&:last) }
+  end
 
   def reach(name, edges)
     found = Set[name]
     frontier = [name]
-    frontier = step(frontier, edges, found) until frontier.empty?
+    until frontier.empty?
+      frontier = frontier.flat_map { edges.fetch(it, []) }.uniq.reject { found.include?(it) }
+      found.merge(frontier)
+    end
     found.delete(name)
   end
 
-  def step(frontier, edges, found)
-    frontier.flat_map { edges.fetch(it, []) }.uniq.reject { found.include?(it) }.each { found << it }
+  def peers(name)
+    @_broods ||=
+      index.keys.group_by { brood(it) }.except(nil).transform_values { |names| names.flat_map { words(it).to_a }.tally }
+    @_broods.fetch(brood(name), {}).select { |_, count| count > 1 }.keys.to_set
   end
-
-  def peers(name) = broods.fetch(brood(name), {}).select { |_, count| count > 1 }.keys.to_set
-
-  def broods = @_broods ||= index.keys.group_by { brood(it) }.except(nil).transform_values { |names| tally(names) }
-
-  def tally(names) = names.flat_map { words(it).to_a }.tally
 
   def brood(name)
     segments = index.fetch(name).map(&:superclass).find(&:any?)
     @lineage.resolve(name, segments) || segments.join("::") if segments
   end
 
-  def spoken(names) = names.map { words(it) }.reduce(Set.new, :|)
-
   def words(name) = said[name]
-
-  def shared = @_shared ||= Hash.new { |memo, name| memo[name] = (words(name) & kindred(name)) | hooks(name) }
-
-  def hooks(name) = adopted?(name) ? words(name) - sent : Set.new
 
   def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
 
   def foreign?(name) = index.fetch(name).any? { @lineage.pointed(it).include?(nil) }
-
-  def sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
 

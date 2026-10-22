@@ -15,40 +15,34 @@ class Hashira::Smells::Vocabulary
 
   private
 
-  def spoken?(message) = words.include?(stem(message))
-
-  def words = @_words ||= spoken - concealed
-
-  def spoken = @trees.each_with_object(Set.new) { |tree, found| gather(tree, found) }
+  def spoken?(message)
+    @_words ||= @trees.each_with_object(Set.new) { |tree, found| gather(tree, found) } - concealed
+    @_words.include?(stem(message))
+  end
 
   def concealed
-    secret, open = entries.partition { |_, section| HIDDEN.include?(section) }
+    types = @trees.flat_map { Hashira::Analysis::TypeWalk.new(it).to_enum(:walk).map { |node, *| node } }
+    sections = types.flat_map { Hashira::Analysis::TypeWalk.new(it).sections }
+    secret, open = sections.partition { |_, section| HIDDEN.include?(section) }
     names(secret) - names(open)
   end
 
   def names(entries) = entries.to_set { |definition, _| stem(definition.name) }
-
-  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Analysis::TypeWalk.sections(it) } }
-
-  def types(tree)
-    found = []
-    Hashira::Analysis::TypeWalk.each(tree) { |node, _| found << node }
-    found
-  end
 
   def gather(node, found)
     found.merge(declared(node).map { stem(it) })
     node.compact_child_nodes.each { gather(it, found) } unless node.is_a?(Prism::DefNode)
   end
 
-  def declared(node) = node.is_a?(Prism::DefNode) ? [node.name] : Hashira::Analysis::Syntax.symbol_names(offered(node))
-
-  def offered(node)
-    case node
-    when Prism::AliasMethodNode then [node.new_name]
-    when Prism::CallNode then node.arguments&.arguments.to_a
-    else []
-    end
+  def declared(node)
+    return [node.name] if node.is_a?(Prism::DefNode)
+    offered =
+      case node
+      when Prism::AliasMethodNode then [node.new_name]
+      when Prism::CallNode then node.arguments&.arguments.to_a
+      else []
+      end
+    offered.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
   end
 
   def stem(name) = name.to_s.delete_suffix("=")

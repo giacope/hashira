@@ -25,21 +25,21 @@ class Hashira::Smells::ParamCheck
   private
 
   def nested
-    @_nested ||= Hashira::Smells::Conditions.nested(branches).map { self.class.new(it, @name) }
+    @_nested ||= Hashira::Smells::Conditions.new(branches).nested.map { self.class.new(it, @name) }
   end
 
-  def branches = Hashira::Smells::Conditions.branches(@node)
+  def branches = Hashira::Smells::Conditions.new(@node).branches
 
   def predicate
-    @_predicate ||= spread(Hashira::Smells::Conditions.condition(@node))
+    @_predicate ||= spread(Hashira::Smells::Conditions.new(@node).condition)
   end
 
-  def spread(condition) = condition ? Hashira::Analysis::NodeWalk.collect(condition) : []
+  def spread(condition) = condition ? Hashira::Analysis::NodeWalk.new(condition).collect : []
 
   def tested = reads(predicate)
 
   def working?
-    reads(branches.compact.flat_map { Hashira::Smells::Conditions.plain(it) }).any?
+    reads(branches.compact.flat_map { Hashira::Smells::Conditions.new(it).plain }).any?
   end
 
   def absolved?
@@ -48,7 +48,7 @@ class Hashira::Smells::ParamCheck
 
   def absolves?(call)
     return measured?(call) if COMPARISONS.include?(call.name)
-    reads(Hashira::Analysis::NodeWalk.collect(call)).any?
+    reads(Hashira::Analysis::NodeWalk.new(call).collect).any?
   end
 
   def measured?(call)
@@ -57,9 +57,9 @@ class Hashira::Smells::ParamCheck
     others.size < sides.size && others.any? { !FIXED.include?(it.class) }
   end
 
-  def mapped? = tested.any? && !Hashira::Smells::Conditions.couple?(@node) && branches.compact.all? { literal?(it) }
+  def mapped? = tested.any? && !Hashira::Smells::Conditions.new(@node).couple? && branches.compact.all? { literal?(it) }
 
-  def literal?(branch) = Hashira::Smells::Mapping.literal?(branch) || Hashira::Smells::Mapping.built?(branch)
+  def literal?(branch) = Hashira::Smells::Mapping.new(branch).literal? || Hashira::Smells::Mapping.new(branch).built?
 
   def reads(nodes) = nodes.grep(Prism::LocalVariableReadNode).select { it.name == @name }
 end

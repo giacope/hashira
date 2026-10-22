@@ -5,8 +5,7 @@ cd "$(dirname "$0")/.."
 
 bundle exec rubocop
 bundle exec rubocop-kata doctor # config entries and disable comments that no longer do anything
-bundle exec rspec # spec_helper enforces the coverage floor (99% line and branch)
-bundle exec exe/hashira --fail-on cycles,sdp,mixed_audience,wide_edge,roll_call
-bundle exec exe/hashira --ratchet # direction, not level: no score to pad
+bundle exec rspec # spec_helper enforces the coverage floor (100% line and branch)
+bundle exec exe/hashira --fail-on all # every kind .hashira.yml checks; no baseline to keep
 
 echo "bin/ci: all checks passed ✓"

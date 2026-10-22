@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::DataClass) do
+RSpec.describe(Hashira::Smells::DataClass, :aggregate_failures) do
   def bags(source, extra = "") = sniffed({ "lib/app/point.rb" => source, "lib/app/more.rb" => extra }, "data_class")
 
   def point(body = "") = <<~RUBY

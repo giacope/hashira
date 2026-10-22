@@ -33,7 +33,11 @@ class Hashira::Coupling::Surface
   def parents(path) = (@_parents ||= {})[path] ||= types.fetch(path, []).flat_map { heritage(it) }.uniq
 
   def ancestors(path, seen = Set[path])
-    parents(path).each_with_object(Set.new) { |parent, all| climb(parent, all, seen) }
+    parents(path).each_with_object(Set.new) do |parent, all|
+      next unless seen.add?(parent)
+      all << parent
+      all.merge(ancestors(parent, seen))
+    end
   end
 
   def mixers(path) = (@_mixers ||= mixed).fetch(path, [])
@@ -47,7 +51,7 @@ class Hashira::Coupling::Surface
   def opened(file, tree)
     found = []
     shown = @project.relative(file)
-    Hashira::Analysis::TypeWalk.each(tree, roots: @census.roots) do |node, full, stack|
+    Hashira::Analysis::TypeWalk.new(tree).walk(roots: @census.roots) do |node, full, stack|
       found << Hashira::Coupling::Opening.new(node:, full:, path: @census.strip(full), stack:, file: shown)
     end
     found
@@ -60,7 +64,7 @@ class Hashira::Coupling::Surface
   end
 
   def written(opening, hidden)
-    Hashira::Analysis::Syntax.constants(opening.node).map do |node|
+    Hashira::Analysis::Syntax.new(opening.node).constants.map do |node|
       name = node.name.to_s
       constant(opening, node, opening.full + [name], hidden: hidden.include?(name))
     end
@@ -76,7 +80,7 @@ class Hashira::Coupling::Surface
   def merged(members) = members.min_by { [it.file, it.site] }.with(exposed: members.all?(&:exposed))
 
   def defined(opening)
-    Hashira::Analysis::TypeWalk.sections(opening.node).map { |node, section| selector(opening, node, section) }
+    Hashira::Analysis::TypeWalk.new(opening.node).sections.map { |node, section| selector(opening, node, section) }
   end
 
   def selector(opening, node, section)
@@ -90,13 +94,7 @@ class Hashira::Coupling::Surface
 
   def exposed?(node, section) = !node.receiver.nil? || !HIDDEN.include?(section)
 
-  def super?(node) = Hashira::Analysis::NodeWalk.collect(node).any? { SUPERS.include?(it.class) }
-
-  def climb(parent, all, seen)
-    return unless seen.add?(parent)
-    all << parent
-    all.merge(ancestors(parent, seen))
-  end
+  def super?(node) = Hashira::Analysis::NodeWalk.new(node).collect.any? { SUPERS.include?(it.class) }
 
   def heritage(opening) = resolved(opening).filter_map(&:last)
 
@@ -104,20 +102,14 @@ class Hashira::Coupling::Surface
 
   def mixed
     found = Hash.new { |hash, key| hash[key] = [] }
-    openings.each { |opening| mix(opening, found) }
+    openings.each { |opening| opening.included.each { |node, nesting| found[located(node, nesting)] << opening.path } }
     found
   end
 
-  def mix(opening, found)
-    opening.included.each do |node, nesting|
-      found[located(node, nesting)] << opening.path
-    end
-  end
-
   def located(node, nesting, depth = ALIASES)
-    return unless Hashira::Analysis::Syntax.static?(node)
-    segments = Hashira::Analysis::Syntax.segments(node)
-    found = @census.locate(segments, Hashira::Analysis::Syntax.rooted?(node) ? [] : nesting)
+    return unless Hashira::Analysis::Syntax.new(node).static?
+    segments = Hashira::Analysis::Syntax.new(node).segments
+    found = @census.locate(segments, Hashira::Analysis::Syntax.new(node).rooted? ? [] : nesting)
     aliased(found, depth) if found&.last == segments.last
   end
 
@@ -132,7 +124,7 @@ class Hashira::Coupling::Surface
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 
   def foreign?(node)
-    segments = Hashira::Analysis::Syntax.segments(node)
+    segments = Hashira::Analysis::Syntax.new(node).segments
     !segments.empty? && !Hashira::Analysis::CORE.include?(segments.first)
   end
 end

@@ -4,21 +4,25 @@ require "prism"
 
 module Hashira
   module Smells
-    module Parameters
+    class Parameters
       NAMELESS = [Prism::ForwardingParameterNode, Prism::ImplicitRestNode, Prism::NoKeywordsParameterNode].freeze
 
-      module_function
+      def initialize(definition)
+        @definition = definition
+      end
 
-      def names(definition) = parts(definition).flat_map { expand(it) }
+      def names = parts.flat_map { expand(it) }
 
-      def arguments(definition) = parts(definition).grep_v(Prism::BlockParameterNode).flat_map { expand(it) }
+      def arguments = parts.grep_v(Prism::BlockParameterNode).flat_map { expand(it) }
 
-      def parts(definition)
-        node = definition.parameters
+      def parts
+        node = @definition.parameters
         return [] unless node
         node.requireds + node.optionals + node.posts + node.keywords +
           [node.rest, node.keyword_rest, node.block].compact
       end
+
+      private
 
       def expand(part)
         case part
@@ -45,20 +49,20 @@ module Hashira
 
         def public? = section == :public && !singleton?
 
-        def parameters = Parameters.names(node)
+        def parameters = Parameters.new(node).names
 
-        def arguments = Parameters.arguments(node)
+        def arguments = Parameters.new(node).arguments
 
         def site = "#{file}:#{line}"
 
         def content = [node.parameters, node.body].compact
 
-        def neighbors = Hashira::Analysis::TypeWalk.sections(home).map { |definition, _| definition.name }
+        def neighbors = Hashira::Analysis::TypeWalk.new(home).sections.map { |definition, _| definition.name }
       end
 
     Sketch =
       Data.define(:name, :node, :kind, :file) do
-        def superclass = kind == :class ? Hashira::Analysis::Syntax.segments(node.superclass) : []
+        def superclass = kind == :class ? Hashira::Analysis::Syntax.new(node.superclass).segments : []
 
         def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name
 
@@ -67,7 +71,7 @@ module Hashira
         end
 
         def defs(protocol, ownership)
-          Hashira::Analysis::TypeWalk.sections(node).map do |definition, section|
+          Hashira::Analysis::TypeWalk.new(node).sections.map do |definition, section|
             MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, home: node)
           end
         end
@@ -78,8 +82,6 @@ module Hashira
         def initialize(assigned: nil, heirs: [], **rest) = super
 
         def line = node.location.start_line
-
-        def subject = name
 
         def owned = defs.reject(&:singleton?)
 

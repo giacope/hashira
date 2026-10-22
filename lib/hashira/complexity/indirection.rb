@@ -17,13 +17,15 @@ class Hashira::Complexity::Indirection
     @rules = rules
   end
 
-  def findings = @sites.filter_map { |file, site| trail(file, site).finding(limit) unless helping.include?(site) }
+  def findings
+    @sites.filter_map do |file, site|
+      next if helping.include?(site)
+      entry = Hashira::Complexity::Entry.new(KIND, file, site)
+      Hashira::Complexity::Trail.new(entry, helpers(site.family)).finding(limit)
+    end
+  end
 
   private
-
-  def trail(file, site) = Hashira::Complexity::Trail.new(entry(file, site), helpers(site.family))
-
-  def entry(file, site) = Hashira::Complexity::Entry.new(KIND, file, site)
 
   def limit = @rules.threshold(KIND, THRESHOLD)
 
@@ -35,7 +37,7 @@ class Hashira::Complexity::Indirection
 
   def helper?(family, name, site) = hidden.include?(site.node) && single?(family, name)
 
-  def hidden = @_hidden ||= Hashira::Analysis::TypeWalk.parted(@trees, [PRIVATE])
+  def hidden = @_hidden ||= Hashira::Complexity::Sections.new(@trees).parted([PRIVATE])
 
   def defined(family) = families.fetch(family).select { it.node.is_a?(Prism::DefNode) }.to_h { [it.node.name, it] }
 
@@ -43,9 +45,9 @@ class Hashira::Complexity::Indirection
 
   def single?(family, name) = calls(family)[name] == 1 && [named, received, borrowed].none? { it.include?(name) }
 
-  def calls(family) = (@_calls ||= {})[family] ||= families.fetch(family).flat_map { sent(it) }.tally
-
-  def sent(site) = Hashira::Complexity::Calls.new(site.node).sent
+  def calls(family)
+    (@_calls ||= {})[family] ||= families.fetch(family).flat_map { Hashira::Complexity::Calls.new(it.node).sent }.tally
+  end
 
   def borrowed = @_borrowed ||= families.keys.flat_map { |family| calls(family).keys - defined(family).keys }.to_set
 
@@ -56,8 +58,8 @@ class Hashira::Complexity::Indirection
   def surveyed = @_surveyed ||= @trees.each_with_object([Set.new, Set.new]) { |tree, sets| survey(tree, *sets) }
 
   def survey(tree, symbols, receivers)
-    nodes = Hashira::Analysis::NodeWalk.collect(tree)
-    symbols.merge(Hashira::Analysis::Syntax.symbol_names(nodes).map(&:to_sym))
+    nodes = Hashira::Analysis::NodeWalk.new(tree).collect
+    symbols.merge(nodes.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.map(&:to_sym))
     receivers.merge(nodes.grep(Prism::CallNode).reject { SELVES.include?(it.receiver.class) }.map(&:name))
   end
 end

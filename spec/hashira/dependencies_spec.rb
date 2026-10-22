@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Dependencies) do
+RSpec.describe(Hashira::Dependencies, :aggregate_failures) do
   def lock
     <<~LOCK
       GIT

@@ -7,7 +7,7 @@ class Hashira::Report::Tally
     Data.define(:kind, :count, :files) do
       def line(wide, tall) = "  #{kind.ljust(wide)}  #{count.to_s.rjust(tall)} in #{reach}"
 
-      def reach = Hashira::Report::Phrases.count(files, "file")
+      def reach = Hashira::Report::Count.new(files, "file").to_s
     end
 
   def initialize(findings)

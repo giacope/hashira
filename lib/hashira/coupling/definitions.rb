@@ -30,8 +30,8 @@ class Hashira::Coupling::Definitions
 
   def scan(file, tree)
     package = @project.package(file)
-    Hashira::Analysis::TypeWalk.each(tree, roots: roots) do |node, full, stack|
-      [node, *Hashira::Analysis::Syntax.constants(node)].each { yield(it, path(full, it), package, stack + [full], file) }
+    Hashira::Analysis::TypeWalk.new(tree).walk(roots: roots) do |node, full, stack|
+      [node, *Hashira::Analysis::Syntax.new(node).constants].each { yield(it, path(full, it), package, stack + [full], file) }
     end
   end
 end

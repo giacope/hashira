@@ -2,12 +2,17 @@
 # meet: two classes in one. Obsoletion's two halves meet in the constructor,
 # which derives its rules from the config the loaders read (the shape of
 # rubocop's ConfigObsoletion). A controller's actions each set their own
-# fields for a template: framework structure, left alone.
+# fields for a template: framework structure, left alone. LedgerEntry's two
+# field groups meet in the module it includes, whose methods call back into it
+# (kimera's Baseline::Entry); Console's run reaches every command through its
+# dispatch table of symbols (kimera's CLI::Baseline).
 present:
   - {kind: low_cohesion, package: "App::Checkout"}
 absent:
   - {kind: low_cohesion, package: "App::Obsoletion"}
   - {kind: low_cohesion, package: "App::OrdersController"}
+  - {kind: low_cohesion, package: "App::LedgerEntry"}
+  - {kind: low_cohesion, package: "App::Console"}
 messages:
   - {kind: low_cohesion, package: "App::Checkout", includes: "splits into 2 groups"}
 evidence: [low_cohesion]

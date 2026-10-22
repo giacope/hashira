@@ -10,7 +10,7 @@ class Hashira::Report::FindingLines
   end
 
   def print
-    @io.puts("#{@indent}#{@finding.kind}: #{Hashira::Report::Phrases.message(@finding)}")
+    @io.puts("#{@indent}#{@finding.kind}: #{Hashira::Report::Phrases.new(@finding).message}")
     @finding.evidence.first(SAMPLE).each { @io.puts("#{@indent}    · #{it}") }
   end
 

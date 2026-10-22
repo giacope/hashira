@@ -16,7 +16,7 @@ class Hashira::Coupling::Associations
   end
 
   def targets(node)
-    return [] unless Hashira::Analysis::Syntax.macro?(node, MACROS) && !option(node, "polymorphic").is_a?(Prism::TrueNode)
+    return [] unless Hashira::Analysis::Syntax.new(node).macro?(MACROS) && !option(node, "polymorphic").is_a?(Prism::TrueNode)
     name = given(node) || inferred(node)
     return [] unless name&.match?(CONSTANT)
     [Target.new(name:, line: node.location.start_line, guarantee: guarantee(node), macro: node.name)]
@@ -24,7 +24,7 @@ class Hashira::Coupling::Associations
 
   private
 
-  def option(call, key) = Hashira::Analysis::Syntax.option(call, key)
+  def option(call, key) = Hashira::Analysis::Syntax.new(call).option(key)
 
   def guarantee(call)
     dependent = option(call, "dependent")
@@ -34,7 +34,7 @@ class Hashira::Coupling::Associations
 
   def given(call)
     named = option(call, "class_name")
-    Hashira::Analysis::Syntax.text(named) if named.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax.new(named).text if named.is_a?(Prism::StringNode)
   end
 
   def inferred(call)
@@ -44,9 +44,7 @@ class Hashira::Coupling::Associations
     COLLECTIONS.include?(call.name) || source ? @inflection.classify(base) : @inflection.camelize(base)
   end
 
-  def literal(node)
-    Hashira::Analysis::Syntax.text(node) if Hashira::Analysis::Syntax.word?(node)
-  end
+  def literal(node) = Hashira::Analysis::Syntax.new(node).literal
 end
 
 Hashira::Coupling::Associations::NONE = Hashira::Coupling::Associations.new(nil)

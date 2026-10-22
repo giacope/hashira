@@ -8,11 +8,15 @@ class Hashira::Coupling::Autoload
     @trees = trees
   end
 
-  def roots = Hashira::Analysis::TypeWalk.roots(@trees) | namespaces
+  def roots = defined | namespaces
 
   def namespaces = @_namespaces ||= @project.rails? ? @trees.keys.flat_map { implied(it) }.to_set : Set.new
 
   private
+
+  def defined = @trees.each_value.flat_map { fulls(it) }.to_set
+
+  def fulls(tree) = Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).map { |_node, full| full }
 
   def implied(file)
     parts = file.split("/")

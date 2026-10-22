@@ -17,11 +17,11 @@ class Hashira::Smells::Sampling
 
   private
 
-  def writes = @_writes ||= Hashira::Smells::Scope.inside(@definition).grep(Prism::LocalVariableWriteNode)
+  def writes = @_writes ||= Hashira::Smells::Scope.new(@definition).inside.grep(Prism::LocalVariableWriteNode)
 
   def keepers(node) = writes.select { |write| holds?(write.value, node) }.map(&:name)
 
-  def holds?(value, node) = value.equal?(node) || Hashira::Smells::Scope.inside(value).any? { it.equal?(node) }
+  def holds?(value, node) = value.equal?(node) || Hashira::Smells::Scope.new(value).inside.any? { it.equal?(node) }
 
   def measured?(node, kept) = @calls.any? { |call| against?(call, node, kept) }
 

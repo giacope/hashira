@@ -30,7 +30,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
       def key = [text, (region if local?)]
 
-      def local? = ([atom] + Hashira::Smells::Scope.inside(atom)).any? { LOCALS.include?(it.class) }
+      def local? = ([atom] + Hashira::Smells::Scope.new(atom).inside).any? { LOCALS.include?(it.class) }
 
       def chain = [atom] + receivers(atom)
 
@@ -67,7 +67,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def subjects = regions.flat_map { cases(it).filter_map(&:predicate) }
 
-  def cases(region) = Hashira::Smells::Scope.below(region, SCOPES).grep(Prism::CaseNode)
+  def cases(region) = Hashira::Smells::Scope.new(region).below(SCOPES).grep(Prism::CaseNode)
 
   def found = regions.flat_map { |region| predicates(region).flat_map { |root| split(root, region) } }
 
@@ -87,9 +87,11 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def rechecks = @_rechecks ||= subject.sweep.grep(Prism::DefNode).map { Hashira::Smells::Recheck.new(it) }
 
-  def regions = subject.nodes.flat_map { [it] + Hashira::Smells::Scope.sweep(it).select { SCOPES.include?(it.class) } }
+  def regions
+    subject.nodes.flat_map { [it] + Hashira::Smells::Scope.new(it).sweep.select { SCOPES.include?(it.class) } }
+  end
 
-  def predicates(region) = Hashira::Smells::Scope.below(region, SCOPES).filter_map { predicate(it) }
+  def predicates(region) = Hashira::Smells::Scope.new(region).below(SCOPES).filter_map { predicate(it) }
 
   def predicate(node)
     node.predicate if node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode) || node.is_a?(Prism::CaseNode)

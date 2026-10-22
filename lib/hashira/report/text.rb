@@ -44,13 +44,13 @@ class Hashira::Report::Text
   end
 
   def banner(grouping, packages)
-    "Package (#{grouping}) metrics for #{@view.project.label}  " \
+    "Package (#{grouping}) metrics for #{@view.label}  " \
       "(#{count(packages, "package")}, #{count(total, "file")})\n\n"
   end
 
-  def count(number, noun) = Hashira::Report::Phrases.count(number, noun)
+  def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
 
-  def total = @view.project.files.size
+  def total = @view.size
 
   def caveat
     @io.puts(

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Coupling::Affixes) do
+RSpec.describe(Hashira::Coupling::Affixes, :aggregate_failures) do
   def affixes(source) = described_class.new(Prism.parse(source).value.statements.body.first.parts).to_a
 
   it "keeps a lower-case stem or a namespace for a prefix, and a tail past two characters for a suffix" do

@@ -1,0 +1,8 @@
+# Real's construction runs Core#setup, which sets every option as an instance
+# variable by a computed name, so its read is not an assumption. Mock includes
+# Core but its initialize never calls setup or super: nothing ever sets the
+# variable it reads (fog-openstack's Real and Mock services).
+present:
+  - {kind: assumed_state, package: "App::Mock"}
+absent:
+  - {kind: assumed_state, package: "App::Real"}

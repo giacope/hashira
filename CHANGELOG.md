@@ -30,6 +30,11 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- `sdp_violation` is now `unstable_dependency`, in the text and JSON reports and
+  in `--kind`/`--fail-on`. `sdp` and `sdp_violation` still name it on the
+  command line and in `.hashira.yml`, and baselines that recorded it read it
+  under the new name.
+
 - `dead_code` is on by default and `layer_violation` is on once `layers:` are
   declared; `checks: all` also turns on `change_coupling`. A baseline recorded
   before them lists their findings as not ratcheted until `--update-baseline`.
@@ -101,6 +106,16 @@ things a baseline sees:
   `duplication`; `--update-baseline` records the smaller set.
 
 ### Added
+
+- `--fail-on all` (and `fail-on: all` in `.hashira.yml`) gates every kind the
+  run checks: the default kinds, the ones `checks:` turns on, less what
+  `--skip` drops, narrowed to `--kind` when given. Unlike naming a kind, it
+  turns no opt-in kind on. A codebase at zero findings gates with it instead of
+  keeping a baseline for `--ratchet`, and the gate's verdict lists the kinds it
+  covered.
+- `.hashira.yml` takes `boundaries:`, the interpreted-model declarations the
+  baseline holds, so a codebase without a baseline can still declare one. Both
+  lists apply when both exist.
 
 - **Rails engines** are Rails: a project with no `config/application.rb` that
   holds exactly one `class Engine < Rails::Engine` is packaged by the classes
@@ -515,6 +530,34 @@ From the third field test (thirty MIT-licensed codebases):
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+- Read on the trifecta's own code (self-hosting):
+  - `low_cohesion` links a class's methods through the project modules it
+    includes, whose methods call back into the class (kimera's
+    `Baseline::Entry` reaches `matching` through `IgnoreList::Drift`), and a
+    computed send (`__send__(command(name))`) to every method the class names as
+    a symbol, its dispatch table.
+  - `repeated_call` takes the same call again, in the arm of a test of its first
+    answer that falls back from it (`outcome.lost? ? attempt(job) : outcome`),
+    for a retry, not a repeat.
+  - `change_coupling` leaves out a pair where one file only loads the other or
+    lists its path (a registration such as a list of harness-critical files);
+    with a constant reference between them it stays an explicit finding.
+  - `fragmentation` leaves a helper that a subclass overrides out of the path:
+    it is a template hook (a base check's `detail` or `evidence`), and merging
+    it into the entry would remove the extension point.
+  - `repeated_conditional` counts a test in a trailing condition
+    (`@job.claim! if @job.state == :open`) or in a command's argument as made
+    before that command, not as a recheck after it: the condition and the
+    argument run first.
+- Namespace packaging keeps an engine's `Engine` class and a namespace's value
+  constants (rails_admin's `EXTENSIONS`, `AUTHORIZATION_ADAPTERS`) in the
+  namespace's own `(root)` package instead of making each a package.
+- `assumed_state` counts a computed `instance_variable_set("@#{key}", …)` as
+  assigning only where the class's construction reaches it: through its
+  `initialize`, `super` and the methods they call. fog's `Real` services, whose
+  `initialize` runs `setup`, stay quiet; the `Mock` services, whose
+  `initialize` never does, are reported again.
 
 From the third field test (thirty MIT-licensed codebases):
 

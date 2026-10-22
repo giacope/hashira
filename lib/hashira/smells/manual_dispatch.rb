@@ -22,7 +22,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
   def proxy? = subject.node.name == PROXY && subject.neighbors.include?(PROTOCOL)
 
   def sightings
-    Hashira::Smells::Scope.inside(subject.node).select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
+    Hashira::Smells::Scope.new(subject.node).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
   end
 
   def probe(call) = Hashira::Smells::Probe.new(call, subject, foreign)

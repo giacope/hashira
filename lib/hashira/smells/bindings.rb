@@ -2,6 +2,7 @@
 
 require "prism"
 require_relative "conditions"
+require_relative "postfix"
 require_relative "refs"
 
 class Hashira::Smells::Bindings
@@ -18,8 +19,6 @@ class Hashira::Smells::Bindings
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode, Prism::InstanceVariableTargetNode,
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
-
-  MODIFIERS = [Prism::IfNode, Prism::UnlessNode].freeze
 
   SCOPES = Hashira::Smells::Refs::SCOPES
 
@@ -82,7 +81,7 @@ class Hashira::Smells::Bindings
 
   private
 
-  def sightings(call) = Hashira::Smells::Scope.inside(call).filter_map { ledger.reads[it] }
+  def sightings(call) = Hashira::Smells::Scope.new(call).inside.filter_map { ledger.reads[it] }
 
   def bound?(read, call) = call.location.start_offset <= read.scope.location.start_offset
 
@@ -103,7 +102,5 @@ class Hashira::Smells::Bindings
     end
   end
 
-  def asked?(root, child) = MODIFIERS.include?(root.class) && child.equal?(root.predicate) && trailing?(root)
-
-  def trailing?(root) = root.statements&.location&.start_offset == root.location.start_offset
+  def asked?(root, child) = Hashira::Smells::Postfix.new(root).asks?(child)
 end

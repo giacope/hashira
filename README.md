@@ -113,7 +113,8 @@ could not parse) goes to stderr.
 ## Configuration
 
 A `.hashira.yml` holds the flags you would pass every time, each key a flag
-without its dashes, plus `directories` and `checks`:
+without its dashes, plus `directories`, `checks`, `layers` and `boundaries`
+(an [interpreted model](#ci) you declare):
 
 ```yaml
 directories: [app, lib]
@@ -170,8 +171,8 @@ So everything is on but five kinds:
 | `change_coupling` | needs the git history, which a shallow CI checkout lacks |
 
 `layer_violation` is on whenever `layers:` are declared. `--kind` and
-`--fail-on` turn on the kinds they name, and a `checks:` setting for a kind
-turns it on.
+`--fail-on` turn on the kinds they name (`--fail-on all` names none: it gates
+what the run checks), and a `checks:` setting for a kind turns it on.
 
 The earlier policy switched kinds on by a precision measured on labels. Those
 labels are in [eval/results](eval/results/README.md): two independent AI
@@ -254,7 +255,7 @@ Findings:
   the bottom. It is exact for knots of up to twelve packages; beyond that it is
   a heuristic, and the message says "the cheapest cut found". The evidence is
   the references on those edges — the lines to change.
-- **sdp_violation** — a stable package depends on a less stable one, against
+- **unstable_dependency** — a stable package depends on a less stable one, against
   the Stable Dependencies Principle. It needs a gap of at least 0.10 and three
   edges at each end; edges inside a cycle are the cycle's.
 - **mixed_audience** — a package whose constants split into parts that disjoint
@@ -502,7 +503,8 @@ or more methods of its own class along a path at least two deep, when the entry
 and every method it reaches average three and a half lines or fewer (blank and
 comment lines aside, a heredoc's lines in). Named predicates (`deferred?`,
 `alone?`) are left out of the count: readers keep them as meaning, so the
-finding lists them as not counted. A method reaches another by calling it with
+finding lists them as not counted. A helper that a subclass overrides is a
+template hook, not a fragment, and ends the path. A method reaches another by calling it with
 no receiver or on `self`, or by `send(:name)` and `method(:name)`; instance
 methods reach instance methods and class methods class methods, across every
 file that reopens the class.
@@ -818,9 +820,18 @@ codebase is the same letter on every row.
 ## CI
 
 `--fail-on` fails the build when findings of a kind exist at all (`cycles`,
-`sdp` and `dupe` are shorthands; `smells` is every smell kind). It suits a
-codebase that starts clean. The **ratchet** suits every other one: record what
-is true now, and fail when it grows.
+`sdp` and `dupe` are shorthands; `smells` is every smell kind). `--fail-on all`
+gates every kind the run checks: the default kinds, the ones `checks:` turns on,
+less what `--skip` drops and narrowed to `--kind` when it is given. It turns no
+opt-in kind on by itself. That is the gate for a codebase at zero findings, with
+no baseline to keep:
+
+```sh
+hashira --fail-on all            # fail on any finding this run reports
+```
+
+It suits a codebase that starts clean. The **ratchet** suits every other one:
+record what is true now, and fail when it grows.
 
 ```sh
 hashira --update-baseline        # record today's edges and findings
@@ -888,6 +899,17 @@ named entrypoint.
 "boundaries": [
   {"root": "Prism", "role": "interpreted_model", "entrypoint": "lib/my_tool/trees.rb", "reason": "the Prism AST is the input model"}
 ]
+```
+
+A declaration is structure, not debt, so it can live in `.hashira.yml` instead,
+where a codebase with no baseline keeps it (both lists apply when both exist):
+
+```yaml
+boundaries:
+  - root: Prism
+    role: interpreted_model
+    entrypoint: lib/my_tool/trees.rb
+    reason: the Prism AST is the input model
 ```
 
 ## Other formats

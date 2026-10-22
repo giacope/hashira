@@ -26,7 +26,8 @@ module Hashira::CLI
 
       def project
         named = rules.naming(kinds + fail_on)
-        Hashira::Project.new(directories, boundaries: decisions.boundaries, home: home.path, rules: named)
+        boundaries = decisions.boundaries + rules.boundaries
+        Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
       end
 
       def analyzers = Hashira::Pipeline::ANALYZERS - skip

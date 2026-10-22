@@ -5,7 +5,7 @@ require_relative "rule"
 class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   KIND = "cycle"
 
-  def list = graph.cycles.knots.map { knot(it.first, it, graph.cycles) }
+  def list = graph.knots.map { knot(it.first, it, graph.cycles) }
 
   private
 
@@ -13,7 +13,8 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
     found = cycles.cut(members)
     cut = found.edges.map { pledged(*it) }
     detail = { members:, folded: folded(members) }.merge(cut:, exact: found.exact?)
-    finding(package: key, cycle: cycles.path(key), evidence: evidence(cut), detail:)
+    evidence = cut.flat_map { graph.evidence(it[:from], it[:to]).to_a.sort }
+    finding(package: key, cycle: cycles.path(key), evidence:, detail:)
   end
 
   def pledged(from, to, weight)
@@ -23,6 +24,4 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   end
 
   def folded(members) = (members & graph.folds.map { it[:to] }).reject { graph.unfolded.cycles.through?(it) }
-
-  def evidence(cut) = cut.flat_map { graph.evidence(it[:from], it[:to]).to_a.sort }
 end

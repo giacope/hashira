@@ -42,20 +42,24 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def components
     joined = pieces.reduce([]) { |found, piece| fuse(found, piece) }
-    joined.map { |piece| [piece.names.compact, piece.fields.select { kept.include?(it) }] }
+    joined.map { |piece| [piece.names.select { names.include?(it) }, piece.fields.select { kept.include?(it) }] }
   end
 
-  def pieces = methods.map { |method| piece(method.node.name, method.node, []) } + setup.map { piece(nil, it, inputs) }
+  def pieces = (methods + mixed).map { piece(it.node.name, it.node, []) } + setup.map { piece(nil, it, inputs) }
+
+  def mixed = @_mixed ||= family.mixed(subject.subject)
+
+  def known = @_known ||= names | mixed.to_set { it.node.name }
 
   def piece(name, node, given)
-    found = Hashira::Analysis::NodeWalk.collect(node)
+    found = Hashira::Analysis::NodeWalk.new(node).collect
     shared = found.grep(Prism::LocalVariableReadNode).map(&:name) & given
     Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
   end
 
   def inputs = constructors.flat_map(&:parameters)
 
-  def setup = constructors.flat_map { Hashira::Analysis::Syntax.statements(it.node).compact }
+  def setup = constructors.flat_map { Hashira::Analysis::Syntax.new(it.node).statements.compact }
 
   def constructors = @_constructors ||= built(subject.owned).then { it.empty? ? bequeathed : it }
 
@@ -78,11 +82,11 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def fields(found) = (touched(found) + attributed(found)).uniq
 
-  def touched(found) = Hashira::Smells::Attributes.ivars(found, FIELDS)
+  def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
 
   def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] }
 
-  def calls(found) = (selves(found).map(&:name) + sent(found)).select { names.include?(it) }.uniq
+  def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 
   def selves(found) = found.grep(Prism::CallNode).select { inward?(it.receiver) }
 
@@ -93,22 +97,31 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   end
 
   def aimed(name)
-    return [symbol(name)].compact unless INTERPOLATED.include?(name.class)
+    return [] unless name
+    return [Hashira::Analysis::Syntax.new(name).symbol] if Hashira::Analysis::Syntax.new(name).word?
+    INTERPOLATED.include?(name.class) ? affixed(name) : tabled
+  end
+
+  def affixed(name)
     head, tail = Hashira::Coupling::Affixes.new(name.parts).to_a
-    return [] if head.empty? && tail.empty?
+    return tabled if head.empty? && tail.empty?
     names.select { it.start_with?(head) && it.end_with?(tail) }
   end
 
-  def symbol(node) = (Hashira::Analysis::Syntax.symbol(node) if Hashira::Analysis::Syntax.word?(node))
+  def tabled = @_tabled ||= names.select { listed.include?(it) }
+
+  def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.to_set(&:to_sym)
+
+  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal&.to_sym
 
   def sweep = @_sweep ||= subject.sweep
 
   def attributes
-    @_attributes ||= Hashira::Smells::Attributes.declared(sweep).to_h { [it, :"@#{it}"] }.merge(delegated)
+    @_attributes ||= Hashira::Smells::Attributes.new(sweep).declared.to_h { [it, :"@#{it}"] }.merge(delegated)
   end
 
   def delegated
-    Hashira::Smells::Attributes.macros(sweep, DELEGATORS).flat_map do |call|
+    Hashira::Smells::Attributes.new(sweep).macros(DELEGATORS).flat_map do |call|
       target, *names = Array(call.arguments&.arguments).map { symbol(it) }
       field = target.to_s.start_with?("@") ? target : :"@#{target}"
       names.compact.map { [it.to_s, field] }

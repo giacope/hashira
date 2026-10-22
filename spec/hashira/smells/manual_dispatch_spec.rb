@@ -1,0 +1,451 @@
+# frozen_string_literal: true
+
+RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
+  it "leaves a ladder over core classes alone even where the project reopens them" do
+    files = {
+      "lib/app/core_ext.rb" => "class Symbol\n  def sql = to_s\nend\n\nclass Array\n  def sql = join\nend\n",
+      "lib/app/key.rb" => <<~RUBY
+        module App
+          class Key
+            def initialize(sink) = @sink = sink
+
+            def add(key)
+              case key
+              when Array then @sink.concat(key)
+              when Symbol then @sink << key
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch")).to(be_empty)
+  end
+
+  it "reads a core class beside an owned namesake, and an owned name out of sight, the way Ruby resolves it" do
+    files = {
+      "lib/app/types.rb" => "module App\n  module Types\n    class String; end\n    class Array; end\n    " \
+        "class Add; end\n  end\nend\n",
+      "lib/app/key.rb" => <<~RUBY
+        module App
+          class Key
+            def add(key) = (case key when Array then key when String then key.to_s end)
+            def sort(key) = (case key when Pick then key when Add then key.to_s end)
+          end
+
+          module Types
+            class Pick
+              def add(key) = (case key when Array then key when String then key.to_s end)
+            end
+
+            class Grip
+              def add(key) = (case key when ::Pick then key when ::Add then key.to_s end)
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Types::Pick#add]))
+  end
+
+  it "lets a rescued library exception be probed even where its name reads as an owned class" do
+    files = {
+      "lib/app/client.rb" => <<~RUBY
+        module App
+          class Failure
+            def retry? = true
+          end
+
+          class Client
+            def call
+              run
+            rescue Faraday::Error => failure
+              failure.respond_to?(:retry?) ? 1 : 2
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch")).to(be_empty)
+  end
+
+  it "flags respond_to? probes and lists every probing line" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~RUBY
+        module App
+          module Zone
+            class Duck; def honk = 1; def moo = 1; end
+
+            class Thing
+              def poke(duck)
+                duck.honk if duck.respond_to?(:honk)
+                duck.moo if duck.respond_to?(:moo)
+              end
+
+              def plain(duck) = duck.honk
+            end
+          end
+        end
+      RUBY
+    }
+    findings = sniffed(files, "manual_dispatch")
+    expect(findings.map { [it.package, it.evidence] }).to(
+      eq([["App::Zone::Thing#poke", ["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]]])
+    )
+    expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:7, 8"))
+  end
+
+  it "flags a bare capability check, but not a computed message, which no definition in the codebase can answer for" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~RUBY
+        module App
+          module Zone
+            class Thing
+              def method_missing(name, *) = @target.respond_to?(name) ? @target.public_send(name, *) : super
+
+              def respond_to_missing?(name, all = false) = @target.respond_to?(name, all) || super
+
+              def probe(duck) = duck.respond_to?(:honk)
+            end
+
+            class Duck; def honk = 1; def moo = 1; end
+
+            class Target; end
+
+            class Half
+              def method_missing(name, *) = @target.respond_to?(name) ? @target.public_send(name, *) : super
+            end
+
+            class Relay
+              def method_missing(name, *) = @duck.respond_to?(:honk) ? @duck.honk : super
+
+              def respond_to_missing?(name, all = false) = @duck.respond_to?(:honk) || super
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Zone::Thing#probe]))
+  end
+
+  def dispatched(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "manual_dispatch")
+
+  it "lets Ruby's conversion, IO and enumeration protocols be probed" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Body; end
+
+          class Value; end
+
+          class Duck; def honk = 1; def moo = 1; end
+
+          class Thing
+            def release(body)
+              body.close if body.respond_to?(:close)
+              body.rewind if body.respond_to?(:rewind)
+              body.read if body.respond_to?(:read)
+              body.pos if body.respond_to?(:pos)
+            end
+
+            def coerce(value)
+              return value.to_unsafe_h if value.respond_to?(:to_unsafe_h)
+              return value.to_hash if value.respond_to?(:to_hash)
+              value.each { @seen << it } if value.respond_to?(:each)
+              value.call if value.respond_to?(:call)
+            end
+
+            def named(duck, name) = duck.respond_to?(name)
+
+            def blank(duck) = duck.respond_to?
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#blank]))
+  end
+
+  it "lets a rescued library exception or another library object be probed, but not one the codebase raises" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Failure < StandardError; def response = 1; end
+
+          class Thing
+            def fetch
+              @http.get
+            rescue => e
+              @log.warn(e.code) if e.respond_to?(:code)
+            end
+
+            def named
+              @http.get
+            rescue Faraday::Error => error
+              error.response if error.respond_to?(:response)
+            end
+
+            def ours
+              @http.get
+            rescue Failure => error
+              error.response if error.respond_to?(:response)
+            end
+
+            def fetched(url)
+              reply = Faraday.get(url)
+              reply.headers if reply.respond_to?(:headers)
+            end
+
+            def guarded(node)
+              return unless node.is_a?(Prism::CallNode)
+              node.block if node.respond_to?(:block)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ours]))
+  end
+
+  it "leaves a probe for a message the codebase never defines, a core value's or a library's, to its owner" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Value; end
+
+          class Thing
+            def limit(value) = value.respond_to?(:positive?) && value.positive?
+
+            def size(value) = value.respond_to?(:zero?) && value.zero?
+          end
+
+          class Counter
+            def zero? = @count.zero?
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#size]))
+  end
+
+  it "trusts a probe on self or its own state, and leaves one on an object of no class it can name to its owner" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Duck; def honk = 1; def moo = 1; end
+
+          class Thing
+            def initialize(duck)
+              @duck = duck
+            end
+
+            def mine = respond_to?(:honk) && self.respond_to?(:moo)
+
+            def held = @duck.respond_to?(:honk)
+
+            def handed(duck) = duck.respond_to?(:honk)
+
+            def mixed(duck) = respond_to?(:honk) && duck.respond_to?(:honk)
+
+            def upload = params[:file].respond_to?(:honk)
+
+            def helped = helper.respond_to?(:honk)
+
+            def plugged = @manager.respond_to?(:honk)
+
+            def chained(node) = node.duck.respond_to?(:honk)
+          end
+        end
+      end
+    RUBY
+    expect(findings.to_h { [it.package.split("#").last, it.confidence] }).to(
+      eq("mine" => :high, "held" => :high, "handed" => nil, "mixed" => nil)
+    )
+  end
+
+  it "flags a case or is_a? ladder over two or more of the codebase's own classes" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Circle; end
+          class Square; end
+          LIMIT = 1
+          OTHER = 2
+
+          class Thing
+            def area(shape)
+              case shape
+              when Circle then @pi
+              when Square then @side
+              end
+            end
+
+            def edges(shape)
+              if shape.is_a?(Circle)
+                0
+              elsif shape.kind_of?(App::Zone::Square)
+                4
+              end
+            end
+
+            def lone(shape) = shape.is_a?(Circle) ? @pi : @side
+
+            def bounded(count)
+              case count
+              when LIMIT then @a
+              when OTHER then @b
+              end
+            end
+
+            def parsed(node)
+              case node
+              when Prism::CallNode then @a
+              when Prism::DefNode then @b
+              end
+            end
+
+            def own = is_a?(Circle) || is_a?(Square) || is_a?
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#area App::Zone::Thing#edges]))
+    expect(findings.map(&:evidence)).to(
+      eq([["shape: Circle, Square (lines 11, 12)"], ["shape: Circle, App::Zone::Square (lines 17, 19)"]])
+    )
+    expect(message(findings.first)).to(
+      include("dispatches manually via a type check (zone/thing.rb:11, 12)", "let polymorphism pick")
+    )
+  end
+
+  it "flags a case over the object's own status, state, type or kind with two or more literal arms" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def step
+              case @state
+              when "a" then @a.run
+              when "b" then @b.run
+              end
+            end
+
+            def charge
+              case payment_kind
+              when 1 then @a.run
+              when 2 then @b.run
+              end
+            end
+
+            def settle
+              case self.status
+              when :paid then @a.run
+              when :open, :held then @b.run
+              end
+            end
+
+            def label(order)
+              case order.status
+              when :paid then @paid.run
+              when :open then @open.run
+              end
+            end
+
+            def pick(kind)
+              case kind
+              when 1 then @a.run
+              when 2 then @b.run
+              end
+            end
+
+            def paint
+              case color
+              when :red then @a.run
+              when :blue then @b.run
+              end
+            end
+
+            def single
+              case status
+              when :paid then @a.run
+              when PAID then @b.run
+              end
+            end
+
+            def loose
+              case
+              when @a then @b
+              when @c then @d
+              end
+            end
+
+            def computed
+              case kinds.first
+              when :a then @a.run
+              when :b then @b.run
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#step App::Zone::Thing#charge App::Zone::Thing#settle]))
+    expect(findings.last.evidence).to(eq(["self.status: :paid, :open, :held (lines 20, 21)"]))
+    expect(message(findings.first)).to(include("dispatches manually via a status switch"))
+  end
+
+  it "leaves a status that only maps to a value, or one read off another object, to the other kinds" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def title
+              case @state
+              when :draft then "Draft"
+              when :live then t(".live")
+              else LIVE
+              end
+            end
+
+            def tag(node)
+              case node.type
+              when :def then @a.run
+              when :send then @b.run
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "names every way one method dispatches, and leaves the confidence to the switch" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Circle; def paint = 1; end
+          class Square; end
+
+          class Thing
+            def draw(shape)
+              return @canvas.paint(shape) if respond_to?(:paint)
+              case shape
+              when Circle then @a
+              when Square then @b
+              end
+              case @kind
+              when :a then @a.run
+              when :b then @b.run
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    finding = findings.first
+    expect(message(finding)).to(
+      include("via respond_to? and a type check and a status switch (zone/thing.rb:8, 10, 11, 14, 15)")
+    )
+    expect(finding.confidence).to(be_nil)
+  end
+end

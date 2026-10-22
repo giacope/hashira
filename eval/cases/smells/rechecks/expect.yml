@@ -1,0 +1,13 @@
+# Jobs tests its job's state in four methods. In claim the test is the
+# trailing condition of the command that changes the state, and in mark it is
+# the command's argument: both run before the command, so neither is a
+# recheck after it, and both count with the plain test in run. In retry the
+# test follows a command on the job (reload), so it is a recheck and does not
+# count. Three tests remain, one more than a class may repeat.
+config:
+  checks:
+    repeated_conditional: true
+present:
+  - {kind: repeated_conditional, package: "App::Jobs"}
+messages:
+  - {kind: repeated_conditional, package: "App::Jobs", includes: "branches on the same test 3 times"}

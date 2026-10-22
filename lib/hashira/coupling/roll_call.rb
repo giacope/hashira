@@ -21,7 +21,10 @@ class Hashira::Coupling::RollCall
     @homes = homes
   end
 
-  def rolls = maximal(candidates.filter_map { entry(it) }).sort_by(&:words)
+  def rolls
+    found = candidates.filter_map { entry(it) }
+    found.reject { |roll| swallowed?(roll, found) }.sort_by(&:words)
+  end
 
   private
 
@@ -47,13 +50,8 @@ class Hashira::Coupling::RollCall
     holders = files.select { holding(it, words) }
     spread = holders.map { @homes[it] }.uniq.sort
     return unless holders.size >= MIN_FILES && spread.size >= MIN_PACKAGES
-    Roll.new(words: words.sort, files: holders, packages: spread, sites: holders.map { cite(it, words) })
-  end
-
-  def cite(file, words) = "#{file}:#{holding(file, words).line}"
-
-  def maximal(rolls)
-    rolls.reject { |roll| swallowed?(roll, rolls) }
+    sites = holders.map { "#{it}:#{holding(it, words).line}" }
+    Roll.new(words: words.sort, files: holders, packages: spread, sites:)
   end
 
   def swallowed?(roll, rolls) = rolls.any? { swallows?(it, roll) }

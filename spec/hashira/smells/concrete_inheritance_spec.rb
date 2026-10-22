@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::ConcreteInheritance) do
+RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   def concrete(source, extra = "")
     sniffed({ "lib/app/report.rb" => source, "lib/app/use.rb" => extra }, "concrete_inheritance")
   end

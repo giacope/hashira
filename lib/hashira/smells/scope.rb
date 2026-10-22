@@ -2,29 +2,33 @@
 
 require "prism"
 
-module Hashira::Smells::Scope
+class Hashira::Smells::Scope
   TYPES = [Prism::ClassNode, Prism::ModuleNode, Prism::SingletonClassNode].freeze
 
   FENCES = (TYPES + [Prism::DefNode]).freeze
 
-  module_function
+  def initialize(node)
+    @node = node
+  end
 
-  def inside(node) = below(node, FENCES)
+  def inside = below(FENCES)
 
-  def sweep(node) = below(node, TYPES)
+  def sweep = below(TYPES)
 
-  def covers?(outer, node) = stretch(outer).cover?(stretch(node))
+  def covers?(node) = stretch.cover?(Hashira::Smells::Scope.new(node).stretch)
 
-  def stretch(node)
-    spot = node.location
+  def stretch
+    spot = @node.location
     spot.start_offset..spot.end_offset
   end
 
-  def below(root, fences)
+  def below(fences)
     found = []
-    visit(root, fences) { found << it }
+    visit(@node, fences) { found << it }
     found
   end
+
+  private
 
   def visit(root, fences, &)
     root.compact_child_nodes.each do |child|
