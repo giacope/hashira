@@ -15,16 +15,20 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
 
   def flag(part) = part.type.to_s.include?("keyword") ? "#{part.name}: true" : "true"
 
-  it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
-    source = "class Writer\n  def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)\n\n  " \
-      "def emit(raw:) = raw ? @a : @b\nend\n"
-    calls = ["w.write(@quoted)\n  w.emit(raw: compute)", "w.write(false)\n  w.emit(raw: :yes)", "Writer.new.write(:on)"]
-    found =
-      calls.map do
-        flagged("lib/app/w.rb" => source, "lib/app/c.rb" => "class C\n  def go(w = Writer.new)\n  #{it}\n end\nend\n")
-      end
-    expect(found.map { it.map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+  def writer
+    "class Writer\n  def write(quoted) = quoted ? @io.puts(1) : @io.puts(2)\n\n  def emit(raw:) = raw ? @a : @b\nend\n"
   end
+
+  def picked(call)
+    flagged("lib/app/w.rb" => writer, "lib/app/c.rb" => "class C\n  def go(w = Writer.new)\n  #{call}\n end\nend\n")
+  end
+
+  it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
+    calls = ["w.write(@quoted)\n  w.emit(raw: compute)", "w.write(false)\n  w.emit(raw: :yes)", "Writer.new.write(:on)"]
+    expect(calls.map { picked(it).map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+  end
+
+  def cart(call) = "class Cart\n  def go\n  #{call}\n end\nend\n"
 
   it "counts a caller only where its receiver is the method's class, never a same-named method elsewhere" do
     source = <<~RUBY
@@ -40,10 +44,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
       "@database.write(true)", "database.write(true)", "main_database = items\n  main_database.write(:on)",
       "items.first(2).write(true)\n  Database.write(true)\n  [Database].first.build(:pg)"
     ]
-    found =
-      calls.map do
-        flagged("lib/app/d.rb" => source, "lib/app/c.rb" => "class Cart\n  def go\n  #{it}\n end\nend\n")
-      end
+    found = calls.map { flagged("lib/app/d.rb" => source, "lib/app/c.rb" => cart(it)) }
     expect(found.map { it.map(&:package) })
       .to(eq([[], %w[Database.build], %w[Database#write], [], *[%w[Database#write]] * 3, []]))
   end
@@ -118,11 +119,8 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing#write"))
-    expect(message(finding)).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
-    expect(finding.evidence).to(eq(["quoted (line 5)"]))
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing#write", ["quoted (line 5)"]]]))
+    expect(message(findings.first)).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
   end
 
   it "flags comparisons, unless, case, and boolean guards on the parameter" do

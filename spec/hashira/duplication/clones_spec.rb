@@ -2,34 +2,31 @@
 
 RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
   it "reports one finding per cluster, with each site as evidence and a refactoring" do
-    duplication(Fixtures::DUPLICATION_FILES) do |clones|
-      finding = clones.findings.first
-      expect(clones.findings.size).to(eq(1))
-      expect(finding.kind).to(eq("duplication"))
-      expect(message(finding)).to(include("2 similar fragments"))
-      expect(finding.evidence).to(
-        include(
-          a_string_matching(%r{orders/checkout\.rb:4-8}),
-          a_string_matching(%r{billing/refund\.rb:4-8})
-        )
-      )
-    end
+    findings = duplication(Fixtures::DUPLICATION_FILES, &:findings)
+    expect(findings.map { [it.kind, message(it)] }).to(match([["duplication", include("2 similar fragments")]]))
+    expect(findings.first.evidence).to(
+      include(a_string_matching(%r{orders/checkout\.rb:4-8}), a_string_matching(%r{billing/refund\.rb:4-8}))
+    )
+  end
+
+  # Two methods share a head and a tail; two others share the head and the tail's first line.
+  def overlapping
+    shared = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
+    archived = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n"
+    tail = "#{archived} r.notify(users.map(&:email), subject: :done)\n"
+    bodies = { "a" => tail, "b" => tail, "c" => "#{archived} q = other.thing(:z)\n w.call(q) if q.ready?\n" }
+    bodies["d"] = "#{archived} x.each { it.flush(now: true) }\n"
+    bodies.to_h { |name, body| ["lib/app/#{name}.rb", "def #{name}(r)\n#{shared}#{body}end\n"] }
+  end
+
+  def measured(clones)
+    [clones.clusters.flat_map(&:sites).select { it.file.end_with?("a.rb") }.map(&:mass), clones.coverage]
   end
 
   it "measures a file's coverage in distinct nodes, so lines two clusters share are counted once" do
-    shared = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
-    tail = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n " \
-      "r.notify(users.map(&:email), subject: :done)\n"
-    whole = %w[a b].to_h { ["lib/app/#{it}.rb", "def #{it}(r)\n#{shared}#{tail}end\n"] }
-    archived = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n"
-    endings = { "c" => " q = other.thing(:z)\n w.call(q) if q.ready?\n", "d" => " x.each { it.flush(now: true) }\n" }
-    partial = endings.to_h { |name, tail| ["lib/app/#{name}.rb", "def #{name}(r)\n#{shared}#{archived}#{tail}end\n"] }
-    files = whole.merge(partial)
-    duplication(files) do |clones|
-      masses = clones.clusters.flat_map(&:sites).select { it.file.end_with?("a.rb") }.map(&:mass)
-      expect(masses).to(eq([56, 41]))
-      expect(clones.coverage.transform_keys { File.basename(it) }).to(include("a.rb" => 56, "c.rb" => 41))
-    end
+    masses, coverage = duplication(overlapping) { measured(it) }
+    expect(masses).to(eq([56, 41]))
+    expect(coverage.transform_keys { File.basename(it) }).to(include("a.rb" => 56, "c.rb" => 41))
   end
 
   it "finds no duplication in code that has none" do
@@ -45,13 +42,13 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
     end
   end
 
+  def digest_of(files) = duplication(files) { |clones| clones.findings.first.digest }
+
   it "keys a clone by a digest that survives it moving down the file and changes when it changes" do
-    digest = ->(files) { duplication(files) { |clones| return clones.findings.first.digest } }
-    original = digest.call(Fixtures::DUPLICATION_FILES)
-    moved = Fixtures::DUPLICATION_FILES.transform_values { "\n\n#{it}" }
+    original = digest_of(Fixtures::DUPLICATION_FILES)
     changed = Fixtures::DUPLICATION_FILES.transform_values { it.gsub("gateway.connect(", "gateway.reconnect(1, ") }
     expect(original).to(match(/\A\h{12}\z/))
-    expect(digest.call(moved)).to(eq(original))
-    expect(digest.call(changed)).not_to(eq(original))
+    expect(digest_of(Fixtures::DUPLICATION_FILES.transform_values { "\n\n#{it}" })).to(eq(original))
+    expect(digest_of(changed)).not_to(eq(original))
   end
 end

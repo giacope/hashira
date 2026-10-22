@@ -84,11 +84,9 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(message(finding)).to(include("reads instance variables nothing in the class assigns", "zone/thing.rb:3"))
-    expect(finding.evidence).to(eq(["@late"]))
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing", ["@late"]]]))
+    expect(message(findings.first))
+      .to(include("reads instance variables nothing in the class assigns", "zone/thing.rb:3"))
   end
 
   it "treats every read as an assumption when nothing assigns at all" do
@@ -379,12 +377,14 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.evidence).to(eq(%w[@late @seen]))
-    expect(finding.detail).to(include(installed: %w[@late], unassigned: %w[@seen]))
-    expect(message(finding)).to(include("subclasses are expected to install '@late'; pass it in instead"))
-    expect(message(finding)).to(include("Nothing ever assigns '@seen', so it reads nil: a typo or a dead hook"))
+    expect(findings.map(&:evidence)).to(eq([%w[@late @seen]]))
+    expect(findings.first.detail).to(include(installed: %w[@late], unassigned: %w[@seen]))
+    expect(message(findings.first)).to(
+      include(
+        "subclasses are expected to install '@late'; pass it in instead",
+        "Nothing ever assigns '@seen', so it reads nil: a typo or a dead hook"
+      )
+    )
   end
 
   it "tells a dead extension hook nothing assigns from state only the subclasses install" do
@@ -485,13 +485,16 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
-  it "reads a class name's ancestry once, however many files reopen it" do
+  def reopened
     base = "module App\n  module Zone\n    class Base\n      def initialize = @seen = 1\n    end\n  end\nend\n"
-    reopened = "module App\n  module Zone\n    class Thing < Base\n      def report = @seen\n    end\n  end\nend\n"
-    files = { "lib/app/zone/base.rb" => base }.merge((1..3).to_h { ["lib/app/zone/thing#{it}.rb", reopened] })
+    thing = "module App\n  module Zone\n    class Thing < Base\n      def report = @seen\n    end\n  end\nend\n"
+    { "lib/app/zone/base.rb" => base }.merge((1..3).to_h { ["lib/app/zone/thing#{it}.rb", thing] })
+  end
+
+  it "reads a class name's ancestry once, however many files reopen it" do
     swept = []
     spy_on(Hashira::Smells::Scope, :sweep, swept)
-    smells(files, &:findings)
+    smells(reopened, &:findings)
     expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 1, report: 3))
   end
 end
