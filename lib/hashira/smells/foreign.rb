@@ -40,7 +40,9 @@ class Hashira::Smells::Foreign
   end
 
   def reaches
-    tests { true }.reject { @ownership.owned?(it, @subject.owner) }.map(&:first).uniq
+    owner = @subject.owner
+    sources = tests { true }.map { @ownership.origin(it, owner) }
+    sources.reject { @ownership.owned?(it, owner) }.map(&:first).uniq
   end
 
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }

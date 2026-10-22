@@ -20,6 +20,9 @@ class Hashira::Smells::Ownership
 
   def values = @_values ||= Hashira::Smells::Values.new(@trees)
 
+  # The path a constant names once copies and aliases are followed (Exports).
+  def origin(segments, owner) = exports.origin(segments, owner)
+
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
 
   def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
@@ -27,6 +30,8 @@ class Hashira::Smells::Ownership
   def keys(segments) = tables.fetch(segments.join("::"), [])
 
   private
+
+  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
 
   def among(known, segments, owner, rooted)
     (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }

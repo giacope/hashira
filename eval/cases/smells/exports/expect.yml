@@ -1,0 +1,18 @@
+# App::Ast copies Prism's node classes as its own (`const_set(name,
+# Prism.const_get(name))`), App::Types copies App::Ast's, and App::Node aliases
+# Parser::AST::Node. Twelve methods across three files type-test through
+# App::Types and twelve through App::Node: each tests the constant it came
+# from, so the sprawl is Prism's and Parser's, not App's. App::Ast::View is a
+# class App::Ast defines itself, so testing it reaches nothing foreign.
+config:
+  checks:
+    boundary_sprawl: true
+present:
+  - {kind: boundary_sprawl, package: "Prism"}
+  - {kind: boundary_sprawl, package: "Parser"}
+absent:
+  - {kind: boundary_sprawl, package: "App"}
+  - {kind: boundary_sprawl, package: "Types"}
+  - {kind: boundary_sprawl, package: "Ast"}
+messages:
+  - {kind: boundary_sprawl, package: "Prism", includes: "12 methods across 3 files each pick apart Prism's internals"}
