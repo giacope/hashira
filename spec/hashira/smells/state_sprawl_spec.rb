@@ -24,11 +24,8 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(message(finding)).to(include("holds 5 instance variables", "zone/thing.rb:3"))
-    expect(finding.evidence).to(eq(%w[@a @b @c @d @e]))
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing", %w[@a @b @c @d @e]]]))
+    expect(message(findings.first)).to(include("holds 5 instance variables", "zone/thing.rb:3"))
   end
 
   it "does not count memoization, repeats, or module state" do

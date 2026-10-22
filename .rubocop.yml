@@ -28,7 +28,3 @@ Kata/EnvDiscipline:
       - Exclude
   Exclude:
     - "eval/probe/peak.rb"
-
-# Next: split the long examples (182 over five lines), then drop this.
-RSpec/ExampleLength:
-  Max: 14

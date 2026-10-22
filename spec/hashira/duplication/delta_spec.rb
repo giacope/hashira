@@ -76,15 +76,15 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
     expect(kind(near)).to(eq(:structure))
   end
 
+  def settling(timeout, extra = "")
+    "def run(gateway)\n gateway.configure(fetch(:host), fetch(:port))\n " \
+      "gateway.connect(retries: 3, timeout: #{timeout})\n#{extra} " \
+      "gateway.authorize(token: load(:tok), scope: :sale)\n " \
+      "gateway.settle(amount: total(:net), currency: :eur)\nend\n"
+  end
+
   it "reports :structure over a literal drift, measured by the shape most sites share" do
-    base =
-      lambda do |timeout, extra = ""|
-        "def run(gateway)\n gateway.configure(fetch(:host), fetch(:port))\n " \
-          "gateway.connect(retries: 3, timeout: #{timeout})\n#{extra} " \
-          "gateway.authorize(token: load(:tok), scope: :sale)\n " \
-          "gateway.settle(amount: total(:net), currency: :eur)\nend\n"
-      end
-    sources = { "a.rb" => base[30], "b.rb" => base[60], "c.rb" => base[30, " gateway.log(:slow)\n"] }
+    sources = { "a.rb" => settling(30), "b.rb" => settling(60), "c.rb" => settling(30, " gateway.log(:slow)\n") }
     expect(cluster(sources)).to(have_attributes(size: 3, mass: 47))
     expect(kind(sources)).to(eq(:structure))
   end

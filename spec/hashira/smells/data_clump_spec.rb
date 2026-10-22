@@ -18,11 +18,9 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(message(finding)).to(include("passes the same parameters", "zone/thing.rb:3"))
-    expect(finding.evidence).to(eq(["(alfa, bravo, charlie) → 3 methods: one, two, three"]))
+    expect(findings.map { [it.package, it.evidence] })
+      .to(eq([["App::Zone::Thing", ["(alfa, bravo, charlie) → 3 methods: one, two, three"]]]))
+    expect(message(findings.first)).to(include("passes the same parameters", "zone/thing.rb:3"))
   end
 
   it "counts keyword parameters and ignores singleton methods" do

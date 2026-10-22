@@ -28,8 +28,7 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "module_initialize")
-    expect(findings.size).to(eq(1))
-    expect(findings.first.package).to(eq("App::Zone::Mixin"))
+    expect(findings.map(&:package)).to(eq(["App::Zone::Mixin"]))
     expect(message(findings.first)).to(include("defines initialize in a module", "zone/thing.rb:3"))
   end
 

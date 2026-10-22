@@ -14,11 +14,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing#double"))
-    expect(message(finding)).to(include("repeats identical calls", "zone/thing.rb:4"))
-    expect(finding.evidence).to(eq(["@other.thing(1) × 2 (line 5)"]))
+    expect(findings.map { [it.package, it.evidence] })
+      .to(eq([["App::Zone::Thing#double", ["@other.thing(1) × 2 (line 5)"]]]))
+    expect(message(findings.first)).to(include("repeats identical calls", "zone/thing.rb:4"))
   end
 
   it "leaves a plain read of a near object made twice alone, even fed on, and reports it read three times" do

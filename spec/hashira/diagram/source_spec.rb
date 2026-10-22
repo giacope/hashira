@@ -45,16 +45,15 @@ RSpec.describe(Hashira::Diagram::Source, :aggregate_failures) do
     end
   end
 
+  def mermaid_ids(graph) = capture { described_class.new(graph, :mermaid).print }.scan(/^  (p\d+)\[/).flatten
+
   it "never collides two packages onto one node, whatever they are called" do
     files = {
       "lib/app/my-pkg/a.rb" => "module App; class A; def a = 1; end; end\n",
       "lib/app/my_pkg/b.rb" => "module App; class B; def b = 1; end; end\n",
       "lib/app/end/c.rb" => "module App; class C; def c = 1; end; end\n"
     }
-    analyze(files) do |_project, _census, graph|
-      ids = capture { described_class.new(graph, :mermaid).print }.scan(/^  (p\d+)\[/)
-      expect(ids.flatten).to(eq(ids.flatten.uniq))
-      expect(ids.size).to(eq(graph.packages.size))
-    end
+    ids, packages = analyze(files) { |_project, _census, graph| [mermaid_ids(graph), graph.packages] }
+    expect([ids, ids.size]).to(eq([ids.uniq, packages.size]))
   end
 end

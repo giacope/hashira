@@ -17,8 +17,8 @@ RSpec.describe(Hashira::CI::Accepted, :aggregate_failures) do
     within({}) do
       File.write("b.json", JSON.generate(acceptance))
       screened = described_class.build("b.json").screen([finding, finding(kind: "unstable_dependency")])
-      expect(screened.all.map(&:kind)).to(eq(%w[unstable_dependency]))
-      expect(screened.accepted).to(eq([[finding, "usage conformance-tests the CLI"]]))
+      expect([screened.all.map(&:kind), screened.accepted])
+        .to(eq([%w[unstable_dependency], [[finding, "usage conformance-tests the CLI"]]]))
     end
   end
 

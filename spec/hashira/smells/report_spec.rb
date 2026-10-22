@@ -1,18 +1,23 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
+  # The class of a pipeline's smells analyzer and the kinds it finds: every rule on, or with nil the defaults.
+  def sniffing(options)
+    rules = options ? Hashira::Config::Rules::ALL : Hashira::Config::Rules::NONE
+    pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:), **options.to_h)
+    [pipeline.smells.class, pipeline.findings.map(&:kind)]
+  end
+
   it "runs inside the pipeline by default and steps aside when skipped" do
-    within(Fixtures::CYCLIC_FILES) do
-      every = Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL)
-      pipeline = Hashira::Pipeline.new(every)
-      expect(pipeline.smells).to(be_a(described_class))
-      expect(pipeline.findings.map(&:kind)).to(include("utility_function"))
-      plain = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      expect(plain.findings.map(&:kind)).to(include("cycle", "utility_function"))
-      trimmed = Hashira::Pipeline.new(every, enabled: %i[coupling])
-      expect(trimmed.smells).to(be_nil)
-      expect(trimmed.findings.map(&:kind)).not_to(include("utility_function"))
-    end
+    found = within(Fixtures::CYCLIC_FILES) { [{}, { enabled: %i[coupling] }, nil].map { sniffing(it) } }
+    expect(found).to(
+      match(
+        [
+          [described_class, include("utility_function")], [NilClass, exclude("utility_function")],
+          [anything, include("cycle", "utility_function")]
+        ]
+      )
+    )
   end
 
   it "honours visibility markers in all their spellings" do

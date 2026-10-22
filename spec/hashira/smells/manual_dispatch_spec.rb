@@ -89,10 +89,10 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "manual_dispatch")
-    expect(findings.size).to(eq(1))
-    expect(findings.first.package).to(eq("App::Zone::Thing#poke"))
+    expect(findings.map { [it.package, it.evidence] }).to(
+      eq([["App::Zone::Thing#poke", ["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]]])
+    )
     expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:7, 8"))
-    expect(findings.first.evidence).to(eq(["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]))
   end
 
   it "flags a bare capability check, but not a computed message, which no definition in the codebase can answer for" do

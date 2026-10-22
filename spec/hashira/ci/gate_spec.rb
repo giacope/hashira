@@ -36,14 +36,17 @@ RSpec.describe(Hashira::CI::Gate, :aggregate_failures) do
   end
 
   it "names only the kinds that fired, worst first, and mirrors the verdict to stderr" do
-    nils = Array.new(2) { finding(kind: "nil_check", evidence: []) }
-    all = nils.unshift(finding(kind: "cycle", evidence: []))
-    io = StringIO.new
-    error = StringIO.new
+    all = [finding(kind: "cycle", evidence: [])] + Array.new(2) { finding(kind: "nil_check", evidence: []) }
+    io, error = Array.new(2) { StringIO.new }
     kinds = %w[cycle nil_check unstable_dependency utility_function]
     expect(described_class.new(findings(all), kinds, io:, error:).check).to(eq(1))
-    expect(io.string).to(include("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1."))
-    expect(io.string).not_to(include("unstable_dependency"))
-    expect(error.string).to(eq("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.\n"))
+    expect([io.string, error.string]).to(
+      match(
+        [
+          include("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.").and(exclude("unstable_dependency")),
+          eq("Gate FAILED: 3 finding(s) — nil_check 2, cycle 1.\n")
+        ]
+      )
+    )
   end
 end

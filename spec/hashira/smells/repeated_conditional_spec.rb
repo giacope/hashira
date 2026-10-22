@@ -24,11 +24,9 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing"))
-    expect(message(finding)).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
-    expect(finding.evidence).to(eq(["@mode == :x × 3 (lines 4, 7, 12)"]))
+    expect(findings.map { [it.package, it.evidence] })
+      .to(eq([["App::Zone::Thing", ["@mode == :x × 3 (lines 4, 7, 12)"]]]))
+    expect(message(findings.first)).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
   end
 
   it "tolerates two repeats, plain truth tests, and predicateless cases" do
