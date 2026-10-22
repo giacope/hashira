@@ -5,7 +5,7 @@ require_relative "rule"
 class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
   KIND = "cycle"
 
-  def list = graph.cycles.knots.map { knot(it.first, it, graph.cycles) }
+  def list = graph.knots.map { knot(it.first, it, graph.cycles) }
 
   private
 

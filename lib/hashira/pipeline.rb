@@ -34,6 +34,20 @@ class Hashira::Pipeline
 
   def unparsed = parsed.unparsed
 
+  def notify(told)
+    told.churn(@project.label) unless churn.history?
+    told.skipped(*@project.scope)
+    told.unlayered(unlayered, size)
+    broken = unparsed
+    told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
+  end
+
+  def targets(home) = @project.directories.map { home.relative(it) }
+
+  def checks?(kind) = rules.enabled?(kind)
+
+  def size = @project.files.size
+
   def unlayered
     layers = @project.layers
     layers.any? && enabled?(:coupling) ? graph.census.unlayered(layers, @project.files) : []

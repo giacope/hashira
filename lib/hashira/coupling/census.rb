@@ -57,6 +57,8 @@ class Hashira::Coupling::Census
 
   def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
 
+  def plural(word) = inflection.plural(word)
+
   def inflection
     @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
   end

@@ -20,7 +20,8 @@ bin/ci
 ```
 
 That's exactly what CI runs: rubocop, rspec (with a coverage floor), and
-hashira's own gate and ratchet on itself. Each check can also be run alone,
+hashira on itself with `--fail-on all`: every kind its `.hashira.yml` checks,
+with no baseline, so any finding fails the build. Each check can also be run alone,
 e.g. `bundle exec rspec`.
 
 CI also runs the evaluation's fixed-answer suites, which check hashira's
@@ -44,22 +45,23 @@ bundle exec kimera ci --since origin/main
 
 `bundle exec kimera skill` explains how to triage a survivor.
 
-There is deliberately no quality score to clear. The ratchet asks only whether a
-change made things worse, so passing it means fixing what regressed or recording
-why it stands — never padding a number.
+There is deliberately no quality score to clear and no baseline to grow: hashira
+reports nothing on its own code, so a change that adds a finding fixes it (or,
+when hashira misreads the code, fixes hashira).
 
-Two cops in `.rubocop/cop/hashira/` enforce house rules. `Hashira/IoDiscipline`
-keeps printers writing through their injected IO. `Hashira/NoComments` allows no
-comments in `lib/` at all, beyond the ones a machine reads: magic comments and
-linter directives. Not docblocks, not annotations, not a note above a constant.
+Lint is [rubocop-kata](https://github.com/giacope/rubocop-kata) with its
+defaults and nothing else: `.rubocop.yml` names the plugin, the Ruby version
+and the paths that are not the project's code, and holds no cop settings, no
+todo file and no disable comments. Among kata's rules, `Kata/IoDiscipline`
+keeps printers writing through their injected IO, and `Kata/NoComments` allows
+no comments in `lib/` beyond the ones a machine reads.
 
 The reasoning a comment would have carried belongs in the code — in the name of
 a method, a constant standing in for a literal, a class small enough that what
 it does is evident. A comment is a second copy of the truth that nothing checks,
 and it rots the moment the code beneath it moves.
 
-Both cops autocorrect. Specs are excluded, since an example is often clearest
-with a line of prose in the middle of it.
+When kata misreads hashira's code, fix kata rather than configuring around it.
 
 ## Submitting changes
 

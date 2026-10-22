@@ -2,6 +2,7 @@
 
 require "prism"
 require_relative "conditions"
+require_relative "postfix"
 require_relative "refs"
 
 class Hashira::Smells::Bindings
@@ -18,8 +19,6 @@ class Hashira::Smells::Bindings
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode, Prism::InstanceVariableTargetNode,
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
-
-  MODIFIERS = [Prism::IfNode, Prism::UnlessNode].freeze
 
   SCOPES = Hashira::Smells::Refs::SCOPES
 
@@ -103,7 +102,5 @@ class Hashira::Smells::Bindings
     end
   end
 
-  def asked?(root, child) = MODIFIERS.include?(root.class) && child.equal?(root.predicate) && trailing?(root)
-
-  def trailing?(root) = root.statements&.location&.start_offset == root.location.start_offset
+  def asked?(root, child) = Hashira::Smells::Postfix.new(root).asks?(child)
 end

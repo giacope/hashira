@@ -11,13 +11,12 @@ class Hashira::Report::Json
   SCHEMA = 1
 
   def print
+    payload = about.merge(base).merge(coupling).merge(sections.compact).merge(withheld)
     @io.puts(@view.compact ? JSON.generate(payload) : JSON.pretty_generate(payload))
     0
   end
 
   private
-
-  def payload = about.merge(base).merge(coupling).merge(sections.compact).merge(withheld)
 
   def about
     project = @view.project
@@ -25,16 +24,15 @@ class Hashira::Report::Json
       .merge(files: project.files.size)
   end
 
-  def base = { findings: shown(:findings).map { rendered(it) }, kinds:, accepted: }.merge(suppressed)
-
-  def suppressed
-    { suppressed: @view.suppressed.map { |finding, directive| silenced(finding, directive) } }
-      .merge(unused_suppressions: @view.screened.unused.map(&:to_h))
+  def base
+    kinds = Hashira::Report::Tally.new(@view.findings.all).to_h
+    { findings: shown(:findings).map { rendered(it) }, kinds:, accepted: }.merge(suppressed)
   end
 
-  def silenced(finding, directive) = rendered(finding).merge(site: directive.site, reason: directive.reason)
-
-  def kinds = Hashira::Report::Tally.new(@view.findings.all).to_h
+  def suppressed
+    silenced = @view.suppressed.map { |finding, note| rendered(finding).merge(site: note.site, reason: note.reason) }
+    { suppressed: silenced, unused_suppressions: @view.screened.unused.map(&:to_h) }
+  end
 
   def rendered(finding)
     finding.to_h.merge(message: Hashira::Report::Phrases.new(finding).message, confidence: confidence(finding))
@@ -61,7 +59,7 @@ class Hashira::Report::Json
 
   def sections
     {
-      complexity: (complexity if @view.complexity),
+      complexity: ({ methods: shown(:methods).map(&:to_h), classes: shown(:classes).map(&:to_h) } if @view.complexity),
       duplication: shown(:duplication)&.map { Hashira::Duplication::Delta.new(it).to_h },
       hotspots: shown(:hotspots)&.map(&:to_h)
     }
@@ -70,8 +68,6 @@ class Hashira::Report::Json
   def accepted
     @view.findings.accepted.map { |finding, reason| rendered(finding).merge(reason:) }
   end
-
-  def complexity = { methods: shown(:methods).map(&:to_h), classes: shown(:classes).map(&:to_h) }
 
   def withheld
     top = @view.top

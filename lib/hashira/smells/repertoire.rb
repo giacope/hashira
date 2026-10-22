@@ -29,21 +29,19 @@ class Hashira::Smells::Repertoire
 
   def index
     @_index ||=
-      @trees.flat_map { entries(it) }.flat_map { filed(it) }.group_by(&:first).transform_values { it.map(&:last) }
+      @trees.flat_map { entries(it) }
+        .flat_map { |entry| entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] } }
+        .group_by(&:first).transform_values { it.map(&:last) }
   end
-
-  def filed(entry) = entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] }
 
   def entries(tree)
     found = []
-    Hashira::Analysis::TypeWalk.new(tree).walk { |node, full| found.push(own(node, full), *constants(node, full)) }
+    Hashira::Analysis::TypeWalk.new(tree).walk do |node, full|
+      syntax = Hashira::Analysis::Syntax.new(node)
+      found << entry(full, syntax.statements, heritage(node))
+      found.concat(syntax.constants.filter_map { built(full, it) if factory?(it.value) })
+    end
     found
-  end
-
-  def own(type, full) = entry(full, Hashira::Analysis::Syntax.new(type).statements, heritage(type))
-
-  def constants(type, full)
-    Hashira::Analysis::Syntax.new(type).constants.filter_map { built(full, it) if factory?(it.value) }
   end
 
   def built(full, constant)

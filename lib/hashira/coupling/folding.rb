@@ -44,7 +44,7 @@ class Hashira::Coupling::Folding
 
   def trims?(name, suffix) = name.end_with?(suffix) && name != suffix
 
-  def plurals = known.map { [@census.inflection.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
+  def plurals = known.map { [@census.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
 
   def plural?(many, one) = many != one && known.include?(many)
 

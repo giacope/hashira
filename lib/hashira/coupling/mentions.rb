@@ -43,18 +43,6 @@ class Hashira::Coupling::Mentions
 
   def names = found.names
 
-  def prefixes = found.prefixes
-
-  def suffixes = found.suffixes
-
-  def open = found.open
-
-  def registries = found.registries
-
-  def handed = found.handed
-
-  def reflected = found.reflected
-
   def visit(node, owner, nesting)
     note(node, owner, nesting)
     return children(node).each { visit(it, owner, nesting) } unless Hashira::Analysis::TypeWalk.new(node).type?
@@ -85,23 +73,26 @@ class Hashira::Coupling::Mentions
 
   def called(call, owner, nesting)
     names << call.name.to_s
-    open << owner if owner && dynamic?(call)
-    registries << Hashira::Analysis::Syntax.new(call.receiver).segments.last if REFLECTIONS.include?(call.name)
+    opened(call, owner)
+    found.registries << Hashira::Analysis::Syntax.new(call.receiver).segments.last if REFLECTIONS.include?(call.name)
     passed(call, owner, nesting)
   end
 
   def passed(call, owner, nesting)
-    handed.concat(Hashira::Coupling::Gift.new(call, nesting).to_a) if handing?(call)
+    found.handed.concat(Hashira::Coupling::Gift.new(call, nesting).to_a) if handing?(call)
     mirror(call.receiver, owner) if call.name == :const_get && computed?(call)
   end
 
   def mirror(receiver, owner)
+    read = Hashira::Analysis::Syntax.new(receiver)
     if own?(receiver)
-      reflected << [owner, nil] if owner
-    elsif Hashira::Analysis::Syntax.new(receiver).static?
-      reflected << [(owner unless Hashira::Analysis::Syntax.new(receiver).rooted?), Hashira::Analysis::Syntax.new(receiver).segments]
+      found.reflected << [owner, nil] if owner
+    elsif read.static?
+      found.reflected << [(owner unless read.rooted?), read.segments]
     end
   end
+
+  def opened(call, owner) = (found.open << owner if owner && dynamic?(call))
 
   def handing?(call) = (HANDS.include?(call.name) || call.name.start_with?("register")) && !own?(call.receiver)
 
@@ -118,7 +109,7 @@ class Hashira::Coupling::Mentions
 
   def built(parts)
     head, tail = Hashira::Coupling::Affixes.new(parts).to_a
-    prefixes << head unless head.empty?
-    suffixes << tail unless tail.empty?
+    found.prefixes << head unless head.empty?
+    found.suffixes << tail unless tail.empty?
   end
 end

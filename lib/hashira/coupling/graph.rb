@@ -29,6 +29,8 @@ class Hashira::Coupling::Graph
 
   def roots = @census.roots
 
+  def knots = cycles.knots
+
   def sightings = @_sightings ||= Hashira::Coupling::Sightings.new(@project, @trees, @census).to_a
 
   def packages = (@census.packages | dependencies.keys)

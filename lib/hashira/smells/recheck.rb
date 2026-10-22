@@ -2,14 +2,17 @@
 
 require "prism"
 require_relative "discards"
+require_relative "postfix"
 require_relative "scope"
 
 class Hashira::Smells::Recheck
   Change =
     Data.define(:call, :command) do
-      def settles?(atom, held) = held.include?(call.receiver.slice) && (follows?(atom) || locks?(atom))
+      def settles?(atom, held, moment) = held.include?(call.receiver.slice) && (follows?(atom, moment) || locks?(atom))
 
-      def follows?(atom) = command && call.location.end_offset <= atom.location.start_offset
+      def follows?(atom, moment)
+        command && call.location.start_offset < moment && !Hashira::Smells::Scope.new(call).covers?(atom)
+      end
 
       def locks?(atom)
         block = call.block
@@ -22,14 +25,21 @@ class Hashira::Smells::Recheck
   end
 
   def settled?(atom, held)
-    Hashira::Smells::Scope.new(@method).covers?(atom) && changes.any? { it.settles?(atom, held) }
+    Hashira::Smells::Scope.new(@method).covers?(atom) &&
+      moment(atom).then { |moment| changes.any? { it.settles?(atom, held, moment) } }
   end
 
   private
 
+  def moment(atom) = trailing.find { it.covers?(atom) }&.start || atom.location.start_offset
+
+  def trailing = @_trailing ||= inside.map { Hashira::Smells::Postfix.new(it) }.select(&:trailing?)
+
+  def inside = Hashira::Smells::Scope.new(@method).inside
+
   def changes = @_changes ||= calls.select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
 
-  def calls = Hashira::Smells::Scope.new(@method).inside.grep(Prism::CallNode)
+  def calls = inside.grep(Prism::CallNode)
 
   def discards = @_discards ||= Hashira::Smells::Discards.new(@method)
 end

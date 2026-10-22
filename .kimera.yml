@@ -8,48 +8,5 @@ jobs: 4
 max_survivors: 0
 max_errors: 0
 fail_on_no_coverage: true
-max_ignored: 8
-ignore:
-- file: lib/hashira/coupling/echo.rb
-  line: 22
-  label: condition => false
-  reason: RollCall keeps only word sets at least 3 files share (MIN_WORDS = MIN_FILES = 3), so a file with no words never
-    joins a roll; the filter only keeps such files out of the pairwise scan (about 30% of coupling time on a 2,600-file app)
-- file: lib/hashira/smells/bindings.rb
-  line: 42
-  label: "<= => <"
-  reason: A write and a later read of the same local are separate nodes with at least one token between them (an
-    operator, a newline, a separator), so no write ever ends at the offset where a read begins and < agrees with <=
-- file: lib/hashira/smells/recheck.rb
-  line: 12
-  label: "<= => <"
-  reason: A discarded command and a later test of its receiver are separate expressions with at least one token
-    between them (a newline, a separator, an operator), so the command never ends at the offset where the test
-    begins and < agrees with <=
-- file: lib/hashira/smells/check.rb
-  line: 32
-  label: condition => true
-  reason: Finding#trace reads the shape only when the evidence is empty and to_h drops it, so a shape computed for a
-    finding with evidence is never observed; the guard only skips fingerprinting it (about 10% of smells time on rubocop)
-- file: lib/hashira/smells/repeated_call.rb
-  line: 112
-  label: delete `nodes.one?`
-  reason: A single call cannot repeat, and together drops every group without a reachable pair, so splitting one-call
-    groups by binding never changes a finding; the filter only spares the binding survey (about 10% of smells time on rubocop)
-- file: lib/hashira/coupling/cut.rb
-  line: 28
-  label: "> => >="
-  reason: A cut only ever holds edges between two different packages of a knot (an edge map never records a package's
-    reference to itself), and an ordering gives each package its own position, so the two ends of an edge never share a
-    position and >= agrees with >
-- file: lib/hashira/coupling/layering.rb
-  line: 23
-  label: condition => true
-  reason: With no layers declared every rank is nil, so no reference becomes a crossing and the list comes out empty
-    either way; the guard only spares the reference walk that layers need (about 0.7 s on rubocop)
-- file: lib/hashira/trees.rb
-  line: 36
-  label: condition => false
-  reason: Prism reads a valid UTF-8 file the same with or without its magic comment, and encoding valid UTF-8 to UTF-8
-    replaces nothing, so parsing the file again yields the same tree; the guard only spares that second parse (about
-    0.1 s on hashira itself, double the parse time of every file)
+max_ignored: 0
+ignore: []

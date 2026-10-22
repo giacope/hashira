@@ -29,6 +29,10 @@ class Hashira::Coupling::Catalog
 
   def claimed?(full) = strip(full).then { it.empty? || territory.owned?(it) }
 
+  def owned?(path) = territory.owned?(path)
+
+  def parents(path) = lineage.parents(path)
+
   private
 
   def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)

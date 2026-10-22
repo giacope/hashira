@@ -503,7 +503,8 @@ or more methods of its own class along a path at least two deep, when the entry
 and every method it reaches average three and a half lines or fewer (blank and
 comment lines aside, a heredoc's lines in). Named predicates (`deferred?`,
 `alone?`) are left out of the count: readers keep them as meaning, so the
-finding lists them as not counted. A method reaches another by calling it with
+finding lists them as not counted. A helper that a subclass overrides is a
+template hook, not a fragment, and ends the path. A method reaches another by calling it with
 no receiver or on `self`, or by `send(:name)` and `method(:name)`; instance
 methods reach instance methods and class methods class methods, across every
 file that reopens the class.

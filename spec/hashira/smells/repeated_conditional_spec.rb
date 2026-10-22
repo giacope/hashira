@@ -259,6 +259,31 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  # A trailing condition runs before the statement written ahead of it, and an
+  # argument before the call it is passed to, so neither is a recheck after it.
+  it "counts a test in a trailing condition or in a command's argument as made before that command" do
+    findings = branching(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def claim
+              @job.claim! if @job.state == :open
+              true
+            end
+
+            def mark
+              @job.mark(@job.state == :open ? 1 : 2)
+              true
+            end
+
+            def run = @job.state == :open ? 1 : 2
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["@job.state == :open × 3 (lines 5, 10, 14)"]))
+  end
+
   it "still counts a recheck when nothing on the receiver changed before it in that method" do
     findings = branching(<<~RUBY)
       module App

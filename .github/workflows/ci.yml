@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -44,3 +45,22 @@ jobs:
           bundler-cache: true
       # Mutates only the lines this PR changed; any surviving or uncovered mutant fails the build.
       - run: bundle exec kimera ci
+
+  mutation-full:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+      # Mutates all of lib. .kimera.yml allows no survivor, no uncovered mutant and
+      # no ignore entry, so any of them fails the build.
+      - run: bundle exec kimera run --jobs 4 --no-progress --report tmp/kimera/full.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kimera-full-report
+          path: tmp/kimera/full.json

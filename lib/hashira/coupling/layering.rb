@@ -22,7 +22,6 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
     end
 
   def list
-    return [] unless layers.any?
     outward.group_by { [it.source, it.target] }.sort.map { |(inner, outer), group| entry(inner, outer, group) }
   end
 
@@ -68,8 +67,11 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   def sites(group) = group.map { it.sighting.evidence }.uniq.sort
 
   def cut
-    links = crossings.map { [names[it.source], names[it.target]] }.tally.map { |(from, to), weight| [from, to, weight] }
-    @_cut ||= Hashira::Coupling::Cut.new(names, links, names.each_with_index.to_h)
+    @_cut ||=
+      Hashira::Coupling::Cut.new(
+        names, crossings.map { [names[it.source], names[it.target]] }.tally.map { |ends, weight| [*ends, weight] },
+        names.each_with_index.to_h
+      )
   end
 
   def leaning

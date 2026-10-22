@@ -543,6 +543,13 @@ From the third field test (thirty MIT-licensed codebases):
   - `change_coupling` leaves out a pair where one file only loads the other or
     lists its path (a registration such as a list of harness-critical files);
     with a constant reference between them it stays an explicit finding.
+  - `fragmentation` leaves a helper that a subclass overrides out of the path:
+    it is a template hook (a base check's `detail` or `evidence`), and merging
+    it into the entry would remove the extension point.
+  - `repeated_conditional` counts a test in a trailing condition
+    (`@job.claim! if @job.state == :open`) or in a command's argument as made
+    before that command, not as a recheck after it: the condition and the
+    argument run first.
 - Namespace packaging keeps an engine's `Engine` class and a namespace's value
   constants (rails_admin's `EXTENSIONS`, `AUTHORIZATION_ADAPTERS`) in the
   namespace's own `(root)` package instead of making each a package.
