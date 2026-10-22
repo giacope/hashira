@@ -43,7 +43,7 @@ class Hashira::Analysis::Visibility
       def note(argument, name)
         case argument
         when Prism::DefNode then found << [argument, name]
-        when Prism::SymbolNode then overrides[Hashira::Analysis::Syntax.symbol(argument)] = name
+        when Prism::SymbolNode then overrides[Hashira::Analysis::Syntax.new(argument).symbol] = name
         end
       end
 

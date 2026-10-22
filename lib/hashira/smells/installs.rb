@@ -37,14 +37,14 @@ class Hashira::Smells::Installs
   private
 
   def bodies
-    calls = Hashira::Analysis::Syntax.statements(@type.node).grep(Prism::CallNode).reject(&:receiver)
+    calls = Hashira::Analysis::Syntax.new(@type.node).statements.grep(Prism::CallNode).reject(&:receiver)
     @swept.grep(Prism::DefNode).reject(&:receiver) + calls.filter_map(&:block).grep(Prism::BlockNode)
   end
 
-  def surveyed = @_surveyed ||= bodies.map { [it, Hashira::Smells::Scope.sweep(it)] }
+  def surveyed = @_surveyed ||= bodies.map { [it, Hashira::Smells::Scope.new(it).sweep] }
 
   def setters(swept)
-    named = injections(swept).map { named(it) }.select { Hashira::Analysis::Syntax.word?(it) }
+    named = injections(swept).map { named(it) }.select { Hashira::Analysis::Syntax.new(it).word? }
     swept.select { SETTERS.include?(it.class) }.map(&:name) + named.map { text(it).to_sym }
   end
 
@@ -59,20 +59,22 @@ class Hashira::Smells::Installs
   def prefix(name)
     name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
     head = name.parts.first if INTERPOLATED.include?(name.class)
-    Hashira::Analysis::Syntax.text(head) if head.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax.new(head).text if head.is_a?(Prism::StringNode)
   end
 
   def words(node)
-    return [node] if Hashira::Analysis::Syntax.word?(node)
+    return [node] if Hashira::Analysis::Syntax.new(node).word?
     node.is_a?(Prism::SplatNode) ? listed(node.expression) : []
   end
 
   def listed(node)
-    name = Hashira::Analysis::Syntax.segments(node).last
-    found = Hashira::Analysis::Syntax.constants(@type.node).find { it.name.to_s == name }
-    value = Hashira::Analysis::Syntax.thaw(found&.value)
-    value.is_a?(Prism::ArrayNode) ? value.elements.select { Hashira::Analysis::Syntax.word?(it) } : []
+    value = syntax(declared(syntax(node).segments.last)&.value).thaw
+    value.is_a?(Prism::ArrayNode) ? value.elements.select { syntax(it).word? } : []
   end
 
-  def text(node) = Hashira::Analysis::Syntax.text(node)
+  def declared(name) = syntax(@type.node).constants.find { it.name.to_s == name }
+
+  def syntax(node) = Hashira::Analysis::Syntax.new(node)
+
+  def text(node) = Hashira::Analysis::Syntax.new(node).text
 end

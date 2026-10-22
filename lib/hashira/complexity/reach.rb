@@ -6,7 +6,7 @@ class Hashira::Complexity::Reach
     @table = table
   end
 
-  def helpers = @_helpers ||= [].tap { |found| descend(@entry.node, found) }
+  def helpers = @_helpers ||= descend(@entry.node)
 
   def path = @_path ||= trail(parents.keys.last)
 
@@ -16,20 +16,24 @@ class Hashira::Complexity::Reach
 
   def root = @entry.node.name
 
-  def descend(node, found)
-    links(node).each do |name|
-      found << @table.fetch(name)
-      descend(found.last.node, found)
+  def descend(node)
+    links(node).flat_map do |name|
+      helper = @table.fetch(name)
+      [helper, *descend(helper.node)]
     end
   end
 
   def links(node) = Hashira::Complexity::Calls.new(node).names.select { it != node.name && @table.key?(it) }
 
-  def parents = @_parents ||= { root => nil }.tap { |tree| widen([root], tree) }
+  def parents = @_parents ||= widen([root], { root => nil })
 
-  def widen(frontier, tree) = frontier.empty? || widen(frontier.flat_map { adopt(it, tree) }, tree)
+  def widen(frontier, tree)
+    return tree if frontier.empty?
+    grown = frontier.reduce(tree) { |known, name| known.merge(adopted(name, known)) }
+    widen(grown.keys - tree.keys, grown)
+  end
 
-  def adopt(name, tree) = links(node(name)).reject { tree.key?(it) }.each { tree[it] = name }
+  def adopted(name, known) = links(node(name)).reject { known.key?(it) }.to_h { [it, name] }
 
   def node(name) = name == root ? @entry.node : @table.fetch(name).node
 

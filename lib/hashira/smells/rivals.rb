@@ -18,18 +18,13 @@ class Hashira::Smells::Rivals
 
   private
 
-  def links = @_links ||= pairs.each_with_object({}) { |pair, found| bind(found, *pair) }
+  def links = @_links ||= pairs.flat_map { [it, it.reverse] }.group_by(&:first).transform_values { it.to_set(&:last) }
 
   def pairs = (sites + doubles + subsets).flat_map { it.uniq.combination(2).to_a }
 
-  def bind(found, left, right)
-    (found[left] ||= Set.new) << right
-    (found[right] ||= Set.new) << left
-  end
-
   def sites = @types.flat_map { |type| forks(type).map { made(type, it) } }
 
-  def forks(type) = Hashira::Smells::Scope.sweep(type.node).select { FORKS.include?(it.class) }
+  def forks(type) = Hashira::Smells::Scope.new(type.node).sweep.select { FORKS.include?(it.class) }
 
   def made(type, fork) = outcomes(fork).filter_map { built(type, it) }
 
@@ -45,7 +40,7 @@ class Hashira::Smells::Rivals
 
   def built(type, node)
     return unless node.is_a?(Prism::CallNode) && node.name == :new
-    @lineage.resolve(type.name, Hashira::Analysis::Syntax.segments(node.receiver))
+    @lineage.resolve(type.name, Hashira::Analysis::Syntax.new(node.receiver).segments)
   end
 
   def doubles = names.flat_map { |name| originals(name).map { [name, it] } }
@@ -65,7 +60,7 @@ class Hashira::Smells::Rivals
   def surface = @_surface ||= @types.group_by(&:name).transform_values { exposed(it) }
 
   def exposed(kin)
-    kin.flat_map { Hashira::Analysis::TypeWalk.sections(it.node) }
+    kin.flat_map { Hashira::Analysis::TypeWalk.new(it.node).sections }
       .filter_map { |definition, section| definition.name if section == :public && !definition.receiver }
       .to_set - [:initialize]
   end

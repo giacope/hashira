@@ -169,17 +169,17 @@ RSpec.describe(Hashira::Report::Json) do
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
       kinds = %i[identical literal message constant mixed renamed renamed_literal nil_guard renamed_nil_guard structure
         convention]
-      rated = kinds.map { described_class.of(clone(it)) }
+      rated = kinds.map { described_class.new(clone(it)).of }
       expect(rated).to(eq(%w[high high high high medium medium medium medium medium low low]))
     end
 
     it "takes the confidence a finding states over the one its kind implies" do
       stated = %i[low high].map { Hashira::Analysis::Finding.new(kind: "nil_check", package: "p", evidence: [], confidence: it) }
-      expect(stated.map { described_class.of(it) }).to(eq(%w[low high]))
+      expect(stated.map { described_class.new(it).of }).to(eq(%w[low high]))
     end
 
     it "treats every structural kind and complexity as measured, and every smell and history guess as a pattern" do
-      rate = ->(kind) { described_class.of(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])) }
+      rate = ->(kind) { described_class.new(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])).of }
       guesses = %w[change_coupling dead_code]
       expect([*(Hashira::Pipeline::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
       expect([*Hashira::Pipeline::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))

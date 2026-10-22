@@ -18,7 +18,7 @@ class Hashira::Smells::RefusedBequest < Hashira::Smells::Check
     granted && refusal(method) && !refusal(granted)
   end
 
-  def refusal(method) = Hashira::Smells::Refusal.of(method.node)
+  def refusal(method) = Hashira::Smells::Refusal.new(method.node).of
 
   def bequest
     @_bequest ||= family.ancestors(name).reverse.flat_map { family.definitions(it) }.to_h { [it.node.name, it] }

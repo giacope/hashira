@@ -1,13 +1,8 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Coupling
-    module NoFolding
-      module_function
+Hashira::Coupling::NoFolding =
+  Data.define do
+    def map = {}
 
-      def map = {}
-
-      def disclosed = []
-    end
+    def disclosed = []
   end
-end

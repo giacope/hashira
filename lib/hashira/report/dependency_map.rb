@@ -12,7 +12,7 @@ class Hashira::Report::DependencyMap
   def print
     @io.puts("Dependencies (DependsUpon(refs) -> | <- UsedBy):")
     kept.each { @io.puts(row(it)) }
-    @io.puts(Hashira::Report::Phrases.withheld(over)) if over.positive?
+    @io.puts(Hashira::Report::Withheld.new(over).to_s) if over.positive?
     loners unless split.last.empty?
     @io.puts
   end
@@ -29,7 +29,7 @@ class Hashira::Report::DependencyMap
 
   def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
 
-  def loners = @io.puts("  + #{Hashira::Report::Phrases.count(split.last.size, "package")} with no edges either way")
+  def loners = @io.puts("  + #{Hashira::Report::Count.new(split.last.size, "package")} with no edges either way")
 
   def row(package)
     format("  %-12s -> %-32s <- %s", package, list(outgoing(package)), list(@graph.incoming(package)))

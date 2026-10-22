@@ -16,12 +16,12 @@ class Hashira::CLI::CommandLine
     Hashira::CLI::Options.build(flag.mode) if flag
   end
 
-  def seen?(flag) = flag.names.any? { arguments.delete(it) }
+  def seen?(flag) = flag.names.any? { arguments.drop(it) }
 
   def parsed
     parses = Hashira::CLI::FLAGS.reject(&:page?).to_h { [it, it.read(arguments)] }
     Hashira::CLI::Options.new(directories: arguments.rest, mode: mode(parses), **fields(parses))
-      .tap { Hashira::CLI::Needs.check(it) }
+      .tap { Hashira::CLI::Needs.new(it).check }
   end
 
   def fields(parses) = parses.to_h { |flag, value| [flag.field, value] }.except(nil)

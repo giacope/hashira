@@ -19,7 +19,7 @@ class Hashira::Smells::Transit
 
   private
 
-  def body = @_body ||= Hashira::Smells::Scope.inside(@node)
+  def body = @_body ||= Hashira::Smells::Scope.new(@node).inside
 
   def calls = @_calls ||= body.grep(Prism::CallNode)
 

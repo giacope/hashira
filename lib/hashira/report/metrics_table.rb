@@ -34,9 +34,9 @@ class Hashira::Report::MetricsTable
 
   def note = @io.puts("  + #{leaves} (TC ≤ 1, Ca ≤ 1, Ce = 0) — hidden for brevity")
 
-  def leaves = Hashira::Report::Phrases.count(spared.size, "single-type leaf package")
+  def leaves = Hashira::Report::Count.new(spared.size, "single-type leaf package").to_s
 
-  def more = @io.puts(Hashira::Report::Phrases.withheld(over))
+  def more = @io.puts(Hashira::Report::Withheld.new(over).to_s)
 
   def row(package, metric) = [package, *metric.cells, cycle(package)]
 

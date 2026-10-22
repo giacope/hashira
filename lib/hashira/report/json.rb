@@ -37,10 +37,10 @@ class Hashira::Report::Json
   def kinds = Hashira::Report::Tally.new(@view.findings.all).to_h
 
   def rendered(finding)
-    finding.to_h.merge(message: Hashira::Report::Phrases.message(finding), confidence: confidence(finding))
+    finding.to_h.merge(message: Hashira::Report::Phrases.new(finding).message, confidence: confidence(finding))
   end
 
-  def confidence(finding) = Hashira::Report::Confidence.of(finding)
+  def confidence(finding) = Hashira::Report::Confidence.new(finding).of
 
   def coupling
     graph = @view.graph

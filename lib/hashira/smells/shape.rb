@@ -3,16 +3,20 @@
 require "digest"
 require "prism"
 
-module Hashira::Smells::Shape
+class Hashira::Smells::Shape
   LENGTH = 12
 
   FIELDS = %i[name unescaped value binary_operator].freeze
 
-  module_function
+  def initialize(nodes)
+    @nodes = nodes
+  end
 
-  def of(nodes) = Digest::SHA256.hexdigest(marks(nodes).inspect).slice(0, LENGTH)
+  def of = Digest::SHA256.hexdigest(marks.inspect).slice(0, LENGTH)
 
-  def marks(nodes) = nodes.flat_map { Hashira::Analysis::NodeWalk.collect(it) }.map { mark(it) }
+  private
+
+  def marks = @nodes.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }.map { mark(it) }
 
   def mark(node) = [node.type, *node.deconstruct_keys(FIELDS).values_at(*FIELDS).compact.grep_v(Prism::Node)]
 end

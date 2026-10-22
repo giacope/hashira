@@ -42,7 +42,7 @@ class Hashira::Complexity::Fragmentation
 
   def entry?(site) = exposed.include?(site.node) && !HIDDEN.include?(site.node.name)
 
-  def exposed = @_exposed ||= Hashira::Analysis::TypeWalk.parted(@trees, OPEN)
+  def exposed = @_exposed ||= Hashira::Complexity::Sections.new(@trees).parted(OPEN)
 
   def table(family) = (@_tables ||= {})[family] ||= families.fetch(family).to_h { [it.node.name, it] }
 

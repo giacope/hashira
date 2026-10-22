@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/giacope/kimera.git
-  revision: 758df8f966011f4b25e659ceb48d6b7316dde416
+  revision: d10d9eaf879cdb428d06d91e4c7d412d3240d3cb
   branch: main
   specs:
     kimera (0.1.6)
@@ -9,7 +9,7 @@ GIT
 
 GIT
   remote: https://github.com/giacope/rubocop-kata.git
-  revision: b83bbcca95adbee872a0b8d3c79dc87044196ba6
+  revision: 2170582e969a1529fdf0c130ee1ff8569d0c2c63
   branch: main
   specs:
     rubocop-kata (0.10.1)

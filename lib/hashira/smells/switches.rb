@@ -32,7 +32,7 @@ class Hashira::Smells::Switches
 
   private
 
-  def body = @_body ||= Hashira::Smells::Scope.inside(@node)
+  def body = @_body ||= Hashira::Smells::Scope.new(@node).inside
 
   def gathered(arms)
     arms.group_by { it.subject.slice }.map { |text, found| Switch.new(text, found) }
@@ -45,7 +45,7 @@ class Hashira::Smells::Switches
 
   def dispatches = selected.reject { lookup?(it) }
 
-  def lookup?(node) = [*node.conditions, node.else_clause].compact.all? { Hashira::Smells::Mapping.literal?(it) }
+  def lookup?(node) = [*node.conditions, node.else_clause].compact.all? { Hashira::Smells::Mapping.new(it).literal? }
 
   def arms(node)
     node.conditions.flat_map { |branch| branch.conditions.select { yield(it) }.map { arm(node.predicate, it) } }
@@ -62,7 +62,7 @@ class Hashira::Smells::Switches
   def arm(subject, label) = Arm.new(subject, label.slice, label.location.start_line)
 
   def type?(node)
-    segments = Hashira::Analysis::Syntax.segments(node)
+    segments = Hashira::Analysis::Syntax.new(node).segments
     segments.any? && TYPE_NAME.match?(segments.last) && @ownership.owns?(node, @owner)
   end
 

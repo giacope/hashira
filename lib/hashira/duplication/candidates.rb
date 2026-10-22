@@ -14,7 +14,7 @@ class Hashira::Duplication::Candidates
 
   private
 
-  def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.collect(@tree)
+  def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.new(@tree).collect
 
   def walks = @_walks ||= Hashira::Duplication::Walks.new
 

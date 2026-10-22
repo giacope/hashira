@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Phrases
+class Hashira::Report::Phrases
   FLATTEN = "flatten the branching — guard clauses, early returns, or polymorphism."
 
   LOOP_BODY = "extract the loop body into its own method."
@@ -28,9 +28,13 @@ module Hashira::Report::Phrases
 
   EXTRACT = "That many private steps are an object hiding inside the class: extract it and give it a name."
 
-  module_function
+  def initialize(finding)
+    @finding = finding
+  end
 
-  def message(finding) = public_send("on_#{finding.kind}", finding)
+  def message = __send__("on_#{@finding.kind}", @finding)
+
+  private
 
   def on_cycle(finding)
     detail = finding.detail
@@ -54,11 +58,6 @@ module Hashira::Report::Phrases
   def joined(folded)
     return "" if folded.empty?
     " (#{folded.one? ? "#{folded.first} is" : "#{roster(folded)} are"} in it only through folded types)"
-  end
-
-  def link(edge)
-    weight = edge[:weight]
-    "#{edge[:from]} -> #{edge[:to]} (#{weight} ref#{"s" unless weight == 1})"
   end
 
   def on_sdp_violation(finding)
@@ -112,10 +111,6 @@ module Hashira::Report::Phrases
   end
 
   def score(value) = format("%.2f", value)
-
-  def count(number, noun) = "#{number} #{number == 1 ? noun : "#{noun}s"}"
-
-  def withheld(rest) = "  … and #{rest} more — raise the cap with --top, or read them all with --json"
 
   def clause(part) = "#{part[:users].join(", ")} #{verb(part)} #{part[:constants].join(", ")}"
 

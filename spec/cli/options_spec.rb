@@ -126,8 +126,8 @@ RSpec.describe(Hashira::CLI::Options) do
     end
 
     it "treats a missing list as nothing to gate or skip" do
-      expect(Hashira::CLI::FailOn.parse(nil)).to(eq([]))
-      expect(Hashira::CLI::Skip.parse(nil)).to(eq([]))
+      expect(Hashira::CLI::Kinds.new("--fail-on", {}).parse(nil)).to(eq([]))
+      expect(Hashira::CLI::Skip.new("--skip").parse(nil)).to(eq([]))
     end
 
     it "expands --fail-on smells into every smell kind" do

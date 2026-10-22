@@ -34,7 +34,7 @@ class Hashira::CLI::ConfigFile
   def chosen
     arguments = Hashira::CLI::Arguments.new(@argv)
     named = arguments.take("--config", "")
-    arguments.delete("--no-config") ? unread(named) : read(named)
+    arguments.drop("--no-config") ? unread(named) : read(named)
   end
 
   def read(named) = named.empty? ? fallback : named

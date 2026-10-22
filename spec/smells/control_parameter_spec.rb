@@ -7,11 +7,11 @@ RSpec.describe(Hashira::Smells::ControlParameter) do
 
   def caller(source) = "class Caller\n  def run = [#{defined(source).map { called(it) }.join(", ")}]\nend\n"
 
-  def defined(source) = Hashira::Analysis::NodeWalk.collect(Prism.parse(source).value).grep(Prism::DefNode)
+  def defined(source) = Hashira::Analysis::NodeWalk.new(Prism.parse(source).value).collect.grep(Prism::DefNode)
 
   def called(definition) = "App::Zone::Thing.new.#{definition.name}(#{flags(definition)})"
 
-  def flags(definition) = Hashira::Smells::Parameters.parts(definition).map { flag(it) }.join(", ")
+  def flags(definition) = Hashira::Smells::Parameters.new(definition).parts.map { flag(it) }.join(", ")
 
   def flag(part) = part.type.to_s.include?("keyword") ? "#{part.name}: true" : "true"
 

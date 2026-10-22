@@ -11,6 +11,6 @@ RSpec.describe(Hashira::Coupling::Words) do
       call(:zeta, "eta")
     RUBY
     expected = [[Set.new(%w[alpha beta]), 1], [Set.new(%w[gamma delta]), 2], [Set.new(%w[epsilon]), 3]]
-    expect(described_class.lists(tree).map { [it.words, it.line] }).to(eq(expected))
+    expect(described_class.new(tree).lists.map { [it.words, it.line] }).to(eq(expected))
   end
 end

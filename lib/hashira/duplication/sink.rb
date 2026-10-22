@@ -26,5 +26,5 @@ class Hashira::Duplication::Sink
 
   def strings = walk(@node).grep(Prism::InterpolatedStringNode)
 
-  def walk(node) = Hashira::Analysis::NodeWalk.collect(node)
+  def walk(node) = Hashira::Analysis::NodeWalk.new(node).collect
 end

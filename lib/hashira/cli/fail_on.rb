@@ -22,17 +22,4 @@ module Hashira::CLI::FailOn
     **%w[fragmentation indirection].to_h { [it, :complexity] },
     **Hashira::Pipeline::SMELLS.to_h { [it, :smells] }
   }.freeze
-
-  module_function
-
-  def parse(list)
-    kinds = Hashira::CLI::Kinds.new("--fail-on", KINDS.merge(EVERY => EVERY)).parse(list)
-    kinds.include?(EVERY) ? [EVERY] : kinds
-  end
-
-  def named(kinds) = kinds - [EVERY]
-
-  def gated(kinds, checked) = kinds.include?(EVERY) ? checked : kinds
-
-  def owner(kind) = OWNERS.fetch(kind)
 end

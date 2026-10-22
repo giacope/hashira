@@ -28,11 +28,11 @@ class Hashira::Smells::Vocabulary
 
   def names(entries) = entries.to_set { |definition, _| stem(definition.name) }
 
-  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Analysis::TypeWalk.sections(it) } }
+  def entries = @trees.flat_map { |tree| types(tree).flat_map { Hashira::Analysis::TypeWalk.new(it).sections } }
 
   def types(tree)
     found = []
-    Hashira::Analysis::TypeWalk.each(tree) { |node, _| found << node }
+    Hashira::Analysis::TypeWalk.new(tree).walk { |node, _| found << node }
     found
   end
 
@@ -41,7 +41,9 @@ class Hashira::Smells::Vocabulary
     node.compact_child_nodes.each { gather(it, found) } unless node.is_a?(Prism::DefNode)
   end
 
-  def declared(node) = node.is_a?(Prism::DefNode) ? [node.name] : Hashira::Analysis::Syntax.symbol_names(offered(node))
+  def declared(node)
+    node.is_a?(Prism::DefNode) ? [node.name] : offered(node).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+  end
 
   def offered(node)
     case node

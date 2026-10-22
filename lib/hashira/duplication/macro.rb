@@ -11,7 +11,7 @@ class Hashira::Duplication::Macro
     @call = call
   end
 
-  def pardoned = [*deferred, *block].flat_map { Hashira::Analysis::NodeWalk.collect(it) }
+  def pardoned = [*deferred, *block].flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
 
   private
 

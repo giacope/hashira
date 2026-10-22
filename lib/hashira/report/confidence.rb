@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Confidence
+class Hashira::Report::Confidence
   HIGH = "high"
   MEDIUM = "medium"
   LOW = "low"
@@ -13,16 +13,20 @@ module Hashira::Report::Confidence
 
   HEDGED = %i[structure convention].freeze
 
-  module_function
-
-  def of(finding)
-    stated = finding.confidence
-    stated ? stated.to_s : inferred(finding)
+  def initialize(finding)
+    @finding = finding
   end
 
-  def inferred(finding)
-    kind = finding.kind
-    return copied(finding.detail.kind) if kind == "duplication"
+  def of
+    stated = @finding.confidence
+    stated ? stated.to_s : inferred
+  end
+
+  private
+
+  def inferred
+    kind = @finding.kind
+    return copied(@finding.detail.kind) if kind == "duplication"
     MEASURED.include?(kind) ? HIGH : MEDIUM
   end
 

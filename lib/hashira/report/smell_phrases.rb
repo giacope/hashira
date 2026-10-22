@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Phrases
+class Hashira::Report::Phrases
   NIL_ADVICE = "Prefer a default, a null object, or polymorphism."
 
   ABSENCE = "Absence is the answer here, so ask for it: exists? instead of fetching a record to test for nil."
@@ -18,7 +18,7 @@ module Hashira::Report::Phrases
   MODULE_INITIALIZE =
     "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
 
-  module_function
+  private
 
   def on_control_parameter(finding)
     detail = finding.detail

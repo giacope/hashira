@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Hashira::Report::Phrases
+class Hashira::Report::Phrases
   CHANGE_ADVICE = {
     true => "and one refers to the other — every change crosses the package boundary. " \
       "Narrow what one asks of the other, or move them into one package.",
@@ -8,7 +8,12 @@ module Hashira::Report::Phrases
       "Name what they share in one place both can depend on."
   }.freeze
 
-  module_function
+  private
+
+  def link(edge)
+    weight = edge[:weight]
+    "#{edge[:from]} -> #{edge[:to]} (#{weight} ref#{"s" unless weight == 1})"
+  end
 
   def on_layer_violation(finding)
     detail = finding.detail

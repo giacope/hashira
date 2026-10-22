@@ -12,7 +12,7 @@ class Hashira::Complexity::Span
 
   private
 
-  def last = Hashira::Analysis::NodeWalk.collect(@node).map { ending(it) }.max
+  def last = Hashira::Analysis::NodeWalk.new(@node).collect.map { ending(it) }.max
 
   def ending(node) = heredoc?(node) ? node.closing_loc.start_line : node.location.end_line
 

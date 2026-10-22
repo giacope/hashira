@@ -29,12 +29,11 @@ class Hashira::Smells::Kinship
   def reach(name, edges)
     found = Set[name]
     frontier = [name]
-    frontier = step(frontier, edges, found) until frontier.empty?
+    until frontier.empty?
+      frontier = frontier.flat_map { edges.fetch(it, []) }.uniq.reject { found.include?(it) }
+      found.merge(frontier)
+    end
     found.delete(name)
-  end
-
-  def step(frontier, edges, found)
-    frontier.flat_map { edges.fetch(it, []) }.uniq.reject { found.include?(it) }.each { found << it }
   end
 
   def peers(name) = broods.fetch(brood(name), {}).select { |_, count| count > 1 }.keys.to_set

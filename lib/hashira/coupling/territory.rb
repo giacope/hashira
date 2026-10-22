@@ -35,7 +35,7 @@ class Hashira::Coupling::Territory
   end
 
   def defining?(definition)
-    definition.created? || Hashira::Analysis::Syntax.statements(definition.node).any? { !autoload?(it) }
+    definition.created? || Hashira::Analysis::Syntax.new(definition.node).statements.any? { !autoload?(it) }
   end
 
   def autoload?(statement) = statement.is_a?(Prism::CallNode) && statement.name == :autoload

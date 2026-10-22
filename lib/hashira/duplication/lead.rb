@@ -13,7 +13,7 @@ class Hashira::Duplication::Lead
 
   def handed = call.then { [it.arguments, it.block] }
 
-  def named = definer? ? [opening, *Hashira::Analysis::NodeWalk.collect(opening.arguments)] : []
+  def named = definer? ? [opening, *Hashira::Analysis::NodeWalk.new(opening.arguments).collect] : []
 
   private
 

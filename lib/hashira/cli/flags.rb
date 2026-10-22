@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "choice"
 require_relative "fail_on"
 require_relative "flag"
 require_relative "format"
@@ -12,7 +13,7 @@ require_relative "top"
 module Hashira::CLI
   FLAGS = [
     Flag.new(
-      name: "--format", arg: "FORMAT", parse: Format, mode: :parsed,
+      name: "--format", arg: "FORMAT", parse: Choice.new("--format", Format::CHOICES), mode: :parsed,
       text: ["text (default), json, dot, or mermaid"]
     ),
     Flag.new(name: "--json", mode: :json, text: ["shorthand for --format json"]),
@@ -21,7 +22,8 @@ module Hashira::CLI
       text: ["emit JSON on one line, without the indentation", "meant for reading"]
     ),
     Flag.new(
-      name: "--fail-on", arg: "KINDS", field: :fail_on, parse: FailOn, mode: :fail_on,
+      name: "--fail-on", arg: "KINDS", field: :fail_on, mode: :fail_on,
+      parse: Kinds.new("--fail-on", FailOn::KINDS.merge(FailOn::EVERY => FailOn::EVERY)),
       text: [
         "exit 1 if findings exist; comma-separated",
         "kinds: cycles, sdp, mixed_audience, wide_edge,",
@@ -31,11 +33,11 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
-      name: "--skip", arg: "ANALYZERS", field: :skip, parse: Skip,
+      name: "--skip", arg: "ANALYZERS", field: :skip, parse: Skip.new("--skip"),
       text: ["drop an analyzer; comma-separated: coupling,", "complexity, duplication, smells"]
     ),
     Flag.new(
-      name: "--only", arg: "PATHS", field: :only, parse: Only,
+      name: "--only", arg: "PATHS", field: :only, parse: Only.new("--only"),
       text: [
         "keep only the findings that name these files",
         "(a directory stands for every file under it);",
@@ -53,7 +55,7 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
-      name: "--top", arg: "N", field: :top, parse: Top,
+      name: "--top", arg: "N", field: :top, parse: Top.new("--top"),
       text: [
         "show at most N rows in each table and N",
         "findings (default: 25 packages and findings,",
@@ -62,7 +64,8 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
-      name: "--package-by", arg: "WHAT", field: :packaging, parse: PackageBy,
+      name: "--package-by", arg: "WHAT", field: :packaging,
+      parse: Choice.new("--package-by", PackageBy::CHOICES, :auto),
       text: [
         "group coupling by: auto, folder, or namespace",
         "(top-level constant). Default auto: namespace for",

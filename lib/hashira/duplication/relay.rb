@@ -24,5 +24,5 @@ class Hashira::Duplication::Relay
 
   def canonical = @cluster.canonical
 
-  def walk(*nodes) = nodes.compact.flat_map { Hashira::Analysis::NodeWalk.collect(it) }
+  def walk(*nodes) = nodes.compact.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
 end

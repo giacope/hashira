@@ -19,7 +19,9 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def carried(method) = method.arguments.reject { it.start_with?("_") } - defaulted(method.node)
 
-  def defaulted(node) = Hashira::Smells::Parameters.parts(node).filter_map { it.name if DEFAULTED.include?(it.class) }
+  def defaulted(node)
+    Hashira::Smells::Parameters.new(node).parts.filter_map { it.name if DEFAULTED.include?(it.class) }
+  end
 
   def clumps = @_clumps ||= maximal.map { |clump| [clump, holders(clump)] }
 
@@ -43,7 +45,7 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
   end
 
   def relays?(holder, clump, callees)
-    Hashira::Smells::Scope.inside(holder.node).grep(Prism::CallNode).any? do |call|
+    Hashira::Smells::Scope.new(holder.node).inside.grep(Prism::CallNode).any? do |call|
       callees.include?(call.name) && inward?(call.receiver) && (clump - handed(call)).empty?
     end
   end
@@ -52,7 +54,7 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def handed(call)
     given = call.arguments
-    given ? Hashira::Analysis::NodeWalk.collect(given).grep(Prism::LocalVariableReadNode).map(&:name) : []
+    given ? Hashira::Analysis::NodeWalk.new(given).collect.grep(Prism::LocalVariableReadNode).map(&:name) : []
   end
 
   def evidence = clumps.map { |clump, holders| row(clump, holders) }

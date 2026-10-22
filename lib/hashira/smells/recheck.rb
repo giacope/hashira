@@ -13,7 +13,7 @@ class Hashira::Smells::Recheck
 
       def locks?(atom)
         block = call.block
-        block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.covers?(block, atom)
+        block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.new(block).covers?(atom)
       end
     end
 
@@ -21,13 +21,15 @@ class Hashira::Smells::Recheck
     @method = method
   end
 
-  def settled?(atom, held) = Hashira::Smells::Scope.covers?(@method, atom) && changes.any? { it.settles?(atom, held) }
+  def settled?(atom, held)
+    Hashira::Smells::Scope.new(@method).covers?(atom) && changes.any? { it.settles?(atom, held) }
+  end
 
   private
 
   def changes = @_changes ||= calls.select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
 
-  def calls = Hashira::Smells::Scope.inside(@method).grep(Prism::CallNode)
+  def calls = Hashira::Smells::Scope.new(@method).inside.grep(Prism::CallNode)
 
   def discards = @_discards ||= Hashira::Smells::Discards.new(@method)
 end

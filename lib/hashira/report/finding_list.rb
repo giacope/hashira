@@ -13,7 +13,7 @@ class Hashira::Report::FindingList
     return listed if rest.zero?
     tally
     listed
-    @io.puts(Hashira::Report::Phrases.withheld(rest))
+    @io.puts(Hashira::Report::Withheld.new(rest).to_s)
   end
 
   private

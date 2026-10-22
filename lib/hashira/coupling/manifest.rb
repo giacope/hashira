@@ -22,7 +22,7 @@ class Hashira::Coupling::Manifest
 
   def mentioned = @_mentioned ||= (loaded(LOADS) + listed).map { "/#{source(it)}" }
 
-  def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.collect(@tree)
+  def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.new(@tree).collect
 
   def loaded(names) = nodes.grep(Prism::CallNode).select { names.include?(it.name) }.filter_map { named(it) }
 
@@ -32,5 +32,5 @@ class Hashira::Coupling::Manifest
 
   def source(text) = "#{text.delete_suffix(SOURCE)}#{SOURCE}"
 
-  def text(node) = Hashira::Analysis::Syntax.text(node)
+  def text(node) = Hashira::Analysis::Syntax.new(node).text
 end

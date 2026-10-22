@@ -19,7 +19,7 @@ class Hashira::CLI::Session
   private
 
   def dispatch(options)
-    usage?(options) ? Hashira::CLI::Usage.public_send(options.mode) : timed(options)
+    usage?(options) ? Hashira::CLI::Usage.new.public_send(options.mode) : timed(options)
   end
 
   def usage?(options) = Hashira::CLI::Usage::PAGES.include?(options.mode)

@@ -27,7 +27,7 @@ class Hashira::Smells::Census
 
   def harvest(file, tree)
     found = []
-    Hashira::Analysis::TypeWalk.each(tree, roots:) { |node, full| found << Hashira::Smells::Sketch.new(full.join("::"), node, kind(node), file) }
+    Hashira::Analysis::TypeWalk.new(tree).walk(roots:) { |node, full| found << Hashira::Smells::Sketch.new(full.join("::"), node, kind(node), file) }
     found
   end
 

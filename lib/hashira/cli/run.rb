@@ -69,11 +69,15 @@ class Hashira::CLI::Run
 
   def targets = @pipeline.project.directories.map { @options.home.relative(it) }
 
-  def gate = Hashira::CI::Gate.new(findings, Hashira::CLI::FailOn.gated(@options.fail_on, checked))
+  def gate = Hashira::CI::Gate.new(findings, gated)
+
+  def gated = @options.fail_on.include?(Hashira::CLI::FailOn::EVERY) ? checked : @options.fail_on
 
   def checked = Hashira::Pipeline::KINDS.select { checks?(it) && sieve.keeps?(it) }
 
-  def checks?(kind) = @pipeline.project.rules.enabled?(kind) && @pipeline.enabled?(Hashira::CLI::FailOn.owner(kind))
+  def checks?(kind)
+    @pipeline.project.rules.enabled?(kind) && @pipeline.enabled?(Hashira::CLI::FailOn::OWNERS.fetch(kind))
+  end
 
   def source = Hashira::Diagram::Source.new(graph, @options.mode)
 

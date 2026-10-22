@@ -63,13 +63,13 @@ class Hashira::Smells::Foreign
 
   private
 
-  def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
+  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 
-  def tail = @_tail ||= Hashira::Analysis::Syntax.statements(@subject.node).compact.last
+  def tail = @_tail ||= Hashira::Analysis::Syntax.new(@subject.node).statements.compact.last
 
   def convert?
     tail.is_a?(Prism::CallNode) && tail.name == :new &&
-      Hashira::Analysis::Syntax.segments(tail.receiver).any? && stateless?
+      Hashira::Analysis::Syntax.new(tail.receiver).segments.any? && stateless?
   end
 
   def stateless? = body.none? { STATE.include?(it.class) }
@@ -97,12 +97,14 @@ class Hashira::Smells::Foreign
   def known(local)
     name = local.name
     tested = (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
-    tested.empty? ? Hashira::Smells::Naming.types(name) : tested
+    tested.empty? ? Hashira::Smells::Naming.new(name).types : tested
   end
 
-  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.segments(value.receiver) : []
+  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.new(value.receiver).segments : []
 
-  def caught(name) = snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.segments(it) } }
+  def caught(name)
+    snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.new(it).segments } }
+  end
 
   def yielders(local)
     scope = local.scope
@@ -111,7 +113,7 @@ class Hashira::Smells::Foreign
 
   def offered(block)
     given = block.parameters
-    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.names(given) : []
+    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.new(given).names : []
   end
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }

@@ -54,11 +54,11 @@ class Hashira::Boundaries
   end
 
   def calls(root)
-    @trees.filter_map { |file, tree| file if Hashira::Analysis::NodeWalk.collect(tree).any? { invocation?(it, root) } }
+    @trees.filter_map { |file, tree| file if Hashira::Analysis::NodeWalk.new(tree).collect.any? { invocation?(it, root) } }
   end
 
   def invocation?(node, root)
-    node.is_a?(Prism::CallNode) && Hashira::Analysis::Syntax.segments(node.receiver).first == root
+    node.is_a?(Prism::CallNode) && Hashira::Analysis::Syntax.new(node.receiver).segments.first == root
   end
 
   def same?(file, entrypoint) = File.expand_path(file) == File.expand_path(entrypoint, @home)

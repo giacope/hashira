@@ -36,13 +36,13 @@ class Hashira::Smells::Probe
 
   def message = Array(@call.arguments&.arguments).first
 
-  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(Hashira::Analysis::Syntax.symbol(message))
+  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(Hashira::Analysis::Syntax.new(message).symbol)
 
   def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
 
   def computed? = !message.nil? && !LITERAL.include?(message.class)
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.symbol(message))
+  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.new(message).symbol)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
@@ -58,5 +58,5 @@ class Hashira::Smells::Probe
 
   def stored = body.grep(Prism::InstanceVariableWriteNode).map(&:value).grep(Prism::LocalVariableReadNode).map(&:name)
 
-  def body = @_body ||= Hashira::Smells::Scope.inside(@subject.node)
+  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 end

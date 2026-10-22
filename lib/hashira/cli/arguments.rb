@@ -18,7 +18,7 @@ class Hashira::CLI::Arguments
     value
   end
 
-  def delete(flag) = argv.delete(flag)
+  def drop(flag) = argv.delete(flag)
 
   def rest
     stray = argv.find { it.start_with?("-") }

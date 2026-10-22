@@ -21,5 +21,5 @@ class Hashira::Complexity::Hollow
 
   def blocked?(node) = node.is_a?(Prism::BlockNode) && node.body
 
-  def inner = @_inner ||= Hashira::Analysis::NodeWalk.collect(lone)
+  def inner = @_inner ||= Hashira::Analysis::NodeWalk.new(lone).collect
 end

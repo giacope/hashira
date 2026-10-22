@@ -19,7 +19,7 @@ class Hashira::Smells::Course
 
       def before?(node) = node.location.end_offset < last.location.end_offset && !covers?(last, node)
 
-      def covers?(outer, node) = Hashira::Smells::Scope.covers?(outer, node)
+      def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
 
       def aims?(call) = held.include?(call.receiver&.slice)
 
@@ -49,7 +49,7 @@ class Hashira::Smells::Course
 
   def sent(call) = beneath(call).grep(Prism::CallNode)
 
-  def beneath(node) = [node] + Hashira::Smells::Scope.inside(node)
+  def beneath(node) = [node] + Hashira::Smells::Scope.new(node).inside
 
   def left?(stretch)
     last = stretch.last
@@ -60,15 +60,15 @@ class Hashira::Smells::Course
 
   def ensured?(node) = ensures.any? { covers?(it, node) }
 
-  def covers?(outer, node) = Hashira::Smells::Scope.covers?(outer, node)
+  def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
 
-  def nodes = @_nodes ||= Hashira::Smells::Scope.inside(@definition)
+  def nodes = @_nodes ||= Hashira::Smells::Scope.new(@definition).inside
 
   def sorted = @_sorted ||= nodes.group_by(&:class)
 
   def returns = sorted.fetch(Prism::ReturnNode, []) + sorted.fetch(Prism::AndNode, []).select { jump?(it.right) }
 
-  def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.raise?(node)
+  def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.new(node).raise?
 
   def loops = sorted.values_at(*LOOPS).compact.flatten
 

@@ -26,25 +26,25 @@ class Hashira::Smells::Callers
         sources(receiver).flat_map { constant(it.receiver) } + named(receiver) + literal(receiver)
       end
 
-      def named(receiver) = Hashira::Smells::Naming.types(word(receiver)).map { [it, false] }
+      def named(receiver) = Hashira::Smells::Naming.new(word(receiver)).types.map { [it, false] }
 
       def literal(receiver) = LITERALS.filter_map { |type, name| [[name], true] if receiver.is_a?(type) }
 
       def constant(node)
-        return [] unless Hashira::Smells::Factory.constant?(node)
-        [[Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node)]]
+        return [] unless Hashira::Smells::Factory.new(node).constant?
+        [[Hashira::Analysis::Syntax.new(node).segments, Hashira::Analysis::Syntax.new(node).rooted?]]
       end
 
       def sources(receiver)
         case receiver
         when Prism::LocalVariableReadNode then writes(receiver.name)
-        else [receiver].select { Hashira::Smells::Mapping.made?(it) }
+        else [receiver].select { Hashira::Smells::Mapping.new(it).made? }
         end
       end
 
       def writes(name)
-        Hashira::Analysis::NodeWalk.collect(definition).select { WRITES.include?(it.class) && it.name == name }
-          .map(&:value).select { Hashira::Smells::Mapping.made?(it) }
+        Hashira::Analysis::NodeWalk.new(definition).collect.select { WRITES.include?(it.class) && it.name == name }
+          .map(&:value).select { Hashira::Smells::Mapping.new(it).made? }
       end
 
       def word(receiver) = NAMED.include?(receiver.class) ? receiver.name.to_s.delete_prefix("@") : ""
@@ -61,12 +61,11 @@ class Hashira::Smells::Callers
 
   def sites = @_sites ||= @trees.flat_map { visit(it, [], it) }.group_by { it.call.name }
 
-  def visit(node, stack, definition, found = [])
-    found << Site.new(node, Array(stack.last).join("::"), definition) if node.is_a?(Prism::CallNode)
-    inner = Hashira::Analysis::TypeWalk.type?(node) ? stack + [place(stack, node)] : stack
-    node.compact_child_nodes.each { visit(it, inner, node.is_a?(Prism::DefNode) ? node : definition, found) }
-    found
+  def visit(node, stack, definition)
+    own = node.is_a?(Prism::CallNode) ? [Site.new(node, Array(stack.last).join("::"), definition)] : []
+    inner = Hashira::Analysis::TypeWalk.new(node).type? ? stack + [place(stack, node)] : stack
+    own + node.compact_child_nodes.flat_map { visit(it, inner, node.is_a?(Prism::DefNode) ? node : definition) }
   end
 
-  def place(stack, type) = Hashira::Analysis::Syntax.place(stack, type.constant_path, nil)
+  def place(stack, type) = Hashira::Analysis::Syntax.new(type.constant_path).place(stack, nil)
 end

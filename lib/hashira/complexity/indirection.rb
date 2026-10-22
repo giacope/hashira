@@ -35,7 +35,7 @@ class Hashira::Complexity::Indirection
 
   def helper?(family, name, site) = hidden.include?(site.node) && single?(family, name)
 
-  def hidden = @_hidden ||= Hashira::Analysis::TypeWalk.parted(@trees, [PRIVATE])
+  def hidden = @_hidden ||= Hashira::Complexity::Sections.new(@trees).parted([PRIVATE])
 
   def defined(family) = families.fetch(family).select { it.node.is_a?(Prism::DefNode) }.to_h { [it.node.name, it] }
 
@@ -56,8 +56,8 @@ class Hashira::Complexity::Indirection
   def surveyed = @_surveyed ||= @trees.each_with_object([Set.new, Set.new]) { |tree, sets| survey(tree, *sets) }
 
   def survey(tree, symbols, receivers)
-    nodes = Hashira::Analysis::NodeWalk.collect(tree)
-    symbols.merge(Hashira::Analysis::Syntax.symbol_names(nodes).map(&:to_sym))
+    nodes = Hashira::Analysis::NodeWalk.new(tree).collect
+    symbols.merge(nodes.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.map(&:to_sym))
     receivers.merge(nodes.grep(Prism::CallNode).reject { SELVES.include?(it.receiver.class) }.map(&:name))
   end
 end

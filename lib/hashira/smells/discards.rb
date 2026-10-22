@@ -27,7 +27,7 @@ class Hashira::Smells::Discards
 
   private
 
-  def voids = @_voids ||= CARRIED.reach(Hashira::Smells::Scope.inside(@root).flat_map { thrown(it) })
+  def voids = @_voids ||= CARRIED.reach(Hashira::Smells::Scope.new(@root).inside.flat_map { thrown(it) })
 
   def thrown(node) = DROPPED.parts(node) + leading(node)
 

@@ -200,7 +200,7 @@ RSpec.describe(Hashira::Report::Text) do
           ]
         )
       )
-      expect(printed.last).to(eq(Hashira::Report::Phrases.withheld(5)))
+      expect(printed.last).to(eq(Hashira::Report::Withheld.new(5).to_s))
     end
 
     it "prints no rollup when every finding fits under the cap" do
@@ -265,7 +265,7 @@ RSpec.describe(Hashira::Report::Text) do
           [
             "  hub          -> a(1), b(1)                       <- (none)",
             "  a            -> (none)                           <- hub",
-            Hashira::Report::Phrases.withheld(1)
+            Hashira::Report::Withheld.new(1).to_s
           ]
         )
       )

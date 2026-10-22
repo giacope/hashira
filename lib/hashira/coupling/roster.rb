@@ -6,10 +6,7 @@ class Hashira::Coupling::Roster
   end
 
   def registry
-    @_registry ||=
-      Hashira::Coupling::ConstantRegistry.new.tap do |found|
-        admitted.each { |definition, package| found.register(definition.path, package) }
-      end
+    @_registry ||= Hashira::Coupling::ConstantRegistry.new(claims)
   end
 
   def types
@@ -23,6 +20,8 @@ class Hashira::Coupling::Roster
   def packages = types.keys | registry.packages
 
   private
+
+  def claims = admitted.map { |definition, package| [definition.path, package] }
 
   def admitted = @_admitted ||= @placed.select(&:last)
 

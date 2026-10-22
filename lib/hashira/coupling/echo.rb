@@ -18,7 +18,7 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
   def sightings
     @_sightings ||=
       graph.trees.filter_map do |file, tree|
-        words = Hashira::Coupling::Words.lists(tree)
+        words = Hashira::Coupling::Words.new(tree).lists
         [project.relative(file), graph.home(file), words] unless words.empty?
       end
   end

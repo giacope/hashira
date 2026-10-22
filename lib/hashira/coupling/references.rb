@@ -34,7 +34,7 @@ class Hashira::Coupling::References
 
   def collect(node, home = nesting)
     return unless node
-    return collect(node.parent, home) if syntax.dynamic?(node)
+    return collect(node.parent, home) if syntax(node).dynamic?
     return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
     spread(node, home + claimed(node))
@@ -42,7 +42,7 @@ class Hashira::Coupling::References
 
   def claimed(node)
     target = written(node)
-    target ? [syntax.place(nesting, target, @roots)] : []
+    target ? [syntax(target).place(nesting, @roots)] : []
   end
 
   def spread(node, scope)
@@ -64,13 +64,14 @@ class Hashira::Coupling::References
     end
   end
 
-  def declaration?(call) = DECLARATIONS.include?(call.name) && syntax.static?(call.receiver)
+  def declaration?(call) = DECLARATIONS.include?(call.name) && syntax(call.receiver).static?
 
   def sighting(node, home)
-    [syntax.segments(node), node.location.start_line, syntax.rooted?(node) ? nil : nesting, home]
+    read = syntax(node)
+    [read.segments, node.location.start_line, read.rooted? ? nil : nesting, home]
   end
 
-  def syntax = Hashira::Analysis::Syntax
+  def syntax(node) = Hashira::Analysis::Syntax.new(node)
 
   def constant?(node) = node.is_a?(Prism::ConstantPathNode) || node.is_a?(Prism::ConstantReadNode)
 
@@ -82,7 +83,7 @@ class Hashira::Coupling::References
     inside(opened) { collect(node.body) }
   end
 
-  def anchor(node) = syntax.place(nesting, node.constant_path, @roots)
+  def anchor(node) = syntax(node.constant_path).place(nesting, @roots)
 
   def inside(scope)
     scopes << scope

@@ -3,25 +3,22 @@
 class Hashira::Coupling::ConstantRegistry
   AMBIGUOUS = Object.new.freeze
 
-  def initialize
-    @origins = {}
+  def initialize(claims)
+    @claims = claims
   end
 
-  attr_reader :origins
+  def origins = @_origins ||= keyed.transform_values { settled(it) }
 
-  def register(path, package)
-    return if path.empty?
-    claim(@origins, path, package)
-  end
+  def exact(path) = origins[path.join("::")]
 
-  def exact(path) = @origins[path.join("::")]
-
-  def packages = (@origins.values.uniq - [AMBIGUOUS])
+  def packages = (origins.values.uniq - [AMBIGUOUS])
 
   private
 
-  def claim(claims, path, package)
-    key = path.join("::")
-    claims[key] = claims.fetch(key, package) == package ? package : AMBIGUOUS
+  def keyed = @claims.reject { |path, _| path.empty? }.group_by { |path, _| path.join("::") }
+
+  def settled(claims)
+    packages = claims.map(&:last).uniq
+    packages.one? ? packages.first : AMBIGUOUS
   end
 end

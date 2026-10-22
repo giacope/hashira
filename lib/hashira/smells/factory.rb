@@ -2,10 +2,12 @@
 
 require "prism"
 
-module Hashira::Smells::Factory
-  module_function
+class Hashira::Smells::Factory
+  def initialize(node)
+    @node = node
+  end
 
-  def made?(value, table) = value.is_a?(Prism::CallNode) && table[value.receiver&.slice] == value.name
+  def made?(table) = @node.is_a?(Prism::CallNode) && table[@node.receiver&.slice] == @node.name
 
-  def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
+  def constant? = @node.is_a?(Prism::ConstantReadNode) || @node.is_a?(Prism::ConstantPathNode)
 end

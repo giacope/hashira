@@ -82,7 +82,7 @@ class Hashira::Smells::Bindings
 
   private
 
-  def sightings(call) = Hashira::Smells::Scope.inside(call).filter_map { ledger.reads[it] }
+  def sightings(call) = Hashira::Smells::Scope.new(call).inside.filter_map { ledger.reads[it] }
 
   def bound?(read, call) = call.location.start_offset <= read.scope.location.start_offset
 

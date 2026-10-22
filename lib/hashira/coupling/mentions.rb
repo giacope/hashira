@@ -57,8 +57,8 @@ class Hashira::Coupling::Mentions
 
   def visit(node, owner, nesting)
     note(node, owner, nesting)
-    return children(node).each { visit(it, owner, nesting) } unless Hashira::Analysis::TypeWalk.type?(node)
-    inner = nesting + [Hashira::Analysis::Syntax.place(nesting, node.constant_path, @roots)]
+    return children(node).each { visit(it, owner, nesting) } unless Hashira::Analysis::TypeWalk.new(node).type?
+    inner = nesting + [Hashira::Analysis::Syntax.new(node.constant_path).place(nesting, @roots)]
     children(node).each { visit(it, node, inner) }
   end
 
@@ -69,8 +69,8 @@ class Hashira::Coupling::Mentions
   def note(node, owner, nesting)
     case node
     when Prism::CallNode then called(node, owner, nesting)
-    when Prism::SymbolNode then names << Hashira::Analysis::Syntax.text(node)
-    when Prism::StringNode then said(Hashira::Analysis::Syntax.text(node))
+    when Prism::SymbolNode then names << Hashira::Analysis::Syntax.new(node).text
+    when Prism::StringNode then said(Hashira::Analysis::Syntax.new(node).text)
     when *INTERPOLATED then built(node.parts)
     when *WRITES, Prism::ConstantPathNode then named(node)
     end
@@ -86,7 +86,7 @@ class Hashira::Coupling::Mentions
   def called(call, owner, nesting)
     names << call.name.to_s
     open << owner if owner && dynamic?(call)
-    registries << Hashira::Analysis::Syntax.segments(call.receiver).last if REFLECTIONS.include?(call.name)
+    registries << Hashira::Analysis::Syntax.new(call.receiver).segments.last if REFLECTIONS.include?(call.name)
     passed(call, owner, nesting)
   end
 
@@ -98,8 +98,8 @@ class Hashira::Coupling::Mentions
   def mirror(receiver, owner)
     if own?(receiver)
       reflected << [owner, nil] if owner
-    elsif Hashira::Analysis::Syntax.static?(receiver)
-      reflected << [(owner unless Hashira::Analysis::Syntax.rooted?(receiver)), Hashira::Analysis::Syntax.segments(receiver)]
+    elsif Hashira::Analysis::Syntax.new(receiver).static?
+      reflected << [(owner unless Hashira::Analysis::Syntax.new(receiver).rooted?), Hashira::Analysis::Syntax.new(receiver).segments]
     end
   end
 

@@ -88,7 +88,17 @@ module Fixtures
     end
   end
 
-  def message(finding) = Hashira::Report::Phrases.message(finding)
+  def message(finding) = Hashira::Report::Phrases.new(finding).message
+
+  def spy_on(klass, method, log)
+    allow(klass).to(
+      receive(:new).and_wrap_original do |make, node|
+        made = make.call(node)
+        allow(made).to(receive(method).and_wrap_original { |call| (log << node) && call.call })
+        made
+      end
+    )
+  end
 
   def capture
     original = [$stdout, $stderr]

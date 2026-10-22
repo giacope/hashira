@@ -6,30 +6,30 @@ RSpec.describe(Hashira::Analysis::Syntax) do
   describe ".segments" do
     it "reads simple and nested constant paths" do
       node = parse("A::B::C").statements.body.first
-      expect(described_class.segments(node)).to(eq(%w[A B C]))
+      expect(described_class.new(node).segments).to(eq(%w[A B C]))
       simple = parse("Foo").statements.body.first
-      expect(described_class.segments(simple)).to(eq(%w[Foo]))
+      expect(described_class.new(simple).segments).to(eq(%w[Foo]))
     end
 
     it "returns [] for non-constant nodes" do
-      expect(described_class.segments(nil)).to(eq([]))
+      expect(described_class.new(nil).segments).to(eq([]))
     end
   end
 
   describe ".rooted?" do
     it "marks ::-anchored paths absolute, plain paths not" do
-      expect(described_class.rooted?(parse("::A::B").statements.body.first)).to(be(true))
-      expect(described_class.rooted?(parse("A::B").statements.body.first)).to(be(false))
-      expect(described_class.rooted?(parse("A").statements.body.first)).to(be(false))
+      expect(described_class.new(parse("::A::B").statements.body.first).rooted?).to(be(true))
+      expect(described_class.new(parse("A::B").statements.body.first).rooted?).to(be(false))
+      expect(described_class.new(parse("A").statements.body.first).rooted?).to(be(false))
     end
   end
 
   describe ".text / .symbol" do
     it "reads a literal's text as valid UTF-8, whatever bytes its escapes spell" do
       string, symbol = parse('["\\xFFok", :"caf\\u00e9"]').statements.body.first.elements
-      expect(described_class.text(string)).to(eq("\uFFFDok"))
-      expect(described_class.symbol(string).name).to(eq("\uFFFDok"))
-      expect(described_class.symbol(symbol)).to(eq(:café))
+      expect(described_class.new(string).text).to(eq("\uFFFDok"))
+      expect(described_class.new(string).symbol.name).to(eq("\uFFFDok"))
+      expect(described_class.new(symbol).symbol).to(eq(:café))
     end
   end
 
@@ -37,17 +37,17 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     def node(source) = parse(source).statements.body.first
 
     it "calls a path static when every link is a constant, down to the root or ::" do
-      expect(%w[A A::B ::A::B].map { described_class.static?(node(it)) }).to(eq([true, true, true]))
-      expect(%w[A A::B ::A::B].map { described_class.dynamic?(node(it)) }).to(eq([false, false, false]))
+      expect(%w[A A::B ::A::B].map { described_class.new(node(it)).static? }).to(eq([true, true, true]))
+      expect(%w[A A::B ::A::B].map { described_class.new(node(it)).dynamic? }).to(eq([false, false, false]))
     end
 
     it "calls a path hanging off an expression dynamic, however deep" do
-      expect(%w[self::A foo::A::B a.b::C].map { described_class.dynamic?(node(it)) }).to(eq([true, true, true]))
-      expect(described_class.static?(node("self::A"))).to(be(false))
+      expect(%w[self::A foo::A::B a.b::C].map { described_class.new(node(it)).dynamic? }).to(eq([true, true, true]))
+      expect(described_class.new(node("self::A")).static?).to(be(false))
     end
 
     it "calls anything that is not a constant path neither" do
-      expect([described_class.static?(nil), described_class.dynamic?(node("foo"))]).to(eq([false, false]))
+      expect([described_class.new(nil).static?, described_class.new(node("foo")).dynamic?]).to(eq([false, false]))
     end
   end
 
@@ -55,24 +55,26 @@ RSpec.describe(Hashira::Analysis::Syntax) do
     def path(source) = parse(source).statements.body.first
 
     it "takes a ::-rooted path as written, whatever scope encloses it, and anchors any other" do
-      placed = %w[::MatchData ::A::B C].map { described_class.place([%w[Drops]], path(it), Set[%w[Drops]]) }
+      placed = %w[::MatchData ::A::B C].map { described_class.new(path(it)).place([%w[Drops]], Set[%w[Drops]]) }
       expect(placed).to(eq([%w[MatchData], %w[A B], %w[Drops C]]))
     end
   end
 
   describe ".anchor" do
+    def placed(source, roots) = described_class.new(parse(source).statements.body.first).place([%w[Baz]], roots)
+
     it "anchors compact paths at the innermost scope that defines the root, else top level, else in place" do
-      expect(described_class.anchor([%w[Baz]], %w[Baz Bar], Set[%w[Baz Baz]])).to(eq(%w[Baz Baz Bar]))
-      expect(described_class.anchor([%w[Baz]], %w[Foo Bar], Set[%w[Foo]])).to(eq(%w[Foo Bar]))
-      expect(described_class.anchor([%w[Baz]], %w[Qux Bar], Set[%w[Foo]])).to(eq(%w[Baz Qux Bar]))
+      expect(placed("Baz::Bar", Set[%w[Baz Baz]])).to(eq(%w[Baz Baz Bar]))
+      expect(placed("Foo::Bar", Set[%w[Foo]])).to(eq(%w[Foo Bar]))
+      expect(placed("Qux::Bar", Set[%w[Foo]])).to(eq(%w[Baz Qux Bar]))
     end
 
     it "anchors a deep compact path at top level when only the top level defines its root" do
-      expect(described_class.anchor([%w[Baz]], %w[Foo Bar Qux], Set[%w[Foo]])).to(eq(%w[Foo Bar Qux]))
+      expect(placed("Foo::Bar::Qux", Set[%w[Foo]])).to(eq(%w[Foo Bar Qux]))
     end
 
     it "nests a single-segment definition in the current scope even when a top-level namesake exists" do
-      expect(described_class.anchor([%w[Baz]], %w[Foo], Set[%w[Foo]])).to(eq(%w[Baz Foo]))
+      expect(described_class.new(parse("Foo").statements.body.first).place([%w[Baz]], Set[%w[Foo]])).to(eq(%w[Baz Foo]))
     end
   end
 
@@ -89,20 +91,20 @@ RSpec.describe(Hashira::Analysis::Syntax) do
         end
       RUBY
       outer = tree.statements.body.first
-      expect(described_class.direct(outer).map(&:name)).to(eq(%i[one two]))
+      expect(described_class.new(outer).direct.map(&:name)).to(eq(%i[one two]))
     end
 
     it "handles a class body with a rescue clause" do
       tree = parse("class A\n  def x = 1\nrescue\n  nil\nend")
       node = tree.statements.body.first
-      expect(described_class.direct(node)).to(eq([]))
+      expect(described_class.new(node).direct).to(eq([]))
     end
 
     it "handles a single-statement and an empty body" do
       single = parse("class A; def only = 1; end").statements.body.first
-      expect(described_class.direct(single).map(&:name)).to(eq(%i[only]))
+      expect(described_class.new(single).direct.map(&:name)).to(eq(%i[only]))
       empty = parse("class A; end").statements.body.first
-      expect(described_class.direct(empty)).to(eq([]))
+      expect(described_class.new(empty).direct).to(eq([]))
     end
   end
 
@@ -120,7 +122,7 @@ RSpec.describe(Hashira::Analysis::Syntax) do
         end
       RUBY
       seen = []
-      Hashira::Analysis::TypeWalk.each(tree) { |_node, full| seen << full }
+      Hashira::Analysis::TypeWalk.new(tree).walk { |_node, full| seen << full }
       expect(seen).to(eq([%w[App], %w[App Layer], %w[App Layer Thing], %w[App App Compact]]))
     end
   end

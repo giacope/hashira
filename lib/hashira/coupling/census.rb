@@ -73,7 +73,7 @@ class Hashira::Coupling::Census
 
   def roster = @_roster ||= tally
 
-  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding
+  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding.new
 
   def type?(segments) = roster.type?(segments)
 

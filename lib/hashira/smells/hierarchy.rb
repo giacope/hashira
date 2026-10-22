@@ -38,7 +38,7 @@ class Hashira::Smells::Hierarchy
   def abstract?(name)
     return true if ABSTRACT.match?(name.split("::").last)
     table.fetch(name, NONE).openings.any? do |type|
-      type.owned.any? { Hashira::Smells::Refusal.unimplemented?(it.node) } || marked?(type)
+      type.owned.any? { Hashira::Smells::Refusal.new(it.node).unimplemented? } || marked?(type)
     end
   end
 
@@ -56,14 +56,14 @@ class Hashira::Smells::Hierarchy
   end
 
   def ancestor(name, node)
-    found = lineage.resolve(name, Hashira::Analysis::Syntax.segments(node))
+    found = lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments)
     found unless Hashira::Analysis::CORE.include?(found)
   end
 
   def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
 
   def marked?(type)
-    Hashira::Analysis::Syntax.statements(type.node).any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
+    Hashira::Analysis::Syntax.new(type.node).statements.any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
   end
 
   def births
@@ -78,13 +78,11 @@ class Hashira::Smells::Hierarchy
       end
   end
 
-  def news(node, factory = nil, found = [])
-    node.compact_child_nodes.each do |child|
-      next if FENCES.include?(child.class)
-      found << [child, factory] if child.is_a?(Prism::CallNode) && child.name == :new
-      news(child, child.is_a?(Prism::DefNode) ? child.name : factory, found)
+  def news(node, factory = nil)
+    node.compact_child_nodes.reject { FENCES.include?(it.class) }.flat_map do |child|
+      made = child.is_a?(Prism::CallNode) && child.name == :new ? [[child, factory]] : []
+      made + news(child, child.is_a?(Prism::DefNode) ? child.name : factory)
     end
-    found
   end
 
   def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.name, factory)
@@ -94,14 +92,12 @@ class Hashira::Smells::Hierarchy
   def invocations
     @_invocations ||=
       @types.flat_map do |type|
-        Hashira::Smells::Scope.sweep(type.node).grep(Prism::CallNode).select(&:receiver).map { [type, it] }
+        Hashira::Smells::Scope.new(type.node).sweep.grep(Prism::CallNode).select(&:receiver).map { [type, it] }
       end
   end
 
   def born(type, call)
     return type.name unless call.receiver
-    segments = Hashira::Analysis::Syntax.segments(call.receiver)
-    parts = type.name.split("::")
-    parts.size.downto(0).map { (parts.first(it) + segments).join("::") }.find { table.key?(it) } unless segments.empty?
+    lineage.candidates(type.name, Hashira::Analysis::Syntax.new(call.receiver).segments).find { table.key?(it) }
   end
 end

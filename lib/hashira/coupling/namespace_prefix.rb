@@ -2,14 +2,16 @@
 
 module Hashira
   module Coupling
-    module NamespacePrefix
-      module_function
-
-      def infer(definitions)
-        build(definitions.map { |_node, full, _package| full }.uniq)
+    class NamespacePrefix
+      def initialize(definitions)
+        @definitions = definitions
       end
 
-      def build(fulls, prefix = [])
+      def infer = build(@definitions.map { |_node, full, _package| full }.uniq, [])
+
+      private
+
+      def build(fulls, prefix)
         depth = prefix.length
         wrapper = wrapper(fulls, depth)
         return prefix unless wrapper

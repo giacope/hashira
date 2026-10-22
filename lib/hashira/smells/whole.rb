@@ -24,7 +24,7 @@ module Hashira
 
         def content = nodes.filter_map(&:body)
 
-        def sweep = nodes.flat_map { Scope.sweep(it) }
+        def sweep = nodes.flat_map { Scope.new(it).sweep }
 
         def first = openings.first
       end

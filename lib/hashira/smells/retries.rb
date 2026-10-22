@@ -35,5 +35,5 @@ class Hashira::Smells::Retries
 
   def within?(outer, node) = outer.equal?(node) || inside(outer).any? { it.equal?(node) }
 
-  def inside(node) = Hashira::Smells::Scope.inside(node)
+  def inside(node) = Hashira::Smells::Scope.new(node).inside
 end

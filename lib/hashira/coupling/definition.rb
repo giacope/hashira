@@ -22,7 +22,7 @@ module Hashira
 
         def created? = node.is_a?(Prism::ConstantWriteNode) || (klass? && !superclass.nil?)
 
-        def counted? = klass? || (module? && !Hashira::Analysis::Syntax.direct(node).empty?)
+        def counted? = klass? || (module? && !Hashira::Analysis::Syntax.new(node).direct.empty?)
 
         def value? = node.is_a?(Prism::ConstantWriteNode) && !Hashira::Coupling::Body.new(node.value).built?
 

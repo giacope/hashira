@@ -11,7 +11,7 @@ class Hashira::Smells::Ownership
   def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
 
   def owns?(node, owner = nil)
-    owned?(Hashira::Analysis::Syntax.segments(node), owner, rooted: Hashira::Analysis::Syntax.rooted?(node))
+    owned?(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
   end
 
   def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
@@ -42,16 +42,16 @@ class Hashira::Smells::Ownership
   end
 
   def walked
-    @_walked ||= @trees.flat_map { Hashira::Analysis::TypeWalk.to_enum(:each, it).map { |node, full| [node, full] } }
+    @_walked ||= @trees.flat_map { Hashira::Analysis::TypeWalk.new(it).to_enum(:walk).map { |node, full| [node, full] } }
   end
 
   def claimed = @_claimed ||= walked.select { |_node, full| claimed?(full) }
 
-  def named(node, full) = Hashira::Analysis::Syntax.constants(node).map { full + [it.name.to_s] }
+  def named(node, full) = Hashira::Analysis::Syntax.new(node).constants.map { full + [it.name.to_s] }
 
   def charted(node, full)
-    Hashira::Analysis::Syntax.constants(node).filter_map do |constant|
-      keys = chart(Hashira::Analysis::Syntax.thaw(constant.value))
+    Hashira::Analysis::Syntax.new(node).constants.filter_map do |constant|
+      keys = chart(Hashira::Analysis::Syntax.new(constant.value).thaw)
       [full + [constant.name.to_s], keys] if keys
     end
   end
@@ -69,7 +69,7 @@ class Hashira::Smells::Ownership
 
   def spine(element)
     return unless element.is_a?(Prism::AssocNode)
-    segments = Hashira::Analysis::Syntax.segments(element.key)
+    segments = Hashira::Analysis::Syntax.new(element.key).segments
     segments unless segments.empty?
   end
 

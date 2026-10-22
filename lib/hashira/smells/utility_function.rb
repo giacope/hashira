@@ -11,5 +11,5 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
 
   def refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 
-  def calls? = Hashira::Smells::Scope.inside(subject.node).any?(Prism::CallNode)
+  def calls? = Hashira::Smells::Scope.new(subject.node).inside.any?(Prism::CallNode)
 end

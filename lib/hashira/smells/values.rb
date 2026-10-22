@@ -13,19 +13,16 @@ class Hashira::Smells::Values
 
   private
 
-  def names
-    @_names ||=
-      Set.new.tap do |found|
-        @trees.each do |tree|
-          Hashira::Analysis::TypeWalk.each(tree) { |node, full| harvest(node, full, found) }
-        end
-      end
+  def names = @_names ||= @trees.flat_map { |tree| harvested(tree) }.to_set
+
+  def harvested(tree)
+    Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).flat_map { |node, full| harvest(node, full) }
   end
 
-  def harvest(node, full, found)
-    found.merge(Hashira::Analysis::Syntax.constants(node).select { factory?(it.value) }.map { it.name.to_s })
-    found << full.last if node.is_a?(Prism::ClassNode) && factory?(node.superclass)
+  def harvest(node, full)
+    made = Hashira::Analysis::Syntax.new(node).constants.select { factory?(it.value) }.map { it.name.to_s }
+    node.is_a?(Prism::ClassNode) && factory?(node.superclass) ? made + [full.last] : made
   end
 
-  def factory?(value) = Hashira::Smells::Factory.made?(value, FACTORIES)
+  def factory?(value) = Hashira::Smells::Factory.new(value).made?(FACTORIES)
 end

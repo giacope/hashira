@@ -44,7 +44,7 @@ class Hashira::Smells::Check
 
   def marks(found) = rating.merge(shape: (shape if found.empty?))
 
-  def shape = Hashira::Smells::Shape.of(subject.content)
+  def shape = Hashira::Smells::Shape.new(subject.content).of
 
   def tally(name, lines) = "#{name} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
 end

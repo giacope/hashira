@@ -27,20 +27,23 @@ class Hashira::Smells::Repertoire
     index.fetch(name, []).reduce(NONE) { |all, entry| all | entry.answers { gathered(it, seen) } }
   end
 
-  def index = @_index ||= @trees.flat_map { entries(it) }.each_with_object({}) { |entry, found| file(found, entry) }
+  def index
+    filings = @trees.flat_map { entries(it) }.flat_map { filed(it) }
+    @_index ||= filings.group_by(&:first).transform_values { |pairs| pairs.map(&:last) }
+  end
 
-  def file(found, entry) = entry.path.each_index { (found[entry.path.drop(it).join("::")] ||= []) << entry }
+  def filed(entry) = entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] }
 
   def entries(tree)
     found = []
-    Hashira::Analysis::TypeWalk.each(tree) { |node, full| found.push(own(node, full), *constants(node, full)) }
+    Hashira::Analysis::TypeWalk.new(tree).walk { |node, full| found.push(own(node, full), *constants(node, full)) }
     found
   end
 
-  def own(type, full) = entry(full, Hashira::Analysis::Syntax.statements(type), heritage(type))
+  def own(type, full) = entry(full, Hashira::Analysis::Syntax.new(type).statements, heritage(type))
 
   def constants(type, full)
-    Hashira::Analysis::Syntax.constants(type).filter_map { built(full, it) if factory?(it.value) }
+    Hashira::Analysis::Syntax.new(type).constants.filter_map { built(full, it) if factory?(it.value) }
   end
 
   def built(full, constant)
@@ -50,17 +53,17 @@ class Hashira::Smells::Repertoire
 
   def entry(path, statements, parents)
     names = statements.flat_map { declared(it) }.to_set { it.to_s.delete_suffix("=") }
-    Entry.new(path, names, parents.map { Hashira::Analysis::Syntax.segments(it).join("::") }.reject(&:empty?))
+    Entry.new(path, names, parents.map { Hashira::Analysis::Syntax.new(it).segments.join("::") }.reject(&:empty?))
   end
 
   def heritage(type)
-    mixed = Hashira::Analysis::Syntax.statements(type).grep(Prism::CallNode).select { MIXINS.include?(it.name) }
+    mixed = Hashira::Analysis::Syntax.new(type).statements.grep(Prism::CallNode).select { MIXINS.include?(it.name) }
     [*(type.superclass if type.is_a?(Prism::ClassNode)), *mixed.flat_map { it.arguments.arguments }]
   end
 
   def declared(node)
     return [node.name] if node.is_a?(Prism::DefNode) && !node.receiver
-    return [Hashira::Analysis::Syntax.text(node.new_name)] if node.is_a?(Prism::AliasMethodNode)
+    return [Hashira::Analysis::Syntax.new(node.new_name).text] if node.is_a?(Prism::AliasMethodNode)
     macro?(node) ? offered(node) : []
   end
 
@@ -68,7 +71,7 @@ class Hashira::Smells::Repertoire
 
   def offered(call) = Array(call.arguments&.arguments).flat_map { symbol(it) || declared(it) }
 
-  def symbol(node) = ([Hashira::Analysis::Syntax.text(node)] if node.is_a?(Prism::SymbolNode))
+  def symbol(node) = ([Hashira::Analysis::Syntax.new(node).text] if node.is_a?(Prism::SymbolNode))
 
-  def factory?(value) = Hashira::Smells::Factory.made?(value, FACTORIES)
+  def factory?(value) = Hashira::Smells::Factory.new(value).made?(FACTORIES)
 end

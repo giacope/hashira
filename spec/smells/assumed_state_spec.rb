@@ -490,12 +490,7 @@ RSpec.describe(Hashira::Smells::AssumedState) do
     reopened = "module App\n  module Zone\n    class Thing < Base\n      def report = @seen\n    end\n  end\nend\n"
     files = { "lib/app/zone/base.rb" => base }.merge((1..3).to_h { ["lib/app/zone/thing#{it}.rb", reopened] })
     swept = []
-    allow(Hashira::Smells::Scope).to(
-      receive(:sweep).and_wrap_original do |sweep, node|
-        swept << node
-        sweep.call(node)
-      end
-    )
+    spy_on(Hashira::Smells::Scope, :sweep, swept)
     smells(files, &:findings)
     expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 1, report: 3))
   end

@@ -21,11 +21,11 @@ class Hashira::Coupling::Gift
   end
 
   def lexical(node)
-    [Hashira::Analysis::Syntax.segments(node), Hashira::Analysis::Syntax.rooted?(node) ? [] : @nesting]
+    [Hashira::Analysis::Syntax.new(node).segments, Hashira::Analysis::Syntax.new(node).rooted? ? [] : @nesting]
   end
 
   def root(node)
-    return node if Hashira::Analysis::Syntax.static?(node)
+    return node if Hashira::Analysis::Syntax.new(node).static?
     root(node.receiver) if node.is_a?(Prism::CallNode)
   end
 end

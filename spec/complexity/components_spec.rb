@@ -4,7 +4,7 @@ RSpec.describe(Hashira::Complexity::Components) do
   def components(graph) = described_class.new(graph).to_a.map(&:sort).sort
 
   def mutual(graph)
-    reach = graph.to_h { |node, _| [node, Hashira::Coupling::Reach.from(node, graph) | [node]] }
+    reach = graph.to_h { |node, _| [node, Hashira::Coupling::Reach.new(graph).from(node) | [node]] }
     graph.keys.map { |node| graph.keys.select { reach[node].include?(it) && reach[it].include?(node) } }.uniq.sort
   end
 

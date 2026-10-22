@@ -27,7 +27,7 @@ RSpec.describe(Hashira::Report::HotspotTable) do
   it "shows only the worst files, and says how many it withheld" do
     output = render(Array.new(described_class::TOP + 3) { cost("f#{it}.rb", 5, 0, 1) })
     expect(output.lines.grep(/^f\d|… and/).last(2))
-      .to(eq(["f9.rb    5    0      1     5\n", "#{Hashira::Report::Phrases.withheld(3)}\n"]))
+      .to(eq(["f9.rb    5    0      1     5\n", "#{Hashira::Report::Withheld.new(3)}\n"]))
   end
 
   it "says nothing about withheld rows when every file fits" do

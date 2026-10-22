@@ -29,7 +29,7 @@ class Hashira::Report::ComplexityTable
   end
 
   def close(rest)
-    @io.puts(Hashira::Report::Phrases.withheld(rest)) if rest.positive?
+    @io.puts(Hashira::Report::Withheld.new(rest).to_s) if rest.positive?
     @io.puts
   end
 end

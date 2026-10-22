@@ -18,7 +18,7 @@ class Hashira::Smells::Construction
   def visit(name, from, seen)
     slot = (from...@kin.size).find { table(it).key?(name) }
     return unless slot && seen.add?([name, slot])
-    found = Hashira::Smells::Scope.inside(table(slot).fetch(name))
+    found = table(slot).fetch(name)
     called(found).each { visit(it, 0, seen) }
     visit(name, slot + 1, seen) if found.any? { SUPERS.include?(it.class) }
   end
@@ -28,7 +28,7 @@ class Hashira::Smells::Construction
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def table(slot)
-    (@_tables ||= {})[slot] ||= Hashira::Smells::Scope.sweep(@kin[slot].node).grep(Prism::DefNode).reject(&:receiver)
-      .to_h { [it.name, it] }
+    (@_tables ||= {})[slot] ||= Hashira::Smells::Scope.new(@kin[slot].node).sweep.grep(Prism::DefNode).reject(&:receiver)
+      .to_h { [it.name, Hashira::Smells::Scope.new(it).inside] }
   end
 end

@@ -16,13 +16,15 @@ class Hashira::Smells::Picks
 
   def argument(call, name) = positions.include?(name) ? passed(call)[positions.index(name)] : keyed(call, name)
 
-  def positions = @_positions ||= Hashira::Smells::Parameters.parts(@definition).select { positional?(it) }.map(&:name)
+  def positions
+    @_positions ||= Hashira::Smells::Parameters.new(@definition).parts.select { positional?(it) }.map(&:name)
+  end
 
   def positional?(part) = part.is_a?(Prism::RequiredParameterNode) || part.is_a?(Prism::OptionalParameterNode)
 
   def passed(call) = given(call).grep_v(Prism::KeywordHashNode)
 
-  def keyed(call, name) = Hashira::Analysis::Syntax.option(call, name)
+  def keyed(call, name) = Hashira::Analysis::Syntax.new(call).option(name)
 
   def given(call) = Array(call.arguments&.arguments)
 end

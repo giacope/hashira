@@ -14,7 +14,7 @@ class Hashira::Coupling::Declared
 
   private
 
-  def calls = Hashira::Analysis::NodeWalk.collect(@tree).grep(Prism::CallNode).select { declares?(it) }
+  def calls = Hashira::Analysis::NodeWalk.new(@tree).collect.grep(Prism::CallNode).select { declares?(it) }
 
   def declares?(call) = HANDLERS.key?(call.name) && call.receiver
 
@@ -28,7 +28,7 @@ class Hashira::Coupling::Declared
   def value(node)
     case node
     when Prism::ArrayNode then node.elements.flat_map { value(it) }
-    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.text(node)]
+    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).text]
     else Array(expression(node))
     end
   end

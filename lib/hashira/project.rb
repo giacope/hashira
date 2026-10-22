@@ -74,7 +74,7 @@ class Hashira::Project
 
   def application? = directories.any? { config?(File.expand_path(it)) }
 
-  def engines = Hashira::Engine.namespaces(directories, home)
+  def engines = Hashira::Engine.new(directories, home).namespaces
 
   def config?(directory)
     ["config/application.rb", "../config/application.rb"].any? { File.exist?(File.expand_path(it, directory)) }

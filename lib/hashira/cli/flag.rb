@@ -7,7 +7,7 @@ module Hashira::CLI
     Data.define(:name, :arg, :default, :field, :parse, :mode, :text) do
       def initialize(**attributes) = super(**BLANK, default: "", **attributes)
 
-      def read(arguments) = arg ? take(arguments) : arguments.delete(name)
+      def read(arguments) = arg ? take(arguments) : arguments.drop(name)
 
       def take(arguments)
         raw = arguments.take(name, default)

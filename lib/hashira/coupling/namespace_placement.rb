@@ -52,7 +52,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def apart?(file) = served?(file) || tested?(file)
 
-  def served?(file) = project.rails? && Hashira::Coupling::Stratum.presentation?(file)
+  def served?(file) = project.rails? && Hashira::Coupling::Stratum.new(file).presentation?
 
   def tested?(file) = project.rails? && project.test?(file)
 

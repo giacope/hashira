@@ -6,7 +6,7 @@ class Hashira::Complexity::Sites
   end
 
   def each(&)
-    Hashira::Analysis::TypeWalk.each(@tree) do |type, full|
+    Hashira::Analysis::TypeWalk.new(@tree).walk do |type, full|
       Hashira::Complexity::Body.new(type.body, Hashira::Complexity::Owner.new(segments: full)).each(&)
     end
   end

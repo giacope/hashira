@@ -22,7 +22,7 @@ module Hashira
     Defined =
       Data.define(:call) do
         def name
-          named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax.symbol(named) : :"define_method(#{named.slice})"
+          named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax.new(named).symbol : :"define_method(#{named.slice})"
         end
 
         def named = call.arguments.arguments.first

@@ -3,7 +3,7 @@
 require "prism"
 
 module Hashira::Smells::Reads
-  module_function
+  private
 
   def local?(node, &) = node.is_a?(Prism::LocalVariableReadNode) && yield(node.name)
 

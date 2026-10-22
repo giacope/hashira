@@ -10,21 +10,19 @@ class Hashira::Complexity::BooleanRun
   end
 
   def apply(node)
-    operators = []
-    leaves = []
-    walk(node, operators, leaves)
+    operators, leaves = walk(node)
     @scorer.add(node, operators.chunk_while { |left, right| left == right }.count, "boolean")
     leaves.each { @scorer.visit(it) }
   end
 
   private
 
-  def walk(node, operators, leaves)
+  def walk(node)
     inner = bare(node)
-    return leaves << node unless CONNECTIVES.include?(inner.class)
-    walk(inner.left, operators, leaves)
-    operators << inner.class
-    walk(inner.right, operators, leaves)
+    return [[], [node]] unless CONNECTIVES.include?(inner.class)
+    left_operators, left_leaves = walk(inner.left)
+    right_operators, right_leaves = walk(inner.right)
+    [left_operators + [inner.class] + right_operators, left_leaves + right_leaves]
   end
 
   def bare(node)

@@ -29,7 +29,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def rating = repeats.each_value.all? { lesser?(it) } ? { confidence: :low } : {}
 
-  def lesser?(nodes) = Hashira::Smells::Lookup.cheap?(nodes.first) || !reachable?(nodes.reject { preset?(it) })
+  def lesser?(nodes) = Hashira::Smells::Lookup.new(nodes.first).cheap? || !reachable?(nodes.reject { preset?(it) })
 
   def preset?(node) = presets.include?(node)
 
@@ -37,7 +37,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def defaults = [subject.node.parameters].compact.flat_map { beneath(it) }
 
-  def every = @_every ||= Hashira::Smells::Scope.below(subject.node, FENCES).grep(Prism::CallNode)
+  def every = @_every ||= Hashira::Smells::Scope.new(subject.node).below(FENCES).grep(Prism::CallNode)
 
   def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) }
 
@@ -49,7 +49,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def fed(node) = Array(node.arguments).flat_map { beneath(it) }.grep(Prism::CallNode)
 
-  def beneath(node) = [node] + Hashira::Smells::Scope.inside(node)
+  def beneath(node) = [node] + Hashira::Smells::Scope.new(node).inside
 
   def minted?(node) = mints?(node.name) || spawns?(node.receiver)
 
@@ -87,7 +87,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
 
-  def glance?(nodes) = Hashira::Smells::Lookup.cheap?(nodes.first) && nodes.combination(3).none? { thrice?(it) }
+  def glance?(nodes) = Hashira::Smells::Lookup.new(nodes.first).cheap? && nodes.combination(3).none? { thrice?(it) }
 
   def thrice?(trio) = trio.combination(2).all? { reachable?(it) }
 
@@ -103,7 +103,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def nested?(node, outer) = outer.any? { contains?(it, node) }
 
-  def contains?(outer, node) = Hashira::Smells::Scope.inside(outer).any? { it.equal?(node) }
+  def contains?(outer, node) = Hashira::Smells::Scope.new(outer).inside.any? { it.equal?(node) }
 
   def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
 
@@ -131,9 +131,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
 
-  def enclosure(node) = blocks.reverse.find { Hashira::Smells::Scope.covers?(it, node) }&.location&.start_offset
+  def enclosure(node) = blocks.reverse.find { Hashira::Smells::Scope.new(it).covers?(node) }&.location&.start_offset
 
-  def blocks = @_blocks ||= Hashira::Smells::Scope.inside(subject.node).select { SCOPES.include?(it.class) }
+  def blocks = @_blocks ||= Hashira::Smells::Scope.new(subject.node).inside.select { SCOPES.include?(it.class) }
 
   def handle(node) = index?(node) ? indexed(node) : "#{title(node)}#{signature(node)}"
 

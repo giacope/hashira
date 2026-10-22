@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
-module Hashira::CLI::Skip
-  module_function
+class Hashira::CLI::Skip
+  def initialize(flag)
+    @flag = flag
+  end
 
   def parse(list)
     return [] unless list
@@ -10,12 +12,11 @@ module Hashira::CLI::Skip
     keys
   end
 
+  private
+
   def key(name)
     symbol = name.to_sym
-    Hashira::Pipeline::ANALYZERS.include?(symbol) ? symbol : unknown(name)
-  end
-
-  def unknown(name)
-    raise(Hashira::Error, "unknown --skip #{name.inspect} (use: #{Hashira::Pipeline::ANALYZERS.join(", ")})")
+    return symbol if Hashira::Pipeline::ANALYZERS.include?(symbol)
+    raise(Hashira::Error, "unknown #{@flag} #{name.inspect} (use: #{Hashira::Pipeline::ANALYZERS.join(", ")})")
   end
 end
