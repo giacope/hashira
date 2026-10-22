@@ -21,132 +21,87 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
 
   def probe(index) = "def probe#{index}(node) = node.is_a?(Prism::CallNode)"
 
-  it "prints a text report and returns 0" do
-    within(Fixtures::CYCLIC_FILES) do
-      nil
-      status = nil
-      output = capture { status = described_class.new(["lib/app"]).status }
-      expect(status).to(eq(0))
-      expect(output).to(include("Package (folder) metrics for lib/app"))
+  # The exit status and what the run printed.
+  def ran(arguments)
+    status = nil
+    capture { status = described_class.new(arguments).status }.then { [status, it] }
+  end
+
+  def status(arguments) = ran(arguments).first
+
+  def parsed(arguments) = ran(arguments).then { |code, output| [code, JSON.parse(output)] }
+
+  def within_history(files)
+    within(files) do
+      git("init", "-q")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+      yield
     end
+  end
+
+  def twins
+    tangle = Fixtures::COMPLEX_FILES.fetch("lib/app/knot/tangle.rb")
+    { "one/lib/knot/tangle.rb" => tangle, "two/lib/knot/tangle.rb" => tangle.sub("Tangle", "Snarl") }
+  end
+
+  def rails_root
+    {
+      "app/models/user.rb" => "class User; def a = 1; end\n", "lib/tools/x.rb" => "class X; def a = 1; end\n",
+      "config/application.rb" => ""
+    }
   end
 
   it "prints help and version without analysing anything" do
-    help = capture { expect(described_class.new(["--help"]).status).to(eq(0)) }
-    expect(help).to(include("Usage: hashira"))
-    expect(help).to(
-      include(
-        "Options:\n  --format FORMAT      text (default), json, dot, or mermaid\n",
-        "  --compact            emit JSON on one line, without the indentation\n                       " \
-          "meant for reading\n"
-      )
-    )
-    version = capture { expect(described_class.new(["--version"]).status).to(eq(0)) }
-    expect(version).to(eq("hashira #{Hashira::VERSION}\n"))
+    help = [
+      "Usage: hashira", "Options:\n  --format FORMAT      text (default), json, dot, or mermaid\n",
+      "  --compact            emit JSON on one line, without the indentation\n                       " \
+        "meant for reading\n"
+    ]
+    expect(ran(["--help"])).to(match([0, include(*help)]))
+    expect(ran(["--version"])).to(eq([0, "hashira #{Hashira::VERSION}\n"]))
   end
 
-  it "dispatches --json, --format dot, and --fail-on" do
-    within(Fixtures::CYCLIC_FILES) do
-      json = capture { expect(described_class.new(["lib/app", "--json"]).status).to(eq(0)) }
-      expect(JSON.parse(json)["packages"].keys).to(contain_exactly("alpha", "beta", "core"))
-      dot = capture { expect(described_class.new(["lib/app", "--format", "dot"]).status).to(eq(0)) }
-      expect(dot).to(start_with("digraph hashira {"))
-      gate = capture { expect(described_class.new(["lib/app", "--fail-on", "cycles"]).status).to(eq(1)) }
-      expect(gate).to(include("Gate FAILED"))
+  context "with a cyclic project" do
+    around { |example| within(Fixtures::CYCLIC_FILES) { example.run } }
+
+    it "prints a text report and returns 0" do
+      expect(ran(["lib/app"])).to(match([0, include("Package (folder) metrics for lib/app")]))
     end
-  end
 
-  it "gates a plain run on the config file's fail-on, and leaves --json alone" do
-    within(Fixtures::CYCLIC_FILES.merge(".hashira.yml" => "directories: lib/app\nfail-on: cycles\n")) do
-      gate = capture { expect(described_class.new([]).status).to(eq(1)) }
-      expect(gate).to(include("Gate FAILED"))
-      json = capture { expect(described_class.new(["--json"]).status).to(eq(0)) }
-      expect(JSON.parse(json)["targets"]).to(eq(%w[lib/app]))
+    it "dispatches --json, --format dot, and --fail-on" do
+      code, report = parsed(["lib/app", "--json"])
+      expect([code, report["packages"].keys]).to(match([0, contain_exactly("alpha", "beta", "core")]))
+      expect(ran(["lib/app", "--format", "dot"])).to(match([0, start_with("digraph hashira {")]))
+      expect(ran(["lib/app", "--fail-on", "cycles"])).to(match([1, include("Gate FAILED")]))
     end
-  end
 
-  it "treats a verified interpreted model as compliant architecture" do
-    within(interpretation) do
-      arguments = %w[lib/app --json --skip duplication,complexity,coupling]
-      report = JSON.parse(capture { expect(described_class.new(arguments).status).to(eq(0)) })
-      expect(report.values_at("findings", "accepted")).to(eq([[], []]))
+    it "gates a plain run on the config file's fail-on, and leaves --json alone" do
+      File.write(".hashira.yml", "directories: lib/app\nfail-on: cycles\n")
+      expect(ran([])).to(match([1, include("Gate FAILED")]))
+      code, report = parsed(["--json"])
+      expect([code, report["targets"]]).to(eq([0, %w[lib/app]]))
     end
-  end
 
-  it "reads an interpreted model declared in .hashira.yml, with no baseline to hold it" do
-    declared = <<~YAML
-      boundaries:
-        - {root: Prism, role: interpreted_model, entrypoint: lib/app/trees.rb, reason: the input}
-    YAML
-    files = interpretation.except("hashira_baseline.json")
-    arguments = %w[lib/app --kind boundary_sprawl --skip duplication,complexity,coupling]
-    kept = within(files.merge(".hashira.yml" => declared)) { capture { described_class.new(arguments).status } }
-    bare = within(files) { capture { described_class.new(arguments).status } }
-    expect([kept, bare].map { it[/Findings \(\d+\)/] }).to(eq(["Findings (0)", "Findings (1)"]))
-  end
-
-  it "refuses to ratchet without a baseline" do
-    within(Fixtures::CYCLIC_FILES) do
-      status = nil
-      expect { status = described_class.new(["lib/app", "--ratchet"]).status }.to(output(/no baseline at/).to_stderr)
-      expect(status).to(eq(2))
+    it "refuses to ratchet without a baseline" do
+      expect { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(2)) }
+        .to(output(/no baseline at/).to_stderr)
     end
-  end
 
-  it "skips an analyzer on request" do
-    within(Fixtures::COMPLEX_FILES) do
-      slim = capture { expect(described_class.new(["lib/app", "--skip", "complexity"]).status).to(eq(0)) }
-      expect(slim).to(include("Package (folder) metrics"))
-      expect(slim).not_to(include("Cognitive complexity"))
-      bare = capture { expect(described_class.new(["lib/app", "--skip", "coupling"]).status).to(eq(0)) }
-      expect(bare).to(include("Cognitive complexity"))
-      expect(bare).not_to(include("Package (folder) metrics"))
-      pruned = capture { expect(described_class.new(["lib/app", "--skip", "duplication"]).status).to(eq(0)) }
-      expect(pruned).to(include("Package (folder) metrics"))
-    end
-  end
-
-  it "drops the hotspot rollup when both analyzers feeding it are skipped" do
-    within(Fixtures::COMPLEX_FILES) do
-      lone =
-        capture do
-          expect(described_class.new(["lib/app", "--skip", "complexity,duplication"]).status).to(eq(0))
-        end
-      expect(lone).to(include("Package (folder) metrics"))
-      expect(lone).not_to(include("Hotspots"))
-    end
-  end
-
-  it "gates on cognitive complexity findings" do
-    within(Fixtures::COMPLEX_FILES) do
-      gate = capture { expect(described_class.new(["lib/app", "--fail-on", "complexity"]).status).to(eq(1)) }
-      expect(gate).to(include("Gate FAILED"))
-    end
-  end
-
-  it "round-trips the ratchet: update then check" do
-    within(Fixtures::CYCLIC_FILES) do
-      capture do
-        expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0))
-        expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(0))
-      end
+    it "round-trips the ratchet: update then check" do
+      expect([%w[--update-baseline], %w[--ratchet]].map { status(["lib/app", *it]) }).to(eq([0, 0]))
       expect(File).to(exist("hashira_baseline.json"))
     end
-  end
 
-  it "keeps only the findings that name the files --only lists" do
-    within(Fixtures::CYCLIC_FILES) do
-      whole = capture { expect(described_class.new(["lib/app"]).status).to(eq(0)) }
-      expect(whole).to(include("cycle: alpha"))
-      part = capture { expect(described_class.new(["lib/app", "--only", "lib/app/core/util.rb"]).status).to(eq(0)) }
-      expect(part).to(include("Package (folder) metrics"))
-      expect(part).to(include("Findings (0)"))
+    it "keeps only the findings that name the files --only lists" do
+      expect(ran(["lib/app"])).to(match([0, include("cycle: alpha")]))
+      expect(ran(["lib/app", "--only", "lib/app/core/util.rb"])).to(
+        match([0, include("Package (folder) metrics", "Findings (0)")])
+      )
     end
-  end
 
-  it "ratchets a focused run on regressions alone, staying quiet about the rest of the project" do
-    within(Fixtures::CYCLIC_FILES) do
-      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
+    it "ratchets a focused run on regressions alone, staying quiet about the rest of the project" do
+      expect(status(["lib/app", "--update-baseline"])).to(eq(0))
       File.write("lib/app/beta/two.rb", <<~RUBY)
         module App
           module Beta
@@ -156,110 +111,55 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
           end
         end
       RUBY
-      whole = capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(3)) }
-      expect(whole).to(include("Edges removed", "Findings resolved"))
-      focused = ["lib/app", "--ratchet", "--only", "lib/app/core/util.rb"]
-      part = capture { expect(described_class.new(focused).status).to(eq(0)) }
-      expect(part).to(eq("Ratchet OK: 0 findings, unchanged.\n"))
+      expect(ran(["lib/app", "--ratchet"])).to(match([3, include("Edges removed", "Findings resolved")]))
+      expect(ran(["lib/app", "--ratchet", "--only", "lib/app/core/util.rb"])).to(
+        eq([0, "Ratchet OK: 0 findings, unchanged.\n"])
+      )
     end
-  end
 
-  it "keeps only the findings of the kinds --kind names, in text and in JSON" do
-    within(Fixtures::CYCLIC_FILES) do
-      text = capture { expect(described_class.new(["lib/app", "--kind", "cycles"]).status).to(eq(0)) }
-      expect(text).to(include("Package (folder) metrics", "Findings (1):", "cycle: alpha"))
-      expect(text).not_to(include("utility_function"))
-      json = capture { expect(described_class.new(["lib/app", "--json", "--kind", "smells"]).status).to(eq(0)) }
-      expect(JSON.parse(json)["findings"].map { it["kind"] }.uniq).to(eq(%w[utility_function]))
-      gate = ["lib/app", "--kind", "cycles,smells", "--fail-on", "smells"]
-      expect(capture { expect(described_class.new(gate).status).to(eq(1)) }).not_to(include("cycle:"))
+    it "keeps only the findings of the kinds --kind names, in text and in JSON" do
+      expect(ran(["lib/app", "--kind", "cycles"])).to(
+        match(
+          [0, include("Package (folder) metrics", "Findings (1):", "cycle: alpha").and(exclude("utility_function"))]
+        )
+      )
+      code, report = parsed(["lib/app", "--json", "--kind", "smells"])
+      expect([code, report["findings"].map { it["kind"] }.uniq]).to(eq([0, %w[utility_function]]))
+      expect(ran(["lib/app", "--kind", "cycles,smells", "--fail-on", "smells"])).to(match([1, exclude("cycle:")]))
     end
-  end
 
-  it "reports the default smells in a plain run, leaves opt-in kinds out, and gates on one that --fail-on names" do
-    within(Fixtures::CYCLIC_FILES) do
-      plain = capture { described_class.new(["lib/app"]).status }
-      expect([plain.include?("utility_function"), plain.include?("repeated_conditional")]).to(eq([true, false]))
-      gate = capture { expect(described_class.new(%w[lib/app --fail-on utility_function]).status).to(eq(1)) }
-      expect(gate).to(include("Gate FAILED: 4 finding(s) — utility_function 4."))
+    it "reports the default smells in a plain run, leaves opt-in kinds out, and gates on one that --fail-on names" do
+      expect(ran(["lib/app"]).last).to(include("utility_function").and(exclude("repeated_conditional")))
+      expect(ran(%w[lib/app --fail-on utility_function])).to(
+        match([1, include("Gate FAILED: 4 finding(s) — utility_function 4.")])
+      )
     end
-  end
 
-  it "gates --fail-on all on every kind the run checks, without turning an opt-in kind on" do
-    within(Fixtures::CYCLIC_FILES) do
-      gate = capture { expect(described_class.new(%w[lib/app --fail-on all]).status).to(eq(1)) }
-      expect(gate).to(include("Gate FAILED: 5 finding(s) — utility_function 4, cycle 1."))
-      narrowed = capture { expect(described_class.new(%w[lib/app --fail-on all --kind sdp]).status).to(eq(0)) }
-      expect(narrowed).to(eq("Gate OK: no findings of kind unstable_dependency.\n"))
-      measured = %w[lib/app --fail-on all --skip coupling,smells,duplication]
-      expect(capture { expect(described_class.new(measured).status).to(eq(0)) })
-        .to(eq("Gate OK: no findings of kind complexity, fragmentation.\n"))
+    it "gates --fail-on all on every kind the run checks, without turning an opt-in kind on" do
+      expect(ran(%w[lib/app --fail-on all])).to(
+        match([1, include("Gate FAILED: 5 finding(s) — utility_function 4, cycle 1.")])
+      )
+      expect(ran(%w[lib/app --fail-on all --kind sdp])).to(
+        eq([0, "Gate OK: no findings of kind unstable_dependency.\n"])
+      )
+      expect(ran(%w[lib/app --fail-on all --skip coupling,smells,duplication])).to(
+        eq([0, "Gate OK: no findings of kind complexity, fragmentation.\n"])
+      )
     end
-  end
 
-  it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
-    within(Fixtures::CYCLIC_FILES) do
-      capture { expect(described_class.new(["lib/app", "--update-baseline"]).status).to(eq(0)) }
-      methods = %w[help name hash].map { "def #{it}_of = Core::Util.#{it}" }.join("; ")
-      File.write("lib/app/beta/two.rb", "module App; module Beta; class Two; #{methods}; end; end; end\n")
-      capture { expect(described_class.new(["lib/app", "--ratchet"]).status).to(eq(1)) }
-      quiet = capture { expect(described_class.new(["lib/app", "--ratchet", "--kind", "cycles"]).status).to(eq(0)) }
-      expect(quiet).to(eq("Ratchet OK: 0 findings, unchanged.\n"))
-      loud = capture { expect(described_class.new(%w[lib/app --ratchet --kind utility_function]).status).to(eq(1)) }
-      expect(loud).to(include("NEW FINDING:", "utility_function: App::Beta::Two#"))
+    it "ratchets a run narrowed by --kind on those kinds alone, like a focused run" do
+      expect(status(["lib/app", "--update-baseline"])).to(eq(0))
+      File.write("lib/app/beta/two.rb", "module App; module Beta; class Two; #{utilities}; end; end; end\n")
+      expect(status(%w[lib/app --ratchet])).to(eq(1))
+      expect(ran(%w[lib/app --ratchet --kind cycles])).to(eq([0, "Ratchet OK: 0 findings, unchanged.\n"]))
+      expect(ran(%w[lib/app --ratchet --kind utility_function])).to(
+        match([1, include("NEW FINDING:", "utility_function: App::Beta::Two#")])
+      )
     end
-  end
 
-  it "reports unreadable files as a friendly error" do
-    within("lib/app/other.rb" => "class Other; def x = 1; end") do
-      File.symlink("gone.rb", "lib/app/thing.rb")
-      expect do
-        expect(described_class.new(["lib/app"]).status).to(eq(2))
-      end.to(output(%r{hashira: cannot read lib/app/thing\.rb}).to_stderr)
-    end
-  end
+    def utilities = %w[help name hash].map { "def #{it}_of = Core::Util.#{it}" }.join("; ")
 
-  it "reads the application and lib/ on a bare run in a Rails root, naming every file from the root" do
-    files = {
-      "app/models/user.rb" => "class User; def a = 1; end\n", "lib/tools/x.rb" => "class X; def a = 1; end\n",
-      "config/application.rb" => ""
-    }
-    within(files) do
-      report = JSON.parse(capture { expect(described_class.new(["--json"]).status).to(eq(0)) })
-      expect(report["targets"]).to(eq(%w[app lib]))
-      files = report.dig("complexity", "methods").map { it["file"] }
-      expect(files).to(contain_exactly("app/models/user.rb", "lib/tools/x.rb"))
-    end
-  end
-
-  it "names files, churn and --only by the same full path when several directories hold same-named files" do
-    tangle = Fixtures::COMPLEX_FILES.fetch("lib/app/knot/tangle.rb")
-    within("one/lib/knot/tangle.rb" => tangle, "two/lib/knot/tangle.rb" => tangle.sub("Tangle", "Snarl")) do
-      git("init", "-q")
-      git("add", "-A")
-      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
-      report = JSON.parse(capture { expect(described_class.new(%w[one/lib two/lib --json]).status).to(eq(0)) })
-      expect(report["hotspots"].to_h { [it["file"], it["churn"]] })
-        .to(eq("one/lib/knot/tangle.rb" => 1, "two/lib/knot/tangle.rb" => 1))
-      focused = JSON.parse(capture { described_class.new(%w[one/lib two/lib --json --only two/lib]).status })
-      expect(focused["findings"].map { it["package"] }).to(include("App::Knot::Snarl#tangled"))
-      expect(focused["findings"].map { it["package"] }).not_to(include("App::Knot::Tangle#tangled"))
-      expect(focused["findings"].map { it["detail"]["site"] }.compact.uniq).to(eq(["two/lib/knot/tangle.rb:8"]))
-    end
-  end
-
-  def on_terminal
-    original = [$stdout, $stderr]
-    $stdout = StringIO.new
-    $stderr = StringIO.new.tap { |io| def io.tty? = true }
-    yield
-    $stderr.string
-  ensure
-    $stdout, $stderr = original
-  end
-
-  it "tells a terminal what it reads, what it had to work around, and how long it took" do
-    within(Fixtures::CYCLIC_FILES) do
+    it "tells a terminal what it reads, what it had to work around, and how long it took" do
       told = on_terminal { expect(described_class.new(["lib/app"]).status).to(eq(0)) }
       expect(told.lines).to(
         match(
@@ -273,15 +173,110 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     end
   end
 
+  it "treats a verified interpreted model as compliant architecture" do
+    within(interpretation) do
+      code, report = parsed(%w[lib/app --json --skip duplication,complexity,coupling])
+      expect([code, report.values_at("findings", "accepted")]).to(eq([0, [[], []]]))
+    end
+  end
+
+  it "reads an interpreted model declared in .hashira.yml, with no baseline to hold it" do
+    declared = <<~YAML
+      boundaries:
+        - {root: Prism, role: interpreted_model, entrypoint: lib/app/trees.rb, reason: the input}
+    YAML
+    files = interpretation.except("hashira_baseline.json")
+    found = [files.merge(".hashira.yml" => declared), files].map { within(it) { ran(sprawl).last[/Findings \(\d+\)/] } }
+    expect(found).to(eq(["Findings (0)", "Findings (1)"]))
+  end
+
+  def sprawl = %w[lib/app --kind boundary_sprawl --skip duplication,complexity,coupling]
+
+  context "with a complex project" do
+    around { |example| within(Fixtures::COMPLEX_FILES) { example.run } }
+
+    it "skips an analyzer on request" do
+      expect(ran(%w[lib/app --skip complexity])).to(
+        match([0, include("Package (folder) metrics").and(exclude("Cognitive complexity"))])
+      )
+      expect(ran(%w[lib/app --skip coupling])).to(
+        match([0, include("Cognitive complexity").and(exclude("Package (folder) metrics"))])
+      )
+      expect(ran(%w[lib/app --skip duplication])).to(match([0, include("Package (folder) metrics")]))
+    end
+
+    it "drops the hotspot rollup when both analyzers feeding it are skipped" do
+      expect(ran(["lib/app", "--skip", "complexity,duplication"])).to(
+        match([0, include("Package (folder) metrics").and(exclude("Hotspots"))])
+      )
+    end
+
+    it "gates on cognitive complexity findings" do
+      expect(ran(["lib/app", "--fail-on", "complexity"])).to(match([1, include("Gate FAILED")]))
+    end
+  end
+
+  it "reports unreadable files as a friendly error" do
+    within("lib/app/other.rb" => "class Other; def x = 1; end") do
+      File.symlink("gone.rb", "lib/app/thing.rb")
+      expect do
+        expect(described_class.new(["lib/app"]).status).to(eq(2))
+      end.to(output(%r{hashira: cannot read lib/app/thing\.rb}).to_stderr)
+    end
+  end
+
+  it "reads the application and lib/ on a bare run in a Rails root, naming every file from the root" do
+    within(rails_root) do
+      code, report = parsed(["--json"])
+      expect([code, report["targets"], report.dig("complexity", "methods").map { it["file"] }]).to(
+        match([0, %w[app lib], contain_exactly("app/models/user.rb", "lib/tools/x.rb")])
+      )
+    end
+  end
+
+  it "names files and churn by the same full path when several directories hold same-named files" do
+    within_history(twins) do
+      code, report = parsed(%w[one/lib two/lib --json])
+      expect([code, report["hotspots"].to_h { [it["file"], it["churn"]] }]).to(
+        eq([0, { "one/lib/knot/tangle.rb" => 1, "two/lib/knot/tangle.rb" => 1 }])
+      )
+    end
+  end
+
+  it "takes --only by the full path when several directories hold same-named files" do
+    within_history(twins) do
+      found = parsed(%w[one/lib two/lib --json --only two/lib]).last["findings"]
+      expect([found.map { it["package"] }, found.map { it["detail"]["site"] }.compact.uniq]).to(
+        match(
+          [
+            include("App::Knot::Snarl#tangled").and(exclude("App::Knot::Tangle#tangled")),
+            eq(["two/lib/knot/tangle.rb:8"])
+          ]
+        )
+      )
+    end
+  end
+
+  def on_terminal
+    original = [$stdout, $stderr]
+    $stdout = StringIO.new
+    $stderr = StringIO.new.tap { |io| def io.tty? = true }
+    yield
+    $stderr.string
+  ensure
+    $stdout, $stderr = original
+  end
+
   it "says nothing about churn when the analyzed repo has history" do
-    within("lib/app/x.rb" => "class X; def a = 1; end\n") do
-      git("init", "-q")
-      git("add", "-A")
-      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", "x")
+    within_history("lib/app/x.rb" => "class X; def a = 1; end\n") do
       capture do
         expect { expect(described_class.new(["lib/app"]).status).to(eq(0)) }.not_to(output(/no git history/).to_stderr)
       end
     end
+  end
+
+  def expect_warning(arguments, said)
+    capture { expect { described_class.new(arguments).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
   end
 
   it "says how many files it analysed and which vendored or generated ones it left out" do
@@ -291,9 +286,7 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     }
     said = "hashira: analysed 1 files in lib/app; skipped 1 vendored and 1 generated " \
       "(pass the directory, or --only a file, to analyse them)"
-    within(files) do
-      capture { expect { described_class.new(["lib/app"]).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
-    end
+    within(files) { expect_warning(["lib/app"], said) }
   end
 
   it "says how many files sit in no declared layer, and in which folders" do
@@ -303,17 +296,15 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
       "app/forms/sign_up.rb" => "class SignUp; def a = User; end\n"
     }
     said = "hashira: 2 of 4 files sit in no layer (config/initializers 1, config 1) — layer_violation"
-    within(files) do
-      capture { expect { described_class.new(%w[app config]).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
-    end
+    within(files) { expect_warning(%w[app config], said) }
+  end
+
+  def unparsed
+    { "lib/app/good.rb" => "class Good; def a = 1; end\n", "lib/app/broken.rb" => "class Broken\n  def (\nend\n" }
   end
 
   it "says when a file did not parse, instead of quietly analyzing a partial tree" do
-    files = {
-      "lib/app/good.rb" => "class Good; def a = 1; end\n",
-      "lib/app/broken.rb" => "class Broken\n  def (\nend\n"
-    }
-    within(files) do
+    within(unparsed) do
       capture do
         expect { expect(described_class.new(["lib/app"]).status).to(eq(0)) }
           .to(output(%r{hashira: 1 of the files did not parse — lib/app/broken\.rb}).to_stderr)
@@ -343,12 +334,9 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
 
   it "analyzes literals whose escapes spell bytes that are not UTF-8, in every format and the ratchet" do
     within(unreadable_literals) do
-      text = capture { expect(described_class.new(["r/lib"]).status).to(eq(0)) }
-      expect(text).to(include("data_class: X::Fields holds '\uFFFD', 'b' and does nothing else"))
-      json = JSON.parse(capture { described_class.new(["r/lib", "--json"]).status })
-      expect(json["findings"].map { it["kind"] }).to(include("data_class"))
-      capture { expect(described_class.new(["r/lib", "--update-baseline"]).status).to(eq(0)) }
-      capture { expect(described_class.new(["r/lib", "--ratchet"]).status).to(eq(0)) }
+      expect(ran(["r/lib"])).to(match([0, include("data_class: X::Fields holds '\uFFFD', 'b' and does nothing else")]))
+      expect(parsed(["r/lib", "--json"]).last["findings"].map { it["kind"] }).to(include("data_class"))
+      expect([%w[--update-baseline], %w[--ratchet]].map { status(["r/lib", *it]) }).to(eq([0, 0]))
     end
   end
 
@@ -394,15 +382,17 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     it "records the project's baseline in the project, with its directories named from there" do
       within("proj/Gemfile" => "", "proj/lib/app/cart.rb" => cart, "here/README" => "") do
         Dir.chdir("here") { run(%w[../proj/lib/app --update-baseline]) }
-        expect(JSON.parse(File.read("proj/hashira_baseline.json"))["targets"]).to(eq(["lib/app"]))
-        expect(File.exist?("here/hashira_baseline.json")).to(be(false))
+        expect(
+          [JSON.parse(File.read("proj/hashira_baseline.json"))["targets"], File.exist?("here/hashira_baseline.json")]
+        ).to(eq([["lib/app"], false]))
         Dir.chdir("proj") { expect(run(%w[lib/app --ratchet])).to(include("Ratchet OK")) }
       end
     end
 
     it "reads a config's baseline setting from the config's own folder, and its other settings as given" do
-      yaml = "baseline: ci/base.json\npackage-by: namespace\n"
-      files = { "proj/.hashira.yml" => yaml, "proj/lib/app/cart.rb" => cart }
+      files = {
+        "proj/.hashira.yml" => "baseline: ci/base.json\npackage-by: namespace\n", "proj/lib/app/cart.rb" => cart
+      }
       within(files.merge("proj/ci/README" => "", "here/README" => "")) do
         Dir.chdir("here") { run(%w[../proj/lib/app --update-baseline]) }
         expect(JSON.parse(File.read("proj/ci/base.json"))["packaging"]).to(eq("namespace"))
@@ -419,8 +409,7 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
       yaml = "checks:\n  complexity:\n    threshold: 3\n  utility_function: false\n"
       within(".hashira.yml" => yaml, "lib/app/gate.rb" => gate, "lib/app/cart.rb" => cart) do
         kinds = JSON.parse(capture { described_class.new(%w[lib/app --json]).status })["kinds"]
-        expect(kinds.keys).to(include("complexity"))
-        expect(kinds.keys).not_to(include("utility_function"))
+        expect(kinds.keys).to(include("complexity").and(exclude("utility_function")))
       end
     end
 
@@ -439,19 +428,24 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
         "def calm = 1 # hashira:disable complexity -- stale\nend\n"
     end
 
-    it "lists what they silence and which ones silence nothing, in text and JSON" do
-      within("lib/app/table.rb" => table("# hashira:disable-next-line complexity -- generated table")) do
-        gated = capture { described_class.new(%w[lib/app --fail-on complexity]).status }
-        expect(gated).to(include("Gate OK"))
+    def explained = table("# hashira:disable-next-line complexity -- generated table")
+
+    it "lists what they silence and which ones silence nothing, in text" do
+      within("lib/app/table.rb" => explained) do
+        expect(capture { described_class.new(%w[lib/app --fail-on complexity]).status }).to(include("Gate OK"))
         expect(capture { described_class.new(%w[lib/app]).status }).to(
           include("Suppressed (1):\n  ~ complexity/Table#step — generated table (table.rb:2)")
             .and(include("Unused suppressions (1)", "? complexity at table.rb:12"))
         )
+      end
+    end
+
+    it "lists what they silence and which ones silence nothing, in JSON" do
+      within("lib/app/table.rb" => explained) do
         json = JSON.parse(capture { described_class.new(%w[lib/app --json]).status })
-        expect(json["suppressed"].first.slice("kind", "site", "reason")).to(
-          eq("kind" => "complexity", "site" => "table.rb:2", "reason" => "generated table")
+        expect([json["suppressed"].first.slice("kind", "site", "reason"), json["unused_suppressions"].size]).to(
+          eq([{ "kind" => "complexity", "site" => "table.rb:2", "reason" => "generated table" }, 1])
         )
-        expect(json["unused_suppressions"].size).to(eq(1))
       end
     end
 

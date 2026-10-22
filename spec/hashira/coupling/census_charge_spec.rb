@@ -1,6 +1,19 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
+  around { |example| within({}) { example.run } }
+
+  # The census and graph of the files, written to the example's own folder.
+  def charted(files, directories: ["app"], packaging: :namespace)
+    files.each do |path, source|
+      FileUtils.mkdir_p(File.dirname(path))
+      File.write(path, source)
+    end
+    pipeline(directories, packaging:).drop(1)
+  end
+
+  def edges(graph) = graph.edges.map(&:to_s)
+
   it "groups types by top-level namespace across layer folders" do
     analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
       expect(census.packages).to(contain_exactly("ApplicationRecord", "Billing", "Ci", "User"))
@@ -35,10 +48,10 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       "lib/app/rails.rb" => "module App\n  class Engine < ::Rails::Engine\n  end\nend\n",
       "lib/app/setup.rb" => "module App\n  ADAPTERS = {}\n  Point = Data.define(:x)\n#{hub}end\n"
     }
-    analyze(Fixtures::CYCLIC_FILES.merge(files), packaging: :namespace) do |_project, census, graph|
-      expect(census.packages).to(contain_exactly("Alpha", "Beta", "Core", "Hub", "Point", "(root)"))
-      expect(graph.edges.map(&:to_s)).to(include("Hub -> (root)"))
-    end
+    census, graph = charted(Fixtures::CYCLIC_FILES.merge(files), directories: ["lib/app"])
+    expect([census.packages, edges(graph)]).to(
+      match([contain_exactly("Alpha", "Beta", "Core", "Hub", "Point", "(root)"), include("Hub -> (root)")])
+    )
   end
 
   it "charges top-level code to the root package" do
@@ -49,18 +62,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     end
   end
 
+  def policy(name) = "class #{name}Policy < ApplicationPolicy\n  def edit? = show?\nend\n\n#{name}Policy.prepend_mod\n"
+
   it "charges top-level code in a file that defines a type to that type's package, not to the root" do
-    policy =
-      lambda { |name|
-        "class #{name}Policy < ApplicationPolicy\n  def edit? = show?\nend\n\n#{name}Policy.prepend_mod\n"
-      }
-    files = %w[Account Article Category Company Contact].to_h { ["app/policies/#{it.downcase}.rb", policy.call(it)] }
-    base = "class ApplicationPolicy\n  def show? = true\nend\n"
-    files = Fixtures::RAILS_FILES.merge(files, "app/policies/application_policy.rb" => base)
-    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      expect(graph.packages).not_to(include("(root)"))
-      expect(graph.edges.map(&:to_s).grep(/Policy/)).to(be_empty)
-    end
+    files = %w[Account Article Category Company Contact].to_h { ["app/policies/#{it.downcase}.rb", policy(it)] }
+    base = { "app/policies/application_policy.rb" => "class ApplicationPolicy\n  def show? = true\nend\n" }
+    _census, graph = charted(Fixtures::RAILS_FILES.merge(files, base))
+    expect([graph.packages, edges(graph).grep(/Policy/)]).to(match([exclude("(root)"), be_empty]))
   end
 
   describe "top-level statements that write a namespaced constant" do
@@ -116,12 +124,10 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     end
 
     it "falls back to the enclosing package when the written constant is not the project's" do
-      payments("Rails::Engine.include(Billing::Invoice)\n") do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing"))
-      end
-      payments("module Payments\n  Rails::Engine.include(Billing::Invoice)\nend\n") do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("Payments -> Billing"))
-      end
+      sources = ["Rails::Engine.include(Billing::Invoice)\n", "module Payments\n  Rails::Engine.include(Billing::Invoice)\nend\n"]
+      expect(sources.map { payments(it) { |graph| edges(graph) } }).to(
+        match([include("(root) -> Billing"), include("Payments -> Billing")])
+      )
     end
   end
 
@@ -224,11 +230,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       }
     end
 
-    def shop(extra = {}, packaging: :namespace, &)
-      analyze(storefront.merge(extra), directories: ["app"], packaging:, &)
-    end
-
-    def edges(graph) = graph.edges.map(&:to_s)
+    def shop(extra = {}, packaging: :namespace) = charted(storefront.merge(extra), packaging:)
 
     it "keeps a serializer named for a domain out of that domain" do
       resources = {
@@ -237,13 +239,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/resources/current_resource.rb" =>
           "class CurrentResource < ApplicationResource\n  def owner = [Current.user, Billing::Invoice]\nend\n"
       }
-      shop(resources) do |_project, census, graph|
-        expect(census.folds).to(be_empty)
-        expect(census.packages).to(include("(web)"))
-        expect(census.packages).not_to(include("OrderResource", "CurrentResource"))
-        expect(edges(graph)).to(include("(web) -> Order", "(web) -> Current", "(web) -> Billing"))
-        expect(edges(graph)).not_to(include("Current -> Billing"))
-      end
+      census, graph = shop(resources)
+      expect([census.folds, census.packages]).to(
+        match([be_empty, include("(web)").and(exclude("OrderResource", "CurrentResource"))])
+      )
+      expect(edges(graph)).to(
+        include("(web) -> Order", "(web) -> Current", "(web) -> Billing").and(exclude("Current -> Billing"))
+      )
     end
 
     it "does not fold a controller into the namespace of its base controller" do
@@ -254,21 +256,16 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/controllers/things_controller.rb" =>
           "class ThingsController < App::BaseController\n  def index = Order\nend\n"
       }
-      shop(controllers) do |_project, census, graph|
-        expect(census.folds).to(be_empty)
-        expect(census.types["App"]).to(eq(1))
-        expect(edges(graph)).to(include("(web) -> Order"))
-        expect(edges(graph)).not_to(include("App -> Order"))
-      end
+      census, graph = shop(controllers)
+      expect([census.folds, census.types["App"]]).to(eq([[], 1]))
+      expect(edges(graph)).to(include("(web) -> Order").and(exclude("App -> Order")))
     end
 
     it "keeps a namespace made only of controllers from becoming a package" do
       namespaced = "module Admin\n  class OrdersController < ApplicationController\n    def index = Order\n  end\nend\n"
-      shop({ "app/controllers/admin/orders_controller.rb" => namespaced }) do |_project, census, graph|
-        expect(census.packages).not_to(include("Admin"))
-        expect(census.resolve(%w[Admin OrdersController])).to(eq("(web)"))
-        expect(edges(graph)).to(eq(["(web) -> Order", "Order -> Billing"]))
-      end
+      census, graph = shop({ "app/controllers/admin/orders_controller.rb" => namespaced })
+      expect([census.packages, census.resolve(%w[Admin OrdersController])]).to(match([exclude("Admin"), eq("(web)")]))
+      expect(edges(graph)).to(eq(["(web) -> Order", "Order -> Billing"]))
     end
 
     it "keeps a controller nested in a domain namespace out of that domain" do
@@ -278,23 +275,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/jobs/shipping/label_job.rb" =>
           "module Shipping\n  class LabelJob\n    def perform = Billing::Invoice\n  end\nend\n"
       }
-      shop(orders) do |_project, census, graph|
-        expect(census.types).to(include("Shipping" => 1, "(web)" => 1))
-        expect(census.resolve(%w[Shipping])).to(eq("Shipping"))
-        expect(edges(graph)).to(include("(web) -> Shipping", "Shipping -> Billing"))
-      end
+      census, graph = shop(orders)
+      expect([census.types, census.resolve(%w[Shipping])])
+        .to(match([include("Shipping" => 1, "(web)" => 1), eq("Shipping")]))
+      expect(edges(graph)).to(include("(web) -> Shipping", "Shipping -> Billing"))
     end
 
     it "charges a controller concern to the presentation package" do
       concern = "module Authentication\n  def current = Current.user\nend\n"
-      shop({ "app/controllers/concerns/authentication.rb" => concern }) do |_project, census, graph|
-        expect(census.packages).not_to(include("Authentication"))
-        expect(edges(graph)).to(include("(web) -> Current"))
-      end
+      census, graph = shop({ "app/controllers/concerns/authentication.rb" => concern })
+      expect([census.packages, edges(graph)]).to(match([exclude("Authentication"), include("(web) -> Current")]))
     end
 
-    it "counts presentation as one client: never in a cycle, never an SDP violation, never a wide edge" do
-      web = {
+    def presentation
+      {
         "app/controllers/orders_controller.rb" =>
           "class OrdersController < ApplicationController\n  def index = [Order, Billing::Invoice]\nend\n",
         "app/controllers/invoices_controller.rb" =>
@@ -304,15 +298,17 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/serializers/order_serializer.rb" =>
           "class OrderSerializer\n  def x = [Billing::A, Billing::B, Billing::C, Billing::D]\nend\n"
       }
-      shop(web) do |_project, _census, graph|
-        expect(edges(graph)).to(include("(web) -> Billing", "(web) -> Order", "Billing -> (web)"))
-        expect(graph.cycles.knots).to(eq([%w[Billing Order]]))
-        expect(graph.metric("Billing").to_h).to(eq(tc: 2, ca: 2, ce: 1, i: 1.0 / 3))
-        expect(graph.metric("(web)").to_h).to(eq(tc: 3, ca: 0, ce: 2, i: 1.0))
-        expect(graph.usage("Billing").keys).to(eq(["(web)", "Order"]))
-        expect(graph.violations).to(be_empty)
-        expect(graph.domain.map(&:to_s)).to(eq(["Billing -> Order", "Order -> Billing"]))
-      end
+    end
+
+    it "counts presentation as one client: never in a cycle, never an SDP violation, never a wide edge" do
+      _census, graph = shop(presentation)
+      expect(edges(graph)).to(include("(web) -> Billing", "(web) -> Order", "Billing -> (web)"))
+      expect([graph.cycles.knots, graph.violations, graph.domain.map(&:to_s)]).to(
+        eq([[%w[Billing Order]], [], ["Billing -> Order", "Order -> Billing"]])
+      )
+      expect([graph.metric("Billing").to_h, graph.metric("(web)").to_h, graph.usage("Billing").keys]).to(
+        eq([{ tc: 2, ca: 2, ce: 1, i: 1.0 / 3 }, { tc: 3, ca: 0, ce: 2, i: 1.0 }, ["(web)", "Order"]])
+      )
     end
 
     def tests
@@ -327,28 +323,29 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       }
     end
 
-    it "puts tests in one (test) package, never a client: a test in a domain's namespace never joins its cycles" do
-      analyze(storefront.merge(tests), directories: %w[app test], packaging: :namespace) do |_project, census, graph|
-        expect(census.packages).to(include("(test)"))
-        expect(census.packages).not_to(include("InvoiceHelper", "OrderTest", "OrdersControllerTest", "(web)"))
-        expect(%w[InvoiceHelper OrderTest].map { census.resolve([it]) } + [census.resolve(%w[Billing InvoiceTest])])
-          .to(eq(["(test)"] * 3))
-        expect(edges(graph)).to(include("(test) -> Billing", "(test) -> Current", "(test) -> Order"))
-        expect(graph.cycles.knots).to(be_empty)
-        expect([graph.metric("Order").to_h, graph.metric("(test)").to_h])
-          .to(eq([{ tc: 1, ca: 0, ce: 1, i: 1.0 }, { tc: 5, ca: 0, ce: 0, i: nil }]))
-        expect(graph.usage("Billing").keys).to(eq(["Order"]))
-        expect(graph.domain.map(&:to_s)).to(eq(["Order -> Billing"]))
-      end
+    it "puts tests in one (test) package, a test in a domain's namespace included" do
+      census, _graph = charted(storefront.merge(tests), directories: %w[app test])
+      expect(census.packages).to(
+        include("(test)").and(exclude("InvoiceHelper", "OrderTest", "OrdersControllerTest", "(web)"))
+      )
+      resolved = [%w[InvoiceHelper], %w[OrderTest], %w[Billing InvoiceTest]].map { census.resolve(it) }
+      expect(resolved).to(eq(["(test)"] * 3))
+    end
+
+    it "never counts the (test) package as a client, so a test never joins a domain's cycles" do
+      _census, graph = charted(storefront.merge(tests), directories: %w[app test])
+      expect(edges(graph)).to(include("(test) -> Billing", "(test) -> Current", "(test) -> Order"))
+      expect([graph.cycles.knots, graph.usage("Billing").keys, graph.domain.map(&:to_s)]).to(
+        eq([[], ["Order"], ["Order -> Billing"]])
+      )
+      expect([graph.metric("Order").to_h, graph.metric("(test)").to_h])
+        .to(eq([{ tc: 1, ca: 0, ce: 1, i: 1.0 }, { tc: 5, ca: 0, ce: 0, i: nil }]))
     end
 
     it "keeps the layer view under folder packaging" do
       namespaced = "module Admin\n  class OrdersController < ApplicationController\n    def index = Order\n  end\nend\n"
-      controllers = { "app/controllers/admin/orders_controller.rb" => namespaced }
-      shop(controllers, packaging: :folder) do |_project, census, graph|
-        expect(census.packages).not_to(include("(web)"))
-        expect(edges(graph)).to(include("controllers -> models"))
-      end
+      census, graph = shop({ "app/controllers/admin/orders_controller.rb" => namespaced }, packaging: :folder)
+      expect([census.packages, edges(graph)]).to(match([exclude("(web)"), include("controllers -> models")]))
     end
 
     it "keeps controllers in their namespace outside a Rails app" do
@@ -410,31 +407,29 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/policies/foo_policy.rb" => "class FooPolicy\n  def p = 1\nend\n",
         "app/models/bar.rb" => "class Bar\n  def b = Foo.new\nend\n"
       )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(census.packages).to(include("Foo"))
-        expect(census.packages).not_to(include("FooPolicy"))
-        expect(census.types["Foo"]).to(eq(2))
-        expect(graph.edges.map(&:to_s)).to(include("Bar -> Foo"))
-      end
+      census, graph = charted(files)
+      expect([census.packages, census.types["Foo"]]).to(match([include("Foo").and(exclude("FooPolicy")), eq(2)]))
+      expect(edges(graph)).to(include("Bar -> Foo"))
     end
 
+    def decorator(name) = "class #{name}Decorator < ApplicationDecorator\n  def x = 1\nend\n"
+
     it "folds decorators into their domain, not an app-defined ApplicationDecorator" do
-      decorator = ->(name) { "class #{name}Decorator < ApplicationDecorator\n  def x = 1\nend\n" }
-      files = Fixtures::RAILS_FILES.merge(
-        "app/decorators/application_decorator.rb" =>
-          "class ApplicationDecorator < Draper::Decorator\n  def s = 1\nend\n",
-        "app/decorators/billing_decorator.rb" => decorator.call("Billing"),
-        "app/decorators/user_decorator.rb" => decorator.call("User")
-      )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-        expect(census.packages).not_to(include("BillingDecorator", "UserDecorator"))
-        expect(census.folds).to(
-          include(
-            { from: "BillingDecorator", to: "Billing", via: "suffix" },
-            { from: "UserDecorator", to: "User", via: "suffix" }
-          )
+      census, _graph = charted(
+        Fixtures::RAILS_FILES.merge(
+          "app/decorators/application_decorator.rb" =>
+            "class ApplicationDecorator < Draper::Decorator\n  def s = 1\nend\n",
+          "app/decorators/billing_decorator.rb" => decorator("Billing"),
+          "app/decorators/user_decorator.rb" => decorator("User")
         )
-      end
+      )
+      expect(census.packages).not_to(include("BillingDecorator", "UserDecorator"))
+      expect(census.folds).to(
+        include(
+          { from: "BillingDecorator", to: "Billing", via: "suffix" },
+          { from: "UserDecorator", to: "User", via: "suffix" }
+        )
+      )
     end
 
     it "keeps a class whose superclass matches a nested namesake only by suffix" do
@@ -442,24 +437,24 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/models/admin/base.rb" => "module Admin\n  class Base\n    def b = 1\n  end\nend\n",
         "app/widgets/widget.rb" => "class Widget < Base\n  def w = Billing::Invoice.new\nend\n"
       )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(census.packages).to(include("Widget"))
-        expect(graph.edges.map(&:to_s)).to(include("Widget -> Billing"))
-        expect(graph.edges.map(&:to_s)).not_to(include("Admin -> Billing"))
+      census, graph = charted(files)
+      expect([census.packages, edges(graph)]).to(
+        match([include("Widget"), include("Widget -> Billing").and(exclude("Admin -> Billing"))])
+      )
+    end
+
+    def reopened(folder)
+      files = Fixtures::RAILS_FILES.merge(
+        Fixtures::NOTIFY_FILES,
+        "app/#{folder}/account_notification.rb" => "class AccountNotification\n  def extra = 1\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
+        [census.packages.include?("AccountNotification"), census.types["Notification"]]
       end
     end
 
     it "keeps the base fold whichever file order reopens a lone subclass" do
-      %w[aext zext].each do |folder|
-        files = Fixtures::RAILS_FILES.merge(
-          Fixtures::NOTIFY_FILES,
-          "app/#{folder}/account_notification.rb" => "class AccountNotification\n  def extra = 1\nend\n"
-        )
-        analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-          expect(census.packages).not_to(include("AccountNotification"))
-          expect(census.types["Notification"]).to(eq(3))
-        end
-      end
+      expect(%w[aext zext].map { reopened(it) }).to(eq([[false, 3], [false, 3]]))
     end
 
     it "does not fold a package into itself via its own nested superclass" do
@@ -478,31 +473,32 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/jobs/orders/refund_job.rb" => "module Orders\n  class RefundJob\n    def perform = Order\n  end\nend\n",
         "app/models/shop.rb" => "class Shop\n  def run = Orders::RefundJob\nend\n"
       )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(census.folds).to(include({ from: "Orders", to: "Order", via: "plural" }))
-        expect(census.types["Order"]).to(eq(2))
-        expect(graph.edges.map(&:to_s)).to(include("Shop -> Order"))
-        expect(graph.cycles.knots).to(be_empty)
-      end
+      census, graph = charted(files)
+      expect([census.folds, census.types["Order"]])
+        .to(match([include({ from: "Orders", to: "Order", via: "plural" }), eq(2)]))
+      expect([edges(graph), graph.cycles.knots]).to(match([include("Shop -> Order"), be_empty]))
+    end
+
+    def plural(name) = "module #{name}\n  class Item\n    def i = 1\n  end\nend\n"
+
+    def single(name) = "class #{name}\n  def s = 1\nend\n"
+
+    def plurals
+      Fixtures::RAILS_FILES.merge(
+        "app/models/box.rb" => single("Box"), "app/models/boxes/item.rb" => plural("Boxes"),
+        "app/models/category.rb" => single("Category"), "app/models/categories/item.rb" => plural("Categories"),
+        "app/models/settings/item.rb" => plural("Settings")
+      )
     end
 
     it "folds -es and -ies plurals too, and keeps a plural with no singular namesake" do
-      plural = ->(name) { "module #{name}\n  class Item\n    def i = 1\n  end\nend\n" }
-      single = ->(name) { "class #{name}\n  def s = 1\nend\n" }
-      files = Fixtures::RAILS_FILES.merge(
-        "app/models/box.rb" => single.call("Box"), "app/models/boxes/item.rb" => plural.call("Boxes"),
-        "app/models/category.rb" => single.call("Category"),
-        "app/models/categories/item.rb" => plural.call("Categories"),
-        "app/models/settings/item.rb" => plural.call("Settings")
-      )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-        expect(census.folds).to(
-          contain_exactly(
-            { from: "Boxes", to: "Box", via: "plural" }, { from: "Categories", to: "Category", via: "plural" }
-          )
+      census, _graph = charted(plurals)
+      expect(census.folds).to(
+        contain_exactly(
+          { from: "Boxes", to: "Box", via: "plural" }, { from: "Categories", to: "Category", via: "plural" }
         )
-        expect(census.packages).to(include("Settings"))
-      end
+      )
+      expect(census.packages).to(include("Settings"))
     end
 
     it "folds a module that only extends or includes another into the module it adopts" do
@@ -512,15 +508,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/events/order_paid.rb" => "module OrderPaid\n  include Notifier\nend\n",
         "app/models/user.rb" => "class User\n  def ship = [OrderShipped, OrderPaid]\nend\n"
       )
-      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(census.folds).to(
-          contain_exactly(
-            { from: "OrderPaid", to: "Notifier", via: "mixin" }, { from: "OrderShipped", to: "Notifier", via: "mixin" }
-          )
+      census, graph = charted(files)
+      expect(census.folds).to(
+        contain_exactly(
+          { from: "OrderPaid", to: "Notifier", via: "mixin" }, { from: "OrderShipped", to: "Notifier", via: "mixin" }
         )
-        expect(graph.edges.map(&:to_s)).to(include("User -> Notifier"))
-        expect(graph.metric("Notifier").to_h).to(include(ca: 1))
-      end
+      )
+      expect([edges(graph), graph.metric("Notifier").to_h]).to(match([include("User -> Notifier"), include(ca: 1)]))
     end
 
     it "keeps a module that does more than adopt another, or adopts nothing the project defines" do

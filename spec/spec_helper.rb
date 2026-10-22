@@ -304,6 +304,8 @@ module Fixtures
   }.freeze
 end
 
+RSpec::Matchers.define_negated_matcher(:exclude, :include)
+
 RSpec.configure do |config|
   config.include(Fixtures)
   config.disable_monkey_patching!

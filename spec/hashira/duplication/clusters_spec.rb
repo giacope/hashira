@@ -19,12 +19,9 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     }
   end
   it "clusters an exact clone into one finding covering both sites, at maximal size" do
-    clusters = clusters(exact)
-    expect(clusters.size).to(eq(1))
-    expect(clusters.first.size).to(eq(2))
-    expect(clusters.first.mass).to(eq(23))
-    expect(clusters.first.canonical.range).to(eq("a.rb:1-5"))
-    expect(clusters.first.sites.map(&:file)).to(eq(["a.rb", "b.rb"]))
+    expect(clusters(exact).map { [it.size, it.mass, it.canonical.range, it.sites.map(&:file)] }).to(
+      eq([[2, 23, "a.rb:1-5", ["a.rb", "b.rb"]]])
+    )
   end
 
   it "keeps an exact pair that a near-miss neighbour drags below the raised floor" do
@@ -75,11 +72,17 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect(cluster.sites.map(&:mass)).to(contain_exactly(40, 60))
   end
 
-  it "keeps two unrelated clones apart when they sit side by side in one method" do
-    pay = " gateway.configure(fetch(:host), fetch(:port))\n gateway.connect(retries: 3, timeout: 30)\n " \
+  def pay
+    " gateway.configure(fetch(:host), fetch(:port))\n gateway.connect(retries: 3, timeout: 30)\n " \
       "gateway.authorize(token: load(:tok), scope: :sale)\n"
-    ship = " @carrier = Carrier.lookup(order.region)\n label = @carrier.print(order.address, format: :pdf)\n " \
+  end
+
+  def ship
+    " @carrier = Carrier.lookup(order.region)\n label = @carrier.print(order.address, format: :pdf)\n " \
       "queue << [label, order.id] unless label.nil?\n"
+  end
+
+  it "keeps two unrelated clones apart when they sit side by side in one method" do
     sources = {
       "a.rb" => "def a(gateway, order, queue)\n#{pay}#{ship}end\n",
       "b.rb" => "def b(gateway)\n#{pay}end\n", "c.rb" => "def c(order, queue)\n#{ship}end\n"
@@ -102,23 +105,40 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
   end
 
   it "does not pair methods of a size that only share a rare construct" do
-    one = "def a(list)\n until list.empty?\n  item = list.shift\n  process(item, mode: :fast) if item.ready?\n end\n " \
-      "log.info(\"done: \#{list.size}\")\n @seen = Set.new([1, 2, 3])\n " \
-      "report(@seen.to_a, header: [:id, :name])\nend\n"
-    two = "def b(table)\n rows = table.fetch(:rows, [])\n until rows.none?\n  emit(rows.pop.to_s.strip, :csv)\n " \
-      "end\n case rows.first\n when Hash then rows.map { |r| r.transform_keys(&:to_s) }\n " \
-      "else rows.flatten.compact.uniq\n end\nend\n"
+    one = <<~'RUBY'
+      def a(list)
+       until list.empty?
+        item = list.shift
+        process(item, mode: :fast) if item.ready?
+       end
+       log.info("done: #{list.size}")
+       @seen = Set.new([1, 2, 3])
+       report(@seen.to_a, header: [:id, :name])
+      end
+    RUBY
+    two = <<~RUBY
+      def b(table)
+       rows = table.fetch(:rows, [])
+       until rows.none?
+        emit(rows.pop.to_s.strip, :csv)
+       end
+       case rows.first
+       when Hash then rows.map { |r| r.transform_keys(&:to_s) }
+       else rows.flatten.compact.uniq
+       end
+      end
+    RUBY
     expect(clusters("a.rb" => one, "b.rb" => two)).to(be_empty)
   end
 
+  def labelled(icon, label)
+    %(image_tag("#{icon}", aria: { hidden: "true" }, size: 20) + tag.span("#{label}", class: "sr"))
+  end
+
   it "clusters a lone expression big enough to stand on its own" do
-    body =
-      lambda do |icon, label|
-        %(image_tag("#{icon}", aria: { hidden: "true" }, size: 20) + tag.span("#{label}", class: "sr"))
-      end
     helper = {
-      "a.rb" => "def back\n link_to dest, class: \"btn\" do\n  #{body["back.svg", "Go Back"]}\n end\nend\n",
-      "b.rb" => "def save\n tag.button type: \"submit\" do\n  #{body["save.svg", "Save"]}\n end\nend\n"
+      "a.rb" => "def back\n link_to dest, class: \"btn\" do\n  #{labelled("back.svg", "Go Back")}\n end\nend\n",
+      "b.rb" => "def save\n tag.button type: \"submit\" do\n  #{labelled("save.svg", "Save")}\n end\nend\n"
     }
     expect(clusters(helper).first.sites.map(&:range)).to(contain_exactly("a.rb:3-3", "b.rb:3-3"))
   end
@@ -267,46 +287,47 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect(clusters(sources.merge("b.rb" => attributes("B", "x", mine))).first.size).to(eq(2))
   end
 
+  def settings(group, host, port)
+    "group :#{group} do\n string :host do\n  description \"#{host}\"\n  default \"#{host}.local\"\n end\n " \
+      "integer :port do\n  description \"port\"\n  default #{port}\n end\n " \
+      "boolean :tls do\n  description \"tls\"\n  default false\n end\nend\n"
+  end
+
   it "leaves a macro alone whose block holds only more declarations" do
-    settings =
-      lambda do |group, host, port|
-        "group :#{group} do\n string :host do\n  description \"#{host}\"\n  default \"#{host}.local\"\n end\n " \
-          "integer :port do\n  description \"port\"\n  default #{port}\n end\n " \
-          "boolean :tls do\n  description \"tls\"\n  default false\n end\nend\n"
-      end
-    expect(clusters("a.rb" => settings[:smtp, "mx", 25], "b.rb" => settings[:imap, "mail", 143])).to(be_empty)
+    expect(clusters("a.rb" => settings(:smtp, "mx", 25), "b.rb" => settings(:imap, "mail", 143))).to(be_empty)
+  end
+
+  def parameterized(group, body)
+    "group :#{group} do |g|\n string :host do\n  description \"host\"\n  #{body}\n end\n " \
+      "integer :port do\n  description \"port\"\n  default 25\n end\nend\n"
   end
 
   it "reads a macro block as code once it takes a parameter or holds logic" do
-    settings =
-      lambda do |group, body|
-        "group :#{group} do |g|\n string :host do\n  description \"host\"\n  #{body}\n end\n " \
-          "integer :port do\n  description \"port\"\n  default 25\n end\nend\n"
-      end
-    expect(clusters("a.rb" => settings[:smtp, "default 1"], "b.rb" => settings[:imap, "default 2"])).not_to(be_empty)
-    logic = ->(group) { settings[group, "default { ENV.fetch(\"HOST\") }"].sub(" |g|", "") }
+    expect(clusters("a.rb" => parameterized(:smtp, "default 1"), "b.rb" => parameterized(:imap, "default 2")))
+      .not_to(be_empty)
+    logic = ->(group) { parameterized(group, "default { ENV.fetch(\"HOST\") }").sub(" |g|", "") }
     expect(clusters("a.rb" => logic[:smtp], "b.rb" => logic[:imap])).not_to(be_empty)
   end
 
+  def declaring(name, limit)
+    "class #{name}\n include Comparable\n extend Forwardable\n MSG = \"Use #{name}.\".freeze\n " \
+      "LIMIT = #{limit}\n KINDS = %i[a b].freeze\n " \
+      "def_node_matcher :bad?, <<~PATTERN\n  (send nil? :#{name}\n    " \
+      "(int #{limit}))\n PATTERN\nend\n"
+  end
+
   it "leaves mixins, frozen constants and plain heredoc arguments alone — they declare, they do not compute" do
-    header =
-      lambda do |name, limit|
-        "class #{name}\n include Comparable\n extend Forwardable\n MSG = \"Use #{name}.\".freeze\n " \
-          "LIMIT = #{limit}\n KINDS = %i[a b].freeze\n " \
-          "def_node_matcher :bad?, <<~PATTERN\n  (send nil? :#{name}\n    " \
-          "(int #{limit}))\n PATTERN\nend\n"
-      end
-    expect(clusters("a.rb" => header["A", 1], "b.rb" => header["B", 2])).to(be_empty)
+    expect(clusters("a.rb" => declaring("A", 1), "b.rb" => declaring("B", 2))).to(be_empty)
+  end
+
+  def declared(name)
+    "class #{name}\n include Comparable\n extend Forwardable\n NAME = \"Thing\".downcase\n " \
+      "KINDS = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze\n " \
+      "MORE = [Prism::CallNode, Prism::ConstantReadNode].freeze\nend\n"
   end
 
   it "reads a frozen list of constants, or a literal's plain message, as a declaration" do
-    declared =
-      lambda do |name|
-        "class #{name}\n include Comparable\n extend Forwardable\n NAME = \"Thing\".downcase\n " \
-          "KINDS = [Prism::DefNode, Prism::RescueNode, Prism::WhenNode].freeze\n " \
-          "MORE = [Prism::CallNode, Prism::ConstantReadNode].freeze\nend\n"
-      end
-    expect(clusters("a.rb" => declared["A"], "b.rb" => declared["B"])).to(be_empty)
+    expect(clusters("a.rb" => declared("A"), "b.rb" => declared("B"))).to(be_empty)
   end
 
   it "reads a literal table that freezes its values in place as a declaration, and a passed block as code" do
@@ -314,9 +335,8 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     table = ->(name, tail) { "module #{name}\n MAP = { #{pairs} }.freeze\n #{tail}\nend\n" }
     expect(clusters("a.rb" => table["A", "MAP.each_value(&:freeze)"], "b.rb" => table["B", "MAP.each_value(&:freeze)"]))
       .to(be_empty)
-    %w[MAP.each_value(&:dup) MAP.each_value(&@cb) MAP.each(&) x.each(&:freeze)].each do |tail|
-      expect(clusters("a.rb" => table["A", tail], "b.rb" => table["B", tail])).not_to(be_empty)
-    end
+    tails = %w[MAP.each_value(&:dup) MAP.each_value(&@cb) MAP.each(&) x.each(&:freeze)]
+    expect(tails.map { clusters("a.rb" => table["A", it], "b.rb" => table["B", it]).size }).to(all(be_positive))
   end
 
   it "takes two runs that share only their shape and their operators for two lists, not one clone" do
@@ -339,18 +359,17 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect(clusters("a.rb" => pods, "b.rb" => keys)).to(be_empty)
   end
 
+  def interpolating(name, value)
+    "class #{name}\n include Comparable\n extend Forwardable\n MSG = #{value}\n " \
+      "LIMIT = 10\n KINDS = %i[a b].freeze\n def_node_matcher :bad?, <<~PATTERN\n  (send nil? :\#{x}\n    " \
+      "(int 1))\n PATTERN\nend\n"
+  end
+
+  def built(value) = %w[A B].to_h { ["#{it.downcase}.rb", interpolating(it, value).sub("\#{x}", "x")] }
+
   it "reads a heredoc that interpolates, or a constant built by a message, as code" do
-    header =
-      lambda do |name, value|
-        "class #{name}\n include Comparable\n extend Forwardable\n MSG = #{value}\n " \
-          "LIMIT = 10\n KINDS = %i[a b].freeze\n def_node_matcher :bad?, <<~PATTERN\n  (send nil? :\#{x}\n    " \
-          "(int 1))\n PATTERN\nend\n"
-      end
-    expect(clusters("a.rb" => header["A", "1"], "b.rb" => header["B", "2"])).not_to(be_empty)
-    %w[Set.new "Use".ljust(20)].each do |value|
-      built = ->(name) { header[name, value].sub("\#{x}", "x") }
-      expect(clusters("a.rb" => built["A"], "b.rb" => built["B"])).not_to(be_empty)
-    end
+    expect(clusters("a.rb" => interpolating("A", "1"), "b.rb" => interpolating("B", "2"))).not_to(be_empty)
+    expect(%w[Set.new "Use".ljust(20)].map { clusters(built(it)).size }).to(all(be_positive))
   end
 
   def client(patch = "def patch(path, body, headers: {}) = request(:patch, path, body: body.to_json, headers:)")
@@ -375,20 +394,21 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect(clusters("b.rb" => source)).to(be_empty)
   end
 
-  it "leaves alone tests whose body is one call to the project's own assertion, as it does such methods" do
-    test =
-      lambda do |name, who, route|
-        "  test \"#{name}\" do\n    assert_leaves(users(:#{who})) { delete #{route}(users(:#{who})) }\n  end\n"
-      end
-    helper = "module Leaving; def assert_leaves(user, &) = yield; end\n"
-    files = {
-      "leaving.rb" => helper,
-      "a.rb" => "class BotsTest\n#{test["a bot leaves", "bender", "bot_url"]}end\n",
-      "b.rb" => "class UsersTest\n#{test["a person leaves", "david", "user_url"]}end\n"
+  def leaving(name, who, route)
+    "  test \"#{name}\" do\n    assert_leaves(users(:#{who})) { delete #{route}(users(:#{who})) }\n  end\n"
+  end
+
+  def leavers
+    {
+      "leaving.rb" => "module Leaving; def assert_leaves(user, &) = yield; end\n",
+      "a.rb" => "class BotsTest\n#{leaving("a bot leaves", "bender", "bot_url")}end\n",
+      "b.rb" => "class UsersTest\n#{leaving("a person leaves", "david", "user_url")}end\n"
     }
-    expect(clusters(files)).to(be_empty)
-    stranger = files.merge("leaving.rb" => "module Leaving; end\n")
-    expect(clusters(stranger).map(&:size)).to(eq([2]))
+  end
+
+  it "leaves alone tests whose body is one call to the project's own assertion, as it does such methods" do
+    expect(clusters(leavers)).to(be_empty)
+    expect(clusters(leavers.merge("leaving.rb" => "module Leaving; end\n")).map(&:size)).to(eq([2]))
   end
 
   it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
@@ -398,13 +418,13 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect([external, renamed, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2]))
   end
 
+  def job(name, id)
+    "def #{name}\n transaction do\n  order = load(:order, #{id})\n  order.check(:stock, limit: 5, warn: true)\n  " \
+      "order.save(:order, status: \"ok\", at: clock.now)\n end\nend\n"
+  end
+
   it "still reports the copies inside the block a shared method is handed" do
-    job =
-      lambda do |name, id|
-        "def #{name}\n transaction do\n  order = load(:order, #{id})\n  order.check(:stock, limit: 5, warn: true)\n  " \
-          "order.save(:order, status: \"ok\", at: clock.now)\n end\nend\n"
-      end
-    source = "class Jobs\n#{job["pay", 1]}#{job["ship", 2]}def transaction = yield\nend\n"
+    source = "class Jobs\n#{job("pay", 1)}#{job("ship", 2)}def transaction = yield\nend\n"
     expect(clusters("j.rb" => source).map { it.canonical.statements.size }).to(eq([3]))
   end
 
@@ -511,12 +531,13 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     end
   end
 
+  def stored(name, body) = "class #{name}\n KINDS = [Prism::DefNode, Prism::RescueNode].freeze\n#{body}end\n"
+
   it "weighs a constructor that only stores its arguments as nothing, and one that computes as code" do
-    stored = ->(name, body) { "class #{name}\n KINDS = [Prism::DefNode, Prism::RescueNode].freeze\n#{body}end\n" }
     stores = %w[file tree root mode].map { "  @#{it} = #{it}\n" }.join
     plain = " def initialize(file, tree, root, mode)\n#{stores} end\n"
     computed = " def initialize(file, tree)\n  @file = file.to_s\n  @tree = tree.freeze\n end\n"
-    sources = [plain, computed].map { |body| { "a.rb" => stored["A", body], "b.rb" => stored["B", body] } }
+    sources = [plain, computed].map { |body| { "a.rb" => stored("A", body), "b.rb" => stored("B", body) } }
     expect(sources.map { clusters(it).size }).to(eq([0, 1]))
   end
 
@@ -636,10 +657,9 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       logs = %w[logger.error(x) Rails.logger.info(x) @log.debug(x) app_logger.warn(x) self.logger.fatal(x) log.unknown]
       others = %w[logger.flush(x) order.error(x) error(x) ledger.info(x) x Sentry.capture_exception(e)]
       reports = %w[Sentry.capture_exception(e) Rails.error.report(e) notify(1,e)]
-      unreported = %w[report(@e) report]
-      plain = [logs, others].map { |group| group.map { sink?(it) } }
-      judged = plain + [reports, unreported].map { |group| group.map { sink?(it, :e) } }
-      expect(judged.map(&:uniq)).to(eq([[true], [false], [true], [false]]))
+      expect([logs, others].map { |group| group.map { sink?(it) }.uniq }).to(eq([[true], [false]]))
+      expect([reports, %w[report(@e) report]].map { |group| group.map { sink?(it, :e) }.uniq })
+        .to(eq([[true], [false]]))
     end
 
     it "discounts every node a sink's interpolated messages hold, nested ones counted once" do
@@ -663,14 +683,23 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       expect([silent, spoken].map { clusters(it).size }).to(eq([1, 0]))
     end
 
-    it "takes the words a method's strings and symbols carry as part of what it says" do
-      envy = "refers to \#{names} more than to self, \#{detail[:count]} (\#{detail[:site]}). " \
+    def envy
+      "refers to \#{names} more than to self, \#{detail[:count]} (\#{detail[:site]}). " \
         "The behavior may belong on \#{detail[:types]}."
-      trace = "scores cognitive \#{detail[:cognitive]} with its \#{names} read in place (\#{detail[:site]}). " \
+    end
+
+    def trace
+      "scores cognitive \#{detail[:cognitive]} with its \#{names} read in place (\#{detail[:site]}). " \
         "Inline the helpers that only move code."
-      head = ->(name, key) { "def #{name}(finding)\n detail = finding.detail.to_h\n names = detail[:#{key}]\n" }
-      said = ->(name, key, words) { "#{head[name, key]} \"\#{finding.package} #{words}\"\nend\n" }
-      expect(clusters("a.rb" => said["a", "names", envy], "b.rb" => said["b", "helpers", trace])).to(be_empty)
+    end
+
+    def said(name, key, words)
+      "def #{name}(finding)\n detail = finding.detail.to_h\n names = detail[:#{key}]\n " \
+        "\"\#{finding.package} #{words}\"\nend\n"
+    end
+
+    it "takes the words a method's strings and symbols carry as part of what it says" do
+      expect(clusters("a.rb" => said("a", "names", envy), "b.rb" => said("b", "helpers", trace))).to(be_empty)
     end
 
     def pair(*sources) = Hashira::Duplication::Pair.new(*sources.map { fragments("a.rb" => it).find(&:opened?) })
