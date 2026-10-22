@@ -3,13 +3,9 @@
 RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
   it "flags one foreign type picked apart across many methods and files" do
     findings = sniffed(spread(methods: 12, files: 3), "boundary_sprawl")
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("Prism"))
-    expect(finding.detail).to(eq(count: 12, files: 3))
-    expect(finding.evidence.size).to(eq(4))
-    expect(finding.evidence.first).to(include("zone/probe0.rb:4"))
-    expect(message(finding)).to(
+    expect(findings.map { [it.package, it.detail, it.evidence.size] }).to(eq([["Prism", { count: 12, files: 3 }, 4]]))
+    expect(findings.first.evidence.first).to(include("zone/probe0.rb:4"))
+    expect(message(findings.first)).to(
       include(
         "12 methods across 3 files each pick apart Prism's internals",
         "Front the boundary with one adapter"
@@ -41,17 +37,19 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
     files = spread(methods: 12, files: 3).merge(
       "lib/app/trees.rb" => "class Trees; def parse = Prism.parse('1').value; end\n"
     )
-    within(files) do
-      project = Hashira::Project.new(["lib/app"])
-      trees = Hashira::Trees.new(project).all
-      record = {
-        "root" => "Prism", "role" => "interpreted_model",
-        "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
-      }
-      boundaries = Hashira::Boundaries.new([record], trees)
-      report = Hashira::Smells::Report.new(project, trees, boundaries, Fixtures::NONE)
-      expect(report.findings.select { it.kind == "boundary_sprawl" }).to(be_empty)
-    end
+    expect(within(files) { interpreted }).to(be_empty)
+  end
+
+  # The sprawl findings left once Prism is declared an interpreted model.
+  def interpreted
+    project = Hashira::Project.new(["lib/app"])
+    trees = Hashira::Trees.new(project).all
+    record = {
+      "root" => "Prism", "role" => "interpreted_model",
+      "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
+    }
+    report = Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([record], trees), Fixtures::NONE)
+    report.findings.select { it.kind == "boundary_sprawl" }
   end
 
   def spread(methods:, files:, tested: "Prism::CallNode")

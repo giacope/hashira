@@ -72,10 +72,8 @@ RSpec.describe(Hashira::Coupling::Census, :aggregate_failures) do
       RUBY
       "lib/app/beta/none.rb" => "module App; module Beta; end; end\n"
     }
-    analyze(files) do |_project, census, _graph|
-      expect(census.types).to(eq("alpha" => 2))
-      expect(census.packages).to(contain_exactly("alpha", "beta"))
-    end
+    types, packages = analyze(files) { |_project, census, _graph| [census.types, census.packages] }
+    expect([types, packages]).to(match([eq("alpha" => 2), contain_exactly("alpha", "beta")]))
   end
 
   it "records a depth-1 module with only direct methods (no nested types)" do
@@ -119,25 +117,24 @@ RSpec.describe(Hashira::Coupling::Census, :aggregate_failures) do
   end
 
   describe "#resolve" do
+    # What each query, a path and the namespaces around it, resolves to.
+    def resolved(files, queries, **)
+      analyze(files, **) { |_project, census, _graph| queries.map { census.resolve(*it) } }
+    end
+
     it "resolves a top-level path only under the shared namespace, as Ruby would" do
-      analyze(Fixtures::CYCLIC_FILES) do |_project, census, _graph|
-        expect(census.resolve(%w[App Alpha One])).to(eq("alpha"))
-        expect(census.resolve(%w[Alpha One])).to(be_nil)
-        expect(census.resolve(%w[Alpha One], [%w[App]])).to(eq("alpha"))
-        expect(census.resolve(%w[App])).to(be_nil)
-      end
+      queries = [[%w[App Alpha One]], [%w[Alpha One]], [%w[Alpha One], [%w[App]]], [%w[App]]]
+      expect(resolved(Fixtures::CYCLIC_FILES, queries)).to(eq(["alpha", nil, "alpha", nil]))
     end
 
     it "resolves references under a deep namespace prefix at any depth" do
-      analyze(Fixtures::NESTED_FILES, directories: ["lib/app/core"]) do |_project, census, _graph|
-        expect(census.resolve(%w[Walk Stepper])).to(be_nil)
-        expect(census.resolve(%w[Core Walk Stepper])).to(be_nil)
-        expect(census.resolve(%w[Walk Stepper], [%w[App], %w[App Core], %w[App Core Search]])).to(eq("walk"))
-        expect(census.resolve(%w[Walk Stepper], [%w[App Core Search]])).to(be_nil)
-        expect(census.resolve(%w[Core Walk Stepper], [%w[App]])).to(eq("walk"))
-        expect(census.resolve(%w[App Core Walk Stepper])).to(eq("walk"))
-        expect(census.resolve(%w[App Core])).to(be_nil)
-      end
+      queries = [
+        [%w[Walk Stepper]], [%w[Core Walk Stepper]], [%w[Walk Stepper], [%w[App], %w[App Core], %w[App Core Search]]],
+        [%w[Walk Stepper], [%w[App Core Search]]], [%w[Core Walk Stepper], [%w[App]]], [%w[App Core Walk Stepper]],
+        [%w[App Core]]
+      ]
+      expect(resolved(Fixtures::NESTED_FILES, queries, directories: ["lib/app/core"]))
+        .to(eq([nil, nil, "walk", nil, "walk", "walk", nil]))
     end
 
     it "returns nil for external constants" do

@@ -7,10 +7,8 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
 
   it "turns kinds off and moves thresholds" do
     rules = parse("feature_envy" => false, "complexity" => { "threshold" => 4 }, "state_sprawl" => true)
-    expect(rules.enabled?("feature_envy")).to(be(false))
-    expect(rules.enabled?("complexity")).to(be(true))
-    expect(rules.threshold("complexity", 10)).to(eq(4))
-    expect(rules.threshold("state_sprawl", 4)).to(eq(4))
+    expect([rules.enabled?("feature_envy"), rules.enabled?("complexity")]).to(eq([false, true]))
+    expect([rules.threshold("complexity", 10), rules.threshold("state_sprawl", 4)]).to(eq([4, 4]))
     expect(parse("complexity" => { "enabled" => false }).enabled?("complexity")).to(be(false))
   end
 
@@ -19,9 +17,9 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
     expect(%w[complexity duplication nil_check indirection dead_code change_coupling].map { defaults.enabled?(it) })
       .to(eq([true, true, true, false, true, false]))
     expect(defaults.threshold("complexity", 10)).to(eq(10))
-    expect(%w[nil_check indirection].map { parse("all").enabled?(it) }).to(eq([true, true]))
-    expect(parse("nil_check" => true).enabled?("nil_check")).to(be(true))
-    expect(defaults.naming(%w[nil_check]).enabled?("nil_check")).to(be(true))
+    expect([parse("all"), parse("nil_check" => true), defaults.naming(%w[nil_check])].map { it.enabled?("nil_check") })
+      .to(eq([true, true, true]))
+    expect(parse("all").enabled?("indirection")).to(be(true))
   end
 
   it "moves a kind's named limits, and keeps the default for one not given" do

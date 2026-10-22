@@ -161,10 +161,9 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     it "defaults --only to nothing and reads a comma-separated list of files" do
       within("lib/app/x.rb" => "class X; def a = 1; end\n") do
         expect(described_class.parse(%w[lib/app]).only).to(eq([]))
-        expect(described_class.parse(%w[lib/app --only lib/app/x.rb]).only).to(eq(%w[lib/app/x.rb]))
-        expect(described_class.parse(["lib/app", "--only", "./lib/app/x.rb, lib/app/x.rb"]).only)
-          .to(eq(%w[lib/app/x.rb lib/app/x.rb]))
-        expect(described_class.parse(["lib/app", "--only", "#{Dir.pwd}/lib/app/x.rb"]).only).to(eq(%w[lib/app/x.rb]))
+        lists = ["lib/app/x.rb", "./lib/app/x.rb, lib/app/x.rb", "#{Dir.pwd}/lib/app/x.rb"]
+        expect(lists.map { described_class.parse(["lib/app", "--only", it]).only })
+          .to(eq([%w[lib/app/x.rb], %w[lib/app/x.rb lib/app/x.rb], %w[lib/app/x.rb]]))
       end
     end
 
@@ -263,12 +262,17 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
       end
     end
 
-    it "steps a setting aside when the command line rules it out, keeping the rest" do
+    it "steps a setting aside when the command line picks a mode that rules it out, keeping the rest" do
       configured("fail-on: cycles\nkind: cycles,sdp\nskip: smells\n") do
         expect(read("--json", %i[mode fail_on kinds]))
           .to(eq(mode: :json, fail_on: [], kinds: %w[cycle unstable_dependency]))
         expect(read("--ratchet", %i[mode fail_on])).to(eq(mode: :ratchet, fail_on: []))
         expect(read("--update-baseline", %i[mode kinds skip])).to(eq(mode: :update, kinds: [], skip: [:smells]))
+      end
+    end
+
+    it "steps a setting aside when a command-line flag rules it out, keeping the rest" do
+      configured("fail-on: cycles\nkind: cycles,sdp\nskip: smells\n") do
         expect(read("--skip", "coupling", %i[mode fail_on kinds])).to(eq(mode: :text, fail_on: [], kinds: []))
         expect(read("--fail-on", "feature_envy", %i[fail_on skip kinds]))
           .to(eq(fail_on: %w[feature_envy], skip: [], kinds: []))

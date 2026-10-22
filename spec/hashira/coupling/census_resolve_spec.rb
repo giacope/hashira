@@ -34,17 +34,16 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
     end
   end
 
+  def vias(census) = [census.vias(%w[Keys MUTEX]), census.vias(%w[Store])]
+
   it "looks a qualified constant up through the ancestors of the type it names, as Ruby does" do
     files = {
       "lib/app/jobs/job.rb" => "module App\n  class Job\n    def key = Store::MUTEX\n  end\nend\n",
       "lib/app/store/store.rb" => "module App\n  module Store\n    include Keys\n  end\nend\n",
       "lib/app/keys/keys.rb" => "module App\n  module Keys\n    MUTEX = 1\n  end\nend\n"
     }
-    analyze(files) do |_project, census, graph|
-      expect(graph.sightings.map(&:path)).to(include(%w[Keys MUTEX]))
-      expect(census.vias(%w[Keys MUTEX])).to(eq(Set[%w[Store]]))
-      expect(census.vias(%w[Store])).to(eq([]))
-    end
+    found = analyze(files) { |_project, census, graph| [graph.sightings.map(&:path), *vias(census)] }
+    expect(found).to(match([include(%w[Keys MUTEX]), eq(Set[%w[Store]]), eq([])]))
   end
 
   it "walks outward through enclosing namespaces before falling back to top level" do
@@ -499,27 +498,28 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
     end
   end
 
-  it "infers an association's class from its name, as Active Record does" do
-    model = ->(name, *body) { "class #{name} < ApplicationRecord\n#{body.join("\n")}\nend\n" }
+  def model(name, *body) = "class #{name} < ApplicationRecord\n#{body.join("\n")}\nend\n"
+
+  def associations
     many = "has_many"
-    lab = model.call("Lab", "#{many} :cacti", "belongs_to :owner, polymorphic: false", "has_one :media")
-    author = model.call("Author", "#{many} :posts", "has_one :profile", "#{many} :tags, through: :y")
     names = %w[Profile Category Tag Commentable Label Cactus Owner Media]
     plain = names.to_h { ["app/models/#{it.downcase}.rb", "class #{it}\nend"] }
-    files = Fixtures::RAILS_FILES.merge(
-      "app/models/author.rb" => author,
-      "app/models/post.rb" => model.call("Post", "belongs_to :author", "has_and_belongs_to_many :categories"),
-      "app/models/remark.rb" => model.call("Remark", "belongs_to :commentable, polymorphic: true", "#{many} 'labels'"),
-      "app/models/feed.rb" => model.call("Feed", "#{many} :entries, through: :p, source: :remark", "#{many} name"),
-      "app/models/lab.rb" => lab,
+    Fixtures::RAILS_FILES.merge(
+      "app/models/author.rb" => model("Author", "#{many} :posts", "has_one :profile", "#{many} :tags, through: :y"),
+      "app/models/post.rb" => model("Post", "belongs_to :author", "has_and_belongs_to_many :categories"),
+      "app/models/remark.rb" => model("Remark", "belongs_to :commentable, polymorphic: true", "#{many} 'labels'"),
+      "app/models/feed.rb" => model("Feed", "#{many} :entries, through: :p, source: :remark", "#{many} name"),
+      "app/models/lab.rb" => model("Lab", "#{many} :cacti", "belongs_to :owner, polymorphic: false", "has_one :media"),
       "config/initializers/inflections.rb" => "Inflector.inflections { |i| i.irregular 'cactus', 'cacti' }\n"
     ).merge(plain)
-    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(
-        include("Author -> Post", "Author -> Profile", "Author -> Tag", "Post -> Author", "Post -> Category")
-          .and(include("Remark -> Label", "Feed -> Remark", "Lab -> Cactus", "Lab -> Owner", "Lab -> Media"))
-      )
-      expect(graph.edges.map(&:to_s)).not_to(include("Remark -> Commentable"))
-    end
+  end
+
+  it "infers an association's class from its name, as Active Record does" do
+    edges = analyze(associations, directories: ["app"], packaging: :namespace) { |*, graph| graph.edges.map(&:to_s) }
+    expect(edges).to(
+      include("Author -> Post", "Author -> Profile", "Author -> Tag", "Post -> Author", "Post -> Category")
+        .and(include("Remark -> Label", "Feed -> Remark", "Lab -> Cactus", "Lab -> Owner", "Lab -> Media"))
+        .and(exclude("Remark -> Commentable"))
+    )
   end
 end

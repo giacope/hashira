@@ -40,11 +40,9 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    finding = findings.first
-    expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing#total"))
-    expect(message(finding)).to(eq("#{finding.package} refers to 'order' #{said}"))
-    expect(finding.evidence).to(eq(["order (line 5)", "self (line 5)"]))
+    expect(findings.map { [it.package, it.evidence] })
+      .to(eq([["App::Zone::Thing#total", ["order (line 5)", "self (line 5)"]]]))
+    expect(message(findings.first)).to(eq("App::Zone::Thing#total refers to 'order' #{said}"))
   end
 
   def untyped(source, more = {})
@@ -658,7 +656,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     )
   end
 
-  it "counts only messages the codebase itself defines, never operators or what every object answers" do
+  def parcels
     parcel = <<~RUBY
       module App
         module Zone
@@ -690,6 +688,11 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
+    order = "module App\n  module Zone\n    class Order < Parcel\n      attr_reader :left\n    end\n  end\nend\n"
+    { "lib/app/zone/parcel.rb" => parcel, "lib/app/zone/order.rb" => order }
+  end
+
+  it "counts only messages the codebase itself defines, never operators or what every object answers" do
     thing = <<~RUBY
       module App
         module Zone
@@ -725,9 +728,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    order = "module App\n  module Zone\n    class Order < Parcel\n      attr_reader :left\n    end\n  end\nend\n"
-    sources = { "lib/app/zone/thing.rb" => thing, "lib/app/zone/parcel.rb" => parcel, "lib/app/zone/order.rb" => order }
-    findings = sniffed(sources, "feature_envy")
+    findings = sniffed(parcels.merge("lib/app/zone/thing.rb" => thing), "feature_envy")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
     expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
   end
