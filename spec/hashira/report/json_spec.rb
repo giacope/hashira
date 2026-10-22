@@ -22,14 +22,26 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   def emit(view) = JSON.parse(capture { described_class.new(view).print })
-  it "says what produced it: schema version, packaging, targets, and file count" do
-    with_pipeline do |project, graph, findings|
-      report = emit(view(project, graph, findings))
-      expect(report["version"]).to(eq(Hashira::Report::Json::SCHEMA))
-      expect(report["packaging"]).to(eq("folder"))
-      expect(report["targets"]).to(eq(["lib/app"]))
-      expect(report["files"]).to(eq(3))
+
+  def cyclic_report = with_pipeline { |project, graph, findings| emit(view(project, graph, findings)) }
+
+  # The JSON report of a pipeline run over the files: with its graph or without, and with the parts named.
+  def reported(files, graph: true, parts: [], directories: ["lib/app"], accepted: [], **)
+    within(files) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(directories), **)
+      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
+      emit(view(pipeline.project, (pipeline.graph if graph), findings, **parts.to_h { [it, pipeline.public_send(it)] }))
     end
+  end
+
+  def capped_at(files, top)
+    within(files) { emit(full(Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])), top:)) }
+  end
+
+  def legacy = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
+  it "says what produced it: schema version, packaging, targets, and file count" do
+    expect(cyclic_report.values_at("version", "packaging", "targets", "files"))
+      .to(eq([Hashira::Report::Json::SCHEMA, "folder", ["lib/app"], 3]))
   end
 
   it "emits one line under --compact, and the same data either way" do
@@ -48,42 +60,33 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "lists accepted findings with their message and the reason they were accepted" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]), enabled: %i[complexity])
-      entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
-      report = emit(view(pipeline.project, nil, Hashira::CI::Accepted.new([entry]).screen(pipeline.findings)))
-      expect(report["accepted"].map { it.values_at("kind", "package", "reason") })
-        .to(eq([["complexity", "App::Knot::Tangle#tangled", "legacy tangle"]]))
-      expect(report["accepted"].first["message"]).to(start_with("App::Knot::Tangle#tangled — cognitive 12"))
-    end
+    report = reported(Fixtures::COMPLEX_FILES, graph: false, accepted: [legacy], enabled: %i[complexity])
+    expect(report["accepted"].map { it.values_at("kind", "package", "reason", "message") }).to(
+      match(
+        [
+          [
+            "complexity", "App::Knot::Tangle#tangled", "legacy tangle",
+            start_with("App::Knot::Tangle#tangled — cognitive 12")
+          ]
+        ]
+      )
+    )
   end
 
   it "emits packages sorted by instability, edges with evidence, and findings" do
-    with_pipeline do |project, graph, findings|
-      report = emit(view(project, graph, findings))
-      expect(report["packages"].keys).to(eq(%w[core beta alpha]))
-      expect(report["packages"]["alpha"]).to(eq("tc" => 1, "ca" => 1, "ce" => 2, "i" => 2.0 / 3, "cyclic" => true))
-      expect(report["packages"]["core"]["cyclic"]).to(be(false))
-      expect(report["edges"]).to(
-        include(
-          "from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]
-        )
-      )
-      kinds = %w[cycle] + (["utility_function"] * 4)
-      expect(report["findings"].map { it["kind"] }).to(eq(kinds))
-    end
+    packages, edges, findings = cyclic_report.values_at("packages", "edges", "findings")
+    expect([packages.keys, packages["alpha"], packages["core"]["cyclic"]]).to(
+      eq([%w[core beta alpha], { "tc" => 1, "ca" => 1, "ce" => 2, "i" => 2.0 / 3, "cyclic" => true }, false])
+    )
+    expect(edges).to(include("from" => "alpha", "to" => "core", "weight" => 1, "refs" => ["alpha/one.rb:5: Core::Util"]))
+    expect(findings.map { it["kind"] }).to(eq(%w[cycle] + (["utility_function"] * 4)))
   end
 
   it "lists folds when packaging folded packages, and an empty list otherwise" do
-    with_pipeline do |project, graph, findings|
-      expect(emit(view(project, graph, findings))["folds"]).to(eq([]))
-    end
+    expect(cyclic_report["folds"]).to(eq([]))
     files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)
-    within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
-      report = emit(view(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings)))
-      expect(report["folds"]).to(include("from" => "SandboxPolicy", "to" => "Sandbox", "via" => "suffix"))
-    end
+    report = reported(files, directories: ["app"], enabled: %i[coupling])
+    expect(report["folds"]).to(include("from" => "SandboxPolicy", "to" => "Sandbox", "via" => "suffix"))
   end
 
   it "omits analyzer keys that were skipped" do
@@ -95,36 +98,24 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "omits coupling keys when no graph is present" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      report = emit(view(pipeline.project, nil, findings, complexity: pipeline.complexity))
-      expect(report).not_to(have_key("packages"))
-      expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
-      expect(report["complexity"]["classes"])
-        .to(eq([{ "name" => "App::Knot::Tangle", "cognitive" => 12, "method_count" => 3, "peak" => 12 }]))
-    end
+    report = reported(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])
+    expect(report).not_to(have_key("packages"))
+    expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
+    expect(report["complexity"]["classes"])
+      .to(eq([{ "name" => "App::Knot::Tangle", "cognitive" => 12, "method_count" => 3, "peak" => 12 }]))
   end
 
   it "includes duplication clusters when supplied" do
-    within(Fixtures::DUPLICATION_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      report = emit(view(pipeline.project, pipeline.graph, findings, duplication: pipeline.duplication))
-      expect(report["duplication"].first).to(include("sites" => 2, "kind" => "literal"))
-    end
+    report = reported(Fixtures::DUPLICATION_FILES, parts: %i[duplication])
+    expect(report["duplication"].first).to(include("sites" => 2, "kind" => "literal"))
   end
 
   it "caps every ranked list at an explicit --top and says how many each withheld" do
-    within(Fixtures::DUPLICATION_FILES.merge(Fixtures::COMPLEX_FILES)) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      whole = emit(full(pipeline))
-      capped = emit(full(pipeline, top: 1))
-      expect(lengths(capped).values).to(all(eq(1)))
-      expect(capped["withheld"]).to(eq(lengths(whole).transform_values { it - 1 }))
-      expect(capped["findings"]).to(eq(whole["findings"].first(1)))
-      expect(capped["packages"]).to(eq(whole["packages"]))
-    end
+    files = Fixtures::DUPLICATION_FILES.merge(Fixtures::COMPLEX_FILES)
+    whole, capped = [nil, 1].map { capped_at(files, it) }
+    expect(lengths(capped).values).to(all(eq(1)))
+    expect(capped["withheld"]).to(eq(lengths(whole).transform_values { it - 1 }))
+    expect(capped.values_at("findings", "packages")).to(eq([whole["findings"].first(1), whole["packages"]]))
   end
 
   it "withholds nothing and says nothing about it unless --top is given" do

@@ -40,10 +40,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       RUBY
       "lib/app/alpha/two.rb" => "module App; module Alpha; class Two; def a = 1; end; end; end\n"
     }
-    analyze(files) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
-      expect(graph.evidence("alpha", "alpha")).to(be_empty)
-    end
+    found = analyze(files) { |_project, _census, graph| [graph.edges, graph.evidence("alpha", "alpha")] }
+    expect(found).to(all(be_empty))
   end
 
   it "records superclass references" do
@@ -82,10 +80,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#outgoing / #incoming" do
     it "returns sorted package lists" do
       with_cycle do |graph|
-        expect(graph.outgoing("alpha")).to(eq(%w[beta core]))
-        expect(graph.incoming("alpha")).to(eq(%w[beta]))
-        expect(graph.incoming("core")).to(eq(%w[alpha]))
-        expect(graph.outgoing("core")).to(eq([]))
+        expect([graph.outgoing("alpha"), graph.incoming("alpha"), graph.incoming("core"), graph.outgoing("core")])
+          .to(eq([%w[beta core], %w[beta], %w[alpha], []]))
       end
     end
   end
@@ -100,11 +96,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
 
     it "leaves instability unset for an unconnected package, rather than calling it maximally stable" do
       files = { "lib/app/solo/x.rb" => "module App; module Solo; class X; def a = 1; end; end; end\n" }
-      analyze(files) do |_project, _census, graph|
-        expect(graph.metric("solo").to_h).to(eq(tc: 1, ca: 0, ce: 0, i: nil))
-        expect(graph.metric("solo")).to(be_isolated)
-        expect(graph.metric("solo").cells).to(eq([1, 0, 0, "—"]))
-      end
+      solo = analyze(files) { |_project, _census, graph| graph.metric("solo") }
+      expect([solo.to_h, solo.isolated?, solo.cells]).to(eq([{ tc: 1, ca: 0, ce: 0, i: nil }, true, [1, 0, 0, "—"]]))
     end
   end
 
@@ -140,8 +133,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#weight and #evidence" do
     it "counts distinct references backing an edge" do
       with_cycle do |graph|
-        expect(graph.weight("beta", "alpha")).to(eq(2))
-        expect(graph.weight("alpha", "core")).to(eq(1))
+        expect([graph.weight("beta", "alpha"), graph.weight("alpha", "core")]).to(eq([2, 1]))
         expect(graph.evidence("alpha", "core").to_a).to(eq(["alpha/one.rb:5: Core::Util"]))
         expect(graph.evidence("beta", "alpha").to_a)
           .to(contain_exactly("beta/two.rb:4: Alpha::One", "beta/two.rb:5: App::Alpha::One"))
@@ -204,6 +196,12 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       end
     end
 
+    def knot_cut(uses)
+      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
+        graph.cycles.cut(graph.cycles.knots.first).then { [it.exact?, it.edges] }
+      end
+    end
+
     it "removes the lightest set of edges that leaves no loop at all" do
       uses = { "a" => %w[b b], "b" => %w[a a c], "c" => %w[d d], "d" => %w[c c a] }
       cut(uses) { expect(it).to(eq([["a", "b", 2], ["c", "d", 2]])) }
@@ -222,11 +220,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
     it "finds a cut for a knot too large to search exhaustively, giving back what it need not take" do
       names = ("a".."n").to_a
       uses = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 14], names[(index + 2) % 14]]] }
-      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        found = graph.cycles.cut(graph.cycles.knots.first)
-        expect(found.exact?).to(be(false))
-        expect(found.edges.sum(&:last)).to(eq(3))
-      end
+      exact, edges = knot_cut(uses)
+      expect([exact, edges.sum(&:last)]).to(eq([false, 3]))
     end
 
     it "moves nodes along the order until no single move makes the cut lighter" do
@@ -234,17 +229,13 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       ring = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 13]]] }
       chords = { "l" => %w[i i f k], "a" => %w[c], "h" => %w[g g], "c" => %w[f f f], "f" => %w[c] }
       uses = ring.merge(chords) { |_name, successor, more| successor + more }
-      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        expect(graph.cycles.cut(graph.cycles.knots.first).edges.sum(&:last)).to(eq(3))
-      end
+      expect(knot_cut(uses).last.sum(&:last)).to(eq(3))
     end
 
     it "peels the nodes a large knot leaves without a way out" do
       names = ("a".."m").to_a
       uses = names.each_with_index.to_h { |name, index| [name, [names[(index + 1) % 13]]] }.merge("c" => %w[d a])
-      analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        expect(graph.cycles.cut(graph.cycles.knots.first).edges.map(&:last)).to(eq([1]))
-      end
+      expect(knot_cut(uses).last.map(&:last)).to(eq([1]))
     end
   end
 
@@ -274,10 +265,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       uses = { "a" => %w[b x1 x2], "b" => %w[y1 y2 y3 y4 y5] }
       uses.merge!(%w[p1 p2 p3 p4 p5].to_h { [it, %w[a]] }, %w[q1 q2 q3 q4 q5 q6 q7].to_h { [it, %w[b]] })
       files = (uses.keys | uses.values.flatten).to_h { ["lib/app/#{it}/x.rb", source(it, uses.fetch(it, []))] }
-      analyze(files) do |_project, _census, graph|
-        a, b = graph.metrics.values_at("a", "b")
-        expect([a.instability < b.instability, a.shown, b.shown, graph.violations]).to(eq([true, "0.38", "0.38", []]))
-      end
+      a, b, violations = analyze(files) { |*, graph| [*graph.metrics.values_at("a", "b"), graph.violations] }
+      expect([a.instability < b.instability, a.shown, b.shown, violations]).to(eq([true, "0.38", "0.38", []]))
     end
 
     it "does not flag an edge whose ends share a cycle" do

@@ -5,6 +5,16 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
     Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR)
   end
 
+  # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
+  def printed(files, graph: true, parts: [], accepted: [])
+    within(files) do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
+      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
+      added = parts.to_h { [it, pipeline.public_send(it)] }
+      capture { described_class.new(view(pipeline.project, (pipeline.graph if graph), findings, **added)).print }
+    end
+  end
+
   it "caps the findings list at --top and counts what it withheld" do
     with_pipeline do |project, graph, findings|
       output = capture { described_class.new(view(project, graph, findings, top: 2)).print }
@@ -49,90 +59,60 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
 
   it "reports a healthy structure verbatim" do
     files = { "lib/app/solo/solo.rb" => "module App; class Solo; def a = 1; end; end\n" }
-    within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      output = capture { described_class.new(view(pipeline.project, pipeline.graph, screened)).print }
-      expect(output).to(eq(<<~TEXT))
-        Package (folder) metrics for lib/app  (1 package, 1 file)
+    expect(printed(files)).to(eq(<<~TEXT))
+      Package (folder) metrics for lib/app  (1 package, 1 file)
 
-        Only one package found — there are no boundaries to analyze. Pass subdirectories to set them (e.g. hashira lib/gem/*/).
+      Only one package found — there are no boundaries to analyze. Pass subdirectories to set them (e.g. hashira lib/gem/*/).
 
-        package  TC  Ca  Ce  I  Cyc
-        ---------------------------
-        solo      1   0   0  —  -
+      package  TC  Ca  Ce  I  Cyc
+      ---------------------------
+      solo      1   0   0  —  -
 
-        Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
-                I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
+      Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
+              I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
 
-        Dependencies (DependsUpon(refs) -> | <- UsedBy):
-          + 1 package with no edges either way
+      Dependencies (DependsUpon(refs) -> | <- UsedBy):
+        + 1 package with no edges either way
 
-        Findings (0):
-          none ✓ — structure is healthy
-      TEXT
-    end
+      Findings (0):
+        none ✓ — structure is healthy
+    TEXT
   end
 
   it "adds the complexity section and its findings when complexity is present" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      view = view(pipeline.project, pipeline.graph, screened, complexity: pipeline.complexity)
-      output = capture { described_class.new(view).print }
-      expect(output).to(
-        include(
-          "Package (folder) metrics", "Cognitive complexity — worst methods",
-          "Per-class rollup", "complexity: App::Knot::Tangle#tangled"
-        )
+    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity])).to(
+      include(
+        "Package (folder) metrics", "Cognitive complexity — worst methods",
+        "Per-class rollup", "complexity: App::Knot::Tangle#tangled"
       )
-    end
+    )
   end
 
   it "renders complexity alone when coupling is skipped (no graph)" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      view = view(pipeline.project, nil, screened, complexity: pipeline.complexity)
-      output = capture { described_class.new(view).print }
-      expect(output).to(include("Cognitive complexity — worst methods"))
-      expect(output).not_to(include("package  TC"))
-    end
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])).to(
+      include("Cognitive complexity — worst methods").and(exclude("package  TC"))
+    )
   end
 
   it "ranks the hotspots between the complexity tables and the findings" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      view = view(pipeline.project, nil, screened, complexity: pipeline.complexity, hotspots: pipeline.hotspots)
-      output = capture { described_class.new(view).print }
-      expect(output).to(match(%r{Per-class rollup.*Hotspots — cost × churn.*knot/tangle\.rb\s+12.*Findings \(}m))
-    end
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity hotspots]))
+      .to(match(%r{Per-class rollup.*Hotspots — cost × churn.*knot/tangle\.rb\s+12.*Findings \(}m))
   end
 
   it "lists accepted findings with their recorded reason" do
-    within(Fixtures::COMPLEX_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
-      screened = Hashira::CI::Accepted.new([entry]).screen(pipeline.findings)
-      view = view(pipeline.project, pipeline.graph, screened, complexity: pipeline.complexity)
-      output = capture { described_class.new(view).print }
-      expect(output).to(include("Accepted (1):", "~ complexity/App::Knot::Tangle#tangled — legacy tangle"))
-    end
+    entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
+    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity], accepted: [entry]))
+      .to(include("Accepted (1):", "~ complexity/App::Knot::Tangle#tangled — legacy tangle"))
   end
 
+  def refs(other) = (1..6).map { "#{other}::X#{it}" }.join(", ")
+
   it "truncates long evidence lists with an overflow marker" do
-    refs = ->(other) { (1..6).map { "#{other}::X#{it}" }.join(", ") }
     files = {
-      "lib/app/a/x.rb" => "module App; module A; class X; def c = [#{refs.call("B")}]; end; end; end\n",
-      "lib/app/b/x.rb" => "module App; module B; class X; def c = [#{refs.call("A")}]; end; end; end\n"
+      "lib/app/a/x.rb" => "module App; module A; class X; def c = [#{refs("B")}]; end; end; end\n",
+      "lib/app/b/x.rb" => "module App; module B; class X; def c = [#{refs("A")}]; end; end; end\n"
     }
-    within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      screened = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-      output = capture { described_class.new(view(pipeline.project, pipeline.graph, screened)).print }
-      expect(output).to(include("· … (2 more)"))
-    end
+    expect(printed(files)).to(include("· … (2 more)"))
   end
 
   describe(Hashira::Report::FindingList) do

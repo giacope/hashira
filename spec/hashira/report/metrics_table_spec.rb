@@ -5,13 +5,14 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
     (1..count).to_h { ["app/models/leaf#{it}.rb", "class Leaf#{it}\n  def a = 1\nend\n"] }
       .merge("app/models/hub.rb" => "class Hub\n#{(1..count).map { "  def use#{it} = Leaf#{it}.new\n" }.join}end\n")
   end
-  it "collapses inert leaf packages when the table grows long" do
-    analyze(hub(26), directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      output = capture { described_class.new(graph).print }
-      expect(output).to(include("Hub"))
-      expect(output).not_to(include("Leaf3 "))
-      expect(output).to(include("+ 26 single-type leaf packages"))
+  def table(files)
+    analyze(files, directories: ["app"], packaging: :namespace) do |*, graph|
+      capture { described_class.new(graph).print }
     end
+  end
+
+  it "collapses inert leaf packages when the table grows long" do
+    expect(table(hub(26))).to(include("Hub", "+ 26 single-type leaf packages").and(exclude("Leaf3 ")))
   end
 
   it "keeps a depended-upon single-type package visible past the limit" do
@@ -20,23 +21,14 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
       "app/models/extra.rb" => "class Extra\n  def e = Shared.new\nend\n",
       "app/models/other.rb" => "class Other\n  def o = Shared.new\nend\n"
     )
-    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      output = capture { described_class.new(graph).print }
-      expect(output).to(include("Shared"))
-      expect(output).to(include("single-type leaf packages"))
-      expect(output).not_to(include("Leaf3 "))
-    end
+    expect(table(files)).to(include("Shared", "single-type leaf packages").and(exclude("Leaf3 ")))
   end
 
   it "keeps a package holding several types visible past the limit" do
     files = hub(26).merge(
       "app/models/pair.rb" => "module Pair\n  class One\n    def a = 1\n  end\n  class Two\n    def b = 2\n  end\nend\n"
     )
-    analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      output = capture { described_class.new(graph).print }
-      expect(output).to(match(/^Pair\s+2\s+0\s+0/))
-      expect(output).to(include("+ 26 single-type leaf packages"))
-    end
+    expect(table(files)).to(match(/^Pair\s+2\s+0\s+0/).and(include("+ 26 single-type leaf packages")))
   end
 
   it "hides no leaf when the table exactly fits the cap" do
@@ -74,17 +66,20 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
     end
   end
 
+  def coupling_report
+    pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
+    view = Hashira::Report::View.new(
+      project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
+      hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR
+    )
+    capture { Hashira::Report::Text.new(view).print }
+  end
+
   it "prints each fold under the coupling section" do
-    files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)
-    within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
-      view = Hashira::Report::View.new(
-        project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
-        hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR
+    expect(within(Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES)) { coupling_report }).to(
+      include(
+        "Folded (packages joined to the one they belong to):", "  SandboxPolicy -> Sandbox (suffix)\n\nFindings ("
       )
-      output = capture { Hashira::Report::Text.new(view).print }
-      expect(output).to(include("Folded (packages joined to the one they belong to):"))
-      expect(output).to(include("  SandboxPolicy -> Sandbox (suffix)\n\nFindings ("))
-    end
+    )
   end
 end

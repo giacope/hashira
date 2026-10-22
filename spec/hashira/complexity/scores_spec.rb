@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
+  def ranked(files) = complexity(files, &:ranked)
+
+  def flagged(files) = complexity(files, &:findings)
+
   it "ranks methods by cognitive complexity, worst first" do
-    complexity(Fixtures::COMPLEX_FILES) do |scores|
-      worst = scores.ranked.first
-      expect(worst.subject).to(eq("App::Knot::Tangle#tangled"))
-      expect(worst.cognitive).to(eq(12))
-      expect(worst.calls).to(eq(4))
-    end
+    worst = ranked(Fixtures::COMPLEX_FILES).first
+    expect([worst.subject, worst.cognitive, worst.calls]).to(eq(["App::Knot::Tangle#tangled", 12, 4]))
   end
 
   it "labels instance methods with # and singleton methods with ." do
@@ -25,34 +25,25 @@ RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
   end
 
   it "flags methods over the threshold as findings with a breakdown and advice" do
-    complexity(Fixtures::COMPLEX_FILES) do |scores|
-      finding = scores.findings.first
-      expect(scores.findings.size).to(eq(1))
-      expect(finding.kind).to(eq("complexity"))
-      expect(finding.package).to(eq("App::Knot::Tangle#tangled"))
-      expect(message(finding)).to(include("cognitive 12, 4 calls", "guard clauses"))
-      expect(finding.evidence).to(include("if +10 (lines 9, 10, 11, 12)", "boolean +2 (line 13)"))
-    end
+    findings = flagged(Fixtures::COMPLEX_FILES)
+    expect(findings.map { [it.kind, it.package] }).to(eq([["complexity", "App::Knot::Tangle#tangled"]]))
+    expect(message(findings.first)).to(include("cognitive 12, 4 calls", "guard clauses"))
+    expect(findings.first.evidence).to(include("if +10 (lines 9, 10, 11, 12)", "boolean +2 (line 13)"))
   end
 
   it "flags a method from exactly the threshold, and not one point below it" do
     ten = "def ten\n if a\n  if b\n   if c\n    d if e\n   end\n  end\n end\nend\n"
     nine = "def nine\n x if p\n x if q\n x if r\n if a\n  if b\n   c if d\n  end\n end\nend\n"
-    source = "module App; module Knot; class Edge\n#{ten}#{nine}end; end; end\n"
-    complexity({ "lib/app/knot/edge.rb" => source }) do |scores|
-      expect(scores.ranked.map(&:cognitive)).to(eq([10, 9]))
-      expect(scores.findings.map(&:package)).to(eq(["App::Knot::Edge#ten"]))
-    end
+    files = { "lib/app/knot/edge.rb" => "module App; module Knot; class Edge\n#{ten}#{nine}end; end; end\n" }
+    expect([ranked(files).map(&:cognitive), flagged(files).map(&:package)]).to(eq([[10, 9], ["App::Knot::Edge#ten"]]))
   end
 
   it "names the method's site and advises on the label that cost the most, not the first one seen" do
     run = "def run\n x unless a\n if b\n  if c\n   if d\n    e if f\n   end\n  end\n end\nend\n"
     source = "module App; module Knot; class Guard\n#{run}end; end; end\n"
-    complexity({ "lib/app/knot/guard.rb" => source }) do |scores|
-      text = message(scores.findings.first)
-      expect(text).to(include("(knot/guard.rb:2)", "flatten the branching"))
-      expect(text).not_to(include("invert to a guard clause"))
-    end
+    expect(message(flagged({ "lib/app/knot/guard.rb" => source }).first)).to(
+      include("(knot/guard.rb:2)", "flatten the branching").and(exclude("invert to a guard clause"))
+    )
   end
 
   it "scores methods wherever the class body declares them, not only its top-level defs" do
@@ -132,22 +123,21 @@ RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
         end
       RUBY
     }
-    complexity(files) do |scores|
-      scored = scores.ranked.to_h { [it.subject, it.cognitive] }
-      expect(scored).to(include("Walk#fact" => 2, "Walk#even?" => 2, "Walk#odd?" => 2, "Walk#tree" => 1))
-      expect(scored).to(include("Walk.count" => 2, "Walk#name" => 0, "Walk#plain" => 0, "Walk#empty" => 0))
-      labels = scores.ranked.find { it.subject == "Walk#fact" }.increments.map(&:label)
-      expect(labels).to(contain_exactly("ternary", "recursion"))
-    end
+    scores = ranked(files)
+    expect(scores.to_h { [it.subject, it.cognitive] }).to(
+      include(
+        "Walk#fact" => 2, "Walk#even?" => 2, "Walk#odd?" => 2, "Walk#tree" => 1,
+        "Walk.count" => 2, "Walk#name" => 0, "Walk#plain" => 0, "Walk#empty" => 0
+      )
+    )
+    expect(scores.find { it.subject == "Walk#fact" }.increments.map(&:label))
+      .to(contain_exactly("ternary", "recursion"))
   end
 
   it "advises on a recursion when it is what costs the most" do
-    files = { "lib/app/walk.rb" => "class Walk\n  def go(n) = go(n - 1)\nend\n" }
-    complexity(files) do |scores|
-      score = scores.ranked.first
-      finding = Hashira::Complexity::MethodFinding.new(score.with(cognitive: 10)).to_finding
-      expect(message(finding)).to(include("name the traversal"))
-    end
+    score = ranked({ "lib/app/walk.rb" => "class Walk\n  def go(n) = go(n - 1)\nend\n" }).first
+    finding = Hashira::Complexity::MethodFinding.new(score.with(cognitive: 10)).to_finding
+    expect(message(finding)).to(include("name the traversal"))
   end
 
   it "scores a method defined with define_method under its own name" do
@@ -165,9 +155,8 @@ RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
         end
       RUBY
     }
-    complexity(files) do |scores|
-      scored = scores.ranked.to_h { [it.subject, it.cognitive] }
-      expect(scored).to(eq("Dyn#run" => 1, "Dyn#walk" => 1, "Dyn#define_method(name)" => 1))
-    end
+    expect(ranked(files).to_h { [it.subject, it.cognitive] }).to(
+      eq("Dyn#run" => 1, "Dyn#walk" => 1, "Dyn#define_method(name)" => 1)
+    )
   end
 end

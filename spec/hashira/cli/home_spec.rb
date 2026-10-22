@@ -28,8 +28,8 @@ RSpec.describe(Hashira::CLI::Home, :aggregate_failures) do
       "vendor/kit/kit.gemspec" => "", "vendor/kit/lib/z.rb" => ""
     }
     within(files) do
-      roots = %w[gem app kit].map { home(["vendor/#{it}/lib"]).path }
-      expect(roots).to(eq(%w[gem app kit].map { File.expand_path("vendor/#{it}") }))
+      expect(%w[gem app kit].map { home(["vendor/#{it}/lib"]).path })
+        .to(eq(%w[gem app kit].map { File.expand_path("vendor/#{it}") }))
       Dir.chdir("vendor/gem") { expect(home(["lib"]).path).to(eq(Dir.pwd)) }
     end
   end
@@ -40,34 +40,26 @@ RSpec.describe(Hashira::CLI::Home, :aggregate_failures) do
       "repo/support/support.gemspec" => "", "repo/support/lib/y.rb" => ""
     }
     within(files) do
-      expected = File.expand_path("repo")
-      expect(home(%w[repo/core/lib repo/support/lib]).path).to(eq(expected))
-      expect(home(%w[repo/support/lib repo/core/lib]).path).to(eq(expected))
-      expect(home(%w[repo/support/lib]).path).to(eq(File.expand_path("repo/support")))
+      found = [%w[repo/core/lib repo/support/lib], %w[repo/support/lib repo/core/lib], %w[repo/support/lib]]
+      expect(found.map { home(it).path }).to(eq(%w[repo repo repo/support].map { File.expand_path(it) }))
     end
   end
 
   it "climbs to the project's markers from outside it, then to the folder holding lib" do
     files = { "proj/Gemfile" => "", "proj/lib/app/x.rb" => "", "bare/lib/x/y.rb" => "", "here/README" => "" }
     within(files) do
-      Dir.chdir("here") do
-        expect(home(["../proj/lib/app"]).path).to(eq(File.expand_path("../proj")))
-        expect(home(["../bare/lib/x"]).path).to(eq(File.expand_path("../bare")))
-        expect(home(["../proj/lib/app"]).path).to(eq(File.expand_path("../proj")))
-      end
+      paths = Dir.chdir("here") { %w[../proj/lib/app ../bare/lib/x ../proj/lib/app].map { home([it]).path } }
+      expect(paths).to(eq(%w[proj bare proj].map { File.expand_path(it) }))
     end
   end
 
+  def placed(found) = [found.join("b.json"), found.expand("ci/b.json"), found.relative("../proj/lib")]
+
   it "names files plainly when home is where hashira runs, and in full otherwise" do
     within("proj/.git/HEAD" => "", "proj/lib/x.rb" => "", "here/README" => "") do
-      Dir.chdir("here") do
-        found = home(["../proj/lib"])
-        expect(found.join("b.json")).to(eq(File.expand_path("../proj/b.json")))
-        expect(found.expand("ci/b.json")).to(eq(File.expand_path("../proj/ci/b.json")))
-        expect(found.relative("../proj/lib")).to(eq("lib"))
-      end
-      expect(home([]).join("b.json")).to(eq("b.json"))
-      expect(home([]).expand("ci/b.json")).to(eq("ci/b.json"))
+      named = Dir.chdir("here") { placed(home(["../proj/lib"])) }
+      expect(named).to(eq([File.expand_path("proj/b.json"), File.expand_path("proj/ci/b.json"), "lib"]))
+      expect([home([]).join("b.json"), home([]).expand("ci/b.json")]).to(eq(["b.json", "ci/b.json"]))
     end
   end
 end
