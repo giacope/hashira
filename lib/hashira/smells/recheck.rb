@@ -24,22 +24,24 @@ class Hashira::Smells::Recheck
     @method = method
   end
 
+  # A trailing condition is asked when its statement starts, before the statement runs.
   def settled?(atom, held)
     Hashira::Smells::Scope.new(@method).covers?(atom) &&
-      moment(atom).then { |moment| changes.any? { it.settles?(atom, held, moment) } }
+      (trailing.find { it.covers?(atom) }&.start || atom.location.start_offset).then do |moment|
+        changes.any? { it.settles?(atom, held, moment) }
+      end
   end
 
   private
 
-  def moment(atom) = trailing.find { it.covers?(atom) }&.start || atom.location.start_offset
-
   def trailing = @_trailing ||= inside.map { Hashira::Smells::Postfix.new(it) }.select(&:trailing?)
 
-  def inside = Hashira::Smells::Scope.new(@method).inside
+  def changes
+    @_changes ||=
+      Hashira::Smells::Discards.new(@method).then do |discards|
+        inside.grep(Prism::CallNode).select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
+      end
+  end
 
-  def changes = @_changes ||= calls.select(&:receiver).map { Change.new(call: it, command: discards.include?(it)) }
-
-  def calls = inside.grep(Prism::CallNode)
-
-  def discards = @_discards ||= Hashira::Smells::Discards.new(@method)
+  def inside = @_inside ||= Hashira::Smells::Scope.new(@method).inside
 end
