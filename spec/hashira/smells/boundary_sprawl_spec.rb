@@ -1,6 +1,24 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
+  # App::Ast copies Prism's node classes, App::Types copies App::Ast's, and
+  # App::Node aliases Parser's node class.
+  let(:copies) { <<~RUBY }
+    module App
+      module Ast
+        %i[CallNode DefNode].each { |name| const_set(name, Prism.const_get(name)) }
+      end
+    end
+  RUBY
+
+  let(:relay) { <<~RUBY }
+    module App
+      module Types
+        App::Ast.constants.each { |name| const_set(name, App::Ast.const_get(name)) }
+      end
+    end
+  RUBY
+
   it "flags one foreign type picked apart across many methods and files" do
     findings = sniffed(spread(methods: 12, files: 3), "boundary_sprawl")
     expect(findings.map { [it.package, it.detail, it.evidence.size] }).to(eq([["Prism", { count: 12, files: 3 }, 4]]))
@@ -30,6 +48,40 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
 
   it "never counts a type the codebase defines" do
     files = spread(methods: 12, files: 3, tested: "Zone::Probe0")
+    expect(sniffed(files, "boundary_sprawl")).to(be_empty)
+  end
+
+  it "counts a type tested through a namespace that copies a foreign one's constants against that foreign root" do
+    files = spread(methods: 12, files: 3, tested: "App::Ast::CallNode").merge("lib/app/ast.rb" => copies)
+    expect(sniffed(files, "boundary_sprawl").map(&:package)).to(eq(["Prism"]))
+  end
+
+  it "follows a copy of a copy, and an alias, to the foreign root" do
+    relayed = spread(methods: 12, files: 3, tested: "App::Types::CallNode").merge("lib/app/ast.rb" => copies + relay)
+    aliased = spread(methods: 12, files: 3, tested: "App::Node")
+      .merge("lib/app/node.rb" => "module App\n  Node = Parser::AST::Node\nend\n")
+    expect([relayed, aliased].map { sniffed(it, "boundary_sprawl").map(&:package) }).to(eq([["Prism"], ["Parser"]]))
+  end
+
+  it "takes no copy from a const_get of another name or none, another fetch, or another setter" do
+    odd = <<~RUBY
+      module App
+        module Ast
+          const_set(:CallNode, Prism.const_get(:DefNode))
+          %i[DefNode].each { |name| const_set(name, Prism.const_get) }
+          %i[CallNode].each { |name| const_set(name, Prism.fetch(name)) }
+          %i[CallNode].each { |name| register(name, Prism.const_get(name)) }
+        end
+      end
+    RUBY
+    files = spread(methods: 12, files: 3, tested: "App::Ast::CallNode").merge("lib/app/ast.rb" => odd)
+    expect(sniffed(files, "boundary_sprawl").map(&:package)).to(eq(["App"]))
+  end
+
+  it "leaves a copying namespace the constants it defines itself" do
+    owned = "module App\n  module Ast\n    class View; end\n  end\nend\n"
+    files = spread(methods: 12, files: 3, tested: "App::Ast::View")
+      .merge("lib/app/ast.rb" => copies, "lib/app/view.rb" => owned)
     expect(sniffed(files, "boundary_sprawl")).to(be_empty)
   end
 

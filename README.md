@@ -726,7 +726,9 @@ Findings (3):
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing
   adapter. A program that interprets a foreign model on purpose can declare it
-  (see [CI](#ci)).
+  (see [CI](#ci)). A constant a namespace takes from elsewhere counts as the
+  one it came from: `const_set(name, Prism.const_get(name))` copies Prism's,
+  and `Node = Parser::AST::Node` aliases Parser's.
 - **module_initialize** — `initialize` in a mixin: constructor state carried
   into every includer.
 

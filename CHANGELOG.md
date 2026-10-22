@@ -301,6 +301,13 @@ things a baseline sees:
 
 ### Changed
 
+- **boundary_sprawl follows copied and aliased constants to their source.** A
+  namespace that hands out another's constants as its own, with
+  `const_set(name, Prism.const_get(name))` or `Node = Parser::AST::Node`,
+  was reported as a foreign root of its own (`SyntaxTypes` in kimera). A type
+  test through it now counts against the root it came from, which a declared
+  interpreted model covers; a constant the namespace defines itself stays its own.
+
 From the third field test (thirty MIT-licensed codebases):
 
 - **Scope**: with no directory, every `lib/<gem>` beside a `lib/<gem>.rb` is
