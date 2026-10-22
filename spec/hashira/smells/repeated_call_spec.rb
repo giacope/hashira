@@ -115,6 +115,81 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
   end
 
+  it "parts two calls when the receiver is handed on between them, as an argument, a keyword or a stored result" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def logged
+              first = @cart.total(1)
+              log(@cart)
+              [first, @cart.total(1)]
+            end
+
+            def keyed
+              first = @cart.total(1)
+              log(cart: @cart)
+              [first, @cart.total(1)]
+            end
+
+            def kept
+              first = @cart.total(1)
+              seen = audit(@cart)
+              [first, @cart.total(1), seen]
+            end
+
+            def plain
+              first = @cart.total(1)
+              log(@other, cart: @basket)
+              [first, @cart.total(1)]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#plain"]))
+  end
+
+  it "parts two calls around a command on the receiver that takes the first as its unparenthesized argument" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def topped
+              @cart.add @cart.total(1)
+              @cart.total(1)
+            end
+
+            def forwarded
+              @other.add @cart.total(1)
+              @cart.total(1)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#forwarded"]))
+  end
+
+  it "counts a bare call handed a block argument, unlike a bare read, as a call that can repeat" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def twice = [total, total]
+
+            def handed = [pick(&@rule), pick(&@rule)]
+
+            def total = 1
+
+            def pick = 2
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#handed"]))
+  end
+
   it "never surveys the bindings of a call made once, which cannot repeat" do
     asked = []
     spy_on(Hashira::Smells::Bindings, :free, asked)

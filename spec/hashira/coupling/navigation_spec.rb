@@ -82,6 +82,13 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
     expect(found(files.merge(tags), "unstable_dependency")).to(be_empty)
   end
 
+  it "keeps a one-way declaration in the stability check, since only a pair has a side to go" do
+    owned = %w[Session Device Token].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  belongs_to :user\nend\n"] }
+    files = models("has_many :posts", "has_many :tags\n  has_many :notes").merge(owned)
+    leaves = %w[Tag Note].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  def post = 1\nend\n"] }
+    expect(found(files.merge(leaves), "unstable_dependency").map(&:package)).to(eq(["User"]))
+  end
+
   it "keeps a declared pair in the cycle search when code reaches both ways besides the declarations" do
     files = models("has_many :posts\n  def latest = Post", "belongs_to :user\n  def owner = User")
     expect(found(files).map(&:kind)).to(eq(%w[cycle bidirectional_association]))

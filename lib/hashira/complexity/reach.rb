@@ -29,11 +29,11 @@ class Hashira::Complexity::Reach
 
   def widen(frontier, tree)
     return tree if frontier.empty?
-    grown = frontier.reduce(tree) { |known, name| known.merge(adopted(name, known)) }
+    grown = frontier.reduce(tree) { |known, name| known.merge(adopted(name)) }
     widen(grown.keys - tree.keys, grown)
   end
 
-  def adopted(name, known) = links(node(name)).reject { known.key?(it) }.to_h { [it, name] }
+  def adopted(name) = links(node(name)).to_h { [it, name] }
 
   def node(name) = name == root ? @entry.node : @table.fetch(name).node
 

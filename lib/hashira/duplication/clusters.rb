@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 class Hashira::Duplication::Clusters
-  PREFILTER = 12
   BASE_MASS = 16
   NEAR_MASS = 40
   PAIR = 2
@@ -29,15 +28,15 @@ class Hashira::Duplication::Clusters
   def definitions = @_definitions ||= @all.select { it.roots in [Prism::DefNode] }
 
   def sets
-    fragments = @all.select { |fragment| fragment.mass >= PREFILTER }.reject(&:schema?)
+    fragments = @all.select { |fragment| fragment.mass >= BASE_MASS }.reject(&:schema?)
     shaped = fragments.group_by(&:types).each_value.flat_map { it.each_cons(2).to_a }
     @_sets ||= Hashira::Duplication::UnionFind.new(shaped + Hashira::Duplication::NearMiss.new(fragments).pairs)
   end
 
   def admitted(group)
     whole = Hashira::Duplication::Grouping.new(group).cluster
-    return [whole] if whole && fits?(whole)
-    group.group_by(&:types).values.filter_map { Hashira::Duplication::Grouping.new(it).cluster }.select { fits?(it) }
+    return [whole] if fits?(whole)
+    group.group_by(&:types).values.map { Hashira::Duplication::Grouping.new(it).cluster }.select { fits?(it) }
   end
 
   def fits?(cluster)

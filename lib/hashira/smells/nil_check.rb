@@ -127,9 +127,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def errors?(node) = node.is_a?(Prism::CallNode) && node.name == :errors
 
-  def defaulted?(check) = tested(check).all? { boundary?(it) } && steering(check).any? { default?(it) }
-
-  def boundary?(node) = parameter?(node) || foreign.entering?(node)
+  def defaulted?(check) = tested(check).all? { parameter?(it) } && steering(check).any? { default?(it) }
 
   def parameter?(node) = node.is_a?(Prism::LocalVariableReadNode) && subject.parameters.include?(node.name)
 

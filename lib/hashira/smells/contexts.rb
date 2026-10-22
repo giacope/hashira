@@ -83,8 +83,6 @@ module Hashira
 
         def line = node.location.start_line
 
-        def subject = name
-
         def owned = defs.reject(&:singleton?)
 
         def site = "#{file}:#{line}"

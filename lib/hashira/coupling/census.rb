@@ -37,8 +37,6 @@ class Hashira::Coupling::Census
 
   def locate(segments, nesting) = scope.locate(segments, nesting)
 
-  def owner(path) = scope.owner(path)
-
   def vias(path) = scope.vias.fetch(path, [])
 
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
@@ -49,7 +47,7 @@ class Hashira::Coupling::Census
 
   def test?(package) = placement.test?(package)
 
-  def home(file) = homes[file] || charge(file, [])
+  def home(file) = charge(file, [])
 
   def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
 

@@ -43,12 +43,6 @@ class Hashira::Smells::Foreign
     tests { true }.reject { @ownership.owned?(it, @subject.owner) }.map(&:first).uniq
   end
 
-  def entering?(node)
-    return inbound?(node) unless node.is_a?(Prism::LocalVariableReadNode)
-    sources = writes(node.name)
-    sources.any? && sources.all? { inbound?(it.value) }
-  end
-
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
 
   def kinds(local)
@@ -117,10 +111,6 @@ class Hashira::Smells::Foreign
   end
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
-
-  def inbound?(node) = node.is_a?(Prism::CallNode) && (fetched?(node) || spawned?(node))
-
-  def fetched?(call) = keyed?(call) && !local?(call.receiver) { built?(it) }
 
   def keyed?(call) = KEYED_READS.include?(call.name) && KEYS.include?(key(call).class)
 

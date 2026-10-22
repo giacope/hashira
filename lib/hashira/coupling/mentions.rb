@@ -86,7 +86,7 @@ class Hashira::Coupling::Mentions
   def mirror(receiver, owner)
     read = Hashira::Analysis::Syntax.new(receiver)
     if own?(receiver)
-      found.reflected << [owner, nil] if owner
+      found.reflected << [owner, nil]
     elsif read.static?
       found.reflected << [(owner unless read.rooted?), read.segments]
     end

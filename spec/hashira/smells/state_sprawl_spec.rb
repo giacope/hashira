@@ -194,6 +194,34 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "does not flag five fields it builds itself when the methods tie them into one group" do
+    findings = crowded(<<~RUBY)
+      module App
+        module Zone
+          class Stream
+            def initialize(path)
+              @socket = Socket.open(path)
+              @reader = Reader.new(@socket)
+              @buffer = Buffer.new
+              @closed = false
+              @exited = false
+            end
+
+            def each_event
+              @buffer << @reader.next until @closed || @exited
+            end
+
+            def close
+              @closed = true
+              @socket.close
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "still flags constructor state that falls apart into separate groups across the methods" do
     findings = crowded(<<~RUBY)
       module App

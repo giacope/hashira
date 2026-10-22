@@ -61,4 +61,9 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
       { "dead_code" => { "roots" => [""] } } => "dead_code roots takes a list of names"
     }.each { |raw, message| expect { parse(raw) }.to(raise_error(Hashira::Error, /#{Regexp.escape(message)}/)) }
   end
+
+  it "turns the opt-in and history kinds on with all: true, and keeps off a kind the same hash turns off" do
+    rules = parse("all" => true, "feature_envy" => false)
+    expect(%w[indirection change_coupling feature_envy].map { rules.enabled?(it) }).to(eq([true, true, false]))
+  end
 end

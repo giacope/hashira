@@ -13,8 +13,6 @@ class Hashira::Coupling::Graph
 
   def cycles = @_cycles ||= Hashira::Coupling::Cycles.new(code, self)
 
-  def pairs = edges.map(&:deconstruct).select { paired?(*it) }.map(&:sort).uniq
-
   def declarations(from, to) = noted(from, to, map.declared)
 
   def associations = map.links

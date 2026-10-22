@@ -12,8 +12,6 @@ module Hashira
 
         def klass? = node.is_a?(Prism::ClassNode)
 
-        def singular? = klass? && !nested?
-
         def superclass = node.superclass
 
         def module? = node.is_a?(Prism::ModuleNode)

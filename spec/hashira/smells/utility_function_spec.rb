@@ -165,6 +165,31 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
   end
 
+  it "takes the subclasses of one class for kin however each spells its parent" do
+    findings = utility(<<~RUBY)
+      module App
+        module Zone
+          class Task
+            def initialize(log) = @log = log
+          end
+
+          class Mail < Task
+            def handle(id) = Feed.find(id)
+          end
+
+          class Ping < App::Zone::Task
+            def handle(id) = Feed.find(id)
+          end
+
+          class Solo
+            def handle(id) = Feed.find(id)
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Solo#handle]))
+  end
+
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
     plugin = <<~RUBY
       module App

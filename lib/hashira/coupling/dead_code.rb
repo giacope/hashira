@@ -41,14 +41,12 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def live?(member)
     path = member.path
-    named?(path) || LEVELS.include?(path.last) || rooted?(member) || framework?(member) || loaded?(path)
+    named?(path) || LEVELS.include?(path.last) || reflected?(member)
   end
 
   def loaded?(path) = surface.types.fetch(path, []).any?(&:loads?)
 
   def named?(path) = used?(path) || mentioned?(path.last) || assembled?(path)
-
-  def framework?(member) = registered?(member.path) || hosted?(member.path) || housed?(member) || reflected?(member)
 
   def reflected?(member)
     @_reflection ||= Hashira::Coupling::Reflection.new(mentions.reflected, graph.census, surface.openings)
@@ -72,10 +70,9 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   def outside = @_outside ||= Hashira::Coupling::Outside.new(project)
 
   def registered?(path)
-    surface.ancestors(path).any? { inheriting.include?(it) || mentions.registries.include?(it.last) }
+    @_inheriting ||= surface.methods.select { it.selector == "inherited" }.to_set(&:path)
+    surface.ancestors(path).any? { @_inheriting.include?(it) || mentions.registries.include?(it.last) }
   end
-
-  def inheriting = @_inheriting ||= surface.methods.select { it.selector == "inherited" }.to_set(&:path)
 
   def methods
     surface.methods.reject { it.overrides || called?(it.selector) || rooted?(it) || framed?(it) || open?(it) }

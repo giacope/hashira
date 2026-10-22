@@ -115,6 +115,12 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
             class Half
               def method_missing(name, *) = @target.respond_to?(name) ? @target.public_send(name, *) : super
             end
+
+            class Relay
+              def method_missing(name, *) = @duck.respond_to?(:honk) ? @duck.honk : super
+
+              def respond_to_missing?(name, all = false) = @duck.respond_to?(:honk) || super
+            end
           end
         end
       RUBY

@@ -494,6 +494,14 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       .to(eq(%w[Audit::Trail2 Audit::Trail2#stray Audit.install]))
   end
 
+  it "nests a hand-off inside a compact class path where Ruby does, under the root the path names" do
+    handed = rails.merge(
+      "lib/billing.rb" => "module Billing\n  class Invoice\n    module Fees\n      def fee = 1\n    end\n  end\nend\n",
+      "lib/wiring.rb" => "module App\n  class Billing::Invoice\n    ::Delayed::Worker.prepend(Fees)\n  end\nend\n"
+    )
+    expect(dead(handed, directories: %w[app lib])).not_to(include("Billing::Invoice::Fees#fee"))
+  end
+
   it "leaves the classes under a parent that aliases a framework class to the framework, and follows an owned alias" do
     aliased = rails.merge(
       "app/models/parents.rb" => <<~RUBY,
