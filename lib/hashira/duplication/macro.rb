@@ -15,11 +15,10 @@ class Hashira::Duplication::Macro
 
   private
 
-  def deferred = options.map(&:value).select { it.is_a?(Prism::LambdaNode) && DEFERRED.include?(lone(it).class) }
-
-  def options = arguments.grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
-
-  def arguments = Array(@call.arguments&.arguments)
+  def deferred
+    options = Array(@call.arguments&.arguments).grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
+    options.map(&:value).select { it.is_a?(Prism::LambdaNode) && DEFERRED.include?(lone(it).class) }
+  end
 
   def block = [@call.block].select { passed?(it) || reader?(it) }
 

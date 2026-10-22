@@ -24,9 +24,12 @@ class Hashira::GitLog
     label + path.delete_prefix(prefix)
   end
 
-  def prefixes = @_prefixes ||= roots.map { |directory, root| [prefix(root), @project.shown(directory).b] }
-
-  def prefix(root) = root == top ? "" : "#{root.delete_prefix("#{top}/")}/"
+  def prefixes
+    @_prefixes ||=
+      roots.map do |directory, root|
+        [root == top ? "" : "#{root.delete_prefix("#{top}/")}/", @project.shown(directory).b]
+      end
+  end
 
   def roots = @_roots ||= @project.directories.to_h { [it, File.realpath(it).b] }.select { |_, root| inside?(root) }
 

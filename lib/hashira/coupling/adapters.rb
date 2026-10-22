@@ -5,11 +5,12 @@ class Hashira::Coupling::Adapters
     @catalog = catalog
   end
 
-  def include?(name) = names.include?(name)
+  def include?(name)
+    @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
+    @_names.include?(name)
+  end
 
   private
-
-  def names = @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
 
   def framed?(group) = group.all? { !owned?(it) } && group.any? { adapter?(it) }
 

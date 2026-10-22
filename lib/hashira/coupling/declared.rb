@@ -10,20 +10,19 @@ class Hashira::Coupling::Declared
     @tree = tree
   end
 
-  def onto(table) = calls.reduce(table) { |current, call| handled(current, call) }
+  def onto(table)
+    calls = Hashira::Analysis::NodeWalk.new(@tree).collect.grep(Prism::CallNode).select { declares?(it) }
+    calls.reduce(table) { |current, call| handled(current, call) }
+  end
 
   private
-
-  def calls = Hashira::Analysis::NodeWalk.new(@tree).collect.grep(Prism::CallNode).select { declares?(it) }
 
   def declares?(call) = HANDLERS.key?(call.name) && call.receiver
 
   def handled(table, call)
     handler, list = HANDLERS.fetch(call.name)
-    __send__(handler, table, list, values(call))
+    __send__(handler, table, list, Array(call.arguments&.arguments).flat_map { value(it) })
   end
-
-  def values(call) = Array(call.arguments&.arguments).flat_map { value(it) }
 
   def value(node)
     case node

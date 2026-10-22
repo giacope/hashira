@@ -82,12 +82,9 @@ class Hashira::CI::Baseline
   def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
 
   def payload(edges, marks, packaging)
-    stem(packaging).merge(edges:, findings: sized(marks)).merge(traced(marks)).merge(kept)
+    stem = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h).merge(optional(:kinds, @kinds.sort))
+    stem.merge(edges:, findings: marks.transform_values(&:magnitude)).merge(traced(marks)).merge(kept)
   end
-
-  def stem(packaging) = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h).merge(optional(:kinds, @kinds.sort))
-
-  def sized(marks) = marks.transform_values(&:magnitude)
 
   def traced(marks)
     found = marks.transform_values(&:trace).compact

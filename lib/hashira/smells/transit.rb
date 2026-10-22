@@ -29,11 +29,12 @@ class Hashira::Smells::Transit
 
   def mapper?(name) = MAPPERS.include?(name) || RENDERS.match?(name)
 
-  def forwards(name) = calls.map { values(it) }.select { whole?(it, name) }.flatten
+  def forwards(name)
+    given = calls.map { |call| arguments(call).flat_map { it.is_a?(Prism::KeywordHashNode) ? pairs(it) : [it] } }
+    given.select { whole?(it, name) }.flatten
+  end
 
   def whole?(values, name) = values.any? { it.is_a?(Prism::LocalVariableReadNode) && it.name == name }
-
-  def values(call) = arguments(call).flat_map { it.is_a?(Prism::KeywordHashNode) ? pairs(it) : [it] }
 
   def pairs(hash) = hash.elements.grep(Prism::AssocNode).map(&:value)
 

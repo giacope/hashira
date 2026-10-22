@@ -25,12 +25,11 @@ class Hashira::CI::Comparison
   def pool = @_pool ||= gone.group_by { @recorded[it].trace }.except(nil)
 
   def worsened(moved)
-    paired(moved).filter_map { |key, was| entry(key, @recorded[was].magnitude, @current[key].magnitude) }
-  end
-
-  def paired(moved) = (@current.keys & @recorded.keys).to_h { [it, it] }.merge(moved)
-
-  def entry(key, before, after)
-    [key, before, after] if before.is_a?(Integer) && after.is_a?(Integer) && after > before
+    paired = (@current.keys & @recorded.keys).to_h { [it, it] }.merge(moved)
+    paired.filter_map do |key, was|
+      before = @recorded[was].magnitude
+      after = @current[key].magnitude
+      [key, before, after] if before.is_a?(Integer) && after.is_a?(Integer) && after > before
+    end
   end
 end

@@ -20,25 +20,27 @@ class Hashira::Complexity::Fragmentation
     @rules = rules
   end
 
-  def findings = @sites.filter_map { |file, site| shard(file, site).finding(*limits) if entry?(site) }
+  def findings
+    limits = %w[helpers lines].zip([HELPERS, LINES]).map { |name, default| @rules.limit(KIND, name, default) }
+    @sites.filter_map { |file, site| shard(file, site).finding(*limits) if entry?(site) }
+  end
 
   private
 
-  def limits = %w[helpers lines].zip([HELPERS, LINES]).map { |name, default| @rules.limit(KIND, name, default) }
-
-  def shard(file, site) = Hashira::Complexity::Shard.new(entry(file, site), reach(site), @notes.fetch(file))
-
-  def entry(file, site) = Hashira::Complexity::Entry.new(KIND, file, site)
-
-  def reach(site) = Hashira::Complexity::Reach.new(site, helpers(site.family))
+  def shard(file, site)
+    entry = Hashira::Complexity::Entry.new(KIND, file, site)
+    reach = Hashira::Complexity::Reach.new(site, helpers(site.family))
+    Hashira::Complexity::Shard.new(entry, reach, @notes.fetch(file))
+  end
 
   def helpers(family) = (@_helpers ||= {})[family] ||= table(family).select { |name, site| helper?(family, name, site) }
 
   def helper?(family, name, site) = !exposed.include?(site.node) && callers(family)[name] == 1
 
-  def callers(family) = (@_callers ||= {})[family] ||= table(family).values.flat_map { called(it) }.tally
-
-  def called(site) = Hashira::Complexity::Calls.new(site.node).names - [site.node.name]
+  def callers(family)
+    (@_callers ||= {})[family] ||=
+      table(family).values.flat_map { Hashira::Complexity::Calls.new(it.node).names - [it.node.name] }.tally
+  end
 
   def entry?(site) = exposed.include?(site.node) && !HIDDEN.include?(site.node.name)
 

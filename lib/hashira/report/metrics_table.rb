@@ -11,11 +11,18 @@ class Hashira::Report::MetricsTable
 
   HEADERS = %w[package TC Ca Ce I Cyc].freeze
 
+  LEGEND = <<~TEXT
+
+    Legend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),
+            I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)
+
+  TEXT
+
   def print
     Hashira::Report::Columns.new(HEADERS, kept.map { |package, metric| row(package, metric) }, io: @io).print
     note unless spared.empty?
     more unless over.zero?
-    legend
+    @io.puts(LEGEND)
   end
 
   private
@@ -32,18 +39,12 @@ class Hashira::Report::MetricsTable
 
   def leaf?(metric) = metric.types <= 1 && metric.efferent.zero? && metric.afferent <= 1
 
-  def note = @io.puts("  + #{leaves} (TC ≤ 1, Ca ≤ 1, Ce = 0) — hidden for brevity")
-
-  def leaves = Hashira::Report::Count.new(spared.size, "single-type leaf package").to_s
+  def note
+    leaves = Hashira::Report::Count.new(spared.size, "single-type leaf package")
+    @io.puts("  + #{leaves} (TC ≤ 1, Ca ≤ 1, Ce = 0) — hidden for brevity")
+  end
 
   def more = @io.puts(Hashira::Report::Withheld.new(over).to_s)
 
-  def row(package, metric) = [package, *metric.cells, cycle(package)]
-
-  def cycle(package) = @graph.cycles.through?(package) ? "YES" : "-"
-
-  def legend
-    @io.puts("\nLegend: TC total types, Ca afferent (incoming), Ce efferent (outgoing),")
-    @io.puts("        I=Ce/(Ce+Ca) instability (0=maximally stable, 1=maximally unstable)\n\n")
-  end
+  def row(package, metric) = [package, *metric.cells, @graph.cycles.through?(package) ? "YES" : "-"]
 end

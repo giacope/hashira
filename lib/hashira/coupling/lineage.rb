@@ -19,19 +19,17 @@ class Hashira::Coupling::Lineage
   private
 
   def links
-    @_links ||= @definitions.select(&:type?).group_by(&:path).transform_values { it.flat_map { heritage(it) } }
+    @_links ||=
+      @definitions.select(&:type?).group_by(&:path).transform_values do |openings|
+        openings.flat_map { [ancestor(it), *mixins(it)].compact }
+      end
   end
 
-  def heritage(definition) = [ancestor(definition), *mixins(definition)].compact
+  def ancestor(definition) = (link(definition.superclass, definition.scope[...-1]) if definition.klass?)
 
-  def ancestor(definition) = (link(definition.superclass, outer(definition)) if definition.klass?)
-
-  def outer(definition) = definition.scope[...-1]
-
-  def mixins(definition) = included(definition).map { link(it, definition.scope) }
-
-  def included(definition)
-    syntax(definition.node).statements.grep(Prism::CallNode).select { mixin?(it) }.flat_map { it.arguments.arguments }
+  def mixins(definition)
+    calls = syntax(definition.node).statements.grep(Prism::CallNode).select { mixin?(it) }
+    calls.flat_map { it.arguments.arguments }.map { link(it, definition.scope) }
   end
 
   def mixin?(call) = MIXINS.include?(call.name) && !call.receiver && call.arguments

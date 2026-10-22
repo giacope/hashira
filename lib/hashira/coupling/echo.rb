@@ -7,11 +7,9 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
 
   REST_ACTIONS = %w[index show new create edit update destroy].to_set.freeze
 
-  def list = rolls.reject { framework?(it) }.map { entry(it) }
+  def list = Hashira::Coupling::RollCall.new(lists, homes).rolls.reject { framework?(it) }.map { entry(it) }
 
   private
-
-  def rolls = Hashira::Coupling::RollCall.new(lists, homes).rolls
 
   def framework?(roll) = project.rails? && REST_ACTIONS.superset?(roll.words.to_set)
 

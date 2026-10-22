@@ -19,8 +19,8 @@ class Hashira::CI::Ratchet
   def check(focus)
     newer
     compared = focus.narrowing? ? Hashira::CI::Slice.new(@baseline) : Hashira::CI::Sweep.new(@baseline)
-    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
-      .print(compared.edges(drift), delta(compared), tally(compared))
+    delta = compared.findings(scored(judged)) if @baseline.findings?
+    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(compared.edges(drift), delta, tally(compared))
   end
 
   def blocker
@@ -76,11 +76,8 @@ class Hashira::CI::Ratchet
 
   def mark(group) = Hashira::CI::Mark.new(magnitude: group.filter_map(&:magnitude).max, trace: group.first.trace)
 
-  def drift = Hashira::CI::Diff.new(added: fresh, removed: @baseline.edges - edges)
-
-  def fresh = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
-
-  def delta(compared)
-    compared.findings(scored(judged)) if @baseline.findings?
+  def drift
+    added = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
+    Hashira::CI::Diff.new(added:, removed: @baseline.edges - edges)
   end
 end

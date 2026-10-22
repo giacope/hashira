@@ -13,6 +13,7 @@ class Hashira::Config::Setting
   end
 
   def rule
+    keys = KEYS + named + listed
     stray = (@raw.keys - keys).first
     raise(Hashira::Error, "checks: #{@kind} has no setting #{stray.inspect} (use: #{keys.join(", ")})") if stray
     Hashira::Config::Rule.new(enabled: @raw["enabled"] != false, threshold:, limits:)
@@ -20,13 +21,14 @@ class Hashira::Config::Setting
 
   private
 
-  def keys = KEYS + named + listed
-
   def named = LIMITS.fetch(@kind, [])
 
   def listed = LISTS.fetch(@kind, [])
 
-  def limits = (named + listed).select { @raw.key?(it) }.to_h { [it, listed.include?(it) ? words(it) : measured(it)] }
+  def limits
+    chosen = (named + listed).select { @raw.key?(it) }
+    chosen.to_h { [it, listed.include?(it) ? words(it) : measured(it)] }
+  end
 
   def words(name)
     value = Array(@raw[name])
@@ -43,6 +45,7 @@ class Hashira::Config::Setting
   def threshold
     return unless @raw.key?("threshold")
     value = @raw["threshold"]
+    scale = Hashira::Config::Rules::THRESHOLDS.join(", ")
     raise(Hashira::Error, "checks: #{@kind} has no threshold (thresholds: #{scale})") unless scaled?
     whole?(value) ? value : raise(Hashira::Error, "checks: #{@kind} threshold must be a positive whole number")
   end
@@ -50,6 +53,4 @@ class Hashira::Config::Setting
   def scaled? = Hashira::Config::Rules::THRESHOLDS.include?(@kind)
 
   def whole?(value) = value.is_a?(Integer) && value.positive?
-
-  def scale = Hashira::Config::Rules::THRESHOLDS.join(", ")
 end

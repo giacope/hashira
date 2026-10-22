@@ -17,7 +17,10 @@ class Hashira::Smells::Lineage
 
   def heirs(context)
     name = context.name
-    bequeathed.fetch(name) { bequeathed[name] = descendants(name).flat_map { installs(it) }.uniq }
+    bequeathed = @_bequeathed ||= {}
+    bequeathed.fetch(name) do
+      bequeathed[name] = descendants(name).flat_map { |heir| index.fetch(heir).flat_map { writes(it) } }.uniq
+    end
   end
 
   def pointed(type) = references(type).map { resolve(type.name, it) }
@@ -36,16 +39,12 @@ class Hashira::Smells::Lineage
 
   private
 
-  def bequeathed = @_bequeathed ||= {}
-
   def message(node)
     case node
     when Prism::CallNode then node.name
     when Prism::SymbolNode then Hashira::Analysis::Syntax.new(node).symbol
     end
   end
-
-  def installs(name) = index.fetch(name).flat_map { writes(it) }
 
   def descendants(name)
     found = [name]

@@ -65,11 +65,9 @@ class Hashira::Smells::Report
 
   def methods = types.flat_map(&:defs)
 
-  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership, interpreted, @rules).findings
+  def sprawl = Hashira::Smells::BoundarySprawl.new(methods, census.ownership, @boundaries.interpreted, @rules).findings
 
-  def interpreted = @boundaries.interpreted
-
-  def sniff(subjects, checks) = subjects.flat_map { |subject| verdicts(subject, checks) }
-
-  def verdicts(subject, checks) = checks.filter_map { |check| check.new(subject, @rules).finding }
+  def sniff(subjects, checks)
+    subjects.flat_map { |subject| checks.filter_map { |check| check.new(subject, @rules).finding } }
+  end
 end

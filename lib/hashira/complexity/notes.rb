@@ -7,14 +7,12 @@ class Hashira::Complexity::Notes
     @comments = comments
   end
 
-  def code?(number) = !bare(number).strip.empty?
+  def code?(number)
+    text = lines.fetch(number - 1, "")
+    !text.byteslice(0, cuts.fetch(number, text.bytesize)).strip.empty?
+  end
 
   private
-
-  def bare(number)
-    text = lines.fetch(number - 1, "")
-    text.byteslice(0, cuts.fetch(number, text.bytesize))
-  end
 
   def lines = @_lines ||= @parsed.lines(@path)
 

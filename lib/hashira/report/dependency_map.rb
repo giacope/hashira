@@ -11,7 +11,7 @@ class Hashira::Report::DependencyMap
 
   def print
     @io.puts("Dependencies (DependsUpon(refs) -> | <- UsedBy):")
-    kept.each { @io.puts(row(it)) }
+    kept.each { @io.puts(Hashira::Report::DependencyRow.new(@graph, it)) }
     @io.puts(Hashira::Report::Withheld.new(over).to_s) if over.positive?
     loners unless split.last.empty?
     @io.puts
@@ -27,17 +27,17 @@ class Hashira::Report::DependencyMap
 
   def over = split.first.size - kept.size
 
-  def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
-
   def loners = @io.puts("  + #{Hashira::Report::Count.new(split.last.size, "package")} with no edges either way")
 
-  def row(package)
-    format("  %-12s -> %-32s <- %s", package, list(outgoing(package)), list(@graph.incoming(package)))
-  end
-
-  def outgoing(package)
-    @graph.outgoing(package).map { "#{it}(#{@graph.weight(package, it)})" }
-  end
-
-  def list(items) = items.empty? ? "(none)" : items.join(", ")
+  def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
 end
+
+Hashira::Report::DependencyRow =
+  Data.define(:graph, :package) do
+    def to_s
+      outgoing = graph.outgoing(package).map { "#{it}(#{graph.weight(package, it)})" }
+      format("  %-12s -> %-32s <- %s", package, listed(outgoing), listed(graph.incoming(package)))
+    end
+    private
+    def listed(items) = items.empty? ? "(none)" : items.join(", ")
+  end

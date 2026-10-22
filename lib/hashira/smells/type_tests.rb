@@ -39,10 +39,9 @@ class Hashira::Smells::TypeTests
   end
 
   def lookups(&)
-    calls.select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }.flat_map { table(it.receiver) }
+    calls.select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }
+      .flat_map { @ownership.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
   end
-
-  def table(receiver) = @ownership.keys(Hashira::Analysis::Syntax.new(receiver).segments)
 
   def sorts?(argument, &) = argument.is_a?(Prism::CallNode) && argument.name == :class && local?(argument.receiver, &)
 end
