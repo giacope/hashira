@@ -62,11 +62,16 @@ class Hashira::CLI::Run
 
   def gated = @options.fail_on.include?(Hashira::CLI::FailOn::EVERY) ? checked : @options.fail_on
 
-  def checked = Hashira::Pipeline::KINDS.select { checks?(it) && sieve.keeps?(it) }
+  def checked = asked { @pipeline.checks?(it) }
 
-  def checks?(kind)
-    @pipeline.checks?(kind) && @pipeline.enabled?(Hashira::CLI::FailOn::OWNERS.fetch(kind))
+  def unjudged
+    left = asked { @pipeline.unjudged?(it) }
+    Hashira::Report::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
   end
+
+  def asked(&) = Hashira::Pipeline::KINDS.select { yield(it) && owned?(it) && sieve.keeps?(it) }
+
+  def owned?(kind) = @pipeline.enabled?(Hashira::CLI::FailOn::OWNERS.fetch(kind))
 
   def source = Hashira::Diagram::Source.new(graph, @options.mode)
 
@@ -74,7 +79,7 @@ class Hashira::CLI::Run
     Hashira::Report::View.new(
       project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
       complexity: @pipeline.complexity, duplication: @pipeline.duplication,
-      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact, screened:
+      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact, screened:, unjudged:
     )
   end
 end

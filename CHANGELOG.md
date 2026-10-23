@@ -125,8 +125,12 @@ things a baseline sees:
   each site as evidence. `repeated_conditional` stays opt-in.
 - A shallow clone, or fewer than two commits, prints one stderr line naming
   what hashira could not weigh (`hashira: shallow git history (1 commit) for lib
-  — hotspots are ranked by cost alone; change_coupling cannot judge`), and the
-  hotspot table's heading says the rank is the cost alone.
+  — hotspots are ranked by cost alone; change_coupling cannot judge`), the
+  hotspot table's heading says the rank is the cost alone, and a run with no
+  findings no longer calls the structure healthy for a kind it could not judge:
+  `none — change_coupling could not judge: shallow git history (1 commit)`, or
+  `none ✓ for the kinds judged; change_coupling not judged (…)`. `--json` lists
+  them under `unjudged`.
 
 - `--fail-on all` (and `fail-on: all` in `.hashira.yml`) gates every kind the
   run checks: the default kinds, the ones `checks:` turns on, less what

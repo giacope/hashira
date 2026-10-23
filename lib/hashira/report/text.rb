@@ -68,7 +68,7 @@ class Hashira::Report::Text
   end
 
   def list(all)
-    return @io.puts("  none ✓ — structure is healthy") if all.empty?
+    return @io.puts("  #{@view.unjudged.verdict}") if all.empty?
     table(Hashira::Report::FindingList, all)
   end
 

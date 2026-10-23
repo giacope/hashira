@@ -11,7 +11,7 @@ class Hashira::Report::Json
   SCHEMA = 1
 
   def print
-    payload = about.merge(base).merge(coupling).merge(sections.compact).merge(withheld)
+    payload = about.merge(base).merge(coupling).merge(sections.compact).merge(withheld).merge(unjudged)
     @io.puts(@view.compact ? JSON.generate(payload) : JSON.pretty_generate(payload))
     0
   end
@@ -67,6 +67,11 @@ class Hashira::Report::Json
 
   def accepted
     @view.findings.accepted.map { |finding, reason| rendered(finding).merge(reason:) }
+  end
+
+  def unjudged
+    told = @view.unjudged.to_a
+    told.empty? ? {} : { unjudged: told }
   end
 
   def withheld

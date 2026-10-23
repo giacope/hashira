@@ -119,6 +119,12 @@ change_coupling nothing to judge, and the stderr line says so:
 hashira: shallow git history (1 commit) for lib — hotspots are ranked by cost alone; change_coupling cannot judge
 ```
 
+and the findings list, where a run with no findings would call the structure
+healthy, names what went unjudged (`none — change_coupling could not judge:
+shallow git history (1 commit)`, or `none ✓ for the kinds judged;
+change_coupling not judged (…)` beside kinds that were judged); `--json` lists
+them under `unjudged`.
+
 ## Configuration
 
 A `.hashira.yml` holds the flags you would pass every time, each key a flag

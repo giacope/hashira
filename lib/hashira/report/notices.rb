@@ -19,7 +19,8 @@ class Hashira::Report::Notices
 
   def churn(label, depth, coupling: false)
     unjudged = "; change_coupling cannot judge" if coupling
-    @io.puts("hashira: #{history(depth)} for #{label} — hotspots are ranked by cost alone#{unjudged}")
+    history = Hashira::Report::History.new(depth)
+    @io.puts("hashira: #{history} for #{label} — hotspots are ranked by cost alone#{unjudged}")
   end
 
   def crashed(error)
@@ -46,13 +47,6 @@ class Hashira::Report::Notices
   end
 
   private
-
-  def history(depth)
-    commits = depth.commits
-    shallow = depth.shallow
-    return "no git history" unless shallow || commits.positive?
-    "#{shallow ? "shallow" : "too little"} git history (#{Hashira::Report::Count.new(commits, "commit")})"
-  end
 
   def progress(line)
     @io.puts("hashira: #{line}") if @io.tty?

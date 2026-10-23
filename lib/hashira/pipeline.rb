@@ -51,6 +51,10 @@ class Hashira::Pipeline
 
   def checks?(kind) = rules.enabled?(kind) && (kind != Hashira::Coupling::ChangeCoupling::KIND || churn.history?)
 
+  def unjudged?(kind) = rules.enabled?(kind) && !checks?(kind)
+
+  def depth = churn.depth
+
   def size = @project.files.size
 
   def unlayered
