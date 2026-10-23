@@ -13,11 +13,14 @@ class Hashira::Smells::Grouping
     @findings = findings
   end
 
-  def findings = @findings.reject { grouped?(it) } + edges + sources + Hashira::Smells::Repeats.new(@findings).findings
+  def findings
+    heirs = Hashira::Smells::Heirs.new(@findings).findings
+    @findings.reject { grouped?(it) } + edges + sources + heirs + Hashira::Smells::Repeats.new(@findings).findings
+  end
 
   private
 
-  def grouped?(finding) = [CHAIN, REPEATS].include?(finding.kind) || sourced?(finding)
+  def grouped?(finding) = [CHAIN, REPEATS, Hashira::Smells::Heirs::KIND].include?(finding.kind) || sourced?(finding)
 
   def sourced?(finding) = finding.kind == ABSENT && finding.detail[:sources].to_a.any?
 

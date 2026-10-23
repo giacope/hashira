@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Sources
-  TEMPLATES = %r{/generators/(?:.+/)?\w*templates?/}
+  TEMPLATES = %r{/generators/(?:.+/)?\w*templates?/|(?:\A|/)lib/templates/}
 
   GRAMMARS = %w[.rl .y .racc .treetop .rex].freeze
 

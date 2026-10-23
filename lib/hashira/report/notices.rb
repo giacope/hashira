@@ -17,8 +17,10 @@ class Hashira::Report::Notices
 
   def finished(files, seconds) = progress("#{files} files in #{seconds}s")
 
-  def churn(label)
-    @io.puts("hashira: no git history for #{label} — hotspots are ranked by cost alone")
+  def churn(label, depth, coupling: false)
+    unjudged = "; change_coupling cannot judge" if coupling
+    history = Hashira::Report::History.new(depth)
+    @io.puts("hashira: #{history} for #{label} — hotspots are ranked by cost alone#{unjudged}")
   end
 
   def crashed(error)

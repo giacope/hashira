@@ -7,6 +7,8 @@ class Hashira::Hotspots::Rollup
     @churn = churn
   end
 
+  def weighed? = @churn.history?
+
   def files = costs.reject { it.cost.zero? }.sort_by { [-it.rank, it.file] }
 
   private

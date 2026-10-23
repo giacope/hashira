@@ -15,7 +15,9 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def smelly? = clumps.any?
 
-  def candidates = @_candidates ||= subject.owned.reject(&:polymorphic?).map { [it, carried(it).sort] }
+  def candidates
+    @_candidates ||= subject.owned.reject(&:polymorphic?).map { [it, carried(it).sort] }.select { clump(it.last) }
+  end
 
   def carried(method) = method.arguments.reject { it.start_with?("_") } - defaulted(method.node)
 
@@ -29,12 +31,13 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def flowing = @_flowing ||= shared.select { |clump| relayed?(clump) }
 
-  def shared = candidates.combination(MAX_COPIES + 1).filter_map { |group| clump(group) }.uniq
+  def shared = pairs.flat_map { |pair| [pair, *narrowed(pair)] }.uniq.select { holders(it).size > MAX_COPIES }
 
-  def clump(group)
-    names = group.map(&:last).inject(:&)
-    names if names.size >= MIN_SIZE
-  end
+  def pairs = candidates.map(&:last).combination(2).filter_map { |one, other| clump(one & other) }.uniq
+
+  def narrowed(pair) = candidates.filter_map { |_, names| clump(pair & names) }
+
+  def clump(names) = (names if names.size >= MIN_SIZE)
 
   def holders(clump) = candidates.filter_map { |method, names| method if (clump - names).empty? }
 

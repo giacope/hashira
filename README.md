@@ -79,8 +79,11 @@ folders the gemspec's `require_paths` lists or globs (fastlane's
 `config/application.rb`) `app` and `lib`. One directory is descended through
 single-folder wrappers, so `hashira`, `hashira lib` and `hashira lib/gem/core`
 land on the same packages. With one directory files are named relative to it;
-with several, as you would open them from where hashira runs. Templates a
-generator copies into an app (`lib/generators/**/templates/`) are not the
+with several, as you would open them from where hashira runs. The entry file of
+a library hashira narrowed to (`lib/rack/attack.rb` beside `lib/rack/attack/`)
+is named from the project's root. Templates a
+generator copies into an app (`lib/generators/**/templates/`), and the
+overrides Rails reads from `lib/templates/`, are not the
 project's code and are left out. Nor is vendored or generated code: a file
 under a `vendor/` folder below the analyzed directory, or a `.rb` that a
 grammar beside it generates (a sibling `.rl`, `.y`, `.racc`, `.treetop` or
@@ -107,8 +110,20 @@ Findings are dealt out across kinds, worst first within a kind, structural
 kinds (cycles, layers, dead code, associations) before the design smells and
 the local ones (`repeated_call`, `duplication`) last, and a capped list opens
 with one line per kind, so hundreds of findings of one kind read as
-one fact. Anything hashira had to work around (no git history, a file Prism
-could not parse) goes to stderr.
+one fact. Anything hashira had to work around (no git history, a shallow clone,
+a file Prism could not parse) goes to stderr. A shallow clone, or a history of
+fewer than two commits, ranks the hotspots by cost alone and leaves
+change_coupling nothing to judge, and the stderr line says so:
+
+```text
+hashira: shallow git history (1 commit) for lib — hotspots are ranked by cost alone; change_coupling cannot judge
+```
+
+and the findings list, where a run with no findings would call the structure
+healthy, names what went unjudged (`none — change_coupling could not judge:
+shallow git history (1 commit)`, or `none ✓ for the kinds judged;
+change_coupling not judged (…)` beside kinds that were judged); `--json` lists
+them under `unjudged`.
 
 ## Configuration
 
@@ -166,13 +181,15 @@ So everything is on but five kinds:
 | --- | --- |
 | `middle_man` | forwarding is what `message_chain` asks for; turn it on to find classes that only forward |
 | `indirection` | a thin named step is what an explanatory helper is; `fragmentation` reports the knots that hurt |
-| `repeated_conditional` | `manual_dispatch` already reports the type and status switches; plain value tests may be fine |
+| `repeated_conditional` | `manual_dispatch` already reports the type and status switches, a type test repeated across methods included; what is left, plain value tests, may be fine |
 | `boundary_sprawl` | an interpreter of a foreign model is legitimate; declare the ones you mean (see [CI](#ci)) |
 | `change_coupling` | needs the git history, which a shallow CI checkout lacks |
 
 `layer_violation` is on whenever `layers:` are declared. `--kind` and
 `--fail-on` turn on the kinds they name (`--fail-on all` names none: it gates
-what the run checks), and a `checks:` setting for a kind turns it on.
+what the run checks), and a `checks:` setting for a kind turns it on. `--kind`
+also turns the others off for that run, so a design smell nobody asked for is
+never computed.
 
 The earlier policy switched kinds on by a precision measured on labels. Those
 labels are in [eval/results](eval/results/README.md): two independent AI
@@ -233,9 +250,15 @@ resolved the way Ruby resolves it: lexical nesting first, then the innermost
 class's ancestors, then top level. `Billing::Client` inside `module Shipping` is
 not `Shipping::Billing::Client` unless that exists. Ruby's own constants never
 belong to a package, even where the project reopens them, and neither does a
-namespace a dependency owns: the root of a gem's camelized name in
-`Gemfile.lock`, the `Gemfile` or a gemspec (`devise` → `Devise`, `rubocop-rails`
-→ `RuboCop`), unless it sits under one of the project's own gems. Any other top-level
+namespace a dependency owns: a gem's whole camelized name in
+`Gemfile.lock`, the `Gemfile` or a gemspec (`devise` → `Devise`,
+`travis-config` → `Travis::Config`), or the path the `Gemfile` requires it by
+(`require: "shop/sql"` → `Shop::Sql`), unless it sits under one of the project's
+own gems. A gem never claims a root by its first word: `travis-config` leaves
+`Travis` to the project that defines it, and `rubocop-rails` claims
+`RuboCop::Rails`, while `RuboCop` is foreign because `rubocop` is a gem too. A
+reopened core class (``class ::Array < `Array` ``, `class String < Object`) stays
+Ruby's whatever superclass it spells. Any other top-level
 namespace is the project's only where the project opens it with definitions
 (`module Shop` holding a class, a method or a constant, not just `autoload`s),
 or where Zeitwerk makes it of a folder; a file path that names it, or a class
@@ -335,7 +358,9 @@ by type, so a method called anywhere under its name counts as used: hashira
 misses dead code rather than report live code. Also left alone:
 
 - Ruby's protocols and hooks (`to_s`, `each`, `==`, `call`, `initialize`,
-  `inherited`, `method_missing`, `as_json`, …) and a method that calls `super`,
+  `inherited`, `method_missing`, `as_json`, Ruby 4.0's
+  `instance_variables_to_inspect`, ActiveModel's `use_relative_model_naming?`,
+  …) and a method that calls `super`,
   which overrides something its caller reaches.
 - Every method of a class that sends itself a computed name (`send(name)`), and
   of its descendants.
@@ -362,7 +387,14 @@ misses dead code rather than report live code. Also left alone:
   (`class String`), or one opened in a library's namespace
   (`class ActionText::Content::Filters`) that the project does not otherwise
   claim. References to it never resolve to the project, so they cannot show it
-  is used. The methods the project adds to it are still judged.
+  is used. The methods the project adds to Ruby's classes are still judged; the
+  ones it patches into a dependency's namespace (`Rack::PageCaching::Utils.gzip_level`),
+  or into a module it includes, prepends or extends into a dependency's class
+  (`SSHKit::Backend::Netssh.prepend(Limit)`, a plugin's
+  `app.send(:include, InstanceMethods)`), are that library's to call.
+- A constant reached through a computed scope (`journey::SlugSequence`,
+  `presenter::SEARCH_FIELDS`, `self.class::KIND`): every owned constant of that
+  name counts as used.
 
 The roots differ by kind of project. In a library, every public method and
 public constant is its users' API, so only private methods and
@@ -390,8 +422,10 @@ finding says whether one file refers to the other: a pair with no reference
 between them is coupled where the code does not show it.
 
 It needs the history: a CI checkout of one commit (`actions/checkout`'s
-default) sees none, so the ratchet would find the pairs resolved there. Fetch
-the history (`fetch-depth: 0`) wherever change_coupling is gated.
+default) sees none. In a shallow clone change_coupling reports nothing, says so
+on stderr, and stays out of `--fail-on all`; a ratchet there would still find
+the recorded pairs resolved. Fetch the history (`fetch-depth: 0`) wherever
+change_coupling is gated.
 
 ## Rails apps
 
@@ -694,18 +728,32 @@ Findings (3):
   `instance_variable_set("@shop_#{key}", v)`, assigns every read that starts
   with its literal prefix), and a block the class body hands its own DSL
   (`start { @mode = :text }`, `before_action { … }`), which the framework runs
-  on the instance.
+  on the instance. A literal `instance_variable_set` on a peer the class builds
+  (`params = new(v); params.instance_variable_set(:@nesting, n)` in a class
+  method) assigns too, and so does a computed one that a subclass's constructor
+  reaches. A class whose code holds a string hashira cannot read (an `eval` or
+  `class_eval` string, an x-string, `binding`) may assign anything, so it is
+  never judged, and a `def` nested in a method (inside
+  `::ActionController::TestCase.class_eval do … end`) is another class's.
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
   library calls, a fake's side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
-  `Dummy`, `*Double`) is exempt.
+  `Dummy`, `*Double`) is exempt, and so is a method whose body holds code
+  hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
+  `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
+  `local_variables` may touch any local, instance variable or method in scope.
 - **manual_dispatch** — a `respond_to?` probe, or a `case`/`is_a?` ladder over
   two or more of the codebase's own classes or the object's own status. The
   probe must be on self or on an object whose owned class can be named (a value
   of unknown type is never taken for the method's own class), and ask for a
   message the codebase defines, which a computed message never is. Ruby's protocols (`:each`, `:to_hash`, …),
-  `respond_to_missing?` and the `method_missing` it pairs with are exempt.
+  `respond_to_missing?` and the `method_missing` it pairs with are exempt, and
+  so are the comparison protocols (`<=>`, `==`, `eql?`, `===`, `equal?`,
+  `coerce`), which must take any object and answer for what they were handed.
+  The same type test on the object's own state in three or more methods of one
+  class (`@check_in_target.is_a?(Event)` in six actions) is a switch spread
+  over methods: one finding for the class, each site as evidence.
 - **nil_check** — `nil?`, `== nil`, `when nil`, `blank?`, and, on a value the
   code itself leaves nil, `&.`, `unless x` and `x || default`. Reported only
   where the nil is the codebase's own: its state, a nil it assigns, its own
@@ -738,8 +786,8 @@ project's own, so a framework's base classes stay out of all of them.
 - **concrete_inheritance** — a class extends an owned class that the project
   also builds on its own (`Report.new` somewhere, or a bare `new` in the
   parent's class methods): the subclass is coupled to a working
-  implementation, not to an abstraction. The places that build the parent are
-  the evidence. Left alone: a parent that says it is abstract (named `Base` or
+  implementation, not to an abstraction. One finding per parent, named for it,
+  with every subclass and the places that build the parent as evidence. Left alone: a parent that says it is abstract (named `Base` or
   `Abstract…`, a method that raises `NotImplementedError`, `abstract_class` or
   `abstract!`), a parent nothing builds directly, and any hierarchy whose owned
   root extends something the project does not own (`ApplicationRecord <
@@ -797,7 +845,14 @@ project's own, so a framework's base classes stay out of all of them.
   spread over several collaborators, and a method that fills a role its kin
   share.
 
-Class-level kinds judge a class across every file that reopens it.
+Class-level kinds judge a class across every file that reopens it. A `def`
+inside a block handed to a call (a DSL such as rodauth's
+`Feature.define(:change_login, :ChangeLogin) do … end`) is not the enclosing
+module's: it belongs to the constant the call names by a CamelCase symbol or
+string (`Rodauth::ChangeLogin`), or else to an owner of its own per block
+(`Auth::(configure block, line 7)`). Blocks that reopen the class or build a
+new one keep the enclosing owner: `included`, `class_methods`, `concerning`,
+`class_eval` on self, `Class.new`, `Module.new`, `Struct.new`, `Data.define`.
 
 ## Hotspots
 
@@ -806,7 +861,7 @@ nodes its clone sites cover, and multiplies by how many commits touched it:
 
 <!-- example: duplication app --kind duplication -->
 ```console
-Hotspots — cost × churn (where refactoring pays the most):
+Hotspots — cost alone, no git history to weigh (where refactoring pays the most):
 
 file                Cog  Dup  Churn  Rank
 -----------------------------------------
@@ -816,7 +871,8 @@ reports/refunds.rb    0   38      0    38
 ```
 
 Read it as a work queue. The rank counts churn as at least one, so a
-repository without history ranks by cost alone. It is deliberately not a grade: a letter on a healthy
+repository without history ranks by cost alone, and the heading says so; a
+shallow clone or a single commit counts as no history. It is deliberately not a grade: a letter on a healthy
 codebase is the same letter on every row.
 
 ## CI

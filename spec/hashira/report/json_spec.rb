@@ -39,6 +39,10 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   def legacy = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
+  it "lists no unjudged kinds when every kind the run asked for was judged" do
+    expect(cyclic_report).not_to(have_key("unjudged"))
+  end
+
   it "says what produced it: schema version, packaging, targets, and file count" do
     expect(cyclic_report.values_at("version", "packaging", "targets", "files"))
       .to(eq([Hashira::Report::Json::SCHEMA, "folder", ["lib/app"], 3]))

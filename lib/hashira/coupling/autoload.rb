@@ -16,7 +16,9 @@ class Hashira::Coupling::Autoload
 
   def defined = @trees.each_value.flat_map { fulls(it) }.to_set
 
-  def fulls(tree) = Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).map { |_node, full| full }
+  def fulls(tree)
+    Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).filter_map { |_node, full, _stack, lexical| full if lexical == full }
+  end
 
   def implied(file)
     parts = file.split("/")

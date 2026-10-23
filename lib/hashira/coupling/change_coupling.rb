@@ -24,6 +24,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
     end
 
   def list
+    return [] unless project.history.deep?
     pairs = together.filter_map { |files, shared| pair(files, shared) }
     pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
   end

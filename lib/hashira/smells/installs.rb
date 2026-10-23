@@ -13,6 +13,8 @@ class Hashira::Smells::Installs
 
   SET = :instance_variable_set
 
+  BUILDERS = %i[new allocate].freeze
+
   SETTERS = [
     Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode,
     Prism::InstanceVariableAndWriteNode, Prism::InstanceVariableOperatorWriteNode,
@@ -24,7 +26,7 @@ class Hashira::Smells::Installs
     @swept = swept
   end
 
-  def names = @_names ||= writes + attributes
+  def names = @_names ||= writes + attributes + peers
 
   def writes = surveyed.flat_map { |_body, swept| setters(swept) }
 
@@ -36,6 +38,24 @@ class Hashira::Smells::Installs
 
   private
 
+  def peers = @swept.grep(Prism::DefNode).select { it.receiver.is_a?(Prism::SelfNode) }.flat_map { built(it) }
+
+  def built(definition)
+    inside = Hashira::Smells::Scope.new(definition).inside
+    made = inside.grep(Prism::LocalVariableWriteNode).select { peer?(it.value) }.map(&:name)
+    sets = injections(inside).select { it.receiver.is_a?(Prism::LocalVariableReadNode) }
+    literal(sets.select { made.include?(it.receiver.name) })
+  end
+
+  def literal(sets) = sets.map { named(it) }.select { Hashira::Analysis::Syntax.new(it).word? }.map { text(it).to_sym }
+
+  def peer?(value)
+    return false unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)
+    maker = value.receiver
+    inward = [nil, Prism::SelfNode].include?(maker&.class)
+    inward || Hashira::Analysis::Syntax.new(maker).segments.last == @type.name[/\w+\z/]
+  end
+
   def bodies
     calls = Hashira::Analysis::Syntax.new(@type.node).statements.grep(Prism::CallNode).reject(&:receiver)
     @swept.grep(Prism::DefNode).reject(&:receiver) + calls.filter_map(&:block).grep(Prism::BlockNode)
@@ -43,10 +63,7 @@ class Hashira::Smells::Installs
 
   def surveyed = @_surveyed ||= bodies.map { [it, Hashira::Smells::Scope.new(it).sweep] }
 
-  def setters(swept)
-    named = injections(swept).map { named(it) }.select { Hashira::Analysis::Syntax.new(it).word? }
-    swept.select { SETTERS.include?(it.class) }.map(&:name) + named.map { text(it).to_sym }
-  end
+  def setters(swept) = swept.select { SETTERS.include?(it.class) }.map(&:name) + literal(injections(swept))
 
   def injections(swept) = swept.grep(Prism::CallNode).select { it.name == SET }
 

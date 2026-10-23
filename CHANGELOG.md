@@ -30,6 +30,18 @@ Rails apps and gems (rails, rubocop, chatwoot, feedbin, rubygems.org, huginn,
 
 ### Upgrading
 
+- `concrete_inheritance` is one finding per concrete parent, named for the
+  parent, with every subclass as evidence (rails_event_store's 13
+  `< RubyEventStore::Event` findings are one). A baseline recorded before lists
+  the per-subclass findings as resolved and the per-parent ones as new until
+  `--update-baseline`.
+- `def`s inside a block handed to a call are no longer the enclosing module's
+  (rodauth's 855-method `Rodauth` is 55 feature modules), and a narrowed
+  library's entry file prints as `lib/rack/attack.rb` instead of `../attack.rb`.
+  Baseline entries named after either move until `--update-baseline`.
+- A shallow clone (or a history of fewer than two commits) counts as no
+  history: change_coupling stays out of `--fail-on all` and reports nothing.
+
 - `sdp_violation` is now `unstable_dependency`, in the text and JSON reports and
   in `--kind`/`--fail-on`. `sdp` and `sdp_violation` still name it on the
   command line and in `.hashira.yml`, and baselines that recorded it read it
@@ -106,6 +118,19 @@ things a baseline sees:
   `duplication`; `--update-baseline` records the smaller set.
 
 ### Added
+
+- `manual_dispatch` reads a type switch spread over methods: the same type test
+  on the object's own state in three or more methods of a class (planner's
+  `@check_in_target.is_a?(Event)` in six actions) is one finding for the class,
+  each site as evidence. `repeated_conditional` stays opt-in.
+- A shallow clone, or fewer than two commits, prints one stderr line naming
+  what hashira could not weigh (`hashira: shallow git history (1 commit) for lib
+  — hotspots are ranked by cost alone; change_coupling cannot judge`), the
+  hotspot table's heading says the rank is the cost alone, and a run with no
+  findings no longer calls the structure healthy for a kind it could not judge:
+  `none — change_coupling could not judge: shallow git history (1 commit)`, or
+  `none ✓ for the kinds judged; change_coupling not judged (…)`. `--json` lists
+  them under `unjudged`.
 
 - `--fail-on all` (and `fail-on: all` in `.hashira.yml`) gates every kind the
   run checks: the default kinds, the ones `checks:` turns on, less what
@@ -300,6 +325,33 @@ things a baseline sees:
     facades are left alone. `threshold` moves the minimum. No corpus findings.
 
 ### Changed
+
+- **A def inside a DSL block has an owner of its own.** Its owner is the
+  constant the call names by a CamelCase symbol or string
+  (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or
+  else one per block (`Auth::(configure block, line 7)`). Blocks that reopen
+  the class or build one keep the enclosing owner: `included`, `class_methods`,
+  `concerning`, `class_eval` on self, `Class.new`, `Module.new`, `Struct.new`,
+  `Data.define`. rodauth's complexity rollup is 55 feature owners, and their
+  `before_logout`s are no longer one class's.
+- **A dependency claims a namespace by its whole name.** `travis-config` claims
+  `Travis::Config`, never `Travis`; a `require:` path in the Gemfile claims the
+  namespace it names. A root the project defines stays the project's beside
+  plugin gems that share its first word (travis-api's `Travis`, a
+  `shop-core` gem beside `shop-sql`).
+- **A reopened core class is Ruby's whatever superclass it spells**
+  (``class ::Array < `Array` ``, `class String < Object`), so a core-type ladder
+  in the rest of the project is not manual dispatch (opal's compiler).
+- `manual_dispatch` leaves the comparison protocols (`<=>`, `==`, `eql?`,
+  `===`, `equal?`, `coerce`) to type-test what they are handed, as
+  rubocop-kata's NoTypeCheck does.
+- `--kind` turns the kinds it does not name off for the run, so the design
+  smells it leaves out are never computed.
+- `lib/templates/**`, where Rails reads generator template overrides, is left
+  out like `lib/generators/**/templates/**` (homeland's ERB-in-`.rb`
+  controller template no longer fails to parse).
+- `analysis/inventory.yml` is read from Ruby 4.0.7; the standard libraries
+  Ruby 3.4 ships stay listed.
 
 - **boundary_sprawl follows copied and aliased constants to their source.** A
   namespace that hands out another's constants as its own, with
@@ -537,6 +589,29 @@ From the third field test (thirty MIT-licensed codebases):
   `respond_to?`, not only `respond_to?` followed by `send`.
 
 ### Fixed
+
+- Found by a field test on 50 more MIT-licensed codebases:
+  - `utility_function` never calls stateless a method whose body holds code
+    hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
+    `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
+    `local_variables` (47 of opal's corelib findings).
+  - `assumed_state` counts a literal `instance_variable_set` on a peer the class
+    builds (roda's `TypecastParams::Params.nest`), a computed set a subclass's
+    constructor reaches (pagy's `assign_and_check`), never judges a class whose
+    code holds an `eval`'d string or an x-string (active_merchant's generated
+    writers), and leaves a `def` nested in a method to the class it is defined
+    on (shoulda-matchers' `def subject` in
+    `::ActionController::TestCase.class_eval do … end`). get-into-teaching's
+    `Agency#key`, which reads an `@city` nothing sets, is still reported.
+  - `dead_code` reads a constant reached through a computed scope
+    (`journey::SlugSequence::RESTRICTED_SLUGS`, `presenter::SEARCH_FIELDS`) as
+    a use of every owned constant of that name; leaves to a dependency the
+    methods the project patches into its namespace
+    (`Rack::PageCaching::Utils.gzip_level`), into a module it prepends into a
+    dependency's class (kamal's `SSHKit::Backend::Netssh`), or into one a
+    plugin hook includes, `send(:include, …)` too (padrino's `dispatch!`); and
+    knows Ruby 4.0's `instance_variables_to_inspect` and ActiveModel's
+    `use_relative_model_naming?`, `i18n_scope` and `persisted?` as hooks.
 
 - Read on the trifecta's own code (self-hosting):
   - `low_cohesion` links a class's methods through the project modules it
@@ -969,6 +1044,12 @@ From the field test on ten MIT-licensed codebases:
   read as such a hook. `LintRoller::Plugin#about` was flagged.
 
 ### Performance
+
+- `data_clump` looks for shared parameter groups among the methods that carry
+  three or more, from pairwise intersections, instead of every 3-combination
+  of a class's methods, and is computed only when reported. A class of 800
+  parameterless methods takes 0.5 s instead of 51 s; rodauth takes 2.7 s
+  instead of 60 s.
 
 - Duplication tallies a cluster's shapes once and looks for a site's
   enclosing method among its own file's definitions: dependabot-core's 4-gem

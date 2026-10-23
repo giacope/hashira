@@ -25,7 +25,7 @@ module Hashira::CLI
       end
 
       def project
-        named = rules.naming(kinds + fail_on)
+        named = rules.naming(kinds + fail_on).narrowed(kinds, Hashira::Pipeline::KINDS)
         boundaries = decisions.boundaries + rules.boundaries
         Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
       end

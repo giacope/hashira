@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pathname"
+
 class Hashira::Project
   ROOT_PACKAGE = "(root)"
 
@@ -40,8 +42,10 @@ class Hashira::Project
 
   def relative(path)
     home = parent(path)
-    "#{shown(home)}#{entry?(path, home) ? "../#{File.basename(path)}" : path.delete_prefix("#{home}/")}"
+    entry?(path, home) ? homeward(path) : "#{shown(home)}#{path.delete_prefix("#{home}/")}"
   end
+
+  def located(shown) = (@_located ||= files.to_h { [relative(it), File.expand_path(it)] }).fetch(shown)
 
   def test?(path) = (@_tests ||= files.select { tested?(it) }.to_set).include?(path)
 
@@ -71,6 +75,8 @@ class Hashira::Project
   def sources = @_sources ||= Hashira::Sources.new(directories, entries: resolution.entries(directories))
 
   def entry?(path, home) = path == "#{home}.rb"
+
+  def homeward(path) = Pathname(File.expand_path(path)).relative_path_from(File.expand_path(@home)).to_s
 
   def application? = directories.any? { config?(File.expand_path(it)) }
 

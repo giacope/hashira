@@ -53,6 +53,8 @@ class Hashira::Coupling::Census
 
   def owned?(path) = territory.owned?(path)
 
+  def abroad?(path) = territory.outside?(path)
+
   def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
 
   def plural(word) = inflection.plural(word)

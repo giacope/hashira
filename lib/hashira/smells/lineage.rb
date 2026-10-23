@@ -59,18 +59,23 @@ class Hashira::Smells::Lineage
   def descent(type) = resolve(type.name, Hashira::Analysis::Syntax.new(parent(type)).segments)
 
   def ancestral(context)
-    kin = kin(context)
+    kin = kin(context.name)
     return unless kin
-    reached = Hashira::Smells::Construction.new(kin).reached
+    reached = reached(context.name, kin)
     computed = kin.flat_map { survey(it).computed }.select { reached.include?(it.holder) }.map(&:prefix)
     (kin.flat_map { writes(it) } + computed).uniq
   end
 
   def learned = @_learned ||= {}
 
+  def reached(name, kin)
+    kinds = descendants(name).filter_map { kin(it) }.push(kin)
+    kinds.flat_map { Hashira::Smells::Construction.new(it).reached.to_a }.to_set
+  end
+
   def index = @_index ||= @types.group_by(&:name)
 
-  def kin(context) = walk([context.name], [])&.flat_map { index.fetch(it) }
+  def kin(name) = walk([name], [])&.flat_map { index.fetch(it) }
 
   def walk(queue, known)
     return known if queue.empty?

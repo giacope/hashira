@@ -28,6 +28,72 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
     expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
   end
 
+  it "counts a peer's instance_variable_set, a set a subclass's constructor reaches, and leaves eval'd state alone" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~'RUBY'
+        module App
+          module Zone
+            class Params
+              def self.nest(value, nesting)
+                params = new(value)
+                params.instance_variable_set(:@nesting, nesting)
+                other = Params.allocate
+                other.instance_variable_set(:@peer, 1)
+                made = self.new(value)
+                made.instance_variable_set(:@made, 1)
+                stray = Other.new
+                stray.instance_variable_set(:@stray, 1)
+                plain = value
+                plain.instance_variable_set(:@plain, 1)
+                copied = value.dup
+                copied.instance_variable_set(:@copied, 1)
+                crafted = craft(value)
+                crafted.instance_variable_set(:@crafted, 1)
+                @class_level.instance_variable_set(:@far, 1)
+                params
+              end
+
+              def initialize(value) = @value = value
+
+              def path = [@nesting, @peer, @made, @stray, @plain, @copied, @crafted, @far, @value]
+            end
+
+            class Pager
+              def limited? = [@limit, @offset]
+
+              protected
+
+              def assign(pairs) = pairs.each { |name, min| instance_variable_set(:"@#{name}", min) }
+            end
+
+            class OffsetPager < Pager
+              def initialize = assign(limit: 1)
+            end
+
+            class Card
+              %w[month year].each { |m| class_eval("def #{m}=(v) = @#{m} = v") }
+
+              def initialize = @at = 1
+
+              def expiry = [@month, @year]
+            end
+
+            class Integration
+              def initialize = @at = 1
+
+              def integrate
+                ::ActionController::TestCase.class_eval do
+                  def subject = @controller
+                end
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([%w[@copied @crafted @far @plain @stray]]))
+  end
+
   it "counts a computed instance_variable_set only where the class's construction reaches it" do
     core = <<~'RUBY'
       module Core

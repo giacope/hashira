@@ -7,22 +7,25 @@ class Hashira::Coupling::Territory
 
   def owned?(path) = owned.include?(path)
 
+  def outside?(path) = !path.empty? && !builtin?(path.first) && !owned?(path)
+
   private
 
   def owned = @_owned ||= @definitions.reject { it.path.empty? }.select { claimed?(it) }.to_set(&:path)
 
   def claimed?(definition)
     scope = definition.scope.last
-    definition.created? || dependencies.own?(scope) || !foreign?(scope.first)
+    return false if definition.core?
+    definition.created? || dependencies.own?(scope) || !(foreign?(scope.first) || dependencies.claims?(scope))
   end
 
   def foreign?(root) = verdicts.fetch(root) { verdicts[root] = abroad?(root) }
 
   def verdicts = @_verdicts ||= {}
 
-  def abroad?(root) = builtin?(root) || dependencies.foreign?(root) || !opened.include?(root)
-
   def builtin?(root) = Hashira::Analysis::CORE.include?(root) || Hashira::Analysis::LIBRARIES.include?(root.downcase)
+
+  def abroad?(root) = builtin?(root) || dependencies.foreign?(root) || !opened.include?(root)
 
   def opened
     @_opened ||=

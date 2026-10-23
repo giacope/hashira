@@ -11,7 +11,8 @@ module Hashira::Coupling::Contracts
     inactive_message password_required? email_required? after_confirmation timeout_in
     before_validation after_validation before_save around_save after_save before_create around_create after_create
     before_update around_update after_update before_destroy around_destroy after_destroy after_commit
-    after_rollback after_initialize after_find after_touch
+    after_rollback after_initialize after_find after_touch use_relative_model_naming? i18n_scope persisted?
+    instance_variables_to_inspect
   ].to_set.freeze
 
   ENTRIES = %w[

@@ -78,6 +78,27 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     end
   end
 
+  def depth = described_class.build(Hashira::Project.new(["lib/app"])).then { [it.history?, it.depth.to_h] }
+
+  def depths
+    thin = depth
+    revise("lib/app/a.rb")
+    git("clone", "-q", "--depth", "1", "file://#{Dir.pwd}", "cut")
+    [thin, depth, Dir.chdir("cut") { [depth, hits(["lib/app"], "a.rb")] }]
+  end
+
+  it "weighs churn only with two commits or more of full history, and counts nothing a shallow clone holds" do
+    found = within_repository("lib/app/a.rb" => "1\n") { depths }
+    expect(found).to(
+      eq(
+        [
+          [false, { commits: 1, shallow: false, deep: false }], [true, { commits: 2, shallow: false, deep: true }],
+          [[false, { commits: 1, shallow: true, deep: false }], [0]]
+        ]
+      )
+    )
+  end
+
   it "reads the history of the analyzed directory, not the working directory" do
     within("repo/a.rb" => "class A\nend\n") do
       git("-C", "repo", "init", "-q")

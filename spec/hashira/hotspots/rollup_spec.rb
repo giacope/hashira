@@ -40,6 +40,11 @@ RSpec.describe(Hashira::Hotspots::Rollup, :aggregate_failures) do
     expect(row).to(eq(file: "a.rb", cognitive: 2, duplication: 0, churn: 3, cost: 2, rank: 6))
   end
 
+  it "says whether churn weighs the rank" do
+    unweighed = Hashira::Churn.new({}, Hashira::Churn::Depth.new(commits: 1, shallow: true, deep: false))
+    expect([rollup.weighed?, described_class.new(nil, nil, unweighed).weighed?]).to(eq([true, false]))
+  end
+
   it "leaves out files that cost nothing" do
     expect(rollup(scores: [score("a.rb", 0)], churn: { "a.rb" => 7 }).files).to(be_empty)
   end

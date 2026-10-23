@@ -38,6 +38,20 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
     Hashira::Pipeline.new(Hashira::Project.new(directories, rules:)).findings.select { it.kind == "change_coupling" }
   end
 
+  def cut
+    history
+    git("clone", "-q", "--depth", "20", "file://#{Dir.pwd}", "cut")
+    rules = Hashira::Config::Rules.parse({ "change_coupling" => true }, Hashira::Pipeline::KINDS)
+    Dir.chdir("cut") do
+      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:))
+      [found(true), pipeline.checks?("change_coupling"), pipeline.checks?("dead_code")]
+    end
+  end
+
+  it "judges nothing in a shallow clone, which holds only the commits it was cut at, and leaves it out of the gate" do
+    expect(within(files) { cut }).to(eq([[], false, true]))
+  end
+
   it "pairs files in two packages that change together in most of their commits" do
     expect(coupled.first.map { [it.digest, it.detail.shared, it.detail.degree, it.anchors] }).to(
       eq([["a/x.rb <-> b/y.rb", 5, 67, %w[a/x.rb:3 b/y.rb:1]], ["d/p.rb <-> e/q.rb", 5, 59, %w[d/p.rb:1 e/q.rb:1]]])

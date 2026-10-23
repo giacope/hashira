@@ -20,6 +20,10 @@ RSpec.describe(Hashira::Coupling::Autoload, :aggregate_failures) do
       .to(eq([%w[Billing], %w[Billing Plan], %w[Last], %w[Steps], %w[Steps Review]]))
   end
 
+  it "takes no root from the owner a DSL block gives its defs" do
+    expect(roots("app/x.rb" => "module X\n  configure do\n    def tuned = 1\n  end\nend\n")).to(eq([%w[X]]))
+  end
+
   it "adds none outside a Rails app" do
     expect(roots(files)).to(eq([%w[Billing], %w[Billing Plan], %w[Last]]))
   end

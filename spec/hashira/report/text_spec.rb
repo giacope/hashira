@@ -96,7 +96,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
 
   it "ranks the hotspots between the complexity tables and the findings" do
     expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity hotspots]))
-      .to(match(%r{Per-class rollup.*Hotspots — cost × churn.*knot/tangle\.rb\s+12.*Findings \(}m))
+      .to(match(%r{Per-class rollup.*Hotspots — cost alone.*knot/tangle\.rb\s+12.*Findings \(}m))
   end
 
   it "lists accepted findings with their recorded reason" do

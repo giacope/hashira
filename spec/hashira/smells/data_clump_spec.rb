@@ -2,6 +2,35 @@
 
 RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
   def clumped(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "data_clump")
+  it "finds the widest group three methods share, never one only two share, among many methods that carry none" do
+    plain = Array.new(400) { "def plain#{it} = @a.go\n" }.join
+    findings = clumped(<<~RUBY)
+      module App
+        class Thing
+          def one(alfa, bravo, charlie, delta, echo) = two(alfa, bravo, charlie, delta, 1)
+          def two(alfa, bravo, charlie, delta, fox) = @a.use(fox)
+          def three(alfa, bravo, charlie, golf) = @a.use(golf)
+          def four(alfa, bravo, charlie, delta, hotel) = @a.use(hotel)
+          def five(xray, yankee, zulu) = six(xray, yankee, zulu)
+          def six(xray, yankee, zulu) = @a.use(xray, yankee, zulu)
+          #{plain}
+        end
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["(alfa, bravo, charlie, delta) → 3 methods: one, two, four"]]))
+  end
+
+  it "finds a group three methods share that is narrower than what any two of them share" do
+    findings = clumped(<<~RUBY)
+      class App::Thing
+        def one(alfa, bravo, charlie, delta, echo) = two(alfa, bravo, charlie, delta, 1)
+        def two(alfa, bravo, charlie, delta, fox) = @a.use(fox)
+        def three(alfa, bravo, charlie, echo, fox) = @a.use(echo, fox)
+      end
+    RUBY
+    expect(findings.map(&:evidence)).to(eq([["(alfa, bravo, charlie) → 3 methods: one, two, three"]]))
+  end
+
   it "flags a parameter group that travels through three or more methods" do
     findings = clumped(<<~RUBY)
       module App

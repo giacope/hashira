@@ -61,7 +61,7 @@ module Hashira
       end
 
     Sketch =
-      Data.define(:name, :node, :kind, :file) do
+      Data.define(:name, :node, :kind, :file, :lexical) do
         def superclass = kind == :class ? Hashira::Analysis::Syntax.new(node.superclass).segments : []
 
         def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name

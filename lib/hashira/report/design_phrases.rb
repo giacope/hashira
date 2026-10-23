@@ -16,7 +16,12 @@ class Hashira::Report::Phrases
   def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
 
   def on_concrete_inheritance(finding)
-    plain(finding, "inherits from #{finding.detail[:parent]}, a concrete class the project also builds", CONCRETE)
+    detail = finding.detail
+    places = detail[:places]
+    parent = detail[:parent]
+    return plain(finding, "inherits from #{parent}, a concrete class the project also builds", CONCRETE) unless places
+    extended = places == 1 ? "a subclass extends" : "#{places} subclasses extend"
+    plain(finding, "is a concrete class the project also builds, and #{extended} it", CONCRETE)
   end
 
   def on_refused_bequest(finding)

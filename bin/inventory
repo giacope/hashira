@@ -12,10 +12,13 @@ require "rubygems"
 require "bundled_gems"
 require "yaml"
 
-shelves = RbConfig::CONFIG.values_at("rubylibdir", "rubyarchdir")
-filed = shelves.flat_map { |shelf| Dir.children(shelf).map { it.sub(/\.(rb|#{RbConfig::CONFIG["DLEXT"]})\z/o, "") } }
+target = File.expand_path("../lib/hashira/analysis/inventory.yml", __dir__)
+already_listed = File.file?(target) ? YAML.load_file(target).fetch("libraries", []) : []
+extension = ".#{RbConfig::CONFIG["DLEXT"]}"
+in_library = Dir.children(RbConfig::CONFIG["rubylibdir"]).map { it.delete_suffix(".rb") }
+compiled = Dir.children(RbConfig::CONFIG["rubyarchdir"]).select { it.end_with?(extension) }.map { it.delete_suffix(extension) }
 gems = Gem::Specification.select(&:default_gem?).map(&:name) + Gem::BUNDLED_GEMS::SINCE.keys
-shipped["libraries"] = (filed + gems).grep(/\A[a-z][a-z0-9_]*\z/)
+shipped["libraries"] = (in_library + compiled + gems + already_listed).grep(/\A[a-z][a-z0-9_]*\z/)
 
 inventory = shipped.transform_values { it.map(&:to_s).uniq.sort }.merge("ruby" => RUBY_VERSION)
-File.write(File.expand_path("../lib/hashira/analysis/inventory.yml", __dir__), YAML.dump(inventory))
+File.write(target, YAML.dump(inventory))

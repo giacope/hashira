@@ -44,6 +44,14 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
     )
   end
 
+  it "narrows to the kinds asked for, keeping their settings, and changes nothing when none is asked for" do
+    rules = parse({ "complexity" => { "threshold" => 9 }, "nil_check" => false })
+    every = %w[complexity dead_code nil_check]
+    narrowed = rules.narrowed(%w[complexity nil_check], every)
+    expect([rules.narrowed([], every), every.map { narrowed.enabled?(it) }, narrowed.threshold("complexity", 15)])
+      .to(eq([rules, [true, false, false], 9]))
+  end
+
   it "refuses what it cannot apply" do
     {
       ["complexity"] => "checks takes all, or kind: settings",

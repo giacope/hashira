@@ -29,6 +29,37 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
 
   def status(arguments) = ran(arguments).first
 
+  def cut(*arguments)
+    git("init", "-q")
+    %w[one two].each do |note|
+      File.write("lib/app/note.rb", "# #{note}\n")
+      git("add", "-A")
+      git("-c", "user.email=t@t", "-c", "user.name=t", "-c", "commit.gpgsign=false", "commit", "-qm", note)
+    end
+    git("clone", "-q", "--depth", "1", "file://#{Dir.pwd}", "cut")
+    Dir.chdir("cut") { arguments.map { ran(["lib/app", "--kind", *it]).last } }
+  end
+
+  def unjudged
+    within("lib/app/a.rb" => "module App\n  class A; end\nend\n") do
+      cut(%w[change_coupling], %w[change_coupling,cycle], %w[change_coupling --json])
+    end
+  end
+
+  it "says which kinds a shallow clone left unjudged instead of calling the structure healthy" do
+    printed = unjudged
+    expect(printed.first(2).map { it.lines.grep(/\A  none/).first }).to(
+      eq(
+        [
+          "  none — change_coupling could not judge: shallow git history (1 commit)\n",
+          "  none ✓ for the kinds judged; change_coupling not judged (shallow git history (1 commit))\n"
+        ]
+      )
+    )
+    expect(JSON.parse(printed.last)["unjudged"])
+      .to(eq([{ "kind" => "change_coupling", "reason" => "shallow git history (1 commit)" }]))
+  end
+
   def parsed(arguments) = ran(arguments).then { |code, output| [code, JSON.parse(output)] }
 
   def within_history(files)

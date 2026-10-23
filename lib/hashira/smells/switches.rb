@@ -26,7 +26,9 @@ class Hashira::Smells::Switches
     @owner = owner
   end
 
-  def typed = @_typed ||= gathered(cased { type?(it) } + probed)
+  def typed = @_typed ||= gathered(tests)
+
+  def held = tests.select { own?(it.subject) }
 
   def statuses = @_statuses ||= gathered(cased(dispatches) { VALUES.include?(it.class) }.select { status?(it.subject) })
 
@@ -65,6 +67,8 @@ class Hashira::Smells::Switches
     segments = Hashira::Analysis::Syntax.new(node).segments
     segments.any? && TYPE_NAME.match?(segments.last) && @ownership.owns?(node, @owner)
   end
+
+  def tests = @_tests ||= cased { type?(it) } + probed
 
   def status?(node) = own?(node) && STATUS.match?(node.name)
 

@@ -78,6 +78,8 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     surface.methods.reject { it.overrides || called?(it.selector) || rooted?(it) || framed?(it) || open?(it) }
   end
 
+  def patch?(member) = [member.owner, *hosts(member.owner)].any? { foreign?(it) || surface.patched?(it) }
+
   def called?(name)
     bare = name.delete_suffix("=")
     HOOKS.include?(name) || protocol?(name) || mentioned?(name) || outside.words.include?(bare) || dynamic?(name)
@@ -94,7 +96,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
   end
 
-  def framed?(member) = member.exposed ? hosted?(member.owner) : surface.outside?(member.owner)
+  def framed?(member) = patch?(member) || (member.exposed ? hosted?(member.owner) : surface.outside?(member.owner))
 
   def hosted?(path) = hosted[path]
 
@@ -137,7 +139,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def entry?(file) = project.rails? && ENTRIES.include?(Hashira::Coupling::Stratum.new(absolute(file)).of)
 
-  def absolute(file) = File.expand_path(file, project.directories.then { it.one? ? it.first : "." })
+  def absolute(file) = project.located(file)
 
   def api?(member) = (library? || engine_library?(member.file)) && member.exposed && owner_exposed?(member)
 

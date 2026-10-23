@@ -7,6 +7,8 @@ class Hashira::Dependencies
 
   GEMFILE = /^\s*gem\s*\(?\s*["']([^"'\s]+)["']/
 
+  REQUIRED = /^\s*gem\s*\(?\s*["'][^"'\s]+["'][^#\n]*\brequire:\s*["']([^"'\s]+)["']/
+
   DECLARED = /\.add_(?:runtime_|development_)?dependency\s*\(?\s*["']([^"'\s]+)["']/
 
   GEMSPECS = %w[*.gemspec */*.gemspec].freeze
@@ -17,19 +19,29 @@ class Hashira::Dependencies
 
   def foreign?(root) = foreign.include?(plain(root))
 
-  def own?(path)
-    words = path.map { plain(it) }
-    mine.any? { words.first(it.size) == it }
-  end
+  def own?(path) = within?(mine, path)
+
+  def claims?(path) = within?(others, path)
 
   private
 
-  def foreign = @_foreign ||= (named - mine).to_set(&:first) - mine.select(&:one?).map(&:first)
-
-  def named
-    listed = read("Gemfile").scan(GEMFILE) + gemspecs.flat_map { File.read(it).scan(DECLARED) }
-    (locked.values_at("GEM", "GIT").compact + listed).flatten.uniq.map { camel(it) }
+  def within?(names, path)
+    words = path.map { plain(it) }
+    names.any? { words.first(it.size) == it }
   end
+
+  def foreign = @_foreign ||= others.select(&:one?).to_set(&:first)
+
+  def others = @_others ||= named - mine
+
+  def named = (listed.map { camel(it) } + required).uniq
+
+  def listed
+    declared = read("Gemfile").scan(GEMFILE) + gemspecs.flat_map { File.read(it).scan(DECLARED) }
+    (locked.values_at("GEM", "GIT").compact + declared).flatten
+  end
+
+  def required = read("Gemfile").scan(REQUIRED).flatten.map { camel(it.tr("/", "-")) }
 
   def mine
     @_mine ||= (gemspecs.map { File.basename(it, ".gemspec") } + locked.fetch("PATH", [])).uniq.map { camel(it) }

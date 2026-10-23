@@ -26,12 +26,12 @@ class Hashira::Smells::Census
 
   def harvest(file, tree)
     found = []
-    Hashira::Analysis::TypeWalk.new(tree).walk(roots:) do |node, full|
-      kind = node.is_a?(Prism::ModuleNode) ? :module : :class
-      found << Hashira::Smells::Sketch.new(full.join("::"), node, kind, file)
+    Hashira::Analysis::TypeWalk.new(tree).walk(roots:) do |node, full, _stack, lexical|
+      kind = node.is_a?(Prism::ClassNode) ? :class : :module
+      found << Hashira::Smells::Sketch.new(full.join("::"), node, kind, file, lexical)
     end
     found
   end
 
-  def claimed?(sketch) = catalog.claimed?(sketch.name.split("::"))
+  def claimed?(sketch) = catalog.claimed?(sketch.lexical)
 end

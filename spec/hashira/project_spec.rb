@@ -72,9 +72,12 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
   it "leaves out the templates a generator copies into an app" do
     files = {
       "lib/app/a.rb" => "", "lib/app/generators/x/templates/setup.rb" => "",
-      "lib/app/generators/x/theme_template/helper.rb" => "", "lib/app/b/c.rb" => ""
+      "lib/app/generators/x/theme_template/helper.rb" => "", "lib/app/b/c.rb" => "",
+      "lib/templates/rails/scaffold_controller/controller.rb" => "<% if x %>\n", "lib/app/b/templates/kept.rb" => ""
     }
-    within(files) { expect(described_class.new(["lib/app"]).files).to(eq(%w[lib/app/a.rb lib/app/b/c.rb])) }
+    within(files) do
+      expect(described_class.new(["lib"]).files).to(eq(%w[lib/app/a.rb lib/app/b/c.rb lib/app/b/templates/kept.rb]))
+    end
   end
 
   def mixed_sources
@@ -291,8 +294,8 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
             [
               %w[lib/ext lib/gem],
               [
-                %w[lib/ext.rb lib/ext/(root) lib/ext/../ext.rb], %w[lib/ext/z.rb lib/ext/(root) lib/ext/z.rb],
-                %w[lib/gem.rb lib/gem/(root) lib/gem/../gem.rb], %w[lib/gem/a/x.rb a lib/gem/a/x.rb],
+                %w[lib/ext.rb lib/ext/(root) lib/ext.rb], %w[lib/ext/z.rb lib/ext/(root) lib/ext/z.rb],
+                %w[lib/gem.rb lib/gem/(root) lib/gem.rb], %w[lib/gem/a/x.rb a lib/gem/a/x.rb],
                 %w[lib/gem/b/y.rb b lib/gem/b/y.rb]
               ]
             ]
@@ -307,7 +310,16 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
         expect([[], ["lib"], ["lib/gem"]].map { described_class.new(it).files })
           .to(eq(([%w[lib/gem.rb lib/gem/a/x.rb lib/gem/b/y.rb]] * 2) + [%w[lib/gem/a/x.rb lib/gem/b/y.rb]]))
         expect(described_class.new([]).then { [it.relative("lib/gem.rb"), it.package("lib/gem.rb")] })
-          .to(eq(%w[../gem.rb (root)]))
+          .to(eq(%w[lib/gem.rb (root)]))
+      end
+    end
+
+    def placed(project) = [project.relative("lib/gem.rb"), project.located("a/x.rb")]
+
+    it "prints a narrowed library's entry file from the project's home, and finds each file by its printed path" do
+      within("lib/gem.rb" => "", "lib/gem/a/x.rb" => "", "lib/gem/b/y.rb" => "") do
+        expect(placed(described_class.new([], home: File.expand_path("lib"))))
+          .to(eq(["gem.rb", File.expand_path("lib/gem/a/x.rb")]))
       end
     end
 

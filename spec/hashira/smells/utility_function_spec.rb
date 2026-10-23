@@ -2,6 +2,16 @@
 
 RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
   def utility(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "utility_function")
+  def opaque(body) = utility("class App::Thing\n  def go(string)\n    #{body}\n    string.to_s\n  end\nend")
+
+  it "never calls stateless a method whose body holds code hashira cannot read" do
+    bodies = [
+      "`self.write_proc(string)`", "%x{ $deny(\#{string}) }", 'eval("@x + string")', 'class_eval("string")',
+      "binding.local_variable_get(:string)", "local_variables.size + string.size", "string.instance_eval(&:size)"
+    ]
+    expect(bodies.map { opaque(it).size }).to(eq([0, 0, 0, 0, 0, 0, 1]))
+  end
+
   it "flags a public instance method that never touches instance state" do
     findings = utility(<<~RUBY)
       module App
