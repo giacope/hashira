@@ -145,6 +145,92 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
     )
   end
 
+  it "leaves to a dependency the methods the project patches into its code, and the hooks Ruby or Rails call" do
+    patched = rails.merge(
+      "Gemfile.lock" => "GEM\n  specs:\n    rack (3.1.0)\n    sshkit (1.23.0)\n",
+      "lib/patch_rack.rb" => "class Rack::PageCaching\n  module Utils\n    def self.gzip_level = 1\n  end\nend\n",
+      "lib/sshkit_ext.rb" => <<~RUBY,
+        class SSHKit::Backend::Netssh
+          module Limit
+            private
+
+            def with_ssh = 1
+          end
+          prepend Limit
+        end
+      RUBY
+      "lib/loud.rb" => "module Loud\n  def shout = 1\nend\nString.prepend(Loud)\n",
+      "app/models/open_startup.rb" =>
+        "module OpenStartup\n  def self.use_relative_model_naming? = 1\n  def instance_variables_to_inspect = 1\nend\n"
+    )
+    expect(dead(patched, directories: %w[app lib]))
+      .to(eq(%w[OpenStartup Order#stale_scope Pricing Pricing#quote Pricing.rate]))
+  end
+
+  it "reads a computed scope however deep the path below it, and a static path as naming only its own constant" do
+    scoped = rails.merge(
+      "lib/scopes.rb" => <<~RUBY,
+        module Scopes
+          module Inner; DEEP = 1; end
+          module Static; LEAF = 1; end
+          module Other; LEAF = 2; end
+          def self.read(x) = [x.factory::Inner::DEEP, ::Scopes::Static::LEAF, Other]
+        end
+      RUBY
+      "app/jobs/scope_job.rb" => "class ScopeJob\n  def perform = Scopes.read(1)\nend\n"
+    )
+    expect(dead(scoped, directories: %w[app lib])).to(include("Scopes::Other::LEAF").and(exclude("Scopes::Inner::DEEP")))
+  end
+
+  it "takes a module a plugin hook includes into its host, through send too, as the host's" do
+    plugin = {
+      "lib/app/routing.rb" => <<~RUBY
+        module App
+          module Routing
+            def self.registered(app) = app.send(:include, InstanceMethods)
+            def self.loose(app) = app.send(:freeze, Kept)
+            def self.bare(app) = app.send
+            def self.named(app) = app.send("include", Kept)
+
+            module InstanceMethods
+              private
+
+              def dispatch! = 1
+            end
+
+            module Kept
+              private
+
+              def leftover = 1
+            end
+          end
+        end
+      RUBY
+    }
+    expect(dead(plugin)).to(eq(%w[App::Routing::Kept#leftover]))
+  end
+
+  it "credits the defs of a DSL block to an owner of their own, which is never a constant to delete" do
+    blocks = {
+      "lib/app/feature.rb" => <<~RUBY
+        module App
+          class Feature
+            def self.define(name, &) = name
+          end
+
+          Feature.define(:x) do
+            def visible = 1
+
+            private
+
+            def hidden = 1
+          end
+        end
+      RUBY
+    }
+    expect(dead(blocks)).to(eq(["App::(define block, line 6)#hidden"]))
+  end
+
   it "reads a ::-rooted class inside a module as the top-level class it reopens, not a nested one" do
     rooted = rails.merge(
       "app/models/drops.rb" => <<~RUBY
@@ -225,7 +311,7 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
   end
 
-  it "leaves to the framework the constants a hosted class declares, the hooks it calls, and polymorphic reads" do
+  it "leaves to the framework the constants a hosted class declares, the hooks it calls, and computed-scope reads" do
     framed = rails.merge(
       "app/dashboards/user_dashboard.rb" => <<~RUBY,
         class UserDashboard < Administrate::BaseDashboard
@@ -250,7 +336,7 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
         "class UseJob\n  def perform = [Filter.new.kind, Filter.limit, QuietRunner, AdminConstraint]\nend\n"
     )
     expect(dead(framed, directories: %w[app lib]))
-      .to(eq(%w[UserDashboard::HIDDEN Order#stale_scope Filter::STALE Filter#other Pricing Pricing#quote Pricing.rate]))
+      .to(eq(%w[UserDashboard::HIDDEN Order#stale_scope Filter#other Pricing Pricing#quote Pricing.rate]))
   end
 
   it "takes a const_get with a computed name for reaching every constant under its receiver" do
@@ -431,7 +517,7 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
     expect(dead(reaching, roots:)).to(
       eq(
         %w[
-          App::Child2 App::Plugin App::Ping#ping_unused App::Tools App::Tools#tool_unused App::Widget
+          App::Child2 App::Plugin App::Ping#ping_unused App::Tools#tool_unused App::Widget
           App::Widget#widget_unused App::Base App::Helpers
           App::Helpers.finder App::Router App::Low App::Kept App::Kept#drop_me
         ]

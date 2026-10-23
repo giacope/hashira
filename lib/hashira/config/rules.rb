@@ -42,6 +42,12 @@ class Hashira::Config::Rules
 
   def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers, @boundaries)
 
+  def narrowed(kinds, every)
+    return self if kinds.empty?
+    silenced = (every - kinds).to_h { [it, Hashira::Config::Rule::OFF] }
+    Hashira::Config::Rules.new(silenced.merge(@table.slice(*kinds)), @chosen, @layers, @boundaries)
+  end
+
   def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers, @boundaries)
 
   def bounded(boundaries) = Hashira::Config::Rules.new(@table, @chosen, @layers, boundaries)

@@ -1,15 +1,28 @@
 # frozen_string_literal: true
 
+require_relative "git_log"
+
 class Hashira::Churn
   FILES_THAT_DRIFT_APART = 2
 
-  def self.build(project) = new(project.history.counts)
+  Depth = Data.define(:commits, :shallow, :deep)
 
-  def initialize(counts)
-    @counts = counts
+  DEEP = Depth.new(commits: Hashira::GitLog::ENOUGH, shallow: false, deep: true)
+
+  def self.build(project)
+    history = project.history
+    depth = Depth.new(commits: history.changesets.size, shallow: history.shallow?, deep: history.deep?)
+    new(depth.shallow ? {} : history.counts, depth)
   end
 
-  def history? = @counts.any?
+  def initialize(counts, depth = DEEP)
+    @counts = counts
+    @depth = depth
+  end
+
+  attr_reader :depth
+
+  def history? = @depth.deep
 
   def hits(file) = @counts.fetch(file.b, 0)
 

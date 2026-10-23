@@ -35,16 +35,21 @@ class Hashira::Pipeline
   def unparsed = parsed.unparsed
 
   def notify(told)
-    told.churn(@project.label) unless churn.history?
+    history(told)
     told.skipped(*@project.scope)
     told.unlayered(unlayered, size)
     broken = unparsed
     told.unparsed(broken.size, broken.first(3).join(", ")) unless broken.empty?
   end
 
+  def history(told)
+    return if churn.history?
+    told.churn(@project.label, churn.depth, coupling: rules.enabled?(Hashira::Coupling::ChangeCoupling::KIND))
+  end
+
   def targets(home) = @project.directories.map { home.relative(it) }
 
-  def checks?(kind) = rules.enabled?(kind)
+  def checks?(kind) = rules.enabled?(kind) && (kind != Hashira::Coupling::ChangeCoupling::KIND || churn.history?)
 
   def size = @project.files.size
 

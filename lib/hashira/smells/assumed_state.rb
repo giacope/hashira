@@ -14,14 +14,16 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
     Data.define(:node) do
       def reads
         return [] if MAYBES.include?(node.class)
-        below = node.compact_child_nodes.flat_map { Harvest.new(it).reads }
+        below = node.compact_child_nodes.grep_v(Prism::DefNode).flat_map { Harvest.new(it).reads }
         node.is_a?(Prism::InstanceVariableReadNode) ? below + [node.name] : below
       end
     end
 
   private
 
-  def smelly? = subject.kind == :class && subject.claimed? && assigned && assumed.any?
+  def smelly? = subject.kind == :class && subject.claimed? && assigned && assumed.any? && legible?
+
+  def legible? = subject.sweep.none? { Hashira::Smells::Opaque.new([it]).any? }
 
   def assigned = subject.assigned
 

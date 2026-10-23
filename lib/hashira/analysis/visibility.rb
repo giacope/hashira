@@ -27,7 +27,8 @@ class Hashira::Analysis::Visibility
 
       def heed(node)
         return shadow(node.block) if lift?(node)
-        bare?(node) ? switch(node.name, node.arguments) : enclose(node)
+        return switch(node.name, node.arguments) if bare?(node)
+        enclose(node) unless Hashira::Analysis::Block.new(node).dsl?
       end
 
       def bare?(node) = Hashira::Analysis::TypeWalk::MARKERS.include?(node.name) && !node.receiver

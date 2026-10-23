@@ -7,11 +7,19 @@ class Hashira::GitLog
 
   TOP = %w[rev-parse --show-toplevel].freeze
 
+  SHALLOW = %w[rev-parse --is-shallow-repository].freeze
+
+  ENOUGH = 2
+
   def initialize(project)
     @project = project
   end
 
   def counts = changesets.flatten.tally
+
+  def shallow? = (@_shallow ||= [git(*SHALLOW).strip == "true"]).first
+
+  def deep? = !shallow? && changesets.size >= ENOUGH
 
   def changesets = @_changesets ||= commits.map { |paths| paths.map { shown(it) } }.reject(&:empty?)
 

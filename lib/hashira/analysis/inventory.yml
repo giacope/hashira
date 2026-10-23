@@ -1,5 +1,5 @@
 ---
-ruby: 3.4.7
+ruby: 4.0.7
 universal:
 - "!"
 - "!="
@@ -344,6 +344,7 @@ values:
 - reverse
 - reverse!
 - reverse_each
+- rfind
 - rindex
 - rjust
 - rotate
@@ -462,6 +463,7 @@ macros:
 - Float
 - Hash
 - Integer
+- Pathname
 - Rational
 - String
 - __callee__
@@ -543,6 +545,7 @@ macros:
 - instance_variable_get
 - instance_variable_set
 - instance_variables
+- instance_variables_to_inspect
 - is_a?
 - iterator?
 - itself
@@ -694,6 +697,7 @@ constants:
 - Numeric
 - Object
 - ObjectSpace
+- Pathname
 - Proc
 - Process
 - Queue
@@ -705,6 +709,7 @@ constants:
 - Refinement
 - Regexp
 - RegexpError
+- Ruby
 - RubyVM
 - RuntimeError
 - ScriptError

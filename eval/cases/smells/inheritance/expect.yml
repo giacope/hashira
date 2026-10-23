@@ -2,18 +2,19 @@
 # and DepsDevScanner extends it to swap one constant, the shape of
 # rubygems.org's GitHubSecretScanning::DepsDev. Exporter announces itself
 # abstract (an unimplemented hook), Error roots in StandardError, and Draft's
-# parent is never built on its own: all left alone.
+# parent is never built on its own: all left alone. Each finding is named for
+# the concrete parent, its subclasses as evidence.
 # Refused bequest: ReadOnlyStore overrides Store's writes only to raise. Mirror
 # fills a hook its parent leaves empty and calls super where it refines.
 present:
-  - {kind: concrete_inheritance, package: "App::DepsDevScanner"}
+  - {kind: concrete_inheritance, package: "App::Scanner"}
   - {kind: refused_bequest, package: "App::ReadOnlyStore"}
 absent:
-  - {kind: concrete_inheritance, package: "App::CsvExporter"}
-  - {kind: concrete_inheritance, package: "App::TimeoutError"}
-  - {kind: concrete_inheritance, package: "App::Draft"}
+  - {kind: concrete_inheritance, package: "App::Exporter"}
+  - {kind: concrete_inheritance, package: "App::Error"}
+  - {kind: concrete_inheritance, package: "App::Document"}
   - {kind: refused_bequest, package: "App::Mirror"}
 messages:
-  - {kind: concrete_inheritance, package: "App::DepsDevScanner", includes: "inherits from App::Scanner"}
+  - {kind: concrete_inheritance, package: "App::Scanner", includes: "a subclass extends it"}
   - {kind: refused_bequest, package: "App::ReadOnlyStore", includes: "'write', 'delete'"}
 evidence: [concrete_inheritance, refused_bequest]

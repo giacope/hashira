@@ -22,6 +22,93 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
     expect(sniffed(files, "manual_dispatch")).to(be_empty)
   end
 
+  it "never makes a core class the project's, whatever superclass its reopening spells" do
+    files = {
+      "lib/app/core/array.rb" => "class ::Array < `Array`\n  def sql = join\nend\n",
+      "lib/app/core/string.rb" => "class String < Object\n  LIMIT = 3\nend\n",
+      "lib/app/options.rb" => <<~RUBY
+        module App
+          class Options
+            def normalize(value)
+              case value
+              when String then value
+              when Array then value.join
+              end
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch")).to(be_empty)
+  end
+
+  it "lets a plugin gem claim only its own namespace, so the root the project defines stays the project's" do
+    files = {
+      "shop-core.gemspec" => "Gem::Specification.new { it.name = 'shop-core' }\n",
+      "Gemfile" => "gemspec\ngem \"shop-sql\"\n",
+      "lib/app/runner.rb" => <<~RUBY
+        module Shop
+          class Create; end
+          class Update; end
+          class Runner
+            def run(command) = (case command when Create then 1 when Update then 2 end)
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[Shop::Runner#run]))
+  end
+
+  it "lets a comparison protocol test what it was handed, and reads a test spread over methods as one switch" do
+    files = {
+      "lib/app/zone/target.rb" => <<~RUBY
+        module App
+          module Zone
+            class Event; end
+            class Meeting; end
+            class Money
+              def <=>(other) = (case other when Event then 1 when Meeting then 2 end)
+              def ==(other) = other.is_a?(Event) && other.is_a?(Meeting)
+              def coerce(other) = [other.is_a?(Event), other.is_a?(Meeting)]
+            end
+
+            class CheckIns
+              def path = @target.is_a?(Event) ? :event : :meeting
+              def confirm = target.is_a?(Event) ? 1 : 2
+              def ==(other) = @target.is_a?(Event)
+              def done? = (@target.is_a?(Event) && 1) || (self.target.is_a?(Event) && 2)
+              def invite = @target.kind_of?(Event)
+              def find(other) = [other.is_a?(Event), other.is_a?(Event)]
+              def find_again(other) = other.is_a?(Event)
+              def last(other) = other.is_a?(Event)
+              def target = @target
+            end
+          end
+        end
+      RUBY
+    }
+    found = sniffed(files, "manual_dispatch")
+    expect(found.map { [it.package, it.detail[:site], it.detail[:via], it.anchors] }).to(
+      eq(
+        [
+          [
+            "App::Zone::CheckIns", "zone/target.rb:12, 15, 16", ["a type check spread over 3 methods"],
+            %w[zone/target.rb:12 zone/target.rb:15 zone/target.rb:16]
+          ]
+        ]
+      )
+    )
+    expect(found.first.evidence).to(
+      eq(
+        [
+          "App::Zone::CheckIns#path: @target is Event (zone/target.rb:12)",
+          "App::Zone::CheckIns#done?: @target is Event (zone/target.rb:15)",
+          "App::Zone::CheckIns#invite: @target is Event (zone/target.rb:16)"
+        ]
+      )
+    )
+  end
+
   it "reads a core class beside an owned namesake, and an owned name out of sight, the way Ruby resolves it" do
     files = {
       "lib/app/types.rb" => "module App\n  module Types\n    class String; end\n    class Array; end\n    " \

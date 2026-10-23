@@ -4,6 +4,10 @@ class Hashira::Report::HotspotTable
   TOP = 10
   HEADERS = %w[file Cog Dup Churn Rank].freeze
 
+  WEIGHED = "cost × churn"
+
+  UNWEIGHED = "cost alone, no git history to weigh"
+
   def initialize(hotspots, top: TOP, io: $stdout)
     @hotspots = hotspots
     @top = top
@@ -12,13 +16,15 @@ class Hashira::Report::HotspotTable
 
   def print
     return if ranked.empty?
-    @io.puts("Hotspots — cost × churn (where refactoring pays the most):\n\n")
+    @io.puts("Hotspots — #{weighed? ? WEIGHED : UNWEIGHED} (where refactoring pays the most):\n\n")
     Hashira::Report::Columns.new(HEADERS, ranked.map(&:cells), io: @io).print
     withheld
     legend
   end
 
   private
+
+  def weighed? = @hotspots.weighed?
 
   def files = @_files ||= @hotspots.files
 
@@ -31,6 +37,6 @@ class Hashira::Report::HotspotTable
 
   def legend
     @io.puts("\nLegend: Cog cognitive complexity, Dup mass of the clones the file carries,")
-    @io.puts("        Churn commits touching it, Rank (Cog+Dup) × Churn\n\n")
+    @io.puts("        Churn commits touching it, Rank (Cog+Dup)#{" × Churn" if weighed?}\n\n")
   end
 end

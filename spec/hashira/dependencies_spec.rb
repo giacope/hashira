@@ -46,14 +46,31 @@ RSpec.describe(Hashira::Dependencies, :aggregate_failures) do
 
   def verdicts(names) = within(files) { return names.map { described_class.new(".").foreign?(it) } }
 
-  it "reads every gem a lockfile, a Gemfile or a gemspec names as foreign, by the root of its camelized name" do
-    names = %w[Devise DfE GoodJob Mongoid RuboCop Rails Kaminari Thor Faraday RSpec]
+  it "reads every one-word gem a lockfile, a Gemfile or a gemspec names as a foreign root" do
+    names = %w[Devise GoodJob Mongoid RuboCop Rails Kaminari Thor Faraday RSpec]
     expect(verdicts(names)).to(all(be(true)))
   end
 
-  it "keeps the project's own gems, local paths and unnamed roots out of the foreign ones" do
-    names = %w[Plugin Shop Sinatra Api Activemodel Commented ApiPagination Warden]
+  it "keeps the project's own gems, local paths, unnamed roots and the first word of a longer name out of them" do
+    names = %w[Plugin Shop Sinatra Api Activemodel Commented ApiPagination Warden DfE]
     expect(verdicts(names)).to(all(be(false)))
+  end
+
+  def claims(paths) = within(files) { return paths.map { described_class.new(".").claims?(it) } }
+
+  it "lets a longer gem name claim only its own namespace, under the whole camelized name" do
+    paths = [%w[DfE Analytics Event], %w[DfE Analytics], %w[DfE Reports], %w[Shop Billing]]
+    expect(claims(paths)).to(eq([true, true, false, false]))
+  end
+
+  def required
+    dependencies = described_class.new(".")
+    [%w[Travis Config], %w[Shop Sql Pool], %w[Shop]].map { dependencies.claims?(it) } << dependencies.foreign?("Travis")
+  end
+
+  it "lets the path a Gemfile requires a gem by claim that namespace" do
+    gemfile = "gem \"travis-config\"\ngem \"lib-sql\", require: \"shop/sql\" # adapter\ngem \"x\", require: false\n"
+    expect(within("Gemfile" => gemfile) { required }).to(eq([true, true, false, false]))
   end
 
   def owns(paths) = within(files) { return paths.map { described_class.new(".").own?(it) } }

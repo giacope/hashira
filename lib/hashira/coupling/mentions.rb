@@ -16,6 +16,10 @@ class Hashira::Coupling::Mentions
 
   HANDS = %i[include prepend extend].freeze
 
+  SENT = %i[send __send__].freeze
+
+  STATIC = [NilClass, Prism::ConstantReadNode].freeze
+
   TOKEN = /[A-Za-z_]\w*[?!=]?/
 
   INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
@@ -66,10 +70,10 @@ class Hashira::Coupling::Mentions
 
   def named(node)
     return names.merge([node.read_name.to_s, node.write_name.to_s]) unless node.is_a?(Prism::ConstantPathNode)
-    names << node.name.to_s if polymorphic?(node.parent)
+    names << node.name.to_s if indirect?(node.parent)
   end
 
-  def polymorphic?(parent) = parent.is_a?(Prism::SelfNode) || (parent.is_a?(Prism::CallNode) && parent.name == :class)
+  def indirect?(scope) = scope.is_a?(Prism::ConstantPathNode) ? indirect?(scope.parent) : !STATIC.include?(scope.class)
 
   def called(call, owner, nesting)
     names << call.name.to_s
@@ -94,7 +98,14 @@ class Hashira::Coupling::Mentions
 
   def opened(call, owner) = (found.open << owner if owner && dynamic?(call))
 
-  def handing?(call) = (HANDS.include?(call.name) || call.name.start_with?("register")) && !own?(call.receiver)
+  def handing?(call) = (hands?(call) || call.name.start_with?("register")) && !own?(call.receiver)
+
+  def hands?(call) = HANDS.include?(call.name) || (SENT.include?(call.name) && HANDS.include?(message(call)))
+
+  def message(call)
+    first = call.arguments&.arguments&.first
+    Hashira::Analysis::Syntax.new(first).symbol if first.is_a?(Prism::SymbolNode)
+  end
 
   def dynamic?(call) = SENDS.include?(call.name) && own?(call.receiver) && computed?(call)
 

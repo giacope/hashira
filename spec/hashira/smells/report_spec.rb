@@ -20,6 +20,20 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
     )
   end
 
+  def narrowed(kinds)
+    rules = Hashira::Config::Rules::ALL.narrowed(kinds, Hashira::Pipeline::KINDS)
+    files = { "lib/app/zone/thing.rb" => "module App\n  class Thing\n    def go(x) = x.to_s\n  end\nend\n" }
+    within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.map(&:kind) }
+  end
+
+  def spied = [Hashira::Smells::DataClump, Hashira::Smells::BoundarySprawl, Hashira::Smells::SpreadSwitch]
+
+  it "computes only the smells a run reports" do
+    spied.each { allow(it).to(receive(:new).and_call_original) }
+    expect(narrowed(%w[utility_function])).to(eq(%w[utility_function]))
+    expect(spied).to(all(have_received(:new).exactly(0).times))
+  end
+
   it "honours visibility markers in all their spellings" do
     files = {
       "lib/app/zone/thing.rb" => <<~RUBY

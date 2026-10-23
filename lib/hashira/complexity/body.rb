@@ -26,6 +26,7 @@ class Hashira::Complexity::Body
 
   def call(child, &)
     return yield(site(Hashira::Complexity::Defined.new(child))) if defines?(child)
+    return if Hashira::Analysis::TypeWalk.new(child).dsl?
     inner(child, LIFTING_BLOCKS.include?(child.name) ? @owner.lifted : @owner).each(&)
   end
 

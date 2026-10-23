@@ -83,7 +83,8 @@ RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
       expect(scores.ranked.map(&:subject)).to(
         contain_exactly(
           "App::Hidden::Box#tucked", "App::Hidden::Box#guarded", "App::Hidden::Box.opened",
-          "App::Hidden::Box#conditional", "App::Hidden::Box::Row#row", "App::Hidden::Box#blocked",
+          "App::Hidden::Box#conditional", "App::Hidden::Box::Row#row",
+          "App::Hidden::Box::(configure block, line 18)#blocked",
           "App::Hidden::Concern.lifted"
         )
       )

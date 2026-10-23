@@ -44,6 +44,8 @@ class Hashira::Coupling::Surface
 
   def outside?(path) = outside[path]
 
+  def patched?(path) = @census.abroad?(path)
+
   private
 
   def outside = @_outside ||= Hash.new { |found, path| found[path] = types.fetch(path, []).any? { hosted?(it) } }
@@ -51,8 +53,8 @@ class Hashira::Coupling::Surface
   def opened(file, tree)
     found = []
     shown = @project.relative(file)
-    Hashira::Analysis::TypeWalk.new(tree).walk(roots: @census.roots) do |node, full, stack|
-      found << Hashira::Coupling::Opening.new(node:, full:, path: @census.strip(full), stack:, file: shown)
+    Hashira::Analysis::TypeWalk.new(tree).walk(roots: @census.roots) do |node, full, stack, lexical|
+      found << Hashira::Coupling::Opening.new(node:, full:, path: @census.strip(lexical), stack:, file: shown)
     end
     found
   end

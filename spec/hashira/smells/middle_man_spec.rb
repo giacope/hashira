@@ -3,7 +3,7 @@
 RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
   let(:names) { %w[read write drop] }
 
-  def relayed(source, rules = Fixtures::NONE)
+  def relayed(source, rules = Hashira::Config::Rules::ALL)
     within("lib/app/cache.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       trees = project.files.to_h { [it, Prism.parse_file(it).value] }

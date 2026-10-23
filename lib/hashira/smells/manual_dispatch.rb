@@ -5,6 +5,8 @@ require "prism"
 class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
   PROTOCOL = :respond_to_missing?
 
+  COMPARISONS = %i[<=> == eql? === equal? coerce].freeze
+
   PROXY = :method_missing
 
   PROBE = "respond_to?"
@@ -15,7 +17,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.node.name != PROTOCOL && (probes.any? || switches.any?)
+  def smelly? = ![PROTOCOL, *COMPARISONS].include?(subject.node.name) && (probes.any? || switches.any?)
 
   def probes = @_probes ||= proxy? ? [] : sightings.map { probe(it) }.reject(&:excused?)
 

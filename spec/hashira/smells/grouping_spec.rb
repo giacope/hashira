@@ -8,6 +8,44 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     end
   end
 
+  it "reports one concrete parent once, every subclass as evidence" do
+    files = {
+      "lib/app/events.rb" => <<~RUBY
+        module App
+          class Event; end
+          class Added < Event; end
+          class Removed < Event; end
+          class Store; def build = [Event.new, Mapper.new]; end
+          class Mapper; end
+          class Fancy < Mapper; end
+        end
+      RUBY
+    }
+    found = grouped(files, "concrete_inheritance")
+    expect(found.map { [it.package, it.detail.to_h, it.evidence] }).to(
+      eq(
+        [
+          [
+            "App::Event", { site: "events.rb:3", places: 2, parent: "App::Event" },
+            ["App::Added (events.rb:3)", "App::Removed (events.rb:4)", "App::Event.new (events.rb:5)"]
+          ],
+          [
+            "App::Mapper", { site: "events.rb:7", places: 1, parent: "App::Mapper" },
+            ["App::Fancy (events.rb:7)", "App::Mapper.new (events.rb:5)"]
+          ]
+        ]
+      )
+    )
+    expect(found.map { message(it)[/is a concrete class [^(]*/] }).to(
+      eq(
+        [
+          "is a concrete class the project also builds, and 2 subclasses extend it ",
+          "is a concrete class the project also builds, and a subclass extends it "
+        ]
+      )
+    )
+  end
+
   def shop = <<~RUBY
     module Shop
       class Address; def city = 1; end

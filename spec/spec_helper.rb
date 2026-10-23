@@ -61,16 +61,16 @@ module Fixtures
     end
   end
 
-  def smells(files, directories: ["lib/app"])
+  def smells(files, directories: ["lib/app"], rules: NONE)
     within(files) do
       project = Hashira::Project.new(directories)
       trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      yield(Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), NONE))
+      yield(Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules))
     end
   end
 
   def sniffed(files, kind)
-    smells(files) { |report| return report.findings.select { it.kind == kind } }
+    smells(files, rules: Hashira::Config::Rules::ALL) { |report| return report.findings.select { it.kind == kind } }
   end
 
   def fragments(sources)
