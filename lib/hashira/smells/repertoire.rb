@@ -38,7 +38,7 @@ class Hashira::Smells::Repertoire
     found = []
     Hashira::Analysis::TypeWalk.new(tree).walk do |node, full|
       syntax = Hashira::Analysis::Syntax.new(node)
-      found << entry(full, syntax.statements, heritage(node))
+      found << entry(full, syntax.statements, heritage(node), instance(node))
       found.concat(syntax.constants.filter_map { built(full, it) if factory?(it.value) })
     end
     found
@@ -49,8 +49,14 @@ class Hashira::Smells::Repertoire
     entry(full + [constant.name.to_s], [value, *Array(value.block&.body&.body)], Array(value.arguments&.arguments))
   end
 
-  def entry(path, statements, parents)
-    names = statements.flat_map { declared(it) }.to_set { it.to_s.delete_suffix("=") }
+  def instance(type)
+    Hashira::Analysis::TypeWalk.new(type).sections.filter_map { |node, section| node.name unless lifted?(node, section) }
+  end
+
+  def lifted?(node, section) = node.receiver || section == :singleton
+
+  def entry(path, statements, parents, defined = [])
+    names = (statements.flat_map { declared(it) } + defined).to_set { it.to_s.delete_suffix("=") }
     Entry.new(path, names, parents.map { Hashira::Analysis::Syntax.new(it).segments.join("::") }.reject(&:empty?))
   end
 

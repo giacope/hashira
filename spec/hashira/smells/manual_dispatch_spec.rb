@@ -225,10 +225,20 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
 
           ParseNode = Struct.new(:type, :value)
 
+          module Withdrawable
+            included do
+              def withdrawn? = true
+            end
+          end
+
+          class ContentItem; include Withdrawable; end
+
           class Handler
             def call(template) = template.respond_to?(:type)
 
             def show(template) = template.respond_to?(:render)
+
+            def page(content_item) = content_item.respond_to?(:withdrawn?)
 
             def built
               template = Template.new
@@ -238,7 +248,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Handler#show App::Zone::Handler#built]))
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Handler#show App::Zone::Handler#page App::Zone::Handler#built]))
   end
 
   it "lets Ruby's conversion, IO and enumeration protocols be probed" do

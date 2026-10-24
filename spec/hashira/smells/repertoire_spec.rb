@@ -11,10 +11,14 @@ RSpec.describe(Hashira::Smells::Repertoire, :aggregate_failures) do
         private def seal = 1
         alias tag seal
         def self.build = new
+        class << self
+          def made = new
+        end
         Rails.logger.tap(:noise)
+        included { def hooked = 1 }
       end
     RUBY
-    expect(answers(source, "Order")).to(eq(%w[lines seal tag total]))
+    expect(answers(source, "Order")).to(eq(%w[hooked lines seal tag total]))
   end
 
   it "adds what owned superclasses and mixins declare, under any suffix of their name, and survives a loop" do
