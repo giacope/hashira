@@ -310,12 +310,12 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     capture { expect { described_class.new(arguments).status }.to(output(/#{Regexp.escape(said)}/).to_stderr) }
   end
 
-  it "says how many files it analysed and which vendored or generated ones it left out" do
+  it "says how many files it analysed and which vendored, generated or template ones it left out" do
     files = {
       "lib/app/good.rb" => "class Good; def a = 1; end\n", "lib/app/vendor/x.rb" => "",
-      "lib/app/y.rb" => "# @generated\n"
+      "lib/app/y.rb" => "# @generated\n", "lib/app/site_template/z.rb" => "", "lib/app/site_template/Gemfile" => ""
     }
-    said = "hashira: analysed 1 files in lib/app; skipped 1 vendored and 1 generated " \
+    said = "hashira: analysed 1 files in lib/app; skipped 1 in project templates and 1 vendored and 1 generated " \
       "(pass the directory, or --only a file, to analyse them)"
     within(files) { expect_warning(["lib/app"], said) }
   end

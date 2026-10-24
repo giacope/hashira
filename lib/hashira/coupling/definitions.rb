@@ -22,6 +22,8 @@ class Hashira::Coupling::Definitions
 
   def dependencies = @project.dependencies
 
+  def spellings = @_spellings ||= Hashira::Coupling::Spellings.new(@trees)
+
   private
 
   def autoload = @_autoload ||= Hashira::Coupling::Autoload.new(@project, @trees)

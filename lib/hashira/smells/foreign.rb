@@ -55,6 +55,8 @@ class Hashira::Smells::Foreign
 
   def built?(name) = writes(name).any? { LITERALS.include?(it.value.class) }
 
+  def guessed?(local) = evidence(local).empty?
+
   def writes(name) = among(Prism::LocalVariableWriteNode, name)
 
   private
@@ -91,9 +93,13 @@ class Hashira::Smells::Foreign
   def sources(local) = writes(local.name).map(&:value) + yielders(local)
 
   def known(local)
+    tested = evidence(local)
+    tested.empty? ? Hashira::Smells::Naming.new(local.name).types : tested
+  end
+
+  def evidence(local)
     name = local.name
-    tested = (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
-    tested.empty? ? Hashira::Smells::Naming.new(name).types : tested
+    (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
   end
 
   def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.new(value.receiver).segments : []

@@ -13,7 +13,9 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
 
   def smelly? = subject.kind == :class && unrelated? && statements.all? { plain?(it) } && fields.size >= MINIMUM
 
-  def unrelated? = subject.nodes.none?(&:superclass) && subject.family.children(subject.subject).empty?
+  def unrelated?
+    subject.nodes.grep(Prism::ClassNode).none?(&:superclass) && subject.family.children(subject.subject).empty?
+  end
 
   def statements = @_statements ||= subject.nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
 

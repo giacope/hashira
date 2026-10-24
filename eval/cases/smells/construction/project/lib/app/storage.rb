@@ -28,4 +28,12 @@ module App
 
     def temp_url(path) = "#{path}?key=#{@shop_temp_url_key}&#{@data}"
   end
+
+  class Stub
+    def initialize(options = {})
+      @data = options
+    end
+
+    def temp_url(path) = "#{path}?key=#{@shop_temp_url_key}&#{@data}"
+  end
 end

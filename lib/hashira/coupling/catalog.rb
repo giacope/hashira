@@ -21,6 +21,8 @@ class Hashira::Coupling::Catalog
 
   def dependencies = @definitions.dependencies
 
+  def spellings = @definitions.spellings
+
   def folders = @definitions.packages
 
   def lineage = @_lineage ||= Hashira::Coupling::Lineage.new(self)

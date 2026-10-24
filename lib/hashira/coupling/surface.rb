@@ -44,6 +44,8 @@ class Hashira::Coupling::Surface
 
   def outside?(path) = outside[path]
 
+  def backed?(path) = [path, *mixers(path)].any? { outside?(it) }
+
   def patched?(path) = @census.abroad?(path)
 
   private

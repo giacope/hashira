@@ -12,6 +12,17 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(bodies.map { opaque(it).size }).to(eq([0, 0, 0, 0, 0, 0, 1]))
   end
 
+  it "judges a class reopened by a block in an earlier file as the class it is" do
+    files = {
+      "lib/app/a_ext.rb" => "App::Thing.class_eval do\n  def extra(word) = word.to_s\nend\n",
+      "lib/app/thing.rb" =>
+        "module App\n  class Thing\n    def initialize = @x = 1\n    def shout(word) = word.to_s\n  end\nend\n"
+    }
+    later = files.transform_keys { it.sub("a_ext", "z_ext") }
+    found = [files, later].map { sniffed(it, "utility_function").map(&:package) }
+    expect(found).to(eq([%w[App::Thing#shout App::Thing#extra]] * 2))
+  end
+
   it "flags a public instance method that never touches instance state" do
     findings = utility(<<~RUBY)
       module App

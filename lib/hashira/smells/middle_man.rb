@@ -37,7 +37,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   def sweep = @_sweep ||= subject.sweep
 
   def declared?
-    sweep.grep(Prism::CallNode).any? { DECLARED.include?(it.name) } || subject.nodes.any? { wrapper?(it.superclass) }
+    sweep.grep(Prism::CallNode).any? { DECLARED.include?(it.name) } || subject.nodes.grep(Prism::ClassNode).any? { wrapper?(it.superclass) }
   end
 
   def wrapper?(node) = WRAPPERS.include?(node&.slice.to_s[/\A[\w:]+/].to_s.split("::").last)

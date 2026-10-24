@@ -37,7 +37,7 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
     )
   end
 
-  it "keeps the owner of a block that reopens the class or builds a new one" do
+  it "keeps the owner of a block that reopens the class or builds one, and gives a constant the blocks it opens" do
     source = <<~RUBY
       module Kept
         included do
@@ -52,15 +52,60 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
         Struct.new(:x) { def f = 1 }
         ::Class.new { def g = 1 }
         Data.define(:y) { def h = 1 }
-        Other.class_eval { def j = 1 }
+        Other.class_eval do
+          def j = 1
+          class Nested; def q = 1; end
+        end
         Data.new { def k = 1 }
+        ::Rack::Request.prepend(Module.new { def m = 1 })
+        Other.include(Module.new, Module.new { def n = 1 })
+        Other.extend(Module.new { def o = 1 })
       end
     RUBY
     expect(owners(source)).to(
       eq(
         [
-          ["Kept", "Kept", %i[a b c d e f g h]], ["Kept::(class_eval block, line 14)", "Kept", %i[j]],
-          ["Kept::(new block, line 15)", "Kept", %i[k]]
+          ["Kept", "Kept", %i[a b c d e f g h n o]], ["Other", "Other", %i[j]], ["Kept::Nested", "Kept::Nested", %i[q]],
+          ["Kept::(new block, line 18)", "Kept", %i[k]], ["Rack::Request", "Rack::Request", %i[m]]
+        ]
+      )
+    )
+  end
+
+  it "gives the class the defs of a block it evaluates in itself, and names a refinement by what it refines" do
+    source = <<~RUBY
+      class Cli < Thor
+        no_tasks { def helper = 1 }
+        no_commands { def other = 1 }
+      end
+      class Web < Sinatra::Base
+        helpers do
+          def money = 1
+        end
+      end
+      class Site < Middleman::Extension
+        helpers do
+          def link = 1
+        end
+      end
+      module Ext
+        refine ::String do
+          def shout = 1
+        end
+      end
+      class Bare
+        helpers do
+          def plain = 1
+        end
+      end
+    RUBY
+    expect(owners(source)).to(
+      eq(
+        [
+          ["Cli", "Cli", %i[helper other]], ["Web", "Web", %i[money]], ["Site", "Site", []],
+          ["Site::(helpers block, line 11)", "Site", %i[link]], ["Ext", "Ext", []],
+          ["Ext refine ::String", "Ext", %i[shout]], ["Bare", "Bare", []],
+          ["Bare::(helpers block, line 21)", "Bare", %i[plain]]
         ]
       )
     )

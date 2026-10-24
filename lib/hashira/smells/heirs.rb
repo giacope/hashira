@@ -13,10 +13,11 @@ class Hashira::Smells::Heirs
 
   def merged(parent, group)
     first = group.first
+    home = first.detail[:home]
     Hashira::Analysis::Finding.new(
-      kind: KIND, package: parent, detail: { site: first.detail[:site], places: group.size, parent: },
+      kind: KIND, package: parent, detail: { site: home, places: group.size, parent: },
       evidence: group.map { "#{it.package} (#{it.detail[:site]})" } + first.evidence,
-      anchors: group.flat_map(&:anchors).uniq, confidence: first.confidence
+      anchors: [home, *group.flat_map(&:anchors)].uniq, confidence: first.confidence
     )
   end
 end

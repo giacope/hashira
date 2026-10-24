@@ -7,9 +7,10 @@ class Hashira::Complexity::Body
 
   DEFINERS = %i[define_method].freeze
 
-  def initialize(node, owner)
+  def initialize(node, owner, host = nil)
     @node = node
     @owner = owner
+    @host = host
   end
 
   def each(&) = (@node ? @node.compact_child_nodes : []).each { visit(it, &) }
@@ -26,7 +27,7 @@ class Hashira::Complexity::Body
 
   def call(child, &)
     return yield(site(Hashira::Complexity::Defined.new(child))) if defines?(child)
-    return if Hashira::Analysis::TypeWalk.new(child).dsl?
+    return if Hashira::Analysis::TypeWalk.new(child).dsl?(@host)
     inner(child, LIFTING_BLOCKS.include?(child.name) ? @owner.lifted : @owner).each(&)
   end
 
@@ -44,5 +45,5 @@ class Hashira::Complexity::Body
     end
   end
 
-  def inner(child, owner) = Hashira::Complexity::Body.new(child, owner)
+  def inner(child, owner) = Hashira::Complexity::Body.new(child, owner, @host)
 end
