@@ -26,6 +26,10 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
 
+  LISTING = :instance_variables
+
+  PEEK = :instance_variable_get
+
   private
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
@@ -80,7 +84,11 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     left.fields.intersect?(right.fields) || left.calls.intersect?(right.names) || right.calls.intersect?(left.names)
   end
 
-  def fields(found) = (touched(found) + attributed(found)).uniq
+  def fields(found) = (touched(found) + attributed(found) + (peeks?(found) ? kept.to_a : [])).uniq
+
+  def peeks?(found) = selves(found).any? { it.name == LISTING || (it.name == PEEK && !literal?(it)) }
+
+  def literal?(call) = Hashira::Analysis::Syntax.new(Array(call.arguments&.arguments).first).word?
 
   def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
 

@@ -94,46 +94,94 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
     expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([%w[@copied @crafted @far @plain @stray]]))
   end
 
-  it "counts a computed instance_variable_set only where the class's construction reaches it" do
+  it "counts a computed instance_variable_set anywhere in the class or its ancestors, whatever method reaches it" do
     core = <<~'RUBY'
       module Core
         def initialize(options) = setup(options)
         def setup(options) = options.each { |key, value| instance_variable_set("@shop_#{key}", value) }
-        def reset = options.each { |key| instance_variable_set("@other_#{key}", nil) }
+        def b=(value) = style(:b, value)
+        def style(name, value) = instance_variable_set(:"@#{name}", value)
       end
     RUBY
     classes = <<~'RUBY'
       class Real
         include Core
         def initialize(options) = super
-        def url = [@shop_key, @other_key]
+        def url = [@shop_key, @b]
       end
 
       class Mock
-        include Core
         def initialize(options) = @data = options
         def url = [@shop_key, @data]
       end
 
-      class Built
-        include Core
-        def url = [@shop_key, @other_key]
-      end
-
-      class Gate
-        include Core
-        def initialize(options) = self.setup(options)
-        def url = @shop_key
-      end
-
       class Hooked
         define_method(:load) { |key| instance_variable_set("@hook_#{key}", 1) }
-        def url = @hook_key
+        def url = [@hook_key, @other_key]
       end
     RUBY
     found = sniffed({ "lib/app/core.rb" => core, "lib/app/classes.rb" => classes }, "assumed_state")
+    expect(found.to_h { [it.package, it.evidence] }).to(eq("Mock" => ["@shop_key"], "Hooked" => ["@other_key"]))
+  end
+
+  it "counts a literal instance_variable_set on an instance any method builds of the class, through a local or a tap" do
+    source = <<~RUBY
+      module App
+        module Zone
+          class Configuration
+            def dsl(context) = DSL.new.tap { |dsl| dsl.instance_variable_set(:@context, context) }
+            def kind = Zone::Builder.allocate.tap { it.instance_variable_set(:@kind, 1) }
+            def numbered = Builder.new.tap { _1.instance_variable_set(:@numbered, 1) }
+
+            def made
+              built = Builder.new
+              built.instance_variable_set(:@made, 1)
+              stray = Stray.new
+              stray.instance_variable_set(:@lost, 1)
+              DSL.new.tap { |dsl| kind.instance_variable_set(:@far, 1) }
+              Stray.new.tap { it.instance_variable_set(:@gone, 1) }
+              DSL.new.tap(&:freeze)
+            end
+          end
+
+          class DSL
+            def initialize = @at = 1
+            def run = [@context, @far]
+          end
+
+          class Builder
+            def initialize = @at = 1
+            def show = [@kind, @numbered, @made, @lost, @gone]
+          end
+        end
+      end
+    RUBY
+    found = assumed(source)
     expect(found.to_h { [it.package, it.evidence] })
-      .to(eq("Real" => ["@other_key"], "Mock" => ["@shop_key"], "Built" => ["@other_key"]))
+      .to(eq("App::Zone::DSL" => ["@far"], "App::Zone::Builder" => %w[@gone @lost]))
+  end
+
+  it "leaves a class alone whose parent the project only reopens, as it does an unknown parent" do
+    files = {
+      "lib/app/tilt.rb" =>
+        "module SafeTemplate\n  def render = 1\nend\n\nclass Tilt::Template\n  include SafeTemplate\nend\n",
+      "lib/app/haml.rb" => <<~RUBY
+        module App
+          class HamlTemplate < ::Tilt::Template
+            def prepare = @options[:context]
+          end
+
+          class Own
+            def initialize = @at = 1
+          end
+
+          class Child < Own
+            def show = @lost
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
   end
 
   it "flags instance variables read but never assigned anywhere in the class" do

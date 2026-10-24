@@ -217,6 +217,30 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
 
   def dispatched(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "manual_dispatch")
 
+  it "takes a probe on a receiver typed only by its name for a duck test unless that class answers the message" do
+    findings = dispatched(<<~RUBY)
+      module App
+        module Zone
+          class Template; def render = 1; end
+
+          ParseNode = Struct.new(:type, :value)
+
+          class Handler
+            def call(template) = template.respond_to?(:type)
+
+            def show(template) = template.respond_to?(:render)
+
+            def built
+              template = Template.new
+              template.respond_to?(:type)
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Handler#show App::Zone::Handler#built]))
+  end
+
   it "lets Ruby's conversion, IO and enumeration protocols be probed" do
     findings = dispatched(<<~RUBY)
       module App
@@ -297,16 +321,12 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Value; end
+          class Value; def zero? = true; end
 
           class Thing
             def limit(value) = value.respond_to?(:positive?) && value.positive?
 
             def size(value) = value.respond_to?(:zero?) && value.zero?
-          end
-
-          class Counter
-            def zero? = @count.zero?
           end
         end
       end

@@ -17,7 +17,7 @@ class Hashira::Smells::Census
   private
 
   def settled(found)
-    lineage = Hashira::Smells::Lineage.new(found)
+    lineage = Hashira::Smells::Lineage.new(found, found.reject { claimed?(it) }.to_set(&:name))
     kinship = Hashira::Smells::Kinship.new(found, lineage)
     found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
   end

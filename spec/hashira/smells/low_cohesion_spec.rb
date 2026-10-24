@@ -125,6 +125,16 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     expect([found[0], found[1], found[2].first.evidence]).to(eq([[], [], groups]))
   end
 
+  it "joins every group through a method that reads fields by computed name, in the class or a module it includes" do
+    serialized = "module Serialized\n  def serialized = FIELDS.map { instance_variable_get(it) }\nend\n"
+    found = [
+      account("def dump = instance_variables.map { 1 }"), account("def dump = instance_variable_get(:\"@\#{name}\")"),
+      mixed("include Serialized\n  def bridge = serialized", serialized),
+      account("def dump = instance_variable_get(:@balance)"), account("def dump = other.instance_variables")
+    ]
+    expect(found.map { split(it).size }).to(eq([0, 0, 0, 1, 1]))
+  end
+
   it "keeps groups apart that a constructor only stores separately" do
     blank = account.sub("@mailer = mailer\n", "@mailer = mailer\n    @log = []\n")
     expect(split(blank).size).to(eq(1))

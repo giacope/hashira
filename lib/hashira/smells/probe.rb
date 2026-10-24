@@ -24,7 +24,7 @@ class Hashira::Smells::Probe
 
   def line = @call.location.start_line
 
-  def excused? = asked?(PROTOCOLS) || unspoken? || computed? || foreign? || unknown?
+  def excused? = asked?(PROTOCOLS) || unspoken? || computed? || foreign? || unknown? || stranger?
 
   def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
 
@@ -49,6 +49,12 @@ class Hashira::Smells::Probe
   def unknown? = !SELVES.include?(receiver.class) && !(named? && typed?)
 
   def typed? = @foreign.kinds(holder).any?
+
+  def stranger? = named? && LITERAL.include?(message.class) && @foreign.guessed?(holder) && unanswered?
+
+  def unanswered? = @foreign.kinds(holder).none? { answers?(it) }
+
+  def answers?(kind) = @subject.ownership.repertoire.of(kind).include?(Hashira::Analysis::Syntax.new(message).text)
 
   def named? = NAMED.include?(receiver.class)
 
