@@ -46,7 +46,7 @@ class Hashira::Sources
   def template?(path)
     below = folders(path)
     index = below.index { it.match?(COPIED) } or return false
-    copied = [*home(path)&.split("/"), *below[..index]]
+    copied = [*home(path).to_s.split("/"), *below[..index]]
     copied.include?(LIB) && Dir.glob(PROJECT_FILES, base: copied.join("/")).any?
   end
 

@@ -22,7 +22,12 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   it "flags a subclass of an owned class that the project also builds on its own, naming where" do
     finding = concrete(reports, built).first
     expect([finding.package, finding.detail, finding.evidence]).to(
-      eq(["App::Daily", { site: "report.rb:6", parent: "App::Report" }, ["App::Report.new (use.rb:3)"]])
+      eq(
+        [
+          "App::Daily", { site: "report.rb:6", parent: "App::Report", home: "report.rb:2" },
+          ["App::Report.new (use.rb:3)"]
+        ]
+      )
     )
   end
 

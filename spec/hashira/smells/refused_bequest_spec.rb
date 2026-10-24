@@ -20,7 +20,20 @@ RSpec.describe(Hashira::Smells::RefusedBequest, :aggregate_failures) do
   it "flags a subclass that overrides an inherited method only to raise, naming the method and its owner" do
     finding = refused(stores("def save(row) = raise(NotImplementedError)")).first
     expect([finding.package, finding.detail, finding.evidence]).to(
-      eq(["App::Archive", { site: "store.rb:8", parent: "App::Store", names: ["save"] }, ["save raises (line 9, over App::Store)"]])
+      eq(
+        [
+          "App::Archive",
+          {
+            site: "store.rb:8", parent: "App::Store",
+            refusals: [
+              described_class::Refused.new(
+                bequest: "App::Store#save", name: "save", home: "store.rb:5", verb: "raises", site: "store.rb:9"
+              )
+            ]
+          },
+          ["save raises (line 9, over App::Store)"]
+        ]
+      )
     )
   end
 

@@ -8,7 +8,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     end
   end
 
-  it "reports one concrete parent once, every subclass as evidence" do
+  it "reports one concrete parent once, at its definition, every subclass as evidence" do
     files = {
       "lib/app/events.rb" => <<~RUBY
         module App
@@ -26,11 +26,11 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       eq(
         [
           [
-            "App::Event", { site: "events.rb:3", places: 2, parent: "App::Event" },
+            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event" },
             ["App::Added (events.rb:3)", "App::Removed (events.rb:4)", "App::Event.new (events.rb:5)"]
           ],
           [
-            "App::Mapper", { site: "events.rb:7", places: 1, parent: "App::Mapper" },
+            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper" },
             ["App::Fancy (events.rb:7)", "App::Mapper.new (events.rb:5)"]
           ]
         ]
@@ -41,6 +41,50 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
         [
           "is a concrete class the project also builds, and 2 subclasses extend it ",
           "is a concrete class the project also builds, and a subclass extends it "
+        ]
+      )
+    )
+  end
+
+  it "reports each parent method refused once, every refusing subclass as evidence" do
+    files = {
+      "lib/app/steps.rb" => <<~RUBY
+        module App
+          class Step
+            def next_step = :done
+            def back = :start
+          end
+          class Done < Step
+            def next_step = nil
+            def back = raise("no")
+          end
+          class Exit < Step
+            def next_step = nil
+          end
+        end
+      RUBY
+    }
+    found = grouped(files, "refused_bequest")
+    expect(found.map { [it.package, it.detail.to_h, it.evidence, it.anchors] }).to(
+      eq(
+        [
+          [
+            "App::Step#next_step", { site: "steps.rb:3", places: 2, parent: "App::Step" },
+            ["App::Done does nothing (steps.rb:7)", "App::Exit does nothing (steps.rb:11)"],
+            %w[steps.rb:3 steps.rb:6 steps.rb:10]
+          ],
+          [
+            "App::Step#back", { site: "steps.rb:4", places: 1, parent: "App::Step" },
+            ["App::Done raises (steps.rb:8)"], %w[steps.rb:4 steps.rb:6]
+          ]
+        ]
+      )
+    )
+    expect(found.map { message(it)[/is overridden [^(]*/] }).to(
+      eq(
+        [
+          "is overridden by 2 subclasses only to raise or do nothing ",
+          "is overridden by a subclass only to raise or do nothing "
         ]
       )
     )

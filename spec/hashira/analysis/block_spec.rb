@@ -68,4 +68,43 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
       )
     )
   end
+
+  it "gives the class the defs of a block it evaluates in itself, and names a refinement by what it refines" do
+    source = <<~RUBY
+      class Cli < Thor
+        no_tasks { def helper = 1 }
+        no_commands { def other = 1 }
+      end
+      class Web < Sinatra::Base
+        helpers do
+          def money = 1
+        end
+      end
+      class Site < Middleman::Extension
+        helpers do
+          def link = 1
+        end
+      end
+      module Ext
+        refine ::String do
+          def shout = 1
+        end
+      end
+      class Bare
+        helpers do
+          def plain = 1
+        end
+      end
+    RUBY
+    expect(owners(source)).to(
+      eq(
+        [
+          ["Cli", "Cli", %i[helper other]], ["Web", "Web", %i[money]], ["Site", "Site", []],
+          ["Site::(helpers block, line 11)", "Site", %i[link]], ["Ext", "Ext", []],
+          ["Ext refine ::String", "Ext", %i[shout]], ["Bare", "Bare", []],
+          ["Bare::(helpers block, line 21)", "Bare", %i[plain]]
+        ]
+      )
+    )
+  end
 end

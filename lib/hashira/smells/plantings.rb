@@ -27,8 +27,8 @@ class Hashira::Smells::Plantings
     inside = Hashira::Smells::Scope.new(definition).inside
     made = made(type, definition, inside)
     calls = inside.grep(Prism::CallNode)
-    calls.filter_map { |set| [made[local(set)], ivar(set)] if made.key?(local(set)) } +
-      calls.flat_map { tapped(type, definition, it) }
+    held = calls.filter_map { |set| made[local(set)]&.then { [it, ivar(set)] } }
+    held + calls.flat_map { tapped(type, definition, it) }
   end
 
   def made(type, definition, inside)
@@ -36,15 +36,16 @@ class Hashira::Smells::Plantings
   end
 
   def tapped(type, definition, call)
-    target = built(type, definition, call.receiver) if call.name == TAP && call.block.is_a?(Prism::BlockNode)
-    held = parameter(call.block.parameters) if target
+    block = call.block
+    target = built(type, definition, call.receiver) if call.name == TAP && block.is_a?(Prism::BlockNode)
+    held = parameter(block.parameters) if target
     return [] unless held
-    Hashira::Analysis::NodeWalk.new(call.block).collect.grep(Prism::CallNode).filter_map { [target, ivar(it)] if local(it) == held }
+    Hashira::Analysis::NodeWalk.new(block).collect.grep(Prism::CallNode).filter_map { [target, ivar(it)] if local(it) == held }
   end
 
   def parameter(parameters)
     case parameters
-    when Prism::BlockParametersNode then Array(parameters.parameters&.requireds).first&.name
+    when Prism::BlockParametersNode then Hashira::Smells::Parameters.new(parameters).names.first
     when Prism::ItParametersNode then :it
     when Prism::NumberedParametersNode then :_1
     end

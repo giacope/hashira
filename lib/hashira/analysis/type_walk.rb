@@ -17,7 +17,7 @@ module Hashira
 
       def sections = Visibility.new(@node).entries
 
-      def dsl? = @node.is_a?(Prism::CallNode) && Block.new(@node).dsl?
+      def dsl?(host = nil) = @node.is_a?(Prism::CallNode) && Block.new(@node, host).dsl?
 
       def type? = @block || @opens || @node.is_a?(Prism::ClassNode) || @node.is_a?(Prism::ModuleNode)
 
@@ -33,10 +33,7 @@ module Hashira
       private
 
       def walker(child, stack)
-        opening = Block.new(child).opening if child.is_a?(Prism::CallNode)
-        return TypeWalk.new(opening, opens: child.receiver) if opening
-        return TypeWalk.new(child) unless stack.any? && TypeWalk.new(child).dsl?
-        TypeWalk.new(child.block, block: Block.new(child).name)
+        (Block.new(child, @node).walker(stack) if child.is_a?(Prism::CallNode)) || TypeWalk.new(child)
       end
 
       def reopen(stack, roots, &)
@@ -52,7 +49,7 @@ module Hashira
       end
 
       def adopt(stack, roots, &)
-        yield(@node, stack.last + [@block], stack, stack.last)
+        yield(@node, @block, stack, stack.last)
         descend(@node.body, stack, roots, &)
       end
 

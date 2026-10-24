@@ -130,9 +130,10 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     found = [
       account("def dump = instance_variables.map { 1 }"), account("def dump = instance_variable_get(:\"@\#{name}\")"),
       mixed("include Serialized\n  def bridge = serialized", serialized),
-      account("def dump = instance_variable_get(:@balance)"), account("def dump = other.instance_variables")
+      account("def dump = instance_variable_get(:@balance)"), account("def dump = other.instance_variables"),
+      account("def dump = instance_variable_get")
     ]
-    expect(found.map { split(it).size }).to(eq([0, 0, 0, 1, 1]))
+    expect(found.map { split(it).size }).to(eq([0, 0, 0, 1, 1, 1]))
   end
 
   it "keeps groups apart that a constructor only stores separately" do

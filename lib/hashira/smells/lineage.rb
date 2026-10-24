@@ -66,13 +66,12 @@ class Hashira::Smells::Lineage
   def ancestral(context)
     kin = kin(context.name)
     return unless kin
+    plantings = @_plantings ||= Hashira::Smells::Plantings.new(@types, self)
     planted = kin.map(&:name).uniq.flat_map { plantings.of(it) }
     (kin.flat_map { writes(it) } + planted + kin.flat_map { survey(it).computed }).uniq
   end
 
   def learned = @_learned ||= {}
-
-  def plantings = @_plantings ||= Hashira::Smells::Plantings.new(@types, self)
 
   def index = @_index ||= @types.group_by(&:name)
 

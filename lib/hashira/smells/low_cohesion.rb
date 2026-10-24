@@ -86,9 +86,9 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def fields(found) = (touched(found) + attributed(found) + (peeks?(found) ? kept.to_a : [])).uniq
 
-  def peeks?(found) = selves(found).any? { it.name == LISTING || (it.name == PEEK && !literal?(it)) }
+  def peeks?(found) = selves(found).any? { it.name == LISTING || (it.name == PEEK && computed?(it)) }
 
-  def literal?(call) = Hashira::Analysis::Syntax.new(Array(call.arguments&.arguments).first).word?
+  def computed?(call) = call.arguments && !Hashira::Analysis::Syntax.new(call.arguments.arguments.first).word?
 
   def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
 

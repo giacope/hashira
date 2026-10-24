@@ -26,8 +26,13 @@ class Hashira::Report::Phrases
 
   def on_refused_bequest(finding)
     detail = finding.detail
-    plain(finding, "overrides #{quoted(detail[:names])} of #{detail[:parent]} only to raise or do nothing", REFUSED)
+    places = detail[:places]
+    return plain(finding, "is overridden by #{refusers(places)} only to raise or do nothing", REFUSED) if places
+    names = detail[:refusals].map(&:name)
+    plain(finding, "overrides #{quoted(names)} of #{detail[:parent]} only to raise or do nothing", REFUSED)
   end
+
+  def refusers(places) = places == 1 ? "a subclass" : "#{places} subclasses"
 
   def on_low_cohesion(finding)
     plain(finding, "splits into #{finding.detail[:count]} groups of methods that share no state", COHESION)

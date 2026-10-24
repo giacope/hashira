@@ -44,6 +44,8 @@ class Hashira::Smells::Hierarchy
 
   def built(name) = births.fetch(name, [])
 
+  def home(name) = table.fetch(name).openings.first.site
+
   private
 
   def table

@@ -9,18 +9,20 @@ class Hashira::Smells::Grouping
 
   OWNER = /[#.][^#.]+\z/
 
+  GROUPED = [CHAIN, REPEATS, Hashira::Smells::Heirs::KIND, Hashira::Smells::Bequests::KIND].freeze
+
   def initialize(findings)
     @findings = findings
   end
 
   def findings
-    heirs = Hashira::Smells::Heirs.new(@findings).findings
+    heirs = Hashira::Smells::Heirs.new(@findings).findings + Hashira::Smells::Bequests.new(@findings).findings
     @findings.reject { grouped?(it) } + edges + sources + heirs + Hashira::Smells::Repeats.new(@findings).findings
   end
 
   private
 
-  def grouped?(finding) = [CHAIN, REPEATS, Hashira::Smells::Heirs::KIND].include?(finding.kind) || sourced?(finding)
+  def grouped?(finding) = GROUPED.include?(finding.kind) || sourced?(finding)
 
   def sourced?(finding) = finding.kind == ABSENT && finding.detail[:sources].to_a.any?
 

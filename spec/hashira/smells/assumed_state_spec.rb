@@ -139,6 +139,8 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
               stray = Stray.new
               stray.instance_variable_set(:@lost, 1)
               DSL.new.tap { |dsl| kind.instance_variable_set(:@far, 1) }
+              DSL.new.tap { kind.instance_variable_set(:@far, 1) }
+              DSL.new.tap { |*| kind.instance_variable_set(:@far, 1) }
               Stray.new.tap { it.instance_variable_set(:@gone, 1) }
               DSL.new.tap(&:freeze)
             end
