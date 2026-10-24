@@ -633,7 +633,9 @@ From the third field test (thirty MIT-licensed codebases):
     interpolated `eval`/`class_eval` string runs in are never "never referred
     to" (kaminari's `FirstPage`, `LastPage`). `X.class_eval do … end` and
     `X.prepend(Module.new do … end)` patch `X`: a dependency's class keeps the
-    methods as its API.
+    methods as its API, and `module_initialize` no longer takes such a block
+    (bridgetown's `Samovar::Output::UsageFormatter.class_eval do def
+    initialize`) for a mixin: it judges modules only.
   - `assumed_state` counts a computed `instance_variable_set` anywhere in the
     class or its ancestors, whatever method reaches it (caxlsx's `b=` writers
     → `set_run_style`); a literal one on an instance any method builds of the
