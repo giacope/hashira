@@ -19,6 +19,14 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
 
   def built(call = "Report.new") = "module App\n  class Runner\n    def run = #{call}.rows\n  end\nend\n"
 
+  it "sites the parent at its definition, not at a block that reopens it in an earlier file" do
+    files = {
+      "lib/app/a_ext.rb" => "App::Report.class_eval do\n  def extra = 1\nend\n",
+      "lib/app/report.rb" => reports, "lib/app/use.rb" => built
+    }
+    expect(sniffed(files, "concrete_inheritance").map { it.detail[:home] }).to(eq(["report.rb:2"]))
+  end
+
   it "flags a subclass of an owned class that the project also builds on its own, naming where" do
     finding = concrete(reports, built).first
     expect([finding.package, finding.detail, finding.evidence]).to(

@@ -16,11 +16,19 @@ class Hashira::Smells::Census
 
   private
 
-  def settled(found)
+  def settled(sketches)
+    found = adopted(sketches).partition { !opened?(it) }.flatten(1)
     lineage = Hashira::Smells::Lineage.new(found, found.reject { claimed?(it) }.to_set(&:name))
     kinship = Hashira::Smells::Kinship.new(found, lineage)
     found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
   end
+
+  def adopted(found)
+    kinds = found.reject { opened?(it) }.to_h { [it.name, it.kind] }
+    found.map { opened?(it) ? it.with(kind: kinds.fetch(it.name, it.kind)) : it }
+  end
+
+  def opened?(sketch) = sketch.node.is_a?(Prism::BlockNode)
 
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
 

@@ -115,7 +115,7 @@ class Hashira::Smells::Lineage
     (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.new(it).segments }
   end
 
-  def parent(type) = (type.node.superclass if type.kind == :class)
+  def parent(type) = (type.node.superclass if type.node.is_a?(Prism::ClassNode))
 
   def scopes(owner)
     parts = owner.split("::")

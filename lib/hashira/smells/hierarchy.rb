@@ -51,7 +51,7 @@ class Hashira::Smells::Hierarchy
   def table
     @_table ||=
       @types.group_by(&:name).to_h do |name, openings|
-        node = openings.filter_map { it.node.superclass if it.kind == :class }.first
+        node = openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
         parent = ancestor(name, node)
         [name, Kin.new(parent:, foreign: !node.nil? && !parent, openings:)]
       end
