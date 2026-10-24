@@ -436,10 +436,11 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
           end
         end
       RUBY
-      "app/models/ledger.rb" => "class Ledger\n  def self.open = 1\nend\nLedger.class_exec { def close = 1 }\n"
+      "app/models/ledger.rb" => "class Ledger\n  def self.open = 1\nend\nLedger.class_exec { def close = 1 }\n",
+      "lib/shop/order.rb" => "module Shop\n  class Order\n  end\n\n  Order.class_eval { def extra = 1 }\nend\n"
     )
     expect(dead(patched, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate]).to(
-      eq(%w[Ledger.open Ledger#close])
+      eq(%w[Ledger.open Ledger#close Shop::Order#extra])
     )
   end
 
@@ -625,7 +626,9 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
           end
         end
       RUBY
-      "app/models/user.rb" => "class User < ApplicationRecord\n  NAME = Omniauth::Strategies::TeacherAuth::NAME\nend\n",
+      "app/models/user.rb" =>
+        "class User < ApplicationRecord\n  NAME = Omniauth::Strategies::TeacherAuth::NAME\n  GDSAPI = 1\n  " \
+        "def self.flag = GDSAPI\nend\n",
       "lib/services.rb" =>
         "require \"gds_api/publishing_api\"\nrequire \"services/x\"\n\nmodule GdsApi\n  def self.retried = 1\nend\n",
       "lib/services/x.rb" => "module Services\n  def self.idle = 1\nend\n"

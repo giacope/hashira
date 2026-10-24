@@ -247,7 +247,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         module Zone
           class Body; end
 
-          class Value; end
+          class Value; def each = 1; end
 
           class Duck; def honk = 1; def moo = 1; end
 

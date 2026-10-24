@@ -52,7 +52,10 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
         Struct.new(:x) { def f = 1 }
         ::Class.new { def g = 1 }
         Data.define(:y) { def h = 1 }
-        Other.class_eval { def j = 1 }
+        Other.class_eval do
+          def j = 1
+          class Nested; def q = 1; end
+        end
         Data.new { def k = 1 }
         ::Rack::Request.prepend(Module.new { def m = 1 })
         Other.include(Module.new, Module.new { def n = 1 })
@@ -62,8 +65,8 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
     expect(owners(source)).to(
       eq(
         [
-          ["Kept", "Kept", %i[a b c d e f g h n o]], ["Other", "Other", %i[j]],
-          ["Kept::(new block, line 15)", "Kept", %i[k]], ["Rack::Request", "Rack::Request", %i[m]]
+          ["Kept", "Kept", %i[a b c d e f g h n o]], ["Other", "Other", %i[j]], ["Kept::Nested", "Kept::Nested", %i[q]],
+          ["Kept::(new block, line 18)", "Kept", %i[k]], ["Rack::Request", "Rack::Request", %i[m]]
         ]
       )
     )

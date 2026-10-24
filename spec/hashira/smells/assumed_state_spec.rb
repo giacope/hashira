@@ -136,9 +136,11 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
             def made
               built = Builder.new
               built.instance_variable_set(:@made, 1)
+              built.instance_variable_get(:@peeked)
+              built.instance_variable_set(peeked, 1)
               stray = Stray.new
               stray.instance_variable_set(:@lost, 1)
-              DSL.new.tap { |dsl| kind.instance_variable_set(:@far, 1) }
+              DSL.new.tap { |dsl| self.dsl(1).instance_variable_set(:@far, 1) }
               DSL.new.tap { kind.instance_variable_set(:@far, 1) }
               DSL.new.tap { |*| kind.instance_variable_set(:@far, 1) }
               Stray.new.tap { it.instance_variable_set(:@gone, 1) }
@@ -153,14 +155,14 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
 
           class Builder
             def initialize = @at = 1
-            def show = [@kind, @numbered, @made, @lost, @gone]
+            def show = [@kind, @numbered, @made, @lost, @gone, @peeked]
           end
         end
       end
     RUBY
     found = assumed(source)
     expect(found.to_h { [it.package, it.evidence] })
-      .to(eq("App::Zone::DSL" => ["@far"], "App::Zone::Builder" => %w[@gone @lost]))
+      .to(eq("App::Zone::DSL" => ["@far"], "App::Zone::Builder" => %w[@gone @lost @peeked]))
   end
 
   it "leaves a class alone whose parent the project only reopens, as it does an unknown parent" do
