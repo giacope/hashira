@@ -53,7 +53,7 @@ class Hashira::Smells::Hierarchy
       @types.group_by(&:name).to_h do |name, openings|
         node = openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
         parent = ancestor(name, node)
-        [name, Kin.new(parent:, foreign: !node.nil? && !parent, openings:)]
+        [name, Kin.new(parent:, foreign: !node.nil? && !claimed.include?(parent), openings:)]
       end
   end
 
@@ -63,6 +63,8 @@ class Hashira::Smells::Hierarchy
   end
 
   def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
+
+  def claimed = @_claimed ||= @types.select(&:claimed).to_set(&:name)
 
   def marked?(type)
     Hashira::Analysis::Syntax.new(type.node).statements.any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }

@@ -19,6 +19,19 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
 
   def built(call = "Report.new") = "module App\n  class Runner\n    def run = #{call}.rows\n  end\nend\n"
 
+  def reopened(reopening)
+    files = { "lib/app/ext.rb" => reopening, "lib/app/report.rb" => reports(" < ActiveRecord::Base"), "lib/app/use.rb" => built }
+    sniffed(files, "concrete_inheritance")
+  end
+
+  it "leaves a hierarchy alone whose root extends a library class the project only reopens" do
+    reopenings = [
+      "class ActiveRecord::Base\n  def tagged = 1\nend\n",
+      "ActiveRecord::Base.class_eval { def tagged = 1 }\n"
+    ]
+    expect(reopenings.map { reopened(it) }).to(all(be_empty))
+  end
+
   it "sites the parent at its definition, not at a block that reopens it in an earlier file" do
     files = {
       "lib/app/a_ext.rb" => "App::Report.class_eval do\n  def extra = 1\nend\n",
