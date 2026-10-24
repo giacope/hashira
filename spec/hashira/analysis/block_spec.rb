@@ -37,7 +37,7 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
     )
   end
 
-  it "keeps the owner of a block that reopens the class or builds a new one" do
+  it "keeps the owner of a block that reopens the class or builds one, and gives a constant the blocks it opens" do
     source = <<~RUBY
       module Kept
         included do
@@ -54,13 +54,16 @@ RSpec.describe(Hashira::Analysis::Block, :aggregate_failures) do
         Data.define(:y) { def h = 1 }
         Other.class_eval { def j = 1 }
         Data.new { def k = 1 }
+        ::Rack::Request.prepend(Module.new { def m = 1 })
+        Other.include(Module.new, Module.new { def n = 1 })
+        Other.extend(Module.new { def o = 1 })
       end
     RUBY
     expect(owners(source)).to(
       eq(
         [
-          ["Kept", "Kept", %i[a b c d e f g h]], ["Kept::(class_eval block, line 14)", "Kept", %i[j]],
-          ["Kept::(new block, line 15)", "Kept", %i[k]]
+          ["Kept", "Kept", %i[a b c d e f g h n o]], ["Other", "Other", %i[j]],
+          ["Kept::(new block, line 15)", "Kept", %i[k]], ["Rack::Request", "Rack::Request", %i[m]]
         ]
       )
     )

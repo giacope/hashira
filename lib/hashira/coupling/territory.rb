@@ -16,8 +16,12 @@ class Hashira::Coupling::Territory
   def claimed?(definition)
     scope = definition.scope.last
     return false if definition.core?
-    definition.created? || dependencies.own?(scope) || !(foreign?(scope.first) || dependencies.claims?(scope))
+    definition.created? || dependencies.own?(scope) || !(foreign?(scope.first) || claims?(scope))
   end
+
+  def claims?(scope) = dependencies.claims?(scope) && !twin?(scope.first)
+
+  def twin?(root) = spellings.twin?(root, opened)
 
   def foreign?(root) = verdicts.fetch(root) { verdicts[root] = abroad?(root) }
 
@@ -25,7 +29,9 @@ class Hashira::Coupling::Territory
 
   def builtin?(root) = Hashira::Analysis::CORE.include?(root) || Hashira::Analysis::LIBRARIES.include?(root.downcase)
 
-  def abroad?(root) = builtin?(root) || dependencies.foreign?(root) || !opened.include?(root)
+  def abroad?(root) = builtin?(root) || !opened.include?(root) || (shipped?(root) && !twin?(root))
+
+  def shipped?(root) = dependencies.foreign?(root) || spellings.required.include?(root)
 
   def opened
     @_opened ||=
@@ -40,4 +46,6 @@ class Hashira::Coupling::Territory
   def autoload?(statement) = statement.is_a?(Prism::CallNode) && statement.name == :autoload
 
   def dependencies = @definitions.dependencies
+
+  def spellings = @definitions.spellings
 end

@@ -26,7 +26,12 @@ class Hashira::Coupling::Mentions
 
   WRITES = [Prism::CallOperatorWriteNode, Prism::CallOrWriteNode, Prism::CallAndWriteNode].freeze
 
-  Found = Data.define(:names, :prefixes, :suffixes, :open, :registries, :handed, :reflected)
+  EVALS = %i[eval class_eval module_eval instance_eval].freeze
+
+  Found =
+    Data.define(:names, :prefixes, :suffixes, :open, :registries, :handed, :reflected, :evaluated) do
+      def evaluated?(name) = evaluated.include?(name.split("::")[...-1])
+    end
 
   def initialize(trees, roots = nil)
     @trees = trees
@@ -37,7 +42,7 @@ class Hashira::Coupling::Mentions
     return @_found if @_found
     @_found = Found.new(
       names: Set.new, prefixes: Set.new, suffixes: Set.new, open: Set.new.compare_by_identity, registries: Set.new,
-      handed: [], reflected: []
+      handed: [], reflected: [], evaluated: Set.new
     )
     @trees.each_value { visit(it, nil, []) }
     @_found
@@ -83,6 +88,7 @@ class Hashira::Coupling::Mentions
   end
 
   def passed(call, owner, nesting)
+    found.evaluated.merge(nesting) if evaluates?(call)
     found.handed.concat(Hashira::Coupling::Gift.new(call, nesting).to_a) if handing?(call)
     mirror(call.receiver, owner) if call.name == :const_get && computed?(call)
   end
@@ -94,6 +100,10 @@ class Hashira::Coupling::Mentions
     elsif read.static?
       found.reflected << [(owner unless read.rooted?), read.segments]
     end
+  end
+
+  def evaluates?(call)
+    EVALS.include?(call.name) && call.arguments&.arguments&.first.is_a?(Prism::InterpolatedStringNode)
   end
 
   def opened(call, owner) = (found.open << owner if owner && dynamic?(call))

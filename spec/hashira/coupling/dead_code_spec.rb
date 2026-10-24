@@ -376,6 +376,73 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
     expect(dead(shared, directories: %w[app lib])).to(eq(%w[Order#stale_scope Pricing Pricing#quote Pricing.rate]))
   end
 
+  it "frames a module a hosted class includes like the class: its private methods may be the foreign parent's hooks" do
+    cache = {
+      "lib/app/store.rb" => "module App\n  class Store < ActiveSupport::Cache::Store\n    include Api\n  end\nend\n",
+      "lib/app/store/api.rb" => <<~RUBY,
+        module App
+          class Store
+            module Api
+              private
+
+              def read_multi_entries(names) = names
+            end
+          end
+        end
+      RUBY
+      "lib/app/ledger.rb" => "module App\n  class Ledger\n    include Tally\n  end\nend\n",
+      "lib/app/tally.rb" => "module App\n  module Tally\n    private\n\n    def recount = 1\n  end\nend\n"
+    }
+    expect(dead(cache)).to(eq(%w[App::Tally#recount]))
+  end
+
+  it "takes the constants of the namespaces an interpolated eval runs in for ones it may name, and reads a plain one" do
+    pager = rails.merge(
+      "app/models/pager/paginator.rb" => <<~'RUBY',
+        module Pager
+          class Paginator
+            %w[first_page].each { |tag| eval("def #{tag}_tag = #{tag.capitalize}.new", nil, __FILE__, __LINE__) }
+            class_eval("def last = LastPage.new", __FILE__, __LINE__)
+          end
+        end
+      RUBY
+      "app/models/pager/tags.rb" =>
+        "module Pager\n  class FirstPage; end\n  class LastPage; end\n  class Gap; end\nend\n",
+      "app/models/pager/views/gap.rb" => "module Pager\n  module Views\n    class Gap; end\n  end\nend\n",
+      "app/controllers/pages_controller.rb" => "class PagesController\n  def index = Pager::Paginator.new\nend\n"
+    )
+    expect(dead(pager, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate]).to(
+      eq(%w[Pager::Views::Gap])
+    )
+  end
+
+  it "reads a block a constant evaluates, or a Module.new it mixes in, as an opening of that constant" do
+    patched = rails.merge(
+      "Gemfile.lock" => "GEM\n  specs:\n    rack (3.1.0)\n",
+      "lib/shop/rack_patches.rb" => <<~RUBY,
+        module Shop
+          module RackPatches
+            Rack::Request.class_eval do
+              def trusted_proxy?(ip) = ip
+            end
+
+            ::Rack::Request.prepend(Module.new do
+              def forwarded_scheme = "https"
+            end)
+
+            Paging.module_eval { def unpaged = 1 }
+            Paging.include(Module.new { def paged = 1 })
+            Paging.include(Module.new)
+          end
+        end
+      RUBY
+      "app/models/ledger.rb" => "class Ledger\n  def self.open = 1\nend\nLedger.class_exec { def close = 1 }\n"
+    )
+    expect(dead(patched, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate]).to(
+      eq(%w[Ledger.open Ledger#close])
+    )
+  end
+
   it "reaches the constants a const_get finds inside the namespace it names from within a module" do
     backends = rails.merge(
       "app/lib/embedding.rb" => <<~RUBY,
@@ -540,6 +607,35 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
   it "leaves a dependency's namespace to the dependency, whatever the project's paths or subclasses say" do
     found = ["gem \"rails\"\n", "gem \"rails\"\ngem \"devise\"\n"].map { dead(devise(it), directories: %w[app lib]) }
     expect(found.map { it - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate] }).to(eq([%w[Devise::Models], []]))
+  end
+
+  def namesakes
+    rails.merge(
+      "Gemfile" => "gem \"rails\"\ngem \"omniauth\"\ngem \"gds-api-adapters\"\n",
+      "lib/omniauth/strategies/teacher_auth.rb" => <<~RUBY,
+        module Omniauth
+          module Strategies
+            module Naming
+              def self.unused_label = "teacher auth"
+            end
+
+            class TeacherAuth < OmniAuth::Strategies::OpenIDConnect
+              NAME = :teacher_auth
+            end
+          end
+        end
+      RUBY
+      "app/models/user.rb" => "class User < ApplicationRecord\n  NAME = Omniauth::Strategies::TeacherAuth::NAME\nend\n",
+      "lib/services.rb" =>
+        "require \"gds_api/publishing_api\"\nrequire \"services/x\"\n\nmodule GdsApi\n  def self.retried = 1\nend\n",
+      "lib/services/x.rb" => "module Services\n  def self.idle = 1\nend\n"
+    )
+  end
+
+  it "keeps a root the project opens under another spelling of a gem's, and gives the gem the root a require names" do
+    expect(dead(namesakes, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate]).to(
+      eq(%w[Omniauth::Strategies::Naming Omniauth::Strategies::Naming.unused_label Services Services.idle])
+    )
   end
 
   it "resolves a constant handed to a library from inside a namespace the way Ruby reads it there, self included" do
