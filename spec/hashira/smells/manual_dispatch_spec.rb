@@ -221,7 +221,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
     findings = dispatched(<<~RUBY)
       module App
         module Zone
-          class Template; def render = 1; end
+          class Template; def render = 1; def to_s = "t"; end
 
           ParseNode = Struct.new(:type, :value)
 
@@ -237,6 +237,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
             def call(template) = template.respond_to?(:type)
 
             def show(template) = template.respond_to?(:render)
+
+            def text(template) = template.respond_to?(:to_s)
 
             def page(content_item) = content_item.respond_to?(:withdrawn?)
 

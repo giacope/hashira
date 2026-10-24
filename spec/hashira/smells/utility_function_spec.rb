@@ -18,7 +18,9 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       "lib/app/thing.rb" =>
         "module App\n  class Thing\n    def initialize = @x = 1\n    def shout(word) = word.to_s\n  end\nend\n"
     }
-    expect(sniffed(files, "utility_function").map(&:package)).to(eq(%w[App::Thing#shout App::Thing#extra]))
+    later = files.transform_keys { it.sub("a_ext", "z_ext") }
+    found = [files, later].map { sniffed(it, "utility_function").map(&:package) }
+    expect(found).to(eq([%w[App::Thing#shout App::Thing#extra]] * 2))
   end
 
   it "flags a public instance method that never touches instance state" do

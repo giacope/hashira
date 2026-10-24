@@ -1,8 +1,9 @@
-# Real's construction runs Core#setup, which sets every option as an instance
-# variable by a computed name, so its read is not an assumption. Mock includes
-# Core but its initialize never calls setup or super: nothing ever sets the
-# variable it reads (fog-openstack's Real and Mock services).
+# Core#setup sets every option as an instance variable by a computed name, so
+# no class that includes Core assumes a "@shop_" read, whichever of its methods
+# reaches setup (fog-openstack's Real and Mock services; caxlsx's writers).
+# Stub has no such set: nothing ever assigns the variable it reads.
 present:
-  - {kind: assumed_state, package: "App::Mock"}
+  - {kind: assumed_state, package: "App::Stub"}
 absent:
   - {kind: assumed_state, package: "App::Real"}
+  - {kind: assumed_state, package: "App::Mock"}
