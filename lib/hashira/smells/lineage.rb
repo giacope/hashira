@@ -7,8 +7,9 @@ class Hashira::Smells::Lineage
 
   EXTENSIONS = %i[extend].freeze
 
-  def initialize(types)
+  def initialize(types, foreign = Set.new)
     @types = types
+    @foreign = foreign
   end
 
   def assigned(context) = learned.fetch(context.name) { learned[context.name] = ancestral(context) }
@@ -37,6 +38,10 @@ class Hashira::Smells::Lineage
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }
   end
 
+  def known?(name) = index.key?(name)
+
+  def sweep(type) = swept.fetch(type.node) { swept[type.node] = Hashira::Smells::Scope.new(type.node).sweep }
+
   private
 
   def message(node)
@@ -61,17 +66,12 @@ class Hashira::Smells::Lineage
   def ancestral(context)
     kin = kin(context.name)
     return unless kin
-    reached = reached(context.name, kin)
-    computed = kin.flat_map { survey(it).computed }.select { reached.include?(it.holder) }.map(&:prefix)
-    (kin.flat_map { writes(it) } + computed).uniq
+    plantings = @_plantings ||= Hashira::Smells::Plantings.new(@types, self)
+    planted = kin.map(&:name).uniq.flat_map { plantings.of(it) }
+    (kin.flat_map { writes(it) } + planted + kin.flat_map { survey(it).computed }).uniq
   end
 
   def learned = @_learned ||= {}
-
-  def reached(name, kin)
-    kinds = descendants(name).filter_map { kin(it) }.push(kin)
-    kinds.flat_map { Hashira::Smells::Construction.new(it).reached.to_a }.to_set
-  end
 
   def index = @_index ||= @types.group_by(&:name)
 
@@ -93,7 +93,7 @@ class Hashira::Smells::Lineage
     found unless found.include?(nil) || kin.any? { opaque?(it) }
   end
 
-  def opaque?(type) = veiled?(type) || extensions(type).any? { stray?(type, it) }
+  def opaque?(type) = veiled?(type) || @foreign.include?(type.name) || extensions(type).any? { stray?(type, it) }
 
   def stray?(type, node) = !resolve(type.name, Hashira::Analysis::Syntax.new(node).segments)
 
@@ -115,7 +115,7 @@ class Hashira::Smells::Lineage
     (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.new(it).segments }
   end
 
-  def parent(type) = (type.node.superclass if type.kind == :class)
+  def parent(type) = (type.node.superclass if type.node.is_a?(Prism::ClassNode))
 
   def scopes(owner)
     parts = owner.split("::")
@@ -133,8 +133,6 @@ class Hashira::Smells::Lineage
   def passed(calls) = calls.flat_map { it.arguments.arguments }
 
   def calls(type) = sweep(type).grep(Prism::CallNode).reject(&:receiver).select(&:arguments)
-
-  def sweep(type) = swept.fetch(type.node) { swept[type.node] = Hashira::Smells::Scope.new(type.node).sweep }
 
   def swept = @_swept ||= {}.compare_by_identity
 end

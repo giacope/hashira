@@ -76,4 +76,12 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
     findings = sniffed(files, "module_initialize")
     expect(findings.map(&:package)).to(eq(["App::Zone::Mixin"]))
   end
+
+  it "leaves alone a library class a block reopens, and judges a module it reopens" do
+    files = {
+      "lib/app/patch.rb" => "Samovar::Output::Formatter.class_eval do\n  def initialize(rows) = @rows = rows\nend\n",
+      "lib/app/mixin.rb" => "module App\n  module Mixin; end\n\n  Mixin.module_eval { def initialize = @x = 1 }\nend\n"
+    }
+    expect(sniffed(files, "module_initialize").map(&:package)).to(eq(["App::Mixin"]))
+  end
 end

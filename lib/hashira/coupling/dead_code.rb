@@ -41,7 +41,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def live?(member)
     path = member.path
-    named?(path) || LEVELS.include?(path.last) || reflected?(member)
+    named?(path) || LEVELS.include?(path.last) || reflected?(member) || mentions.evaluated?(member.name)
   end
 
   def loaded?(path) = surface.types.fetch(path, []).any?(&:loads?)
@@ -96,7 +96,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
   end
 
-  def framed?(member) = patch?(member) || (member.exposed ? hosted?(member.owner) : surface.outside?(member.owner))
+  def framed?(member) = patch?(member) || (member.exposed ? hosted?(member.owner) : surface.backed?(member.owner))
 
   def hosted?(path) = hosted[path]
 

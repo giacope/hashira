@@ -9,11 +9,7 @@ class Hashira::Smells::Installs
 
   INTERPOLATED = [Prism::InterpolatedStringNode, Prism::InterpolatedSymbolNode].freeze
 
-  Computed = Data.define(:prefix, :holder)
-
   SET = :instance_variable_set
-
-  BUILDERS = %i[new allocate].freeze
 
   SETTERS = [
     Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode,
@@ -26,11 +22,11 @@ class Hashira::Smells::Installs
     @swept = swept
   end
 
-  def names = @_names ||= writes + attributes + peers
+  def names = @_names ||= writes + attributes
 
-  def writes = surveyed.flat_map { |_body, swept| setters(swept) }
+  def writes = surveyed.flat_map { setters(it) }
 
-  def computed = @_computed ||= surveyed.flat_map { |body, swept| injections(swept).map { set(it, body) } }
+  def computed = @_computed ||= surveyed.flat_map { |swept| injections(swept).map { prefix(named(it)) } }
 
   def attributes = macros.flat_map { it.arguments.arguments }.flat_map { words(it) }.map { :"@#{text(it)}" }
 
@@ -38,40 +34,20 @@ class Hashira::Smells::Installs
 
   private
 
-  def peers = @swept.grep(Prism::DefNode).select { it.receiver.is_a?(Prism::SelfNode) }.flat_map { built(it) }
-
-  def built(definition)
-    inside = Hashira::Smells::Scope.new(definition).inside
-    made = inside.grep(Prism::LocalVariableWriteNode).select { peer?(it.value) }.map(&:name)
-    sets = injections(inside).select { it.receiver.is_a?(Prism::LocalVariableReadNode) }
-    literal(sets.select { made.include?(it.receiver.name) })
-  end
-
   def literal(sets) = sets.map { named(it) }.select { Hashira::Analysis::Syntax.new(it).word? }.map { text(it).to_sym }
-
-  def peer?(value)
-    return false unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)
-    maker = value.receiver
-    inward = [nil, Prism::SelfNode].include?(maker&.class)
-    inward || Hashira::Analysis::Syntax.new(maker).segments.last == @type.name[/\w+\z/]
-  end
 
   def bodies
     calls = Hashira::Analysis::Syntax.new(@type.node).statements.grep(Prism::CallNode).reject(&:receiver)
     @swept.grep(Prism::DefNode).reject(&:receiver) + calls.filter_map(&:block).grep(Prism::BlockNode)
   end
 
-  def surveyed = @_surveyed ||= bodies.map { [it, Hashira::Smells::Scope.new(it).sweep] }
+  def surveyed = @_surveyed ||= bodies.map { Hashira::Smells::Scope.new(it).sweep }
 
   def setters(swept) = swept.select { SETTERS.include?(it.class) }.map(&:name) + literal(injections(swept))
 
   def injections(swept) = swept.grep(Prism::CallNode).select { it.name == SET }
 
   def named(call) = call.arguments&.arguments&.first
-
-  def set(call, body) = Computed.new(prefix: prefix(named(call)), holder: holder(body))
-
-  def holder(body) = body.is_a?(Prism::DefNode) ? body.name : Hashira::Smells::Construction::START
 
   def prefix(name)
     name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)

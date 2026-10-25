@@ -9,6 +9,8 @@ class Hashira::Report::Notices
 
   OPT_IN = "pass the directory, or --only a file, to analyse them"
 
+  REASONS = { template: "in project templates" }.freeze
+
   def initialize(io: $stderr)
     @io = io
   end
@@ -31,7 +33,7 @@ class Hashira::Report::Notices
 
   def skipped(count, label, left)
     return if left.empty?
-    counts = left.map { |reason, files| "#{files.size} #{reason}" }.join(" and ")
+    counts = left.map { |reason, files| "#{files.size} #{REASONS.fetch(reason, reason)}" }.join(" and ")
     @io.puts("hashira: analysed #{count} files in #{label}; skipped #{counts} (#{OPT_IN})")
   end
 

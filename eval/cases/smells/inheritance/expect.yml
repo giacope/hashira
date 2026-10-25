@@ -4,17 +4,19 @@
 # abstract (an unimplemented hook), Error roots in StandardError, and Draft's
 # parent is never built on its own: all left alone. Each finding is named for
 # the concrete parent, its subclasses as evidence.
-# Refused bequest: ReadOnlyStore overrides Store's writes only to raise. Mirror
-# fills a hook its parent leaves empty and calls super where it refines.
+# Refused bequest: ReadOnlyStore overrides Store's writes only to raise, one
+# finding per refused method, named for it. Mirror fills a hook its parent
+# leaves empty and calls super where it refines.
 present:
   - {kind: concrete_inheritance, package: "App::Scanner"}
-  - {kind: refused_bequest, package: "App::ReadOnlyStore"}
+  - {kind: refused_bequest, package: "App::Store#write"}
+  - {kind: refused_bequest, package: "App::Store#delete"}
 absent:
   - {kind: concrete_inheritance, package: "App::Exporter"}
   - {kind: concrete_inheritance, package: "App::Error"}
   - {kind: concrete_inheritance, package: "App::Document"}
-  - {kind: refused_bequest, package: "App::Mirror"}
+  - {kind: refused_bequest, package: "App::Store#changed"}
 messages:
   - {kind: concrete_inheritance, package: "App::Scanner", includes: "a subclass extends it"}
-  - {kind: refused_bequest, package: "App::ReadOnlyStore", includes: "'write', 'delete'"}
+  - {kind: refused_bequest, package: "App::Store#write", includes: "is overridden by a subclass"}
 evidence: [concrete_inheritance, refused_bequest]

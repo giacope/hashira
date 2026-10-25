@@ -13,7 +13,7 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
 
   def built = family.built(parent)
 
-  def detail = { site:, parent: }
+  def detail = { site:, parent:, home: family.home(parent) }
 
   def evidence = built.first(SHOWN).map { "#{parent}.new (#{it})" }
 end

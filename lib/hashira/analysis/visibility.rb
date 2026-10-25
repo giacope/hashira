@@ -6,7 +6,7 @@ class Hashira::Analysis::Visibility
   LIFTS = %i[class_methods].freeze
 
   Scan =
-    Data.define(:found, :overrides, :section) do
+    Data.define(:found, :overrides, :section, :host) do
       def scan(nodes) = nodes.each { classify(it) }
       private
       def classify(node)
@@ -28,7 +28,8 @@ class Hashira::Analysis::Visibility
       def heed(node)
         return shadow(node.block) if lift?(node)
         return switch(node.name, node.arguments) if bare?(node)
-        enclose(node) unless Hashira::Analysis::Block.new(node).dsl?
+        block = Hashira::Analysis::Block.new(node, host)
+        enclose(node) unless block.dsl? || block.opening
       end
 
       def bare?(node) = Hashira::Analysis::TypeWalk::MARKERS.include?(node.name) && !node.receiver
@@ -64,7 +65,7 @@ class Hashira::Analysis::Visibility
   end
 
   def entries
-    scanned = Scan.new(found: [], overrides: {}, section: [:public]).tap { it.scan(statements(@node)) }
+    scanned = Scan.new(found: [], overrides: {}, section: [:public], host: @node).tap { it.scan(statements(@node)) }
     scanned.found.map { |node, section| [node, lifted(scanned.overrides.fetch(node.name, section))] }
   end
 
