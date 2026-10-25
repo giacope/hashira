@@ -2,10 +2,6 @@
 
 require "prism"
 
-# The constants a namespace hands out as its own but takes from elsewhere:
-# `const_set(name, Prism.const_get(name))` copies every name it is given from
-# Prism, and `Node = Parser::AST::Node` aliases one constant. A type test
-# against such a name tests the constant it came from.
 class Hashira::Smells::Exports
   DEPTH = 4
 
@@ -18,9 +14,6 @@ class Hashira::Smells::Exports
     @ownership = ownership
   end
 
-  # The path a constant names once each copy or alias on its way is followed.
-  # The longest prefix the codebase defines decides, so a namespace that
-  # copies another's constants still owns the ones it defines itself.
   def origin(segments, owner) = DEPTH.times.reduce(segments) { |path, _| hop(path, owner) }
 
   private
