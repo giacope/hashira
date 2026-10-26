@@ -46,7 +46,7 @@ class Hashira::Report::Phrases
 
   def on_stateful_mixin(finding) = plain(finding, "mixes behavior into its host's own state", STATEFUL_MIXIN)
 
-  def plain(finding, said, advice) = "#{finding.package} #{said} (#{finding.detail[:site]}). #{advice}"
+  def plain(finding, said, advice) = "#{finding.package} #{said} (#{finding.site}). #{advice}"
 
   def on_boundary_sprawl(finding)
     detail = finding.detail

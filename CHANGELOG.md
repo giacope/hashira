@@ -382,6 +382,18 @@ things a baseline sees:
     of every raising guard: `fail exception unless @socket` (excon),
     `raise InvalidEvent unless event` (state_machines) were reported because
     the check was the `unless` itself rather than its condition.
+  - `concrete_inheritance` no longer leaves every hierarchy rooted outside the
+    project alone (batch-1 GH2). Under a framework root, a subclass that
+    overrides a working method of its concrete parent is reported, each
+    overriding method as evidence: pay's `Stripe::Charge#sync!` over
+    `Pay::Charge#sync!` and its three other STI families, collections-publisher's
+    `MainstreamBrowsePage#dependent_tags` over `Tag`. A subclass that only adds,
+    or gives itself a constructor, stays quiet. A class extending `Array`,
+    `Hash`, `String` or `Set` is reported on its own (V1 P26: `class LineItems
+    < Array`), told to hold one in a field. A parent named `Base…` reads as
+    abstract, like `…Base`. The JSON detail of a `concrete_inheritance`
+    finding carries `mode` (`built`, `overriding` or `core`). 24 new findings in
+    the 30 round-6 projects, all judged right on reading.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or

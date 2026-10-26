@@ -842,12 +842,22 @@ project's own, so a framework's base classes stay out of all of them.
   parent's class methods): the subclass is coupled to a working
   implementation, not to an abstraction. One finding per parent, named for it
   and sited at its definition, with every subclass and the places that build
-  the parent as evidence. Left alone: a parent that says it is abstract (named `Base` or
-  `Abstract…`, a method that raises `NotImplementedError`, `abstract_class` or
-  `abstract!`), a parent nothing builds directly, and any hierarchy whose owned
-  root extends something the project does not own (`ApplicationRecord <
-  ActiveRecord::Base`, `MyError < StandardError`, `Struct.new(…)`): STI and
-  exception trees are how those frameworks are meant to be extended.
+  the parent as evidence. Under a root the project does not own
+  (`ApplicationRecord < ActiveRecord::Base`, `MyError < StandardError`), where
+  a framework builds the objects, a subclass counts when it overrides a working
+  method of its concrete parent: single-table inheritance's
+  `Stripe::Charge#sync!` over `Charge#sync!` is a strategy the record should
+  be given, and each overriding method is evidence. A subclass that only adds
+  to its parent (scopes, validations, `store_accessor`, methods of its own) or
+  only gives itself a constructor is left alone. A class that extends a
+  concrete core collection or value (`Array`, `Hash`, `String`, `Set`) is
+  reported on its own: what it inherits (`map`, `select`, `merge`) answers a
+  plain core object, so hold one in a field instead. Left alone: a parent that
+  says it is abstract (named `Base`, `Base…` or `Abstract…`, a method that
+  raises `NotImplementedError`, `abstract_class` or `abstract!`), a parent
+  nothing builds directly, an override of a hook the parent leaves empty or
+  unimplemented, and one that refuses its parent's method
+  (`refused_bequest`'s business).
 - **refused_bequest** — a subclass overrides a method an owned ancestor
   implements, only to raise or to do nothing (an empty body or a bare `nil`).
   One finding per refused method, named for it (`Questionnaires::Base#next_step`)

@@ -26,11 +26,11 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       eq(
         [
           [
-            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event" },
+            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event", mode: :built },
             ["App::Added (events.rb:3)", "App::Removed (events.rb:4)", "App::Event.new (events.rb:5)"]
           ],
           [
-            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper" },
+            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper", mode: :built },
             ["App::Fancy (events.rb:7)", "App::Mapper.new (events.rb:5)"]
           ]
         ]

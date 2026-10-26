@@ -7,7 +7,7 @@ class Hashira::Smells::Hierarchy
 
   FENCES = [Prism::ClassNode, Prism::ModuleNode].freeze
 
-  ABSTRACT = /\AAbstract|Base\z/
+  ABSTRACT = /\AAbstract|\ABase(?=[A-Z])|Base\z/
 
   MARKS = %i[abstract_class= abstract_class primary_abstract_class abstract!].freeze
 
