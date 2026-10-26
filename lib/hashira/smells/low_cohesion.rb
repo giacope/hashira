@@ -120,7 +120,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.to_set(&:to_sym)
 
-  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal&.to_sym
+  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal.to_s.to_sym
 
   def sweep = @_sweep ||= subject.sweep
 
@@ -132,7 +132,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     Hashira::Smells::Attributes.new(sweep).macros(DELEGATORS).flat_map do |call|
       target, *names = Array(call.arguments&.arguments).map { symbol(it) }
       field = target.to_s.start_with?("@") ? target : :"@#{target}"
-      names.compact.map { [it.to_s, field] }
+      names.reject(&:empty?).map { [it.to_s, field] }
     end.to_h
   end
 

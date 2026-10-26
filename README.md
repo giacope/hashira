@@ -789,19 +789,29 @@ Findings (3):
 - **nil_check** — `nil?`, `== nil`, `when nil`, `blank?`, and, on a value the
   code itself leaves nil, `&.`, `unless x` and `x || default`. Reported only
   where the nil is the codebase's own: its state, a nil it assigns, its own
-  method's result, a private method's argument, a literal it built,
-  a record fetched from an owned class, or an attribute an owned class declares.
+  method's result, a private method's argument, a parameter it defaults to nil,
+  a literal it built, a record fetched from an owned class, an attribute an
+  owned class declares, or the answer of another owned class's method that can
+  answer nil (its body ends in `detect`, `find`, `first`, `last`, `[]`, `dig`,
+  `min_by`, `&.`, a literal `nil`, an `if` or `case` without `else`, or it
+  returns early with nothing), reached through an instance variable or local
+  named for that class or an object built on the spot
+  (`Finder.new(rows).parent(id)`).
   A public method's argument, a payload read from outside and a library's
   answer (a node's absent receiver, a URI's missing scheme) are someone else's
   contract. A validator's guard on an attribute a presence validation already
   reports, a check replaced by its default, a check whose branch raises (the
   guard asserts against the nil), memoization in any of its spellings (`@x ||=
   v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that
-  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. A parameter defaulting
-  to nil is the caller's option, not the codebase's nil. A predicate that fetches
+  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. A
+  parameter defaulting to nil that the method tests (`def discounted(coupon =
+  nil)` … `coupon.nil?`) is an optional argument, two methods in one, and is
+  told to split the method or ask for a null object: Elegant Objects accepts
+  no nil arguments. A predicate that fetches
   a record only to test it for nil is told to ask `exists?`. Checks of one
   nil source — an instance variable, a method that can return nil — are one
-  finding, named for the source (`Account@owner`, `Account#current`), with
+  finding, named for the source (`Account@owner`, `Account#current`,
+  `Catalog#find` for `item = @catalog.find(code)` checked in `Cart`), with
   each method that checks it as evidence: settle it where the nil is made.
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing

@@ -89,7 +89,18 @@ class Hashira::Report::Phrases
       "(#{detail[:site]}). #{NIL_ADVICE} Settle it where the nil is made."
   end
 
-  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE
+  def remedy(origin)
+    case origin
+    when :absence then ABSENCE
+    when Array then optional(origin)
+    else NIL_ADVICE
+    end
+  end
+
+  def optional(names)
+    "#{quoted(names)} default#{"s" if names.one?} to nil, so callers may pass nothing and the method is two in one: " \
+      "split it, or ask for a null object instead of nil."
+  end
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")

@@ -163,6 +163,24 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def catalog = "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n"
+
+  def cart = <<~RUBY
+    module Shop
+      class Cart
+        def total(code) = @catalog.find(code).nil? ? 0 : 1
+        def label(code) = @catalog.find(code)&.name
+      end
+    end
+  RUBY
+
+  it "names a nil an owned method answers for that method, wherever the checks are" do
+    found = grouped({ "lib/app/catalog.rb" => catalog, "lib/app/cart.rb" => cart }, "nil_check")
+    sites = ["Shop::Cart#total (cart.rb:3)", "Shop::Cart#label (cart.rb:4)"]
+    expect(found.map { [it.package, it.evidence] }).to(eq([["Shop::Catalog#find", sites]]))
+    expect(message(found.first)).to(start_with("Shop::Catalog#find may be nil, and 2 methods check for it (cart.rb:3)"))
+  end
+
   def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }
 
   def counter

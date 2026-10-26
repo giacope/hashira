@@ -365,6 +365,18 @@ things a baseline sees:
     callers talk to the delegate directly", which undoes the decorator Elegant
     Objects asks for, while the same class spelled with `def_delegators` was
     left alone.
+  - `nil_check` no longer exempts a parameter defaulting to nil: a method
+    that tests its own `coupon = nil` (or `label: nil`) is an optional
+    argument, two methods in one, and is told to split it or ask for a null
+    object, as Elegant Objects accepts no nil arguments. It was "the caller's
+    option". The check also follows a nil to another owned class's method
+    that can answer nil (its body ends in `detect`, `find`, `first`, `[]`,
+    `dig`, `&.`, a literal `nil`, an `if` without `else`, or it returns early
+    with nothing): `item = @catalog.find(code); item.nil?` in `Cart` is one
+    finding named `Catalog#find`, with every method that checks it as
+    evidence, reached through an instance variable or local named for the
+    class or an object built on the spot (content-tagger's
+    `TaxonomyQuery.new.parent(id)`), where it was quiet.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or

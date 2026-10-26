@@ -390,7 +390,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(message(findings.first)).to(include("checks for nil", "exists? instead of fetching a record"))
   end
 
-  it "flags safe navigation on a value the codebase itself leaves nil, and not on a caller's nil default" do
+  it "flags safe navigation on a value the codebase itself leaves nil, a parameter's nil default included" do
     findings = checked(<<~RUBY)
       module App
         module Zone
@@ -425,7 +425,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found]))
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[held found optional keyword]))
   end
 
   it "flags blank? on a value the object holds, but not on a public argument or a method's result" do
@@ -621,5 +621,116 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
       end
     RUBY
     expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready? Box#sized?]))
+  end
+
+  it "flags a public method testing its own nil-defaulted parameter: an optional argument is two methods in one" do
+    findings = checked(<<~RUBY)
+      module App
+        class Price
+          def initialize(cents) = @cents = cents
+
+          def discounted(coupon = nil)
+            return @cents if coupon.nil?
+            @cents - coupon.cents
+          end
+
+          def tagged(label: nil) = label ? "\#{label}: \#{@cents}" : @cents.to_s
+
+          def forced(force = false) = force.nil? ? 1 : 2
+
+          def given(coupon) = coupon.nil? ? @cents : coupon.cents
+
+          def fallback(ttl = nil) = ttl.nil? ? 60 : ttl
+        end
+      end
+    RUBY
+    expect(findings.map { [it.package, it.detail[:origin]] }).to(eq([["App::Price#discounted", ["coupon"]]]))
+    expect(message(findings.first)).to(
+      eq(
+        "App::Price#discounted checks for nil (zone/thing.rb:6). 'coupon' defaults to nil, so callers may pass " \
+          "nothing and the method is two in one: split it, or ask for a null object instead of nil."
+      )
+    )
+  end
+
+  it "names an owned method that can answer nil as the source of a check on its answer" do
+    findings = sniffed(
+      {
+        "lib/app/shop/catalog.rb" => <<~RUBY,
+          module Shop
+            class Catalog
+              def initialize(items) = @items = items
+
+              def find(code) = @items.detect { it.code == code }
+
+              def fetch(code) = @items.fetch(code)
+
+              def parent(code)
+                return nil unless code
+                @items[code]
+              end
+            end
+          end
+        RUBY
+        "lib/app/shop/cart.rb" => <<~RUBY
+          module Shop
+            class Cart
+              def initialize(catalog, codes) = (@catalog = catalog; @codes = codes)
+
+              def total
+                @codes.sum do |code|
+                  item = @catalog.find(code)
+                  item.nil? ? 0 : item.price
+                end
+              end
+
+              def first = @catalog.find(@codes.first)&.price
+
+              def sure = @catalog.fetch(@codes.first).nil?
+
+              def held
+                parent = Shop::Catalog.new(@codes).parent(1)
+                return 0 if parent.nil?
+                parent.price
+              end
+
+              def built
+                catalog = Catalog.new(@codes)
+                found = catalog.find(2)
+                found || 0
+              end
+
+              def mixed(code)
+                found = @catalog.find(code)
+                found = @catalog.parent(code) if code.odd?
+                found.nil? ? 0 : found.price
+              end
+            end
+          end
+        RUBY
+      }, "nil_check"
+    )
+    expect(findings.to_h { [it.package, it.detail[:sources]] }).to(
+      eq(
+        "Shop::Cart#total" => ["Shop::Catalog#find"], "Shop::Cart#first" => ["Shop::Catalog#find"],
+        "Shop::Cart#held" => ["Shop::Catalog#parent"], "Shop::Cart#built" => ["Shop::Catalog#find"],
+        "Shop::Cart#mixed" => []
+      )
+    )
+  end
+
+  def answered?(body)
+    store = "module Shop\n  class Store\n    def get\n    #{body}\n    end\n  end\nend\n"
+    user = "module Shop\n  class User\n    def go = @store.get.nil?\n  end\nend\n"
+    sniffed({ "lib/app/shop/store.rb" => store, "lib/app/shop/user.rb" => user }, "nil_check").any?
+  end
+
+  it "takes an owned method for a nil source only when its body can answer nil" do
+    bodies = {
+      "x if @y" => true, "case @y when 1 then 2 end" => true, "return if @y\n    1" => true, "@y&.size" => true,
+      "@y.first" => true, "" => true, "@y ? 1 : nil" => true, "unless @y then 1 end" => true,
+      "@y.fetch(1)" => false, "@y ? 1 : 2" => false, "return 2 if @y\n    1" => false, "@y.size" => false
+    }
+    expect(bodies.keys.map { answered?(it) }).to(eq(bodies.values))
   end
 end
