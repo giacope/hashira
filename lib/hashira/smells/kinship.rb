@@ -51,8 +51,8 @@ class Hashira::Smells::Kinship
   end
 
   def brood(name)
-    segments = index.fetch(name).map(&:superclass).find(&:any?)
-    @lineage.resolve(name, segments) || segments.join("::") if segments
+    node = index.fetch(name).filter_map(&:parent).first
+    @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments) || node.slice.delete_prefix("::") if node
   end
 
   def words(name) = said[name]

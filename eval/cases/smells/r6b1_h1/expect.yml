@@ -1,0 +1,15 @@
+# R6B1-H1. A computed superclass (`< Shop.parent_job.constantize`, searchkick's
+# jobs and pay's ApplicationRecord) is a parent the project cannot see, like
+# `< ActiveJob::Base`: the jobs built on it are kin, so `perform` is the role
+# they share even though QueueJob calls IndexJob#perform, and the models under
+# it are the framework's to call. A plain class's stateless method is still
+# reported.
+args: [app, lib]
+absent:
+  - {kind: utility_function, package: "Shop::IndexJob#perform"}
+  - {kind: utility_function, package: "Shop::PurgeJob#perform"}
+  - {kind: utility_function, package: "Shop::QueueJob#perform"}
+  - {kind: dead_code, package: "Shop::Charge#label"}
+  - {kind: dead_code, package: "Shop::Stripe::Charge#sync"}
+present:
+  - {kind: utility_function, package: "Shop::Formatter#money"}

@@ -211,6 +211,41 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Solo#handle]))
   end
 
+  it "takes the classes built on one computed parent, or on one library class however rooted, for kin" do
+    findings = utility(<<~RUBY)
+      module App
+        class IndexJob < App.parent_job.constantize
+          def perform(id) = Feed.find(id).index
+        end
+
+        class PurgeJob < App.parent_job.constantize
+          def perform(id) = Feed.find(id).purge
+        end
+
+        class QueueJob < App.parent_job.constantize
+          def perform(id) = IndexJob.new.perform(id)
+        end
+
+        class Stray < App.other_job.constantize
+          def perform(id) = Feed.find(id)
+        end
+
+        class Mail < ::Library::Task
+          def handle(id) = Feed.find(id)
+        end
+
+        class Ping < Library::Task
+          def handle(id) = Feed.find(id)
+        end
+
+        class User
+          def go = @task.handle(1)
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Stray#perform]))
+  end
+
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
     plugin = <<~RUBY
       module App

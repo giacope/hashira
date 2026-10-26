@@ -380,7 +380,8 @@ misses dead code rather than report live code. Also left alone:
 - Subclasses registered through an `inherited` hook or found with
   `.subclasses` or `.descendants`.
 - A `ClassMethods` module, and the public methods and constants of a class
-  whose ancestry leaves the project (`< ActiveRecord::Base`, `include
+  whose ancestry leaves the project (`< ActiveRecord::Base`, a parent computed
+  by a call, `< Pay.model_parent_class.constantize`, `include
   Sidekiq::Job`, Administrate's `ATTRIBUTE_TYPES`) or of a module mixed into
   one: the framework calls them. So are a private method of such a class, which
   may fill the library's template hook (`RuboCop::Runner#file_finished`), or of

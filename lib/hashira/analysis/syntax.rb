@@ -29,6 +29,8 @@ module Hashira
 
       def dynamic? = @node.is_a?(Prism::ConstantPathNode) && !static?
 
+      def origin = @node.is_a?(Prism::CallNode) && @node.receiver ? Syntax.new(@node.receiver).origin : segments.first
+
       def rooted?
         return false unless @node.is_a?(Prism::ConstantPathNode)
         parent = @node.parent

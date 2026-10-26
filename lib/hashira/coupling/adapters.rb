@@ -24,7 +24,8 @@ class Hashira::Coupling::Adapters
 
   def owned?(definition)
     segments = parent(definition)
-    segments.empty? || candidates(definition, segments).any? { paths.include?(it) }
+    return !definition.superclass if segments.empty?
+    candidates(definition, segments).any? { paths.include?(it) }
   end
 
   def candidates(definition, segments)

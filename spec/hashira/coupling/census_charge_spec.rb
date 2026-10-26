@@ -144,6 +144,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       end
     end
 
+    it "takes a class built on a computed parent for a framework adapter, and a class with no parent for the app's" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/shop_record.rb" => "class ShopRecord < Shop.model_parent.constantize\nend\n",
+        "app/models/charge.rb" => "class Charge < ShopRecord\nend\n",
+        "app/models/plain.rb" => "class Plain\nend\n",
+        "app/models/leaf.rb" => "class Leaf < Plain\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Charge, ShopRecord, Leaf]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Charge", "Report -> Plain"))
+        expect(census.folds.map { it[:from] }).to(eq(%w[Leaf]))
+      end
+    end
+
     it "resolves an adapter's superclass where it is written, so a namespace mirroring a library's owns nothing" do
       files = Fixtures::RAILS_FILES.merge(
         "app/models/extensions/audit/active_record/base.rb" =>

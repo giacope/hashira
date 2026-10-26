@@ -127,8 +127,5 @@ class Hashira::Coupling::Surface
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 
-  def foreign?(node)
-    segments = Hashira::Analysis::Syntax.new(node).segments
-    !segments.empty? && !Hashira::Analysis::CORE.include?(segments.first)
-  end
+  def foreign?(node) = !Hashira::Analysis::CORE.include?(Hashira::Analysis::Syntax.new(node).origin)
 end
