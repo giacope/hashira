@@ -164,4 +164,25 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     findings = mixed("module Odd\n  extend\n\n  def read = @value\nend\n")
     expect(findings.map(&:evidence)).to(eq([["reads @value (line 4)"]]))
   end
+
+  it "reads only the included hook and its parameter as the host, and leaves a module the project does not own alone" do
+    findings = mixed(<<~RUBY)
+      module Setup
+        def self.configure(base) = base.after_save(:x)
+
+        def self.included(base) = base.extend(Hooks)
+
+        included do
+          base.after_save :y
+        end
+
+        def go = 1
+      end
+
+      module Enumerable
+        def total = @sum
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
 end

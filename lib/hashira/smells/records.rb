@@ -30,9 +30,7 @@ class Hashira::Smells::Records
     Hashira::Analysis::Syntax.new(node).segments.join("::").match?(RECORD)
   end
 
-  def plain?(type)
-    type.kind == :class && type.defs.empty? && Hashira::Analysis::Syntax.new(type.node).statements.compact.all? { shape?(it) }
-  end
+  def plain?(type) = Hashira::Analysis::Syntax.new(type.node).statements.compact.all? { shape?(it) }
 
   def shape?(node)
     node.is_a?(Prism::CallNode) && !node.block && SHAPES.include?(node.receiver ? :"self.#{node.name}" : node.name)

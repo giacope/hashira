@@ -774,4 +774,31 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     )
     expect(findings).to(be_empty)
   end
+
+  it "takes an owned method's instance definition only, and names no source for its own call with arguments" do
+    findings = sniffed(
+      {
+        "lib/app/shop/catalog.rb" =>
+          "module Shop\n  class Catalog\n    def self.find = nil\n    def find(id) = @items.fetch(id)\n  end\nend\n",
+        "lib/app/shop/cart.rb" => <<~RUBY
+          module Shop
+            class Cart
+              def sure(code) = @catalog.find(code).nil?
+
+              def own(count = nil) = self.count.nil?
+
+              def count = @items.first
+
+              def first = lookup(1).nil?
+
+              def lookup(id) = @items[id]
+            end
+          end
+        RUBY
+      }, "nil_check"
+    )
+    expect(findings.to_h { [it.package, [it.detail[:origin], it.detail[:sources]]] }).to(
+      eq("Shop::Cart#own" => [nil, ["#count"]], "Shop::Cart#first" => [nil, []])
+    )
+  end
 end

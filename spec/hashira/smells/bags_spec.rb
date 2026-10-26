@@ -24,6 +24,7 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
       end
 
       class Order < ApplicationRecord
+        self.table_name = "orders"
         belongs_to :customer
         scope :recent, -> { order(:id) }
       end
@@ -95,5 +96,25 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
     shop = "module Shop\n  class Size < Struct.new(:width, :height)\n  end\nend\n"
     reader = "module Shop\n  class Box\n    def area(size) = size.width * size.height\n  end\nend\n"
     expect(bagged("lib/app/shop.rb" => shop, "lib/app/box.rb" => reader).map(&:package)).to(eq(["Shop::Size"]))
+  end
+
+  it "counts a value's own members only, read plainly, and records only under a record base" do
+    bodies = ["def label = @address.street + @address.shout", "def label = @address.street + @address.city(1)"]
+    shapes = "module Shop\n  class Record < ActiveRecord::Base\n    self.abstract_class = true\n  end\n\n  " \
+      "class Shape\n  end\n\n  class Box < Shape\n  end\nend\n"
+    boxed = bagged(
+      "lib/app/shapes.rb" => shapes,
+      "lib/app/area.rb" => invoice("def area(box) = box.width * box.height")
+    )
+    expect(bodies.map { found(it) } + [boxed]).to(all(be_empty))
+  end
+
+  it "computes nothing when data_class is off" do
+    rules = Hashira::Config::Rules.parse({ "all" => true, "data_class" => false }, Hashira::Pipeline::KINDS)
+    files = {
+      "lib/app/shop.rb" => shop,
+      "lib/app/invoice.rb" => invoice("def label = @address.street + @address.city")
+    }
+    smells(files, rules:) { |report| expect(report.findings.map(&:kind)).not_to(include("data_class")) }
   end
 end

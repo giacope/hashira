@@ -106,7 +106,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def record? = Hashira::Smells::Records::RECORD.match?(root)
 
-  def columns = sweep.grep(Prism::CallNode).select { inward?(it.receiver) && columned?(it) }.to_set { :"@#{it.name}" }
+  def columns = sweep.grep(Prism::CallNode).select { columned?(it) }.to_set { :"@#{it.name}" }
 
   def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 

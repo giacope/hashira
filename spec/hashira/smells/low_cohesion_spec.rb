@@ -190,4 +190,9 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
       )
     )
   end
+
+  it "takes a bare call for a field only in a model" do
+    plain = account.sub("def balance = @balance", "def balance = audit && @balance")
+    expect(split(plain.sub("def ping = @mailer.ping", "def ping = audit && @mailer.ping")).size).to(eq(1))
+  end
 end
