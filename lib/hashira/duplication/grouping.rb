@@ -5,7 +5,6 @@ class Hashira::Duplication::Grouping
     @group = group
   end
 
-  # One site left means the copies overlap each other; Maximal keeps only clusters with two fresh sites.
   def cluster = Hashira::Duplication::Cluster.new(distinct)
 
   private

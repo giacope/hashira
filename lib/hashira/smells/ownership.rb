@@ -20,7 +20,6 @@ class Hashira::Smells::Ownership
 
   def values = @_values ||= Hashira::Smells::Values.new(@trees)
 
-  # The path a constant names once copies and aliases are followed (Exports).
   def origin(segments, owner) = exports.origin(segments, owner)
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)

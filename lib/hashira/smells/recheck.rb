@@ -24,7 +24,6 @@ class Hashira::Smells::Recheck
     @method = method
   end
 
-  # A trailing condition is asked when its statement starts, before the statement runs.
   def settled?(atom, held)
     Hashira::Smells::Scope.new(@method).covers?(atom) &&
       (trailing.find { it.covers?(atom) }&.start || atom.location.start_offset).then do |moment|
