@@ -126,4 +126,16 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
     kin = "class Base\n  def read(key) = 1\n  def write(key, value) = 2\nend\n\n#{cache("", "class Cache < Base")}"
     expect([hidden, kin, cache("", "module Cache")].map { relayed(it) }).to(all(be_empty))
   end
+
+  it "leaves alone a decorator: every public method it does not forward wraps the same call on the delegate" do
+    decorated = ["def stats = \"hits: \#{@store.stats}\"", "def stats(key) = @store.stats(key).round"]
+    expect(decorated.map { relayed(cache.sub("def stats = Stats.new(@store)", it)) }).to(all(be_empty))
+  end
+
+  it "still flags a class whose own work sends another message, the same message elsewhere, or adds a method" do
+    others = ["def stats = @store.count.to_s", "def stats = @log.stats.to_s", "def stats = Stats.new(@store).stats"]
+    sources = others.map { cache.sub("def stats = Stats.new(@store)", it) }
+    sources << cache("def size = 1").sub("def stats = Stats.new(@store)", "def stats = @store.stats.to_s")
+    expect(sources.map { relayed(it).size }).to(eq([1, 1, 1, 1]))
+  end
 end

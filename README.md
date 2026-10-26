@@ -878,7 +878,11 @@ project's own, so a framework's base classes stay out of all of them.
   Left alone too: a class that declares its delegation (`def_delegators`,
   `delegate … to:`, `SimpleDelegator`, `DelegateClass`) — the declaration is
   the design, a wrapper that narrows an interface on purpose, and removing the
-  middle man would mean giving that up — forwarding to a collection's own
+  middle man would mean giving that up — a decorator, whose every public
+  method that does not forward wraps the same call on the same field
+  (`def subject = "URGENT: #{@origin.subject}"` beside `body` and `recipient`
+  passed straight through): wrapping is how Elegant Objects adds behavior, and
+  the advice would undo it — forwarding to a collection's own
   protocol (`each`, `size`, `<<`: an encapsulated collection), a facade
   spread over several collaborators, and a method that fills a role its kin
   share.

@@ -68,4 +68,18 @@ module App
 
     def items = @mutex.synchronize { @items.dup }
   end
+
+  class Urgent
+    def initialize(origin)
+      @origin = origin
+    end
+
+    def subject = "URGENT: #{@origin.subject}"
+
+    def body = @origin.body
+
+    def recipient = @origin.recipient
+
+    def to_s = @origin.to_s
+  end
 end

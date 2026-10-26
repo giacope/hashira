@@ -343,6 +343,15 @@ things a baseline sees:
 
 ### Changed
 
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each):
+  - `middle_man` leaves a decorator alone: a class whose every public method
+    that does not forward wraps the same call on the same field
+    (`def subject = "URGENT: #{@origin.subject}"` beside `body`, `recipient`
+    and `to_s` passed straight through). It was told to "let
+    callers talk to the delegate directly", which undoes the decorator Elegant
+    Objects asks for, while the same class spelled with `def_delegators` was
+    left alone.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or
