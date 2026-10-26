@@ -185,4 +185,8 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     RUBY
     expect(findings).to(be_empty)
   end
+
+  it "leaves a module that extends itself alone, though it keeps state: it is an object, not a mixin" do
+    expect(mixed("module Job\n  extend self\n\n  def start = @client = 1\n\n  def run = @client\nend\n")).to(be_empty)
+  end
 end
