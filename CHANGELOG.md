@@ -394,6 +394,15 @@ things a baseline sees:
     abstract, like `…Base`. The JSON detail of a `concrete_inheritance`
     finding carries `mode` (`built`, `overriding` or `core`). 24 new findings in
     the 30 round-6 projects, all judged right on reading.
+  - `data_class` no longer exempts a value by declaration (V1 P28): a bare
+    `Struct` or `Data` value, or an ActiveRecord model with no behavior of its
+    own, is reported once another owned class computes with two or more of its
+    fields from one object (`Invoice#total` over `@order.quantity`,
+    `@order.unit_cents`, `@order.shipping_cents`), each such method as
+    evidence. Its advice no longer offers "or declare it a Data value", which
+    would only move the bag under this rule. No new findings in the 30
+    round-6 projects (none of their 25 bare values is computed with
+    elsewhere) or in the three gems.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or

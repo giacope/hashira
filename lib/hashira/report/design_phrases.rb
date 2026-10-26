@@ -7,7 +7,9 @@ class Hashira::Report::Phrases
 
   COHESION = "Split the class along that seam."
 
-  DATA_CLASS = "Move the code that works on these fields into the class, or declare it a Data value."
+  DATA_CLASS = "Move the code that works on these fields into the class."
+
+  BAGGED = "Move that code into the class, so the data and what it means live together."
 
   MIDDLE_MAN = "Let callers talk to the delegate directly, or give the class work of its own."
 
@@ -65,7 +67,11 @@ class Hashira::Report::Phrases
   def reaching(places) = places ? "— #{count(places, "method")} reach#{"es" if places == 1} through" : "reaches through"
 
   def on_data_class(finding)
-    plain(finding, "holds #{quoted(finding.detail[:fields])} and does nothing else", DATA_CLASS)
+    detail = finding.detail
+    users = detail[:users]
+    said = "holds #{quoted(detail[:fields])} and does nothing else"
+    return plain(finding, said, DATA_CLASS) unless users
+    plain(finding, "#{said}, while #{count(users, "method")} elsewhere compute#{"s" if users == 1} with them", BAGGED)
   end
 
   def on_middle_man(finding)

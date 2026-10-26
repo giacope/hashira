@@ -670,7 +670,7 @@ All are on but `repeated_conditional`, `middle_man` and `boundary_sprawl` (see
 <!-- example: smells lib/app --kind smells -->
 ```console
 Findings (3):
-  data_class: Item holds 'base', 'tax', 'quantity' and does nothing else (item.rb:1). Move the code that works on these fields into the class, or declare it a Data value.
+  data_class: Item holds 'base', 'tax', 'quantity' and does nothing else (item.rb:1). Move the code that works on these fields into the class.
       · base
       · tax
       · quantity
@@ -897,9 +897,20 @@ project's own, so a framework's base classes stay out of all of them.
   chain read twice whatever its types.
 - **data_class** — a class with two or more fields and nothing but attribute
   macros, hand-written readers and writers, and a constructor that only stores
-  its arguments. Left alone: `Struct` and `Data` (a value declared as one),
-  a class with a superclass or a subclass (an error carrying a code, a base
-  others extend), and any method, mixin, class method or constant.
+  its arguments. A declared value is one too when another class computes with
+  it: a `Struct` or `Data` value with nothing but its members (`Address =
+  Struct.new(:street, :city, :zip)`, `class Size < Struct.new(:w, :h)`), or
+  an ActiveRecord model with no methods, callbacks or validations of its own
+  (only associations, scopes, enums and attribute declarations), once a method
+  of another owned class reads two or more of its fields from one object
+  (`Invoice#total` multiplying `@order.quantity` by `@order.unit_cents`): the
+  logic about the data lives away from it, so nothing keeps its meaning. One
+  finding per value, each method that computes with it as evidence. Left
+  alone: a class with a superclass or a subclass (an error carrying a code, a
+  base others extend) and any method, mixin, class method or constant, a
+  value or record with behavior of its own, a value nested in the class that
+  reads it (that class's own record), and fields copied into a constructor
+  (`Part.new(part.slug, part.title)`), which is mapping, not computing.
 - **middle_man** — a class whose public methods mostly (more than half, and at
   least three) only forward to one field: one call on an instance variable or
   its reader, passing the method's own arguments, and its block if it takes

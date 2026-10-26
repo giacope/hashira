@@ -1,5 +1,9 @@
 # frozen_string_literal: true
 
+require_relative "bags"
+require_relative "readings"
+require_relative "records"
+require_relative "tuples"
 require_relative "boundary_sprawl"
 require_relative "check"
 require_relative "concrete_inheritance"
@@ -57,7 +61,7 @@ class Hashira::Smells::Report
     @rules = rules
   end
 
-  def findings = @_findings ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES)) + spread + sprawl
+  def findings = @_findings ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES)) + spread + sprawl + bags
 
   private
 
@@ -81,6 +85,8 @@ class Hashira::Smells::Report
   def wanted(checks) = checks.select { wants?(Hashira::Smells::Kind.new(it).to_s) }
 
   def wants?(kind) = @rules.enabled?(kind)
+
+  def bags = wants?(Hashira::Smells::Bags::KIND) ? Hashira::Smells::Bags.new(types, family, methods).findings : []
 
   def sprawl
     return [] unless wants?(Hashira::Smells::BoundarySprawl::KIND)

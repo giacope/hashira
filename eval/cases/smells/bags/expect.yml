@@ -1,13 +1,19 @@
 # A hand-rolled bag of accessors with nothing to do (Options) is a data class:
 # the behavior that reads its fields lives elsewhere. Left alone: a Data
-# value (declared intent), an error carrying a code (framework base), and a
+# value nothing computes with, an error carrying a code (framework base), and a
 # class with behavior of its own.
+# Declared bags (V1 P28): Address, a bare Struct, and Order, a record with
+# nothing but an association, are data classes once Invoice computes with
+# their fields.
 present:
   - {kind: data_class, package: "App::Options"}
+  - {kind: data_class, package: "App::Address"}
+  - {kind: data_class, package: "App::Order"}
 absent:
   - {kind: data_class, package: "App::Size"}
   - {kind: data_class, package: "App::ApiError"}
   - {kind: data_class, package: "App::Range"}
 messages:
   - {kind: data_class, package: "App::Options", includes: "'timeout', 'retries', 'verbose'"}
+  - {kind: data_class, package: "App::Order", includes: "1 method elsewhere computes with them"}
 evidence: [data_class]
