@@ -18,26 +18,30 @@ class Hashira::Smells::Repertoire
     @trees = trees
   end
 
-  def of(segments) = gathered(segments.join("::"), Set.new)
+  def of(segments) = gathered(segments.join("::"), Set.new, own(segments))
 
-  def closed?(segments) = sealed?(segments.join("::"), Set.new)
+  def closed?(segments) = sealed?(segments.join("::"), Set.new, own(segments))
 
   private
 
-  def sealed?(name, seen)
-    found = index.fetch(name, [])
+  def own(segments) = homes.fetch(segments) { index.fetch(segments.join("::"), []) }
+
+  def sealed?(name, seen, found = index.fetch(name, []))
     !seen.add?(name) || (found.any? && found.all? { |entry| entry.parents.all? { sealed?(it, seen) } })
   end
 
-  def gathered(name, seen)
+  def gathered(name, seen, found = index.fetch(name, []))
     return NONE unless seen.add?(name)
-    index.fetch(name, []).reduce(NONE) { |all, entry| all | entry.answers { gathered(it, seen) } }
+    found.reduce(NONE) { |all, entry| all | entry.answers { gathered(it, seen) } }
   end
+
+  def listed = @_listed ||= @trees.flat_map { entries(it) }
+
+  def homes = @_homes ||= listed.group_by(&:path)
 
   def index
     @_index ||=
-      @trees.flat_map { entries(it) }
-        .flat_map { |entry| entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] } }
+      listed.flat_map { |entry| entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] } }
         .group_by(&:first).transform_values { it.map(&:last) }
   end
 
