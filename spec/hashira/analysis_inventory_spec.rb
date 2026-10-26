@@ -10,6 +10,13 @@ RSpec.describe(Hashira::Analysis, :aggregate_failures) do
     expect(loaded).to(eq([false, false]))
   end
 
+  it "knows what each core class answers beyond Object, through its own ancestors" do
+    inherited = described_class::INHERITED
+    expect([inherited.fetch("StandardError").include?(:message), inherited.fetch("Hash").include?(:fetch)])
+      .to(eq([true, true]))
+    expect(inherited.fetch("StandardError")).not_to(include(:puts, :fetch))
+  end
+
   it "records the Ruby that bin/inventory read it from, so it changes only when someone regenerates it" do
     expect(described_class::SHIPPED.fetch("ruby")).to(match(/\A\d+\.\d+\.\d+\z/))
   end

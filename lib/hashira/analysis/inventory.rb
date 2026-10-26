@@ -15,5 +15,7 @@ module Hashira
     CORE = SHIPPED.fetch("constants").to_set.freeze
 
     LIBRARIES = SHIPPED.fetch("libraries").to_set.freeze
+
+    INHERITED = SHIPPED.fetch("inherited").transform_values { it.to_set(&:to_sym).freeze }.freeze
   end
 end

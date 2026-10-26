@@ -780,7 +780,9 @@ Findings (3):
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
-  library calls, a fake's side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
+  library calls, an override of a method a core ancestor defines such as an
+  error's `message`, even where the project sends that message too, a fake's
+  side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
   `Dummy`, `*Double`; the classes one array literal builds side by side,
   `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt, and so is a method whose body holds code
   hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an

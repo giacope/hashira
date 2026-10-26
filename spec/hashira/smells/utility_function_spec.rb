@@ -268,6 +268,33 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
   end
 
+  it "keeps an override of a core ancestor's method a hook, though the project sends that message too" do
+    findings = utility(<<~RUBY)
+      module App
+        class Error < StandardError
+        end
+
+        class AuthError < Error
+          def message = I18n.t("app.errors.auth")
+
+          def hint = I18n.t("app.errors.hint")
+        end
+
+        class Set < Library::Base
+        end
+
+        class Tags < Set
+          def add(tag) = Log.write(tag)
+        end
+
+        class Handler
+          def handle(error) = @log.warn([error.message, error.hint, @tags.add(1)])
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::AuthError#hint App::Tags#add]))
+  end
+
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
     plugin = <<~RUBY
       module App

@@ -1,0 +1,9 @@
+# R6B1-H11. AuthError#message overrides Exception#message, which Ruby and
+# every `rescue => e; e.message` read: it fills the role its core ancestor
+# defines, whether or not the project also sends `message`. A stateless
+# method the ancestor does not define (hint), which the project sends, is
+# still a utility_function.
+present:
+  - {kind: utility_function, package: "Shop::AuthError#hint"}
+absent:
+  - {kind: utility_function, package: "Shop::AuthError#message"}

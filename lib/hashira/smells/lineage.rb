@@ -26,6 +26,8 @@ class Hashira::Smells::Lineage
 
   def pointed(type) = references(type).map { resolve(type.name, it) }
 
+  def abroad(type) = references(type).reject { resolve(type.name, it) }.map { it.join("::") }
+
   def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
