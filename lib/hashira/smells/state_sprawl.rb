@@ -42,11 +42,19 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
     read?(name) ? 1 : 0
   end
 
-  def given = @_given ||= names.select { |name| writes.select { it.name == name }.all? { handed?(it) } }
+  def given = @_given ||= names.select { handed(assigns(it)) }
 
-  def handed?(write) = setup.include?(write) && passed?(write)
+  def handed(found) = found.any? && found.all? { handed?(it) }
 
-  def passed?(write) = argument?(write.is_a?(Prism::InstanceVariableWriteNode) ? write.value : paired[write])
+  def handed?(write) = setup.include?(write) && argument?(fed(write))
+
+  def fed(write)
+    case write
+    when Prism::InstanceVariableWriteNode then write.value
+    when Prism::CallNode then write.arguments.arguments.first
+    else paired[write]
+    end
+  end
 
   def paired
     @_paired ||= {}.compare_by_identity.merge(setup.grep(Prism::MultiWriteNode).flat_map { pairs(it) }.to_h)
@@ -64,7 +72,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def inputs = @_inputs ||= constructors.flat_map { Hashira::Smells::Parameters.new(it).names }
 
-  def stray?(name) = written(strays).include?(name) && !written(founders).include?(name)
+  def stray?(name) = (written(strays) + fields.minted).include?(name) && !written(founders).include?(name)
 
   def parked = @_parked ||= names.select { stray?(it) && carried?(it) }
 
@@ -86,7 +94,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def strays = methods.reject(&:receiver) - founders
 
-  def written(methods) = sweeps(methods).select { COUNTED.include?(it.class) }.map(&:name)
+  def written(methods) = sweeps(methods).filter_map { fields.of(it) }
 
   def founders = methods.select { founding.include?(it.name) }
 
@@ -125,15 +133,19 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
     apart + [joined.flatten]
   end
 
-  def names
-    @_names ||= writes.map(&:name).uniq.reject { it.start_with?("@_") || memoized?(it) }.sort
-  end
+  def names = @_names ||= (writes.map { fields.of(it) } + fields.minted).uniq.reject { cache?(it) }.sort
+
+  def cache?(name) = name.start_with?("@_") || memoized?(name)
+
+  def fields = @_fields ||= Hashira::Smells::Fields.new(nodes)
+
+  def assigns(name) = writes.select { fields.of(it) == name }
 
   def nodes = @_nodes ||= subject.sweep
 
-  def writes = @_writes ||= nodes.select { COUNTED.include?(it.class) }
+  def writes = @_writes ||= nodes.select { fields.of(it) }
 
-  def memoized?(name) = lazy?(name) && writes.select { it.name == name }.all? { blank?(it) || guarded?(it) }
+  def memoized?(name) = lazy?(name) && assigns(name).all? { blank?(it) || guarded?(it) }
 
   def lazy?(name) = cached.include?(name) || probed.include?(name)
 

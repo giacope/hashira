@@ -350,6 +350,80 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
     expect(findings.map { message(it) }).to(eq([said]))
   end
 
+  it "counts the fields an attribute writer mints: set from outside, parked when read, handed on when not" do
+    findings = crowded(<<~RUBY)
+      module App
+        class Form
+          attr_accessor :name, :email, :_cache
+          attr_writer :team, :notes
+          attr_writer
+
+          def initialize(role)
+            @role = role
+            @email = role.email
+          end
+
+          def summary = [name, email, @team].join(" ")
+        end
+      end
+    RUBY
+    evidence = [
+      "@email", "@name (parked between calls)", "@notes (read by no method: handed off)",
+      "@role (given to the constructor)", "@team (parked between calls)"
+    ]
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Form", evidence]]))
+  end
+
+  it "takes a constructor's call to its own attribute writer for the write it is" do
+    findings = crowded(<<~RUBY)
+      module App
+        class Color
+          def initialize(red, green, blue, alpha)
+            self.red = red
+            self.green = green
+            self.blue = blue
+            self.alpha = alpha
+            self.name = red.to_s
+            other.blue = 1
+          end
+
+          def to_h = { r: red, g: green, b: blue, a: alpha, n: name }
+
+          private
+
+          attr_accessor :red, :green, :blue, :alpha, :name
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "takes a constructor's call to a hand-written writer for a call, not for a field of the writer's name" do
+    findings = crowded(<<~RUBY)
+      module App
+        class Swatch
+          def initialize(a)
+            @a = a.x
+            @b = a.y
+            @c = a.z
+            @d = a.w
+            @e = a.v
+            self.tint = a.t
+          end
+
+          def tint=(value)
+            @hue = value
+          end
+
+          def left = [@a, @b]
+
+          def right = [@c, @d, @e]
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @d @e] + ["@hue (read by no method: handed off)"]))
+  end
+
   it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do
     findings = crowded(<<~RUBY)
       module App

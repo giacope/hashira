@@ -751,8 +751,10 @@ Findings (3):
   `@w, @h = w, h`) is an input, a component's props or a job's arguments, and
   weighs nothing. Any other field the constructor (or a helper it calls, or a
   callback the class registers such as a `before_action`) sets weighs one. One
-  set elsewhere and taken up by another method or a reader is parked between
-  calls and weighs two; one set elsewhere that no method reads is handed on —
+  set elsewhere (a method, or an `attr_writer`/`attr_accessor`, which a caller
+  or ActiveModel's attribute assignment fills) and taken up by another method
+  or a reader is parked between calls and weighs two; one set elsewhere that
+  no method reads is handed on —
   to a template, to a caller — and weighs nothing. Memo caches (`@x ||=`,
   `@_x`, `defined?` guards) are not state, and a class whose methods use all
   its constructor fields together is one handle.
