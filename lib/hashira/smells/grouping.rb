@@ -38,7 +38,11 @@ class Hashira::Smells::Grouping
     end
   end
 
-  def named(finding) = finding.detail[:sources].map { [finding.package.sub(OWNER, "") + it, finding] }
+  def named(finding)
+    finding.detail[:sources].map do |name, site|
+      [finding.package.sub(OWNER, "") + name, finding.with(detail: { **finding.detail, site: })]
+    end
+  end
 
   def merged(group, package, **told)
     first = group.first
