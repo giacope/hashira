@@ -1,0 +1,9 @@
+# R6B1-H6. support's navigation sections implement one protocol (label,
+# link, visible?) and Sections holds them in one array literal, read
+# polymorphically. HelpEntry#link is that protocol's answer, not a
+# utility_function: making it private breaks the menu, moving it brings back
+# the type switch. A stateless method only one of them has is still reported.
+present:
+  - {kind: utility_function, package: "Shop::HelpEntry#hint"}
+absent:
+  - {kind: utility_function, package: "Shop::HelpEntry#link"}

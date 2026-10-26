@@ -776,7 +776,8 @@ Findings (3):
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
   library calls, a fake's side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
-  `Dummy`, `*Double`) is exempt, and so is a method whose body holds code
+  `Dummy`, `*Double`; the classes one array literal builds side by side,
+  `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt, and so is a method whose body holds code
   hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
   `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
   `local_variables` may touch any local, instance variable or method in scope.

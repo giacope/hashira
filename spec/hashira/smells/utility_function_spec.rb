@@ -246,6 +246,28 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Stray#perform]))
   end
 
+  it "takes the classes one array literal builds side by side for peers, so their shared methods are protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        class HelpEntry
+          def initialize(user) = @user = user
+          def link = App.routes.help_path
+          def note = App.routes.note_path
+        end
+
+        class OrdersEntry
+          def initialize(user) = @user = user
+          def link = App.routes.orders_path(@user.id)
+        end
+
+        class Menu
+          def initialize(user) = @entries = [HelpEntry.new(user), OrdersEntry.new(user), 1]
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
+  end
+
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
     plugin = <<~RUBY
       module App
