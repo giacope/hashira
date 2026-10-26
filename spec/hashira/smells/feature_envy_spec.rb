@@ -733,6 +733,47 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
   end
 
+  def relation(parent = "", extra = "")
+    <<~RUBY
+      module App
+        module Zone
+          #{extra}class Relation#{parent}
+            attr_reader :model
+            alias_method :klass, :model
+
+            def initialize(model) = @model = model
+
+            def except(*keys) = Relation.new(@model.except(*keys))
+          end
+        end
+      end
+    RUBY
+  end
+
+  def indexer
+    <<~RUBY
+      module App
+        module Zone
+          class Indexer
+            def reindex(relation)
+              relation = relation.except(:includes)
+              relation = relation.except(:select).select(relation.primary_key) unless relation.klass.routed?
+              @index.import(relation.to_s)
+            end
+          end
+        end
+      end
+    RUBY
+  end
+
+  it "types a name only by a class that declares every message sent to it, the codebase's words or not" do
+    base = "class Base\n    def primary_key = :id\n    def routed? = true\n  end\n"
+    framed = relation(" < ActiveRecord::Relation")
+    sources = [relation, relation(" < Base", base), framed, relation(" < Bare", "class Bare; end\n")]
+    found = sources.map { sniffed({ "lib/app/z.rb" => it, "lib/app/i.rb" => indexer }, "feature_envy").map(&:package) }
+    expect(found).to(eq([[], *[%w[App::Zone::Indexer#reindex]] * 2, []]))
+  end
+
   it "keeps apart block variables that merely share a name, and follows outer names into blocks" do
     findings = envy(<<~RUBY)
       module App

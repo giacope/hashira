@@ -699,7 +699,10 @@ Findings (3):
   and never a core class (`range`, `set`). A type test on a library class
   (`when Prism::ConstantPathNode`) outranks the name. That class, with
   its owned superclasses and mixins, must declare every message the method
-  sends. A parser node, a source range or an array is not envied. Comparators,
+  sends it (what every object answers, `to_s`, `nil?`, aside). A class whose
+  ancestry leaves the project (an ActiveRecord model) also answers what its
+  library and schema define, so for it only the messages the codebase itself
+  defines somewhere must be declared. A parser node, a source range or an array is not envied. Comparators,
   mappers that only copy fields into a hash or a constructor, and methods that
   fill a role peers share stay quiet.
 - **control_parameter** — an argument used only to pick a path, where some

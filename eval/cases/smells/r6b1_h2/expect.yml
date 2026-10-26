@@ -1,0 +1,11 @@
+# R6B1-H2. A local named `relation` is typed as the owned Shop::Relation only
+# if that class declares every message the method sends it. searchkick's
+# RelationIndexer#reindex sends `primary_key` (and `klass`) to an ActiveRecord
+# relation; Shop::Relation, the query builder, declares no `primary_key`, so
+# the method is not advice to move onto it. The veto counted only the
+# messages the codebase itself speaks, so the undeclared one never vetoed.
+# Shop::Exporter's `report` answers everything sent to it and stays reported.
+present:
+  - {kind: feature_envy, package: "Shop::Exporter#export"}
+absent:
+  - {kind: feature_envy, package: "Shop::RelationIndexer#reindex"}

@@ -20,7 +20,14 @@ class Hashira::Smells::Repertoire
 
   def of(segments) = gathered(segments.join("::"), Set.new)
 
+  def closed?(segments) = sealed?(segments.join("::"), Set.new)
+
   private
+
+  def sealed?(name, seen)
+    found = index.fetch(name, [])
+    !seen.add?(name) || (found.any? && found.all? { |entry| entry.parents.all? { sealed?(it, seen) } })
+  end
 
   def gathered(name, seen)
     return NONE unless seen.add?(name)
