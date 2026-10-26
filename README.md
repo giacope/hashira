@@ -798,7 +798,9 @@ Findings (3):
 - **nil_check** — `nil?`, `== nil`, `when nil`, `blank?`, and, on a value the
   code itself leaves nil, `&.`, `unless x` and `x || default`. Reported only
   where the nil is the codebase's own: its state, a nil it assigns, its own
-  method's result, a private method's argument, a literal it built,
+  method's result (not a reader that answers a literal or memoizes one, `def
+  successors = @successors ||= {}`, which never answers nil), a private
+  method's argument, a literal it built,
   a record fetched from an owned class, or an attribute an owned class declares.
   A public method's argument, a payload read from outside and a library's
   answer (a node's absent receiver, a URI's missing scheme) are someone else's

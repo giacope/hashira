@@ -1,0 +1,10 @@
+# R6B1-H3. statesman's Machine memoizes its tables (`@successors ||= {}`), so
+# `return if successors.nil?` tests a reader that never answers nil: the
+# check is dead, and "settle it where the nil is made" points at a place
+# that makes none. A reader that may still answer nil (`@parent ||= find`)
+# is the nil's source and stays reported.
+present:
+  - {kind: nil_check, package: "Shop::Machine#lookup"}
+absent:
+  - {kind: nil_check, package: "Shop::Machine#remove"}
+  - {kind: nil_check, package: "Shop::Machine#known?"}

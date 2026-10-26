@@ -35,7 +35,20 @@ class Hashira::Smells::Provenance
 
   def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
 
-  def own?(name) = answers.include?(name.to_s.delete_suffix("=")) || @subject.neighbors.include?(name) || hosted?(name)
+  def own?(name) = !filled?(name) && (known?(name) || @subject.neighbors.include?(name) || hosted?(name))
+
+  def known?(name) = answers.include?(name.to_s.delete_suffix("="))
+
+  def filled?(name)
+    found = Hashira::Analysis::TypeWalk.new(@subject.home).sections.map(&:first).select { it.name == name }
+    found.any? && found.all? { settled?(Hashira::Analysis::Syntax.new(it).statements) }
+  end
+
+  def settled?(statements)
+    tail = statements.last
+    value = tail.is_a?(Prism::InstanceVariableOrWriteNode) ? tail.value : tail
+    statements.one? && Hashira::Smells::NilCheck::DEFAULTS.include?(value.class)
+  end
 
   def hosted?(name) = @subject.host == :module && @subject.ownership.vocabulary.speaks?(name)
 
