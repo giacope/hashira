@@ -809,8 +809,9 @@ Findings (3):
   method's argument, a literal it built,
   a record fetched from an owned class, or an attribute an owned class declares.
   A public method's argument, a payload read from outside and a library's
-  answer (a node's absent receiver, a URI's missing scheme) are someone else's
-  contract. A validator's guard on an attribute a presence validation already
+  answer (a node's absent receiver, a URI's missing scheme, Ruby's answer to a
+  core value an owned constant holds: `PATTERN.match(path)` with `PATTERN =
+  %r{…}`) are someone else's contract. A validator's guard on an attribute a presence validation already
   reports, a check replaced by its default, a check whose branch raises (the
   guard asserts against the nil), memoization in any of its spellings (`@x ||=
   v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that

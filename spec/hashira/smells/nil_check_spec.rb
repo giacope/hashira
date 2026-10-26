@@ -89,6 +89,35 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#loaded App::Zone::Thing#watched]))
   end
 
+  it "leaves a nil to Ruby when an owned constant only holds a core value, and owns what an owned class answers" do
+    findings = checked(<<~'RUBY')
+      module App
+        module Zone
+          class Thing
+            PATTERN = %r{\A/(?<slug>[a-z]+)\z}
+            NAMES = %w[a b].freeze
+
+            def initialize(text) = @text = text
+
+            def slug
+              parts = PATTERN.match(@text)
+              parts.nil? ? "" : parts[:slug]
+            end
+
+            def name = NAMES.first.nil? ? "" : @text
+
+            def found = Finder.lookup(@text).nil? ? "" : @text
+          end
+
+          class Finder
+            def self.lookup(text) = text
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#found]))
+  end
+
   it "reaches methods defined inside blocks and class << self" do
     findings = checked(<<~RUBY)
       module App
