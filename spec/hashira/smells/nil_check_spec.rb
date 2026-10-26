@@ -737,7 +737,8 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
   it "lets a raising guard on a defaulted parameter or an owned answer stand, and never types a field as its class" do
     findings = sniffed(
       {
-        "lib/app/shop/output.rb" => "module Shop\n  class Output\n    def wait = (@lines[0] if @ready)\n  end\nend\n",
+        "lib/app/shop/output.rb" =>
+          "module Shop\n  class Output\n    def self.wait = nil\n    def wait = (@lines[0] if @ready)\n  end\nend\n",
         "lib/app/shop/process.rb" => <<~RUBY,
           module Shop
             class Process
@@ -746,6 +747,8 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
                 raise ArgumentError, "timed out" unless match
                 match
               end
+
+              def odd = (@output || @spare).wait.nil?
 
               def key(source: nil)
                 raise ArgumentError, "source needed" unless source

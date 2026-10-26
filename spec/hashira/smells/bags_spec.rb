@@ -17,6 +17,7 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
     module Shop
       Address = Struct.new(:street, :city, :zip)
       Point = Data.define(:left, :top)
+      Blank = Data.define
 
       class ApplicationRecord < ActiveRecord::Base
         self.abstract_class = true
@@ -50,6 +51,11 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
     said = "Shop::Address holds 'street', 'city' and does nothing else, while 1 method elsewhere computes with " \
       "them (shop.rb:2). Move that code into the class, so the data and what it means live together."
     expect(message(found("def label(address) = address.street + address.city").first)).to(eq(said))
+  end
+
+  it "counts every method that computes with the value" do
+    finding = found("def label = @address.street + @address.city\n  def code = @address.zip + @address.city").first
+    expect(message(finding)).to(include("while 2 methods elsewhere compute with them"))
   end
 
   it "needs two readers of one object in one method, and leaves its persistence and universal messages out" do

@@ -163,6 +163,21 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def charges
+    "module App\n  class Charge < ActiveRecord::Base\n    def sync = 1\n  end\n\n  " \
+      "class Stripe < Charge\n    def sync = 2\n  end\n\n  class Gift < Charge\n    def sync = 3\n  end\nend\n"
+  end
+
+  def overriding(source)
+    message(grouped({ "lib/app/charge.rb" => source }, "concrete_inheritance").first)[/is a [^(]*/]
+  end
+
+  it "reports subclasses that override a framework-rooted parent's working methods, in the singular and plural" do
+    said = [charges, charges.sub(/  class Gift.*?end\n/m, "")].map { overriding(it) }
+    plural = "is a concrete class, and 2 subclasses override its working methods "
+    expect(said).to(eq([plural, "is a concrete class, and a subclass overrides its working methods "]))
+  end
+
   def catalog = "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n"
 
   def cart = <<~RUBY

@@ -159,4 +159,9 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     RUBY
     expect(findings.map { [it.package, it.evidence] }).to(eq([["Base", ["keeps @started in its host (line 2)"]]]))
   end
+
+  it "takes a bare extend for a call, not for extending the module itself" do
+    findings = mixed("module Odd\n  extend\n\n  def read = @value\nend\n")
+    expect(findings.map(&:evidence)).to(eq([["reads @value (line 4)"]]))
+  end
 end
