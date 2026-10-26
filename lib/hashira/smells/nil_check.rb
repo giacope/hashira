@@ -2,6 +2,7 @@
 
 require "prism"
 require_relative "param_check"
+require_relative "provenance"
 
 class Hashira::Smells::NilCheck < Hashira::Smells::Check
   EQUALITY = %i[== ===].freeze
@@ -15,6 +16,10 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
   FINDERS = %i[find_by].freeze
 
   BRANCHES = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode].freeze
+
+  GUARDS = BRANCHES.first(2).freeze
+
+  WRITES = Hashira::Smells::Provenance::WRITES
 
   private
 
@@ -62,12 +67,12 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def nullable?(node)
     values = assignments(node).map(&:value)
-    values.any?(Prism::NilNode) && values.none? { FLAGS.include?(it.class) }
+    (values.any?(Prism::NilNode) && values.none? { FLAGS.include?(it.class) }) || provenance.source(node)
   end
 
   def assignments(node)
     case node
-    when Prism::LocalVariableReadNode then named(body.grep(Prism::LocalVariableWriteNode), node.name)
+    when Prism::LocalVariableReadNode then named(body.select { WRITES.include?(it.class) }, node.name)
     when Prism::InstanceVariableReadNode then named(state.grep(Prism::InstanceVariableWriteNode), node.name)
     else []
     end
@@ -99,7 +104,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def asserted(check) = body.select { asserts?(it, check) }
 
-  def asserts?(node, check) = BRANCHES.first(2).include?(node.class) && within(node.predicate).any? { it.equal?(check) }
+  def asserts?(node, check) = GUARDS.include?(node.class) && [node, *within(node.predicate)].any? { it.equal?(check) }
 
   def raise?(node) = Hashira::Smells::Exits.new(node).raise?
 
@@ -140,7 +145,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def origin = (:absence if absent?)
+  def origin = absent? ? :absence : provenance.options(checks.flat_map { tested(it) })
 
   def absent? = subject.node.name.end_with?("?") && checks.all? { tested(it).all? { finder?(it) } }
 
@@ -156,7 +161,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def sightings = checks.flat_map { |check| tested(check).filter_map { origin_of(it) }.map { [it, check] } }
 
-  def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject.singleton?)
+  def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject.singleton?) || provenance.source(node)
 
   def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
 

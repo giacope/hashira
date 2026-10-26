@@ -20,7 +20,8 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   def built(call = "Report.new") = "module App\n  class Runner\n    def run = #{call}.rows\n  end\nend\n"
 
   def reopened(reopening)
-    files = { "lib/app/ext.rb" => reopening, "lib/app/report.rb" => reports(" < ActiveRecord::Base"), "lib/app/use.rb" => built }
+    report = reports(" < ActiveRecord::Base").sub("def rows = [2]", "def extra = [2]")
+    files = { "lib/app/ext.rb" => reopening, "lib/app/report.rb" => report, "lib/app/use.rb" => built }
     sniffed(files, "concrete_inheritance")
   end
 
@@ -37,26 +38,38 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
       "lib/app/a_ext.rb" => "App::Report.class_eval do\n  def extra = 1\nend\n",
       "lib/app/report.rb" => reports, "lib/app/use.rb" => built
     }
-    expect(sniffed(files, "concrete_inheritance").map { it.detail[:home] }).to(eq(["report.rb:2"]))
+    expect(sniffed(files, "concrete_inheritance").map { it.detail.home }).to(eq(["report.rb:2"]))
   end
 
   it "flags a subclass of an owned class that the project also builds on its own, naming where" do
     finding = concrete(reports, built).first
-    expect([finding.package, finding.detail, finding.evidence]).to(
+    expect([finding.package, finding.detail.to_h, finding.evidence]).to(
       eq(
         [
-          "App::Daily", { site: "report.rb:6", parent: "App::Report", home: "report.rb:2" },
+          "App::Daily", { site: "report.rb:6", parent: "App::Report", home: "report.rb:2", mode: :built },
           ["App::Report.new (use.rb:3)"]
         ]
       )
     )
   end
 
-  it "leaves a subclass of a core class alone even where the project reopens and builds it" do
+  def labelled(parent) = "module App\n  class Label < #{parent}\n    def tag = self\n  end\nend\n"
+
+  it "flags a subclass of a concrete core collection or value class" do
     reopened = "class String\n  def shout = upcase\nend\n"
-    child = "module App\n  class Label < String\n    def tag = self\n  end\nend\n"
-    use = "module App\n  class Use\n    def run = String.new.shout\n  end\nend\n"
-    expect(concrete(reopened + child, use)).to(be_empty)
+    found = %w[String ::Array Hash Set].map { concrete(reopened + labelled(it)).map { [it.package, it.detail.parent] } }
+    expect(found).to(eq(%w[String Array Hash Set].map { [["App::Label", it]] }))
+  end
+
+  it "says a core class's subclass to hold one instead" do
+    said = "App::Label extends Hash, a concrete core class (report.rb:2). Keep one in a field and give the class " \
+      "methods of its own: what it inherits (map, select, merge) answers a plain Hash, not this class."
+    expect(message(concrete(labelled("Hash")).first)).to(eq(said))
+  end
+
+  it "leaves a subclass of a core class that is not a collection or a value alone" do
+    parents = %w[StandardError Struct SimpleDelegator Object].map { "module App\n  class Label < #{it}\n  end\nend\n" }
+    expect(parents.map { concrete(it) }).to(all(be_empty))
   end
 
   it "says what the parent is and what to do" do
@@ -90,18 +103,49 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
     hooks = ["def rows = raise(NotImplementedError)", "def rows\n      raise NotImplementedError, 'subclass'\n    end"]
     marked = ["self.abstract_class = true", "abstract!"].map { "#{it}\n    def rows = [1]" }
     parents = (hooks + marked).map { reports.sub("def rows = [1]", it) }
-    named = %w[Base AbstractReport ReportBase].map { name(it) }
-    expect((parents.map { concrete(it, built) } + named).map(&:size)).to(eq([0] * 7))
+    named = %w[Base AbstractReport ReportBase BaseReport].map { name(it) }
+    expect((parents.map { concrete(it, built) } + named).map(&:size)).to(eq([0] * 8))
   end
 
   it "still flags a parent whose methods raise something other than the unimplemented error" do
     expect(concrete(reports.sub("def rows = [1]", "def rows = raise(ArgumentError)"), built).size).to(eq(1))
   end
 
-  it "leaves a hierarchy alone whose owned root extends a framework or core class" do
-    framed = [" < StandardError", " < ActiveRecord::Base", " < Struct.new(:id)"].map { concrete(reports(it), built) }
-    root = reports(" < Root").sub("module App\n", "module App\n  class Root < StandardError\n  end\n\n")
-    expect(framed + [concrete(root, built)]).to(all(be_empty))
+  it "leaves a hierarchy alone whose owned root extends a framework class, when subclasses only add to it" do
+    adding = reports(" < ActiveRecord::Base").sub("def rows = [2]", "def extra = [2]")
+    framed = [" < StandardError", " < ActiveRecord::Base", " < Struct.new(:id)"].map { reports(it).sub("def rows = [2]", "def extra = [2]") }
+    root = adding.sub(" < ActiveRecord::Base", " < Root").sub(
+      "module App\n",
+      "module App\n  class Root < StandardError\n  end\n\n"
+    )
+    expect((framed + [root]).map { concrete(it, built) }).to(all(be_empty))
+  end
+
+  it "flags a subclass under a framework root that overrides a working method of its concrete parent (STI)" do
+    found = [" < ActiveRecord::Base", " < StandardError"].map { concrete(reports(it)).map { [it.package, it.evidence] } }
+    expect(found).to(eq([[["App::Daily", ["App::Daily#rows (report.rb:7)"]]]] * 2))
+    said = "App::Daily overrides working methods of App::Report, a concrete class (report.rb:6). " \
+      "Extract what they share into an abstract base both extend, or compose instead."
+    expect(message(concrete(reports(" < ActiveRecord::Base")).first)).to(eq(said))
+  end
+
+  it "takes a subclass's own constructor for construction, not an override, and a Base-named parent for abstract" do
+    constructor = reports(" < StandardError").sub("def rows = [2]", "def initialize(rows) = super(rows.to_s)")
+    based = reports(" < ActiveRecord::Base").gsub("Report", "BaseReport")
+    expect([constructor, based].map { concrete(it) }).to(all(be_empty))
+  end
+
+  it "takes a core-named parent the namespace defines for that class, not the core one" do
+    owned = "module App\n  class Hash < ::Hash\n  end\n\n  class Mash < Hash\n  end\nend\n"
+    expect(concrete(owned).map(&:package)).to(eq(["App::Hash"]))
+  end
+
+  it "leaves an override alone under a framework root when the parent is abstract or the method a hook or a refusal" do
+    abstract = reports(" < ActiveRecord::Base").sub("def rows = [1]", "self.abstract_class = true\n    def rows = [1]")
+    hook = reports(" < ActiveRecord::Base").sub("def rows = [1]", "def rows = raise(NotImplementedError)")
+    empty = reports(" < ActiveRecord::Base").sub("def rows = [1]", "def rows = nil")
+    refused = reports(" < ActiveRecord::Base").sub("def rows = [2]", "def rows = raise(ArgumentError)")
+    expect([abstract, hook, empty, refused].map { concrete(it) }).to(all(be_empty))
   end
 
   it "flags a deeper subclass of a built class whose owned ancestors extend nothing foreign" do

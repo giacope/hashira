@@ -1,8 +1,9 @@
 # Session hands three of its four public methods straight to the store it
 # wraps: a middle man. Left alone: a wrapper that declares its delegation
 # with Forwardable, a collection that only exposes its own enumeration, a
-# facade that forwards to several collaborators, and a lock whose calls take a
-# block that does the method's work.
+# facade that forwards to several collaborators, a lock whose calls take a
+# block that does the method's work, and a decorator (Urgent) that forwards
+# three messages and wraps the fourth around the same call (V1 P18).
 present:
   - {kind: middle_man, package: "App::Session"}
 absent:
@@ -10,6 +11,7 @@ absent:
   - {kind: middle_man, package: "App::Bag"}
   - {kind: middle_man, package: "App::Shop"}
   - {kind: middle_man, package: "App::Tally"}
+  - {kind: middle_man, package: "App::Urgent"}
 messages:
   - {kind: middle_man, package: "App::Session", includes: "forwards 3 of its 4 public methods to @store"}
 evidence: [middle_man]

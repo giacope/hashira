@@ -26,6 +26,10 @@ module Hashira
 
         def sweep = nodes.flat_map { Scope.new(it).sweep }
 
+        def statements = nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
+
+        def legible? = sweep.none? { Opaque.new([it]).any? }
+
         def first = openings.first
       end
   end

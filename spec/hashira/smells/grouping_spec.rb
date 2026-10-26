@@ -26,11 +26,11 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       eq(
         [
           [
-            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event" },
+            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event", mode: :built },
             ["App::Added (events.rb:3)", "App::Removed (events.rb:4)", "App::Event.new (events.rb:5)"]
           ],
           [
-            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper" },
+            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper", mode: :built },
             ["App::Fancy (events.rb:7)", "App::Mapper.new (events.rb:5)"]
           ]
         ]
@@ -189,6 +189,39 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
         "Shop::Query@json" => ["Shop::Query#response (query.rb:10)"]
       )
     )
+  end
+
+  def charges
+    "module App\n  class Charge < ActiveRecord::Base\n    def sync = 1\n  end\n\n  " \
+      "class Stripe < Charge\n    def sync = 2\n  end\n\n  class Gift < Charge\n    def sync = 3\n  end\nend\n"
+  end
+
+  def overriding(source)
+    message(grouped({ "lib/app/charge.rb" => source }, "concrete_inheritance").first)[/is a [^(]*/]
+  end
+
+  it "reports subclasses that override a framework-rooted parent's working methods, in the singular and plural" do
+    said = [charges, charges.sub(/  class Gift.*?end\n/m, "")].map { overriding(it) }
+    plural = "is a concrete class, and 2 subclasses override its working methods "
+    expect(said).to(eq([plural, "is a concrete class, and a subclass overrides its working methods "]))
+  end
+
+  def catalog = "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n"
+
+  def cart = <<~RUBY
+    module Shop
+      class Cart
+        def total(code) = @catalog.find(code).nil? ? 0 : 1
+        def label(code) = @catalog.find(code)&.name
+      end
+    end
+  RUBY
+
+  it "names a nil an owned method answers for that method, wherever the checks are" do
+    found = grouped({ "lib/app/catalog.rb" => catalog, "lib/app/cart.rb" => cart }, "nil_check")
+    sites = ["Shop::Cart#total (cart.rb:3)", "Shop::Cart#label (cart.rb:4)"]
+    expect(found.map { [it.package, it.evidence] }).to(eq([["Shop::Catalog#find", sites]]))
+    expect(message(found.first)).to(start_with("Shop::Catalog#find may be nil, and 2 methods check for it (cart.rb:3)"))
   end
 
   def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }

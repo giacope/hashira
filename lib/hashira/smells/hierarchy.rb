@@ -7,7 +7,7 @@ class Hashira::Smells::Hierarchy
 
   FENCES = [Prism::ClassNode, Prism::ModuleNode].freeze
 
-  ABSTRACT = /\AAbstract|Base\z/
+  ABSTRACT = /\AAbstract|\ABase(?=[A-Z])|Base\z/
 
   MARKS = %i[abstract_class= abstract_class primary_abstract_class abstract!].freeze
 
@@ -30,6 +30,12 @@ class Hashira::Smells::Hierarchy
   def children(name) = table.filter_map { |child, kin| child if kin.parent == name }
 
   def framed?(name) = [name, *ancestors(name)].any? { table.fetch(it, NONE).foreign }
+
+  def root(name)
+    framed = [name, *ancestors(name)].find { table.fetch(it, NONE).foreign }
+    written = table.fetch(framed, NONE).openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
+    Hashira::Analysis::Syntax.new(written).segments.join("::")
+  end
 
   def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
 

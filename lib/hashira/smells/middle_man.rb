@@ -22,7 +22,9 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && !declared? && relays.any? && heaviest.size >= threshold(LIMIT) && most?
+  def smelly?
+    subject.kind == :class && !declared? && relays.any? && heaviest.size >= threshold(LIMIT) && most? && !decorates?
+  end
 
   def publics = @_publics ||= subject.owned.select(&:public?).reject { it.node.name == CONSTRUCTOR }
 
@@ -38,6 +40,16 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def declared?
     sweep.grep(Prism::CallNode).any? { DECLARED.include?(it.name) } || subject.nodes.grep(Prism::ClassNode).any? { wrapper?(it.superclass) }
+  end
+
+  def decorates?
+    own = publics - heaviest
+    own.any? && own.all? { wraps?(it) }
+  end
+
+  def wraps?(method)
+    name = method.node.name
+    Hashira::Smells::Scope.new(method.node).sweep.grep(Prism::CallNode).any? { it.name == name && target(it.receiver) == delegate }
   end
 
   def wrapper?(node) = WRAPPERS.include?(node&.slice.to_s[/\A[\w:]+/].to_s.split("::").last)

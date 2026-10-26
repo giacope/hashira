@@ -136,6 +136,19 @@ things a baseline sees:
 
 ### Added
 
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each):
+  - `stateful_mixin` (on by default): a mixin whose behavior works on its
+    host's state, by reading instance variables the module never assigns,
+    keeping fields of its own in the host, or installing fields,
+    associations, callbacks or validations on it (`included do after_save
+    :track end`). Elegant Objects asks for a decorator that reaches the host
+    through its public methods. Protocol mixins over public methods, memo
+    caches, `extend self` and `module_function` modules and refinements are
+    left alone. 56 findings in the 30 round-6 projects, 55 of them judged
+    right (a refinement, now exempt, was the miss): state_machines' `Machine`
+    split into eight modules over its ivars, pay's billable concerns, Rails
+    helpers and controller concerns reading `@site`.
 - `manual_dispatch` reads a type switch spread over methods: the same type test
   on the object's own state in three or more methods of a class (planner's
   `@check_in_target.is_a?(Event)` in six actions) is one finding for the class,
@@ -343,6 +356,62 @@ things a baseline sees:
 
 ### Changed
 
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each) and the gaps the sixth
+  field test listed (GH2–GH5):
+  - `middle_man` leaves a decorator alone: a class whose every public method
+    that does not forward wraps the same call on the same field
+    (`def subject = "URGENT: #{@origin.subject}"` beside `body`, `recipient`
+    and `to_s` passed straight through). It was told to "let
+    callers talk to the delegate directly", which undoes the decorator Elegant
+    Objects asks for, while the same class spelled with `def_delegators` was
+    left alone.
+  - `nil_check` no longer exempts a parameter defaulting to nil: a method
+    that tests its own `coupon = nil` (or `label: nil`) is an optional
+    argument, two methods in one, and is told to split it or ask for a null
+    object, as Elegant Objects accepts no nil arguments. It was "the caller's
+    option". The check also follows a nil to another owned class's method
+    that can answer nil (its body ends in `detect`, `find`, `first`, `[]`,
+    `dig`, `&.`, a literal `nil`, an `if` without `else`, or it returns early
+    with nothing): `item = @catalog.find(code); item.nil?` in `Cart` is one
+    finding named `Catalog#find`, with every method that checks it as
+    evidence, reached through an instance variable or local named for the
+    class or an object built on the spot (content-tagger's
+    `TaxonomyQuery.new.parent(id)`), where it was quiet. A field named
+    like its own class (`@contexts` inside `Contexts`) is not that class.
+  - `nil_check` leaves a shorthand guard that raises alone, as README says
+    of every raising guard: `fail exception unless @socket` (excon),
+    `raise InvalidEvent unless event` (state_machines) were reported because
+    the check was the `unless` itself rather than its condition.
+  - `concrete_inheritance` no longer leaves every hierarchy rooted outside the
+    project alone (batch-1 GH2). Under a framework root, a subclass that
+    overrides a working method of its concrete parent is reported, each
+    overriding method as evidence: pay's `Stripe::Charge#sync!` over
+    `Pay::Charge#sync!` and its three other STI families, collections-publisher's
+    `MainstreamBrowsePage#dependent_tags` over `Tag`. A subclass that only adds,
+    or gives itself a constructor, stays quiet. A class extending `Array`,
+    `Hash`, `String` or `Set` is reported on its own (V1 P26: `class LineItems
+    < Array`), told to hold one in a field. A parent named `Base…` reads as
+    abstract, like `…Base`. The JSON detail of a `concrete_inheritance`
+    finding carries `mode` (`built`, `overriding` or `core`). 24 new findings in
+    the 30 round-6 projects, all judged right on reading.
+  - `data_class` no longer exempts a value by declaration (V1 P28): a bare
+    `Struct` or `Data` value, or an ActiveRecord model with no behavior of its
+    own, is reported once another owned class computes with two or more of its
+    fields from one object (`Invoice#total` over `@order.quantity`,
+    `@order.unit_cents`, `@order.shipping_cents`), each such method as
+    evidence. Its advice no longer offers "or declare it a Data value", which
+    would only move the bag under this rule. No new findings in the 30
+    round-6 projects (none of their 25 bare values is computed with
+    elsewhere) or in the three gems.
+  - `low_cohesion` judges models (batch-1 GH4). Its framework exemption,
+    written for controllers and mailers, covered every class under a
+    framework base; it now covers the presentation stratum only
+    (controllers, mailers, jobs, channels, mailboxes). A model's column
+    readers (a bare call to a name the class does not define) count as
+    fields, as hashira does not read the schema: transition's `Hit` splits
+    into its `http_status` predicates and its `path` URLs. 12 new findings in
+    the 30 round-6 projects.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or

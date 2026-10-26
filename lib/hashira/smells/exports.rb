@@ -53,7 +53,7 @@ class Hashira::Smells::Exports
       Array(value.arguments&.arguments).map(&:slice) == [name.slice]
   end
 
-  def resolved(segments, name) = @ownership.place(segments, name)&.split("::") || segments
+  def resolved(segments, name) = @ownership.anchored(segments, name)
 
   def shallow(node)
     return [] if node.nil? || NESTED.include?(node.class)
