@@ -29,11 +29,11 @@ RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
     expect(result.unused.map(&:to_h)).to(
       eq(
       [
-      {
-        "site" => "knot.rb:11", "kinds" => ["complexity"],
-        "reason" => "stale"
-      }
-    ]
+        {
+          "site" => "knot.rb:11", "kinds" => ["complexity"],
+          "reason" => "stale"
+        }
+      ]
     )
     )
   end

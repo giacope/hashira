@@ -651,7 +651,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         [
           "App::Zone::Thing#near", "App::Zone::Thing#blank",
           "App::Zone::Thing#loose", "App::Zone::Thing#flat", "App::Zone::Thing#spread"
-      ]
+        ]
       )
     )
   end
