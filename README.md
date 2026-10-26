@@ -811,6 +811,18 @@ Findings (3):
   and `Node = Parser::AST::Node` aliases Parser's.
 - **module_initialize** — `initialize` in a mixin: constructor state carried
   into every includer.
+- **stateful_mixin** — a mixin whose behavior works on its host's state rather
+  than through the host's public methods: its methods read an instance
+  variable nothing in the module assigns (the host's `@text`), keep state of
+  their own in the host (`@events = …`), or it installs fields, associations,
+  callbacks or validations on the host (`included do after_save :track end`,
+  `base.validate`, `attr_accessor`). Elegant Objects composes decorators
+  instead: wrap the host and reach it through its public methods. One finding
+  per module, each field or hook as evidence. Left alone: a protocol mixin
+  that calls only its host's public methods (`Comparable`'s `<=>`), memo
+  caches (`@x ||=`, `@_x`), a module that is not a mixin (`extend self`,
+  `module_function`, a refinement), and one whose code holds a string hashira
+  cannot read.
 
 The next six judge how classes are built. They need the class to be the
 project's own, so a framework's base classes stay out of all of them.

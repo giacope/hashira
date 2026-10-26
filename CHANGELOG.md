@@ -136,6 +136,19 @@ things a baseline sees:
 
 ### Added
 
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each):
+  - `stateful_mixin` (on by default): a mixin whose behavior works on its
+    host's state, by reading instance variables the module never assigns,
+    keeping fields of its own in the host, or installing fields,
+    associations, callbacks or validations on it (`included do after_save
+    :track end`). Elegant Objects asks for a decorator that reaches the host
+    through its public methods. Protocol mixins over public methods, memo
+    caches, `extend self` and `module_function` modules and refinements are
+    left alone. 56 findings in the 30 round-6 projects, 55 of them judged
+    right (a refinement, now exempt, was the miss): state_machines' `Machine`
+    split into eight modules over its ivars, pay's billable concerns, Rails
+    helpers and controller concerns reading `@site`.
 - `manual_dispatch` reads a type switch spread over methods: the same type test
   on the object's own state in three or more methods of a class (planner's
   `@check_in_target.is_a?(Event)` in six actions) is one finding for the class,

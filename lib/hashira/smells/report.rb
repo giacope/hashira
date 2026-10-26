@@ -34,6 +34,7 @@ require_relative "ownership"
 require_relative "repeated_conditional"
 require_relative "spread_switch"
 require_relative "state_sprawl"
+require_relative "stateful_mixin"
 require_relative "utility_function"
 
 class Hashira::Smells::Report
@@ -43,7 +44,8 @@ class Hashira::Smells::Report
     Hashira::Smells::DataClump, Hashira::Smells::AssumedState,
     Hashira::Smells::ModuleInitialize, Hashira::Smells::RepeatedConditional,
     Hashira::Smells::StateSprawl, Hashira::Smells::ConcreteInheritance, Hashira::Smells::RefusedBequest,
-    Hashira::Smells::LowCohesion, Hashira::Smells::DataClass, Hashira::Smells::MiddleMan
+    Hashira::Smells::LowCohesion, Hashira::Smells::DataClass, Hashira::Smells::MiddleMan,
+    Hashira::Smells::StatefulMixin
   ].freeze
 
   PROBES = (CHECKS - JUDGES).freeze

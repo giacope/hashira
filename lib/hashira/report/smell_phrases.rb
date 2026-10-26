@@ -18,6 +18,8 @@ class Hashira::Report::Phrases
   MODULE_INITIALIZE =
     "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
 
+  STATEFUL_MIXIN = "Make it a decorator: wrap the host and reach it through its public methods."
+
   private
 
   def on_control_parameter(finding)
@@ -41,6 +43,8 @@ class Hashira::Report::Phrases
   end
 
   def on_module_initialize(finding) = plain(finding, "defines initialize in a module", MODULE_INITIALIZE)
+
+  def on_stateful_mixin(finding) = plain(finding, "mixes behavior into its host's own state", STATEFUL_MIXIN)
 
   def plain(finding, said, advice) = "#{finding.package} #{said} (#{finding.detail[:site]}). #{advice}"
 
