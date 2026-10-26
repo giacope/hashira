@@ -512,7 +512,12 @@ Findings (1):
 - **Framework adapters are plumbing.** A top-level class that extends an outside
   class and that the app's classes extend (`ApplicationRecord <
   ActiveRecord::Base`, a `ApplicationCable::Channel`) is not a package anyone
-  depends on. A domain base class (`Billing::Base`) stays part of its domain.
+  depends on, however its heirs spell it (an engine's `Pay::ApplicationRecord`).
+  A domain base class (`Billing::Base`) stays part of its domain, and so does a
+  record straight on `ActiveRecord::Base` that neither says it is abstract
+  (`self.abstract_class = true`, `primary_abstract_class`) nor is named
+  `Application…`: its subclasses are single-table kinds of it (mailboxer's
+  `Message < Notification`).
 - **Presentation stays out of the domain.** Controllers, serializers and
   resources are one `(web)` package, counted once as a client of each package it
   uses.

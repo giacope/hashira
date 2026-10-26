@@ -8,9 +8,8 @@ class Hashira::Coupling::Scope
   end
 
   def resolve(segments, nesting)
-    return if @placement.skip?(segments)
     found = locate(segments, nesting)
-    owner(found) if found
+    owner(found) if found && !@placement.skip?(found)
   end
 
   def owner(path) = qualify(@registry.exact(path))
