@@ -70,7 +70,7 @@ class Hashira::Smells::Provenance
     end
   end
 
-  def named(name) = sole(Hashira::Smells::Naming.new(name).types.filter_map { place(it) }.first(1))
+  def named(name) = sole(Hashira::Smells::Naming.new(name).types.filter_map { place(it) }.first(1) - [@subject.owner])
 
   def kinds(local) = @foreign.kinds(Hashira::Smells::Refs::Local.new(local, @subject.node)).map { it.join("::") }
 

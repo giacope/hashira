@@ -376,7 +376,12 @@ things a baseline sees:
     finding named `Catalog#find`, with every method that checks it as
     evidence, reached through an instance variable or local named for the
     class or an object built on the spot (content-tagger's
-    `TaxonomyQuery.new.parent(id)`), where it was quiet.
+    `TaxonomyQuery.new.parent(id)`), where it was quiet. A field named
+    like its own class (`@contexts` inside `Contexts`) is not that class.
+  - `nil_check` leaves a shorthand guard that raises alone, as README says
+    of every raising guard: `fail exception unless @socket` (excon),
+    `raise InvalidEvent unless event` (state_machines) were reported because
+    the check was the `unless` itself rather than its condition.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or

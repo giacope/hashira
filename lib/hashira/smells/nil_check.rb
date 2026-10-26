@@ -17,6 +17,8 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   BRANCHES = [Prism::IfNode, Prism::UnlessNode, Prism::CaseNode].freeze
 
+  GUARDS = BRANCHES.first(2).freeze
+
   WRITES = Hashira::Smells::Provenance::WRITES
 
   private
@@ -102,7 +104,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def asserted(check) = body.select { asserts?(it, check) }
 
-  def asserts?(node, check) = BRANCHES.first(2).include?(node.class) && within(node.predicate).any? { it.equal?(check) }
+  def asserts?(node, check) = GUARDS.include?(node.class) && [node, *within(node.predicate)].any? { it.equal?(check) }
 
   def raise?(node) = Hashira::Smells::Exits.new(node).raise?
 

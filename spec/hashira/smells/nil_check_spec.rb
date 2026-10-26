@@ -733,4 +733,42 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     }
     expect(bodies.keys.map { answered?(it) }).to(eq(bodies.values))
   end
+
+  it "lets a raising guard on a defaulted parameter or an owned answer stand, and never types a field as its class" do
+    findings = sniffed(
+      {
+        "lib/app/shop/output.rb" => "module Shop\n  class Output\n    def wait = (@lines[0] if @ready)\n  end\nend\n",
+        "lib/app/shop/process.rb" => <<~RUBY,
+          module Shop
+            class Process
+              def url
+                match = @output.wait
+                raise ArgumentError, "timed out" unless match
+                match
+              end
+
+              def key(source: nil)
+                raise ArgumentError, "source needed" unless source
+                source.key
+              end
+            end
+          end
+        RUBY
+        "lib/app/shop/contexts.rb" => <<~RUBY
+          module Shop
+            class Contexts
+              def [](id) = @contexts[id]
+
+              def dispose(id)
+                context = @contexts[id]
+                return unless context
+                context.close
+              end
+            end
+          end
+        RUBY
+      }, "nil_check"
+    )
+    expect(findings).to(be_empty)
+  end
 end
