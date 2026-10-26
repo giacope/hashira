@@ -878,10 +878,13 @@ project's own, so a framework's base classes stay out of all of them.
   `SerializedAttributes` writing one XML element's attributes). The
   constructor joins what it ties together statement by statement: a field it
   derives from another group's method (`@rules = load_rules`) or from the same
-  argument as another field. Left alone: a field only written (handed to a
-  template), a lone stateless method (that is `utility_function`'s business),
-  modules, and classes under a framework base, whose controllers and mailers
-  split into independent actions by design.
+  argument as another field. A model is judged like any class: hashira does
+  not read the schema, so its column readers (a bare call to a name the class
+  does not define, `state`, `http_status`) count as fields. Left alone: a
+  field only written (handed to a template), a lone stateless method (that is
+  `utility_function`'s business), modules, and the presentation stratum —
+  controllers, mailers, jobs, channels and mailboxes, by name or by the
+  framework base they extend — whose actions are independent by design.
 - **message_chain** — the Law of Demeter, on one chain: `order.customer.address`
   calls a method on what an owned object's reader returned. Every link must be
   typed and owned: the start (a parameter, local, instance variable or own

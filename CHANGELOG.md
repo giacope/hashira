@@ -403,6 +403,14 @@ things a baseline sees:
     would only move the bag under this rule. No new findings in the 30
     round-6 projects (none of their 25 bare values is computed with
     elsewhere) or in the three gems.
+  - `low_cohesion` judges models (batch-1 GH4). Its framework exemption,
+    written for controllers and mailers, covered every class under a
+    framework base; it now covers the presentation stratum only
+    (controllers, mailers, jobs, channels, mailboxes). A model's column
+    readers (a bare call to a name the class does not define) count as
+    fields, as hashira does not read the schema: transition's `Hit` splits
+    into its `http_status` predicates and its `path` URLs. 12 new findings in
+    the 30 round-6 projects.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or
