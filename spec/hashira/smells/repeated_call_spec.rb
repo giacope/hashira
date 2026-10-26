@@ -44,6 +44,35 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     )
   end
 
+  it "takes a literal-key read through the class's own attribute reader for a plain read, not one through a helper" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            attr_reader :options
+
+            def routing = [options[:routing], options[:routing]]
+
+            def selfish = [self.options[:a], self.options[:a]]
+
+            def helper = [settings[:a], settings[:a]]
+
+            def thrice = [options[:x], options[:x], options[:x]]
+
+            def computed(key) = [options[key], options[key]]
+
+            def chained(other) = [other.options[:a], other.options[:a]]
+
+            def called = [options(1)[:a], options(1)[:a]]
+
+            def settings = { a: @a }
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[helper thrice computed chained called].map { "App::Zone::Thing##{it}" }))
+  end
+
   it "counts the plain reads one run makes, not every read across branches that never run together" do
     findings = repeated(<<~RUBY)
       module App

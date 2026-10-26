@@ -1,0 +1,13 @@
+# R6B1-H8. README leaves "a plain read of self, a local or an instance
+# variable — no arguments, or literal keys — made at most twice" alone as
+# style. searchkick reads `options[:routing]` twice through `attr_reader
+# :options`, which is `@options[:routing]` twice; it is no repeated_call.
+# The same lookup on a helper's computed result is still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Query"}
+messages:
+  - {kind: repeated_call, package: "Shop::Query", includes: "repeats 1 call in 1 method"}
+evidence: [repeated_call]
+absent:
+  - {kind: repeated_call, package: "Shop::Query#routing"}
+  - {kind: repeated_call, package: "Shop::Query#scroll"}

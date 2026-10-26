@@ -735,7 +735,10 @@ Findings (3):
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
   variable — no arguments, or literal keys — made at most twice in any one run,
-  which is style. A chain (`order.customer.address`), a helper method's result,
+  which is style; a reader the class declares (`attr_reader :options`) reads
+  its instance variable, so `options[:routing]` twice is `@options[:routing]`
+  twice. A chain (`order.customer.address`), a helper method's result
+  (`settings[:a]`, a framework's `params[:id]`),
   a constant's query (`Time.now` twice is two times) or three reads in one run
   are reported.
 - **repeated_conditional** — one class testing the same condition in three or
