@@ -357,7 +357,8 @@ things a baseline sees:
 ### Changed
 
 - Found by the round-6 conformance matrix (one Elegant Objects principle per
-  case, a violating and a compliant project each):
+  case, a violating and a compliant project each) and the gaps the sixth
+  field test listed (GH2–GH5):
   - `middle_man` leaves a decorator alone: a class whose every public method
     that does not forward wraps the same call on the same field
     (`def subject = "URGENT: #{@origin.subject}"` beside `body`, `recipient`
