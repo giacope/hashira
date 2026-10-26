@@ -81,6 +81,12 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
     expect([untyped, computed, typed].map { probed(it) }).to(eq([[], [], ["App::Inspector#show"]]))
   end
 
+  it "leaves a probe on a method's result typed only by its name, and a probe of a message nothing defines, alone" do
+    called = "def item = Item.new\n\ndef show = item.respond_to?(:name)"
+    undefined = "def show\n  item = Item.new\n  item.respond_to?(:label)\nend"
+    expect([called, undefined].map { probed(it) }).to(eq([[], []]))
+  end
+
   it "leaves a probe on an exception rescued from a splatted list alone, as it does a library's" do
     rescued = "def show\n  Item.new.name\nrescue *FAILURES => item\n  item.respond_to?(:name)\nend"
     expect(probed(rescued)).to(be_empty)
