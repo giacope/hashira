@@ -1,0 +1,9 @@
+# R6B2-H2. ferrum's Output#wait_for loops until a deadline and names each
+# reading as it measures it: `while (now = monotonic_time) < deadline`.
+# README leaves a deadline loop alone; following "name the result" freezes
+# `now`, and the loop never ends. The same clock read twice with nothing
+# measured against the stored copy is still a repeat.
+present:
+  - {kind: repeated_call, package: "Shop::Output#stamps"}
+absent:
+  - {kind: repeated_call, package: "Shop::Output#wait_for"}

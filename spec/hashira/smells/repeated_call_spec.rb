@@ -144,6 +144,34 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
   end
 
+  it "reads a reading the loop names as it measures it, in parentheses, for the deadline loop it is" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def named(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              while (now = clock.now(:ms)) < deadline
+                return true if @io.ready?(deadline - now)
+              end
+            end
+
+            def bare(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              @io.poll while (clock.now(:ms)) < deadline
+            end
+
+            def boxed(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              @io.poll while [clock.now(:ms)].max < deadline
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[boxed]))
+  end
+
   it "parts two calls when the receiver is handed on between them, as an argument, a keyword or a stored result" do
     findings = repeated(<<~RUBY)
       module App

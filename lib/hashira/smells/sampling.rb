@@ -28,7 +28,15 @@ class Hashira::Smells::Sampling
   def against?(call, node, kept)
     return false unless OPERATORS.include?(call.name)
     operands = [call.receiver, *call.arguments.arguments]
-    operands.any? { it.equal?(node) } && operands.any? { read?(it, kept) }
+    operands.any? { bare(it).equal?(node) } && operands.any? { read?(it, kept) }
+  end
+
+  def bare(operand)
+    case operand
+    when Prism::ParenthesesNode then bare(Hashira::Analysis::Syntax.new(operand).statements.last)
+    when Prism::LocalVariableWriteNode then bare(operand.value)
+    else operand
+    end
   end
 
   def read?(operand, kept) = operand.is_a?(Prism::LocalVariableReadNode) && kept.include?(operand.name)

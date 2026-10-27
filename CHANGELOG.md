@@ -640,6 +640,12 @@ From the third field test (thirty MIT-licensed codebases):
     `build_operation_tree`) were "never called", though deleting them turns
     `Success[` into `Success(`. A private method no ancestor leaves to the
     library is still judged.
+  - `repeated_call` leaves alone a deadline loop that names each reading as
+    it compares it: ferrum's `Output#wait_for` (`deadline =
+    monotonic_time + timeout; while (now = monotonic_time) < deadline`) read
+    as one value to name, and naming it freezes `now`, so the loop never
+    ends. The comparison's operand is read through its parentheses and the
+    local it writes, as README's "a deadline loop" says.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,
