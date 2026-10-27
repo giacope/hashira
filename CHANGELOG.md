@@ -710,6 +710,14 @@ From the third field test (thirty MIT-licensed codebases):
     extend (`@entries ||= {}`, then `@entries.fetch`) was reported, though
     memo caches are left alone. A field nothing in the module assigns is
     still the host's.
+  - `concrete_inheritance` reads a parent method that only raises
+    `NoMethodError` as the parent saying it is abstract, as one that raises
+    `NotImplementedError` does: collections-publisher's `Tag` declares
+    `can_be_archived?` and two more as `raise NoMethodError` stubs its
+    subclasses fill, and strict reported it as a concrete class.
+    `refused_bequest` and the strict "working method" reading already took
+    any raise-only stub for unimplemented. A method that raises another error
+    (`ArgumentError`) is still a working method.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

@@ -904,9 +904,9 @@ project's own, so a framework's base classes stay out of all of them.
   implementation, not to an abstraction. One finding per parent, named for it
   and sited at its definition, with every subclass and the places that build
   the parent as evidence. Left alone: a parent that says it is abstract (named
-  `Base` or `Abstract…`, a method that raises `NotImplementedError`,
-  `abstract_class` or `abstract!`), a parent nothing builds directly, and,
-  by default, any hierarchy whose owned root extends something the project
+  `Base` or `Abstract…`, a method that only raises `NotImplementedError` or
+  `NoMethodError`, `abstract_class` or `abstract!`), a parent nothing builds
+  directly, and, by default, any hierarchy whose owned root extends something the project
   does not own (`ApplicationRecord < ActiveRecord::Base`, `MyError <
   StandardError`, `Struct.new(…)`). Under `strict: true` such a hierarchy is
   judged too: there a framework builds the objects, so a subclass counts when

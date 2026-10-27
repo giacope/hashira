@@ -111,11 +111,14 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   end
 
   it "leaves a parent alone that announces itself abstract by name, a hook left unimplemented, or a marker" do
-    hooks = ["def rows = raise(NotImplementedError)", "def rows\n      raise NotImplementedError, 'subclass'\n    end"]
+    hooks = [
+      "def rows = raise(NotImplementedError)", "def rows\n      raise NotImplementedError, 'subclass'\n    end",
+      "def rows = raise(NoMethodError)"
+    ]
     marked = ["self.abstract_class = true", "abstract!"].map { "#{it}\n    def rows = [1]" }
     parents = (hooks + marked).map { reports.sub("def rows = [1]", it) }
     named = %w[Base AbstractReport ReportBase].map { name(it) }
-    expect((parents.map { concrete(it, built) } + named).map(&:size)).to(eq([0] * 7))
+    expect((parents.map { concrete(it, built) } + named).map(&:size)).to(eq([0] * 8))
   end
 
   it "reads a Base-prefixed parent as abstract under strict only" do
@@ -124,7 +127,8 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   end
 
   it "still flags a parent whose methods raise something other than the unimplemented error" do
-    expect(concrete(reports.sub("def rows = [1]", "def rows = raise(ArgumentError)"), built).size).to(eq(1))
+    raising = %w[ArgumentError NoMethodErrors MyNoMethodError].map { "def rows = raise(#{it})" }
+    expect(raising.map { concrete(reports.sub("def rows = [1]", it), built).size }).to(eq([1, 1, 1]))
   end
 
   it "leaves a hierarchy alone whose owned root extends a framework class, when subclasses only add to it" do

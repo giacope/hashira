@@ -1,0 +1,16 @@
+# R6B3-H3. collections-publisher's Tag declares the methods every subclass
+# must supply as `raise NoMethodError` stubs (`can_be_archived?`): a parent
+# that says it is abstract, as one that raises NotImplementedError does, so
+# under strict a subclass's override is no evidence against it; and Shape,
+# built on its own, raises NoMethodError from the area its Square fills. Note
+# raises ArgumentError from its body: not the unimplemented error, so a
+# working method its built parent keeps, and Memo is still reported.
+config:
+  strict: true
+args: [app, lib]
+present:
+  - {kind: concrete_inheritance, package: "Shop::Note"}
+absent:
+  - {kind: concrete_inheritance, package: "Tag"}
+  - {kind: concrete_inheritance, package: "Shop::Shape"}
+evidence: [concrete_inheritance]
