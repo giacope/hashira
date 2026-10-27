@@ -21,7 +21,9 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   private
 
-  def smelly? = mixin? && lent.any? && !subject.singular? && uses.any? && subject.legible?
+  def smelly? = mixin? && (lent.any? || !lifted?) && !subject.singular? && uses.any? && subject.legible?
+
+  def lifted? = subject.openings.flat_map(&:defs).any? { it.section == :singleton }
 
   def mixin? = subject.kind == :module && subject.claimed? && subject.nodes.any?(Prism::ModuleNode)
 
@@ -58,7 +60,11 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def installed = hooked.select { installs?(it) }.map { ["installs #{it.name}", line(it)] }
 
-  def hooked = (subject.nodes + included).flat_map { Hashira::Smells::Scope.new(it).inside }
+  def hooked = (subject.nodes + included).flat_map { Hashira::Smells::Scope.new(it).inside }.reject { aside?(it) }
+
+  def aside?(node) = asides.any? { Hashira::Smells::Scope.new(it).covers?(node) }
+
+  def asides = @_asides ||= subject.sweep.select { Hashira::Analysis::TypeWalk.new(it).apart? }.map(&:block)
 
   def included = @_included ||= statements.grep(Prism::DefNode).select { it.name == INCLUDED && it.receiver }
 

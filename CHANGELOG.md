@@ -736,6 +736,17 @@ From the third field test (thirty MIT-licensed codebases):
     `respond_to?` probes on a value of no owned class. The same root reaches
     strict `nil_check`'s typing of a built local and `boundary_sprawl`'s
     foreign roots (`::Ast::Node` beside an owned `App::Ast::Node`).
+  - `stateful_mixin` reports a mixin that only installs on its host, as its
+    README example says (`included do after_save :track end`): WebsiteOne's
+    `ActAsPage`, whose `self.included` installs a presence validation (and
+    library macros) on every page model, went unreported because it defines
+    no method, while transition's `NilifyBlanks`, the same shape plus one
+    method, was reported. A call inside a block that opens another object (a
+    refinement, `Struct.new`/`Class.new`/`Module.new`/`Data.define`)
+    installs nothing on the host, which the old method gate had covered for
+    refinement-only modules, and a `ClassMethods` module its namespace hands
+    to the host, whose methods are the host's class methods, stays out as
+    before.
 - Found by the sixth field test's third batch (collections-publisher,
   travel-advice-publisher, mechanize, ancestry, ahoy):
   - `low_cohesion` under strict reads an association and the columns that back

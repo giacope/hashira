@@ -904,13 +904,16 @@ Findings (3):
   cannot see, `extend Forwardable`), keep state of
   their own in the host (`@events = …`), or it installs fields, associations,
   callbacks or validations on the host (`included do after_save :track end`,
-  `base.validate`, `attr_accessor`). Elegant Objects composes decorators
-  instead: wrap the host and reach it through its public methods. One finding
+  `base.validate`, `attr_accessor`), with or without methods of its own; a
+  call in a block that opens another object (`refine String do`,
+  `Struct.new do`) installs nothing on the host. Elegant Objects composes
+  decorators instead: wrap the host and reach it through its public methods. One finding
   per module, each field or hook as evidence. Left alone: a protocol mixin
   that calls only its host's public methods (`Comparable`'s `<=>`), memo
   caches (`@x ||=`, `@_x`), a module that is not a mixin (`extend self`,
-  `module_function`, a refinement), and one whose code holds a string hashira
-  cannot read.
+  `module_function`, a refinement), a `ClassMethods` module its namespace
+  hands to the host (its methods are the host's class methods), and one whose
+  code holds a string hashira cannot read.
 
 The next six judge how classes are built. They need the class to be the
 project's own, so a framework's base classes stay out of all of them.

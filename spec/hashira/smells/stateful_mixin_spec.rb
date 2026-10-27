@@ -100,6 +100,60 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     )
   end
 
+  it "flags a mixin that only installs hooks or fields on its host, with no method, but not a class-level one" do
+    findings = mixed(<<~RUBY)
+      module Pageish
+        def self.included(base)
+          base.acts_as_tree
+          base.has_paper_trail
+          base.validates :title, presence: true
+        end
+      end
+
+      module Audited
+        extend ActiveSupport::Concern
+
+        included do
+          after_save :track
+        end
+      end
+
+      module Named
+        attr_accessor :name
+      end
+
+      module Treed
+        def self.included(base) = base.acts_as_tree
+      end
+
+      module Shapes
+        Point = Struct.new(:x) do
+          attr_writer :y
+        end
+
+        Box = Class.new do
+          validates :size, presence: true
+        end
+      end
+
+      module Coerced
+        def self.included(base) = base.extend(ClassMethods)
+
+        module ClassMethods
+          attr_writer :coercions
+
+          def coerce(key) = @coercions.fetch(key)
+        end
+      end
+    RUBY
+    expect(findings.to_h { [it.package, it.evidence] }).to(
+      eq(
+        "Pageish" => ["installs validates (line 5)"], "Audited" => ["installs after_save (line 13)"],
+        "Named" => ["installs attr_accessor (line 18)"]
+      )
+    )
+  end
+
   it "leaves alone a protocol mixin over its host's public methods, and a module that is not a mixin" do
     findings = mixed(<<~RUBY)
       module Ordered
