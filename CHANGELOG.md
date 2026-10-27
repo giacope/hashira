@@ -616,6 +616,14 @@ From the third field test (thirty MIT-licensed codebases):
     `uniq` and `sort` call them, so "make it private" broke them and "move
     it" meant nothing. A method of another name, or one that takes what Ruby
     never passes (`def hash(password)`), is still reported.
+  - A library's hook stays a hook when the project only sends its name to a
+    class, as a macro in a class body: places-manager's
+    `CannotEditPlaceDetailsUnlessNewestInactiveDataset#validate` fills
+    `ActiveModel::Validator#validate`, which `validates_with` calls, but
+    `validate :has_both_lat_lng_overrides` in `Place` made it read as the
+    project's own message, and `utility_function` said to make it private
+    (every update would raise NoMethodError). A name the project sends an
+    instance still counts.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,

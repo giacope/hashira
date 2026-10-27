@@ -34,7 +34,10 @@ class Hashira::Smells::Lineage
 
   def mixins(type) = named(type, MIXINS).filter_map { resolve(type.name, Hashira::Analysis::Syntax.new(it).segments) }
 
-  def messages(type) = sweep(type).filter_map { message(it) }
+  def messages(type)
+    told = Set.new.compare_by_identity.merge(macros(type))
+    sweep(type).reject { told.include?(it) }.filter_map { message(it) }
+  end
 
   def candidates(owner, segments)
     segments.empty? ? [] : scopes(owner).map { (it + segments).join("::") }
@@ -99,13 +102,11 @@ class Hashira::Smells::Lineage
 
   def stray?(type, node) = !resolve(type.name, Hashira::Analysis::Syntax.new(node).segments)
 
-  def veiled?(type) = type.kind == :class && macros(type).any? { !native?(it) && !vocabulary.include?(it) }
+  def veiled?(type) = type.kind == :class && macros(type).map(&:name).any? { !native?(it) && !vocabulary.include?(it) }
 
   def native?(name) = Hashira::Analysis::MACROS.include?(name)
 
-  def macros(type)
-    Hashira::Analysis::Syntax.new(type.node).statements.grep(Prism::CallNode).reject(&:receiver).map(&:name)
-  end
+  def macros(type) = Hashira::Analysis::Syntax.new(type.node).statements.grep(Prism::CallNode).reject(&:receiver)
 
   def vocabulary
     @_vocabulary ||= @types.flat_map { Hashira::Analysis::TypeWalk.new(it.node).sections }.to_set { |definition, _| definition.name }

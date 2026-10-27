@@ -358,6 +358,32 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Plugin#label App::Plugin#badge App::Plain#orphan]))
   end
 
+  it "keeps a library hook a hook when the project only sends its name to a class, as a macro" do
+    validator = <<~RUBY
+      module App
+        class NewestOnly < ActiveModel::Validator
+          def validate(record) = record.errors.add(:base, "stale") unless record.newest?
+
+          def check(record) = record.errors.add(:base, "stale")
+        end
+
+        class Place < ActiveRecord::Base
+          validates_with NewestOnly
+          validate :paired
+          check :paired
+
+          def newest? = @newest
+        end
+
+        class Audit
+          def run(record) = NewestOnly.new.check(record)
+        end
+      end
+    RUBY
+    findings = sniffed({ "lib/app/place.rb" => validator }, "utility_function")
+    expect(findings.map(&:package)).to(eq(%w[App::NewestOnly#check App::Audit#run]))
+  end
+
   it "traces a finding by the code it names, so a rename still matches and a different method does not" do
     shop = ->(name, body) { "module App\n  class Shop\n    def #{name}(price) = #{body}\n  end\nend\n" }
     traced = ->(name, body) { sniffed({ "lib/app/shop.rb" => shop[name, body] }, "utility_function").first.trace }
