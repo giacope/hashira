@@ -607,6 +607,15 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's second batch (manuals-publisher,
+  places-manager, ferrum, friendly_id, dry-monads):
+  - `utility_function` leaves to the object what Ruby asks of every object:
+    `==`, `eql?`, `equal?`, `<=>`, `===` and `coerce` with one argument,
+    `hash`, `inspect` and `to_s` with none. dry-monads' `None#eql?` and
+    `None#hash` answer without state because every None is equal; Hash keys,
+    `uniq` and `sort` call them, so "make it private" broke them and "move
+    it" meant nothing. A method of another name, or one that takes what Ruby
+    never passes (`def hash(password)`), is still reported.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,

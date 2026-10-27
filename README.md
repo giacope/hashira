@@ -784,7 +784,11 @@ Findings (3):
   error's `message`, even where the project sends that message too, a fake's
   side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
   `Dummy`, `*Double`; the classes one array literal builds side by side,
-  `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt, and so is a method whose body holds code
+  `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt. So is what
+  Ruby asks of every object, at the arity it asks it (`==`, `eql?`, `equal?`,
+  `<=>`, `===`, `coerce` taking one argument; `hash`, `inspect`, `to_s` taking
+  none): a null object's `eql?` answers without state, and Hash, `sort` and
+  `p` call it whatever its body reads. So is a method whose body holds code
   hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
   `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
   `local_variables` may touch any local, instance variable or method in scope.

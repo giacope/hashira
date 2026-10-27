@@ -295,6 +295,30 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::AuthError#hint App::Tags#add]))
   end
 
+  it "leaves the equality, ordering and printing Ruby asks of every object to it, at the arity Ruby calls them" do
+    findings = utility(<<~RUBY)
+      module App
+        class Nothing
+          def eql?(other) = other.is_a?(Nothing)
+          def hash = Nothing.name.hash
+          def <=>(other) = other.is_a?(Nothing) ? 0 : -1
+          def ===(other) = other.nil?
+          def inspect = "Nothing".dup.freeze
+          def to_s(*) = String.new("Nothing")
+          def coerce(number) = [Nothing.new, number.to_i]
+          def digest(password) = Digest::SHA256.hexdigest(password)
+          def display(page) = Printer.print(page)
+        end
+
+        class Vault
+          def hash(password) = Digest::SHA256.hexdigest(password)
+          def ==(*) = Vault.name.frozen?
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Nothing#digest App::Nothing#display App::Vault#hash App::Vault#==]))
+  end
+
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
     plugin = <<~RUBY
       module App

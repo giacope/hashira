@@ -1,0 +1,14 @@
+# R6B2-H4. dry-monads' None is the null object: every None equals every
+# other, so its eql?, == and hash read no state. They override what Ruby asks
+# of every object (Hash keys, uniq, sort, case, p, interpolation); making
+# them private breaks those callers and "moving" them means nothing. A
+# stateless method that is no such protocol, or one named like it that takes
+# an argument Ruby never passes (Vault#hash(password)), is still reported.
+present:
+  - {kind: utility_function, package: "Shop::Nothing#label"}
+  - {kind: utility_function, package: "Shop::Vault#hash"}
+absent:
+  - {kind: utility_function, package: "Shop::Nothing#eql?"}
+  - {kind: utility_function, package: "Shop::Nothing#hash"}
+  - {kind: utility_function, package: "Shop::Nothing#<=>"}
+  - {kind: utility_function, package: "Shop::Nothing#inspect"}
