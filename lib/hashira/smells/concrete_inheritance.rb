@@ -7,19 +7,25 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
 
   CORE = %w[Array Hash String Set].freeze
 
+  BASED = /\ABase(?=[A-Z])/
+
   CONSTRUCTOR = :initialize
 
   Lineage = Data.define(:site, :parent, :home, :mode)
 
   private
 
-  def smelly? = core? || (parent && !family.abstract?(parent) && (framed? ? overrides.any? : built.any?))
+  def smelly? = core? || (parent && !abstract? && grounds?)
+
+  def abstract? = family.abstract?(parent) || (strict? && BASED.match?(parent.split("::").last))
+
+  def grounds? = framed? ? strict? && overrides.any? : built.any?
 
   def family = subject.family
 
   def parent = @_parent ||= family.parent(subject.subject)
 
-  def core? = !parent && CORE.include?(base)
+  def core? = strict? && !parent && CORE.include?(base)
 
   def base
     written = subject.nodes.grep(Prism::ClassNode).filter_map(&:superclass).first

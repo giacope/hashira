@@ -150,6 +150,7 @@ checks:
   fragmentation: { helpers: 6 }    # fragmentation has two limits
   indirection: { threshold: 3 }    # (a setting turns an opt-in kind on too)
 layers: [web, app, domain]         # outermost first; see Layers below
+strict: true                       # the strict set; see Strict below
 ```
 
 `checks: all` turns every kind on. Kinds with a threshold, and what reaches it:
@@ -194,7 +195,8 @@ So everything is on but five kinds:
 
 `layer_violation` is on whenever `layers:` are declared. `--kind` and
 `--fail-on` turn on the kinds they name (`--fail-on all` names none: it gates
-what the run checks), and a `checks:` setting for a kind turns it on. `--kind`
+what the run checks; a [strict](#strict) kind waits for `strict: true`), and a
+`checks:` setting for a kind turns it on. `--kind`
 also turns the others off for that run, so a design smell nobody asked for is
 never computed.
 
@@ -213,6 +215,27 @@ holds a `.hashira.yml`, a `hashira_baseline.json`, `.git`, a `Gemfile` or a
 `*.gemspec`. A project checked out inside another stops at its own root. So `hashira ../other/lib` reads and writes the other project's
 files, not the ones where you stand. Paths inside the file are read from that
 root.
+
+### Strict
+
+`strict: true` in `.hashira.yml`, or `--strict` on the command line, turns on
+the strict set: one more kind and stricter readings of four kinds that are on
+by default. Without it a run reports what it reported before they existed,
+under `checks: all` too, so upgrading hashira adds no finding to a codebase
+that gates on zero. Each follows the philosophy; they wait because they are
+new and report code that passed before.
+
+| kind | what strict adds |
+| --- | --- |
+| `stateful_mixin` | the kind: a mixin that works on its host's state instead of decorating it |
+| `nil_check` | a parameter the method defaults to nil and tests; the answer of another owned class's method that can answer nil, named for that method |
+| `concrete_inheritance` | under a framework root, a subclass overriding a working method of its concrete parent (single-table inheritance); a class extending `Array`, `Hash`, `String` or `Set`; a `Base…` parent read as abstract |
+| `low_cohesion` | models: the framework exemption narrows to controllers, mailers, jobs, channels and mailboxes |
+| `data_class` | a bare `Struct` or `Data` value, or a record with no behavior, that another class computes with |
+
+`checks: { stateful_mixin: true }` turns that kind on by itself, without the
+readings. `--kind` and `--fail-on` do not: `--fail-on smells` names every
+smell, and would otherwise turn it on.
 
 ### Suppressing one finding
 
@@ -671,7 +694,8 @@ other drifts.
 RuboCop measures one method at a time; these are about how objects treat each
 other. Each is reported only where its advice applies to code the project owns.
 All are on but `repeated_conditional`, `middle_man` and `boundary_sprawl` (see
-[which kinds are on by default](#which-kinds-are-on-by-default)).
+[which kinds are on by default](#which-kinds-are-on-by-default)), and
+`stateful_mixin`, which waits for [strict](#strict).
 
 <!-- example: smells lib/app --kind smells -->
 ```console
@@ -823,15 +847,17 @@ Findings (3):
   reports, a check replaced by its default, a check whose branch raises (the
   guard asserts against the nil), memoization in any of its spellings (`@x ||=
   v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that
-  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. A
-  parameter defaulting to nil that the method tests (`def discounted(coupon =
-  nil)` … `coupon.nil?`) is an optional argument, two methods in one, and is
-  told to split the method or ask for a null object: Elegant Objects accepts
-  no nil arguments. A predicate that fetches
+  answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. By
+  default a parameter defaulting to nil is the caller's option, not the
+  codebase's nil; under `strict: true` one the method tests (`def
+  discounted(coupon = nil)` … `coupon.nil?`) is an optional argument, two
+  methods in one, and is told to split the method or ask for a null object:
+  Elegant Objects accepts no nil arguments. A predicate that fetches
   a record only to test it for nil is told to ask `exists?`. Checks of one
   nil source — an instance variable, a method that can return nil — are one
   finding, named for the source (`Account@owner`, `Account#current`,
-  `Catalog#find` for `item = @catalog.find(code)` checked in `Cart`), with
+  and, under strict, `Catalog#find` for `item = @catalog.find(code)` checked
+  in `Cart`), with
   each method that checks it as evidence: settle it where the nil is made.
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing
@@ -841,7 +867,8 @@ Findings (3):
   and `Node = Parser::AST::Node` aliases Parser's.
 - **module_initialize** — `initialize` in a mixin: constructor state carried
   into every includer.
-- **stateful_mixin** — a mixin whose behavior works on its host's state rather
+- **stateful_mixin** (strict: on only under `strict: true`) — a mixin whose
+  behavior works on its host's state rather
   than through the host's public methods: its methods read an instance
   variable nothing in the module assigns (the host's `@text`), keep state of
   their own in the host (`@events = …`), or it installs fields, associations,
@@ -862,22 +889,24 @@ project's own, so a framework's base classes stay out of all of them.
   parent's class methods): the subclass is coupled to a working
   implementation, not to an abstraction. One finding per parent, named for it
   and sited at its definition, with every subclass and the places that build
-  the parent as evidence. Under a root the project does not own
-  (`ApplicationRecord < ActiveRecord::Base`, `MyError < StandardError`), where
-  a framework builds the objects, a subclass counts when it overrides a working
-  method of its concrete parent: single-table inheritance's
-  `Stripe::Charge#sync!` over `Charge#sync!` is a strategy the record should
-  be given, and each overriding method is evidence. A subclass that only adds
-  to its parent (scopes, validations, `store_accessor`, methods of its own) or
-  only gives itself a constructor is left alone. A class that extends a
-  concrete core collection or value (`Array`, `Hash`, `String`, `Set`) is
-  reported on its own: what it inherits (`map`, `select`, `merge`) answers a
-  plain core object, so hold one in a field instead. Left alone: a parent that
-  says it is abstract (named `Base`, `Base…` or `Abstract…`, a method that
-  raises `NotImplementedError`, `abstract_class` or `abstract!`), a parent
-  nothing builds directly, an override of a hook the parent leaves empty or
-  unimplemented, and one that refuses its parent's method
-  (`refused_bequest`'s business).
+  the parent as evidence. Left alone: a parent that says it is abstract (named
+  `Base` or `Abstract…`, a method that raises `NotImplementedError`,
+  `abstract_class` or `abstract!`), a parent nothing builds directly, and,
+  by default, any hierarchy whose owned root extends something the project
+  does not own (`ApplicationRecord < ActiveRecord::Base`, `MyError <
+  StandardError`, `Struct.new(…)`). Under `strict: true` such a hierarchy is
+  judged too: there a framework builds the objects, so a subclass counts when
+  it overrides a working method of its concrete parent (single-table
+  inheritance's `Stripe::Charge#sync!` over `Charge#sync!` is a strategy the
+  record should be given), each overriding method as evidence, while one that
+  only adds to its parent (scopes, validations, `store_accessor`, methods of
+  its own), only gives itself a constructor, or overrides a hook the parent
+  leaves empty or a method it refuses (`refused_bequest`'s business) is left
+  alone. Strict also reports a class that extends a concrete core collection
+  or value (`Array`, `Hash`, `String`, `Set`) on its own: what it inherits
+  (`map`, `select`, `merge`) answers a plain core object, so hold one in a
+  field instead. And it reads a `Base…` parent (`BaseController`) as
+  abstract, like `…Base`.
 - **refused_bequest** — a subclass overrides a method an owned ancestor
   implements, only to raise or to do nothing (an empty body or a bare `nil`).
   One finding per refused method, named for it (`Questionnaires::Base#next_step`)
@@ -898,13 +927,15 @@ project's own, so a framework's base classes stay out of all of them.
   `SerializedAttributes` writing one XML element's attributes). The
   constructor joins what it ties together statement by statement: a field it
   derives from another group's method (`@rules = load_rules`) or from the same
-  argument as another field. A model is judged like any class: hashira does
-  not read the schema, so its column readers (a bare call to a name the class
-  does not define, `state`, `http_status`) count as fields. Left alone: a
-  field only written (handed to a template), a lone stateless method (that is
-  `utility_function`'s business), modules, and the presentation stratum —
-  controllers, mailers, jobs, channels and mailboxes, by name or by the
-  framework base they extend — whose actions are independent by design.
+  argument as another field. Left alone: a field only written (handed to a
+  template), a lone stateless method (that is `utility_function`'s business),
+  modules, and classes under a framework base, whose controllers and mailers
+  split into independent actions by design. Under `strict: true` that
+  exemption narrows to the presentation stratum — controllers, mailers, jobs,
+  channels and mailboxes, by name or by the framework base they extend — and a
+  model is judged like any class: hashira does not read the schema, so its
+  column readers (a bare call to a name the class does not define, `state`,
+  `http_status`) count as fields.
 - **message_chain** — the Law of Demeter, on one chain: `order.customer.address`
   calls a method on what an owned object's reader returned. Every link must be
   typed and owned: the start (a parameter, local, instance variable or own
@@ -920,7 +951,10 @@ project's own, so a framework's base classes stay out of all of them.
   chain read twice whatever its types.
 - **data_class** — a class with two or more fields and nothing but attribute
   macros, hand-written readers and writers, and a constructor that only stores
-  its arguments. A declared value is one too when another class computes with
+  its arguments. Left alone: `Struct` and `Data` (a value declared as one), a
+  class with a superclass or a subclass (an error carrying a code, a base
+  others extend), and any method, mixin, class method or constant. Under
+  `strict: true` a declared value is one too when another class computes with
   it: a `Struct` or `Data` value with nothing but its members (`Address =
   Struct.new(:street, :city, :zip)`, `class Size < Struct.new(:w, :h)`), or
   an ActiveRecord model with no methods, callbacks or validations of its own
@@ -929,11 +963,10 @@ project's own, so a framework's base classes stay out of all of them.
   (`Invoice#total` multiplying `@order.quantity` by `@order.unit_cents`): the
   logic about the data lives away from it, so nothing keeps its meaning. One
   finding per value, each method that computes with it as evidence. Left
-  alone: a class with a superclass or a subclass (an error carrying a code, a
-  base others extend) and any method, mixin, class method or constant, a
-  value or record with behavior of its own, a value nested in the class that
-  reads it (that class's own record), and fields copied into a constructor
-  (`Part.new(part.slug, part.title)`), which is mapping, not computing.
+  alone there: a value or record with behavior of its own, a value nested in
+  the class that reads it (that class's own record), and fields copied into a
+  constructor (`Part.new(part.slug, part.title)`), which is mapping, not
+  computing.
 - **middle_man** — a class whose public methods mostly (more than half, and at
   least three) only forward to one field: one call on an instance variable or
   its reader, passing the method's own arguments, and its block if it takes

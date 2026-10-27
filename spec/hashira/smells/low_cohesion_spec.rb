@@ -164,7 +164,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
       "class AccountsController < ApplicationController", "class Account < ActionMailer::Base",
       "class Account < ActiveJob::Base", "class Account < ApplicationCable::Channel"
     ]
-    framed = heads.map { split(account("", it)) }
+    framed = heads.flat_map { [split(account("", it)), split(account("", it), Fixtures::STRICT)] }
     expect([split(account.sub("class Account", "module Account")), *framed]).to(all(be_empty))
   end
 
@@ -180,8 +180,9 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
         def corporate? = domain != "gmail.com" && !errors.any?
       end
     RUBY
-    expect([split(account("", "class Account < ApplicationRecord")), split(model)].map(&:size)).to(eq([1, 1]))
-    expect(split(model).first.evidence).to(
+    strict = [account("", "class Account < ApplicationRecord"), model].map { split(it, Fixtures::STRICT).size }
+    expect([strict, [model].map { split(it).size + split(it, Hashira::Config::Rules::ALL).size }]).to(eq([[1, 1], [0]]))
+    expect(split(model, Fixtures::STRICT).first.evidence).to(
       eq(
         [
           "debt, credit, overdrawn? (@balance)",

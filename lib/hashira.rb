@@ -40,6 +40,7 @@ end
 
 require_relative "hashira/config/error"
 require_relative "hashira/config/layers"
+require_relative "hashira/config/reserve"
 require_relative "hashira/config/rules"
 require_relative "hashira/config/rule"
 require_relative "hashira/config/setting"

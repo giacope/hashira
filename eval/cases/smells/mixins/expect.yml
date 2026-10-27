@@ -1,9 +1,11 @@
-# Mixins instead of decorators (V1 P18, round-6 GH3). Loud reads its host's
+# Mixins instead of decorators (V1 P18, round-6 GH3), a strict kind. Loud reads its host's
 # @text; Trackable is a Concern that installs after_save on its host; Sized
 # keeps a field of its own in every host. All three lend behavior that works
 # on the host's state. Left alone: Ordered, a protocol mixin over its host's
 # public methods; Shared, a module that extends itself; and UrgentMessage, a
 # decorator that wraps a Message and reaches it through its public methods.
+config:
+  strict: true
 present:
   - {kind: stateful_mixin, package: "App::Loud"}
   - {kind: stateful_mixin, package: "App::Trackable"}

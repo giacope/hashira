@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
-  def mixed(source) = sniffed({ "lib/app/zone/mixin.rb" => source }, "stateful_mixin")
+  def mixed(source) = strictly({ "lib/app/zone/mixin.rb" => source }, "stateful_mixin")
+
+  it "is a strict kind: off by default and under checks: all" do
+    host = { "lib/app/zone/mixin.rb" => "module Loud\n  def shout = @text.upcase\nend\n" }
+    off = [Fixtures::NONE, Hashira::Config::Rules::ALL].map { sniffed(host, "stateful_mixin", rules: it) }
+    expect([off, strictly(host, "stateful_mixin").size]).to(eq([[[], []], 1]))
+  end
 
   it "flags a mixin whose methods read state its host assigns, naming each field" do
     findings = mixed(<<~RUBY)

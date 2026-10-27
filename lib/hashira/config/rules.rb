@@ -11,6 +11,12 @@ class Hashira::Config::Rules
 
   CHOSEN = (OPT_IN + HISTORY).freeze
 
+  STRICT = %w[stateful_mixin].freeze
+
+  HELD = Hashira::Config::Reserve.new(kinds: CHOSEN, strict: false)
+
+  OPEN = HELD.with(kinds: [])
+
   EVERY = "all"
 
   def self.parse(raw, kinds)
@@ -21,18 +27,20 @@ class Hashira::Config::Rules
     new(
       raw.except(EVERY).to_h do |kind, setting|
         Hashira::Config::Rule.parse(kind, setting, kinds)
-      end, every ? [] : CHOSEN
+      end, every ? OPEN : HELD
     )
   end
 
-  def initialize(table, chosen = CHOSEN, layers = Hashira::Config::Layers::NONE, boundaries = [])
+  def initialize(table, reserve = HELD, layers = Hashira::Config::Layers::NONE, boundaries = [])
     @table = table
-    @chosen = chosen
+    @reserve = reserve
     @layers = layers
     @boundaries = boundaries
   end
 
   attr_reader :layers, :boundaries
+
+  def strict? = @reserve.strict
 
   def enabled?(kind) = rule(kind).enabled
 
@@ -40,25 +48,31 @@ class Hashira::Config::Rules
 
   def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
 
-  def naming(kinds) = Hashira::Config::Rules.new(@table, @chosen - kinds, @layers, @boundaries)
+  def naming(kinds) = remade(reserve: @reserve.naming(kinds))
 
   def narrowed(kinds, every)
     return self if kinds.empty?
     silenced = (every - kinds).to_h { [it, Hashira::Config::Rule::OFF] }
-    Hashira::Config::Rules.new(silenced.merge(@table.slice(*kinds)), @chosen, @layers, @boundaries)
+    remade(table: silenced.merge(@table.slice(*kinds)))
   end
 
-  def layered(layers) = Hashira::Config::Rules.new(@table, @chosen, layers, @boundaries)
+  def layered(layers) = remade(layers:)
 
-  def bounded(boundaries) = Hashira::Config::Rules.new(@table, @chosen, @layers, boundaries)
+  def bounded(boundaries) = remade(boundaries:)
+
+  def tightened = remade(reserve: @reserve.with(strict: true))
 
   private
 
+  def remade(table: @table, reserve: @reserve, layers: @layers, boundaries: @boundaries)
+    Hashira::Config::Rules.new(table, reserve, layers, boundaries)
+  end
+
   def rule(kind) = @table.fetch(kind) { fallback(kind) }
 
-  def fallback(kind) = @chosen.include?(kind) ? Hashira::Config::Rule::OFF : Hashira::Config::Rule::ON
+  def fallback(kind) = @reserve.held?(kind) ? Hashira::Config::Rule::OFF : Hashira::Config::Rule::ON
 end
 
 Hashira::Config::Rules::NONE = Hashira::Config::Rules.new({})
 
-Hashira::Config::Rules::ALL = Hashira::Config::Rules.new({}, [])
+Hashira::Config::Rules::ALL = Hashira::Config::Rules.new({}, Hashira::Config::Rules::OPEN)

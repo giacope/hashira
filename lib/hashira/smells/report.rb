@@ -86,7 +86,10 @@ class Hashira::Smells::Report
 
   def wants?(kind) = @rules.enabled?(kind)
 
-  def bags = wants?(Hashira::Smells::Bags::KIND) ? Hashira::Smells::Bags.new(types, family, methods).findings : []
+  def bags
+    return [] unless @rules.strict? && wants?(Hashira::Smells::Bags::KIND)
+    Hashira::Smells::Bags.new(types, family, methods).findings
+  end
 
   def sprawl
     return [] unless wants?(Hashira::Smells::BoundarySprawl::KIND)

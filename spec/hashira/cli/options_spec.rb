@@ -292,6 +292,15 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
       end
     end
 
+    def strict(*argv) = described_class.parse(argv).project.rules.then { [it.strict?, it.enabled?("stateful_mixin")] }
+
+    it "turns the strict set on with strict: true or --strict, and leaves it off under checks: all" do
+      files = ["strict: true\n", "checks: all\n", "checks: all\nstrict: false\n"]
+      found = files.map { |yaml| configured(yaml) { strict } } + [configured("checks: all\n") { strict("--strict") }]
+      on = [true, true]
+      expect(found + [strict, strict("--strict")]).to(eq([on, [false, false], [false, false], on, [false, false], on]))
+    end
+
     it "reads another file with --config, and none with --no-config" do
       within(".hashira.yml" => "top: 3\n", "ci/hashira.yml" => "top: 9\n", "empty.yml" => "") do
         expect(read("--config", "ci/hashira.yml", %i[top])).to(eq(top: 9))
@@ -323,7 +332,8 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
         "top: 0\n" => '--top "0" is not a positive whole number',
         "skip: coupling\nfail-on: cycles\n" => "--fail-on cycle needs the coupling analyzer, but --skip drops it",
         "layers: [web]\n" => "layers needs at least two layers to order",
-        "boundaries: Prism\n" => "boundaries takes a list of declarations (root, role, entrypoint, reason)"
+        "boundaries: Prism\n" => "boundaries takes a list of declarations (root, role, entrypoint, reason)",
+        "strict: yes please\n" => 'strict takes true or false, not "yes please"'
       }.each do |yaml, message|
         configured(yaml) { expect { described_class.parse([]) }.to(raise_error(Hashira::Error, ".hashira.yml: #{message}")) }
       end

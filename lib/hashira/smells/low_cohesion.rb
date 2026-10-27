@@ -38,7 +38,9 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
 
-  def framed? = [label, root].any? { PRESENTATION.match?(it) }
+  def framed? = strict? ? presented? : family.framed?(label)
+
+  def presented? = [label, root].any? { PRESENTATION.match?(it) }
 
   def root = @_root ||= family.root(label)
 

@@ -4,26 +4,24 @@
 # abstract (an unimplemented hook), Error roots in StandardError, and Draft's
 # parent is never built on its own: all left alone. Each finding is named for
 # the concrete parent, its subclasses as evidence.
-# Under a framework root (V1 P26, round-6 GH2): StripeCharge overrides a
-# working method of Charge, a concrete record (single-table inheritance), and
-# LineItems extends Array; GiftCharge only adds a method and stays quiet.
+# Without strict, a hierarchy under a framework root and a subclass of a core
+# class are left alone: Charge (single-table inheritance) and LineItems
+# (< Array) are reported only by inheritance_strict.
 # Refused bequest: ReadOnlyStore overrides Store's writes only to raise, one
 # finding per refused method, named for it. Mirror fills a hook its parent
 # leaves empty and calls super where it refines.
 present:
   - {kind: concrete_inheritance, package: "App::Scanner"}
-  - {kind: concrete_inheritance, package: "App::Charge"}
-  - {kind: concrete_inheritance, package: "App::LineItems"}
   - {kind: refused_bequest, package: "App::Store#write"}
   - {kind: refused_bequest, package: "App::Store#delete"}
 absent:
   - {kind: concrete_inheritance, package: "App::Exporter"}
   - {kind: concrete_inheritance, package: "App::Error"}
   - {kind: concrete_inheritance, package: "App::Document"}
+  - {kind: concrete_inheritance, package: "App::Charge"}
+  - {kind: concrete_inheritance, package: "App::LineItems"}
   - {kind: refused_bequest, package: "App::Store#changed"}
 messages:
   - {kind: concrete_inheritance, package: "App::Scanner", includes: "a subclass extends it"}
-  - {kind: concrete_inheritance, package: "App::Charge", includes: "a subclass overrides its working methods"}
-  - {kind: concrete_inheritance, package: "App::LineItems", includes: "extends Array, a concrete core class"}
   - {kind: refused_bequest, package: "App::Store#write", includes: "is overridden by a subclass"}
 evidence: [concrete_inheritance, refused_bequest]

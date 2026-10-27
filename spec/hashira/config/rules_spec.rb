@@ -22,6 +22,20 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
     expect(parse("all").enabled?("indirection")).to(be(true))
   end
 
+  it "holds the strict kinds back, under all too, and tightening turns on exactly them, carried through every copy" do
+    plain = [Hashira::Config::Rules::NONE, Hashira::Config::Rules::ALL, parse("all" => true), parse({})]
+    moved = plain.map { |rules| Hashira::Pipeline::KINDS.reject { rules.enabled?(it) == rules.tightened.enabled?(it) } }
+    copies = plain.first.tightened.naming(["nil_check"]).layered(Hashira::Config::Layers::NONE).bounded([])
+    strict = plain.map(&:strict?) + [copies.strict?, copies.narrowed(["nil_check"], ["nil_check"]).strict?]
+    expect([moved, strict]).to(eq([[Hashira::Config::Rules::STRICT] * 4, ([false] * 4) + [true, true]]))
+  end
+
+  it "turns a strict kind on when checks: names it, but not when a flag names it" do
+    named = described_class.parse({ "stateful_mixin" => true }, Hashira::Pipeline::KINDS)
+    flagged = Hashira::Config::Rules::ALL.naming(["stateful_mixin"])
+    expect([named, flagged].map { [it.enabled?("stateful_mixin"), it.strict?] }).to(eq([[true, false], [false, false]]))
+  end
+
   it "moves a kind's named limits, and keeps the default for one not given" do
     rules = parse("fragmentation" => { "helpers" => 6, "lines" => 2.5 })
     limits = %w[helpers lines].map { rules.limit("fragmentation", it, 1) }

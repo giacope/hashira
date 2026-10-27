@@ -19,8 +19,6 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   GUARDS = BRANCHES.first(2).freeze
 
-  WRITES = Hashira::Smells::Provenance::WRITES
-
   private
 
   def smelly? = checks.any?
@@ -29,7 +27,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def made?(check) = tested(check).any? { provenance.made?(it) }
 
-  def provenance = @_provenance ||= Hashira::Smells::Provenance.new(subject, foreign)
+  def provenance = @_provenance ||= Hashira::Smells::Provenance.new(subject, foreign, @rules)
 
   def body = @_body ||= Hashira::Smells::Scope.new(subject.node).inside
 
@@ -72,7 +70,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def assignments(node)
     case node
-    when Prism::LocalVariableReadNode then named(body.select { WRITES.include?(it.class) }, node.name)
+    when Prism::LocalVariableReadNode then named(body.select { provenance.writes.include?(it.class) }, node.name)
     when Prism::InstanceVariableReadNode then named(state.grep(Prism::InstanceVariableWriteNode), node.name)
     else []
     end

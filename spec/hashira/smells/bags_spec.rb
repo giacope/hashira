@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
-  def bagged(files) = sniffed(files, "data_class")
+  def bagged(files) = strictly(files, "data_class")
 
   def invoice(body) = <<~RUBY
     module Shop
@@ -32,6 +32,13 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
   RUBY
 
   def found(body) = bagged("lib/app/shop.rb" => shop, "lib/app/invoice.rb" => invoice(body))
+
+  it "reads declared bags under strict only, not by default or under checks: all" do
+    label = invoice("def label = @address.street + @address.city + Tag.new.to_s")
+    files = { "lib/app/shop.rb" => shop, "lib/app/invoice.rb" => label }
+    off = [Fixtures::NONE, Hashira::Config::Rules::ALL].map { sniffed(files, "data_class", rules: it) }
+    expect([off, bagged(files).map(&:package)]).to(eq([[[], []], ["Shop::Address"]]))
+  end
 
   it "flags a Struct value and a behaviorless record whose readers another class combines" do
     body = "def total = (@order.quantity * @order.unit_cents) + @order.shipping_cents\n  " \

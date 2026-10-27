@@ -136,9 +136,19 @@ things a baseline sees:
 
 ### Added
 
+- **`strict: true`** in `.hashira.yml`, or `--strict`, turns on the strict
+  set: the `stateful_mixin` kind and the stricter readings of `nil_check`,
+  `concrete_inheritance`, `low_cohesion` and `data_class` listed under
+  Changed. Without it every run reports what it reported before, under
+  `checks: all` too: the new rules report code that passed, and a codebase
+  gating on zero findings (rubocop-kata and kimera turn every kind on)
+  should not fail on an upgrade. `checks: { stateful_mixin: true }` turns
+  that kind on alone; `--kind` and `--fail-on` do not, since `--fail-on
+  smells` names every smell. On the three gems' own code the strict set
+  finds 0 in hashira, 3 in rubocop-kata and 12 in kimera.
 - Found by the round-6 conformance matrix (one Elegant Objects principle per
   case, a violating and a compliant project each):
-  - `stateful_mixin` (on by default): a mixin whose behavior works on its
+  - `stateful_mixin` (strict): a mixin whose behavior works on its
     host's state, by reading instance variables the module never assigns,
     keeping fields of its own in the host, or installing fields,
     associations, callbacks or validations on it (`included do after_save
@@ -366,11 +376,12 @@ things a baseline sees:
     callers talk to the delegate directly", which undoes the decorator Elegant
     Objects asks for, while the same class spelled with `def_delegators` was
     left alone.
-  - `nil_check` no longer exempts a parameter defaulting to nil: a method
-    that tests its own `coupon = nil` (or `label: nil`) is an optional
-    argument, two methods in one, and is told to split it or ask for a null
-    object, as Elegant Objects accepts no nil arguments. It was "the caller's
-    option". The check also follows a nil to another owned class's method
+  - Under `strict: true`, `nil_check` no longer exempts a parameter
+    defaulting to nil: a method that tests its own `coupon = nil` (or `label:
+    nil`) is an optional argument, two methods in one, and is told to split
+    it or ask for a null object, as Elegant Objects accepts no nil arguments.
+    By default it stays "the caller's option". Strict also follows a nil to
+    another owned class's method
     that can answer nil (its body ends in `detect`, `find`, `first`, `[]`,
     `dig`, `&.`, a literal `nil`, an `if` without `else`, or it returns early
     with nothing): `item = @catalog.find(code); item.nil?` in `Cart` is one
@@ -383,8 +394,9 @@ things a baseline sees:
     of every raising guard: `fail exception unless @socket` (excon),
     `raise InvalidEvent unless event` (state_machines) were reported because
     the check was the `unless` itself rather than its condition.
-  - `concrete_inheritance` no longer leaves every hierarchy rooted outside the
-    project alone (batch-1 GH2). Under a framework root, a subclass that
+  - Under `strict: true`, `concrete_inheritance` no longer leaves every
+    hierarchy rooted outside the project alone (batch-1 GH2). Under a
+    framework root, a subclass that
     overrides a working method of its concrete parent is reported, each
     overriding method as evidence: pay's `Stripe::Charge#sync!` over
     `Pay::Charge#sync!` and its three other STI families, collections-publisher's
@@ -392,21 +404,26 @@ things a baseline sees:
     or gives itself a constructor, stays quiet. A class extending `Array`,
     `Hash`, `String` or `Set` is reported on its own (V1 P26: `class LineItems
     < Array`), told to hold one in a field. A parent named `Base…` reads as
-    abstract, like `…Base`. The JSON detail of a `concrete_inheritance`
-    finding carries `mode` (`built`, `overriding` or `core`). 24 new findings in
-    the 30 round-6 projects, all judged right on reading.
-  - `data_class` no longer exempts a value by declaration (V1 P28): a bare
-    `Struct` or `Data` value, or an ActiveRecord model with no behavior of its
-    own, is reported once another owned class computes with two or more of its
-    fields from one object (`Invoice#total` over `@order.quantity`,
-    `@order.unit_cents`, `@order.shipping_cents`), each such method as
-    evidence. Its advice no longer offers "or declare it a Data value", which
-    would only move the bag under this rule. No new findings in the 30
-    round-6 projects (none of their 25 bare values is computed with
-    elsewhere) or in the three gems.
-  - `low_cohesion` judges models (batch-1 GH4). Its framework exemption,
-    written for controllers and mailers, covered every class under a
-    framework base; it now covers the presentation stratum only
+    abstract, like `…Base`. 24 new findings in the 30 round-6 projects, all
+    judged right on reading. The JSON detail of a `concrete_inheritance`
+    finding carries `mode` (`built`, `overriding` or `core`); without strict
+    it is always `built`.
+  - Under `strict: true`, `data_class` no longer exempts a value by
+    declaration (V1 P28): a bare `Struct` or `Data` value, or an ActiveRecord
+    model with no behavior of its own, is reported once another owned class
+    computes with two or more of its fields from one object (`Invoice#total`
+    over `@order.quantity`, `@order.unit_cents`, `@order.shipping_cents`),
+    each such method as evidence. No new findings in the 30 round-6 projects
+    (none of their 25 bare values is computed with elsewhere) or in the three
+    gems.
+  - `data_class`'s advice no longer offers "or declare it a Data value": a
+    `Data` value with nothing but its members is the same bag, which the
+    strict reading reports, so the advice only moved the finding out of
+    sight.
+  - Under `strict: true`, `low_cohesion` judges models (batch-1 GH4). Its
+    framework exemption, written for controllers and mailers, covers every
+    class under a framework base by default; strict narrows it to the
+    presentation stratum
     (controllers, mailers, jobs, channels, mailboxes). A model's column
     readers (a bare call to a name the class does not define) count as
     fields, as hashira does not read the schema: transition's `Hit` splits

@@ -11,9 +11,10 @@ class Hashira::Smells::Provenance
 
   REACHED = [Prism::InstanceVariableReadNode, Prism::CallNode].freeze
 
-  def initialize(subject, foreign)
+  def initialize(subject, foreign, rules)
     @subject = subject
     @foreign = foreign
+    @rules = rules
   end
 
   def made?(node, seen = Set.new)
@@ -24,14 +25,9 @@ class Hashira::Smells::Provenance
     end
   end
 
-  def source(node)
-    case node
-    when Prism::LocalVariableReadNode then sole(@foreign.writes(node.name).map { source(it.value) })
-    when Prism::CallNode then spring(node)
-    end
-  end
+  def source(node) = (sourced(node) if strict?)
 
-  def optional?(node) = node.is_a?(Prism::LocalVariableReadNode) && defaulted.include?(node.name)
+  def writes = strict? ? WRITES : WRITES.first(1)
 
   def options(nodes)
     named = nodes.select { optional?(it) }.map { it.name.to_s }.uniq
@@ -40,17 +36,29 @@ class Hashira::Smells::Provenance
 
   private
 
+  def strict? = @rules.strict?
+
+  def sourced(node)
+    case node
+    when Prism::LocalVariableReadNode then sole(@foreign.writes(node.name).map { sourced(it.value) })
+    when Prism::CallNode then spring(node)
+    end
+  end
+
+  def optional?(node) = node.is_a?(Prism::LocalVariableReadNode) && defaulted.include?(node.name)
+
   def local?(name, seen) = argument?(name) ? handed?(name) : @foreign.writes(name).any? { made?(it.value, seen) }
 
   def argument?(name) = @subject.parameters.include?(name)
 
   def handed?(name) = HIDDEN.include?(@subject.section) || defaulted.include?(name)
 
-  def defaulted
-    @_defaulted ||=
-      Hashira::Smells::Parameters.new(@subject.node).parts.filter_map do
-        it.name if OPTIONAL.include?(it.class) && it.value.is_a?(Prism::NilNode)
-      end
+  def defaulted = @_defaulted ||= strict? ? nils : []
+
+  def nils
+    Hashira::Smells::Parameters.new(@subject.node).parts.filter_map do
+      it.name if OPTIONAL.include?(it.class) && it.value.is_a?(Prism::NilNode)
+    end
   end
 
   def sole(found) = (found.first if found.any? && found.uniq.one?)
@@ -89,7 +97,7 @@ class Hashira::Smells::Provenance
     receiver = call.receiver
     case receiver
     when Prism::LocalVariableReadNode then @foreign.built?(receiver.name) || typed?(receiver.name, call.name)
-    when *REACHED then sprung?(call) || spoken?(built(receiver), call.name)
+    when *REACHED then strict? && (sprung?(call) || spoken?(built(receiver), call.name))
     else false
     end
   end

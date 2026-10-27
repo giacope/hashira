@@ -5,9 +5,9 @@ module Hashira::CLI
 
   Options =
     Data.define(
-      :directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact, :home, :rules
+      :directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact, :strict, :home, :rules
     ) do
-      def initialize(home: Hashira::CLI::Home::HERE, rules: Hashira::Config::Rules::NONE, **) = super
+      def initialize(home: Hashira::CLI::Home::HERE, rules: Hashira::Config::Rules::NONE, strict: nil, **) = super
 
       def self.parse(argv) = Settings.new(argv).options
 
@@ -25,13 +25,14 @@ module Hashira::CLI
       end
 
       def project
-        named = rules.naming(kinds + fail_on).narrowed(kinds, Hashira::Pipeline::KINDS)
+        named = ruled.naming(kinds + fail_on).narrowed(kinds, Hashira::Pipeline::KINDS)
         boundaries = decisions.boundaries + rules.boundaries
         Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
       end
 
       def analyzers = Hashira::Pipeline::ANALYZERS - skip
       private
+      def ruled = strict ? rules.tightened : rules
       def decisions
         recorded = Hashira::CI::Baseline.new(baseline)
         raise(Hashira::Error, recorded.trouble) if recorded.trouble
