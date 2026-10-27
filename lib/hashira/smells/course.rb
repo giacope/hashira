@@ -28,10 +28,20 @@ class Hashira::Smells::Course
       def handed(call) = Array(call.arguments&.arguments).flat_map { values(it) }.compact
 
       def values(argument) = argument.is_a?(Prism::KeywordHashNode) ? argument.elements.map(&:value) : [argument]
+
+      def shifts?(node)
+        case node
+        when Prism::CallNode then aims?(node) && node.receiver.slice.start_with?("@") && moves?(node.name)
+        when Prism::InstanceVariableWriteNode then held.include?(node.name.to_s)
+        else false
+        end
+      end
+
+      def moves?(name) = !name.end_with?("?") && name != first.name
     end
 
-  def initialize(definition, calls, discards, branches)
-    @definition = definition
+  def initialize(method, calls, discards, branches)
+    @method = method
     @calls = calls
     @discards = discards
     @branches = branches
@@ -39,15 +49,12 @@ class Hashira::Smells::Course
 
   def parted?(pair)
     first, last = pair
-    stretch = Stretch.new(first:, last:, held: receivers(first))
+    held = [first, *Hashira::Smells::Scope.new(first).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
+    stretch = Stretch.new(first:, last:, held:)
     left?(stretch) || disturbed?(stretch)
   end
 
   private
-
-  def receivers(call)
-    [call, *Hashira::Smells::Scope.new(call).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
-  end
 
   def left?(stretch)
     last = stretch.last
@@ -60,7 +67,7 @@ class Hashira::Smells::Course
 
   def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
 
-  def nodes = @_nodes ||= Hashira::Smells::Scope.new(@definition).inside
+  def nodes = @_nodes ||= Hashira::Smells::Scope.new(@method.node).inside
 
   def sorted = @_sorted ||= nodes.group_by(&:class)
 
@@ -69,8 +76,11 @@ class Hashira::Smells::Course
   def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.new(node).raise?
 
   def disturbed?(stretch)
-    disturbs?(stretch, commands) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) }
+    disturbs?(stretch, commands) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) } ||
+      disturbs?(stretch, @calls) { |call| errands.own?(call) && errands.of(call.name).any? { stretch.shifts?(it) } }
   end
+
+  def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
 
   def disturbs?(stretch, calls) = calls.any? { stretch.spans?(it) && meets?(it, stretch) && yield(it) }
 

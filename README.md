@@ -759,7 +759,11 @@ Findings (3):
   result is thrown away, two reads no single run reaches both of (`return`,
   `raise` and the `render :index and return` idiom end a run; `x or return`
   is a guard the run passes), a read after a
-  command on the receiver, a reading measured by distance or order against a
+  command on the receiver, or after a call on self whose method (or one it
+  calls on self) sends the instance variable read a message as a command or
+  as its own answer, but a predicate or that same reader, or reassigns it
+  (`start = @scanner.pos; token; @scanner.pos` with `def token =
+  @scanner.scan(…)`), a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop, also one that names each reading as it compares
   it, `while (now = clock.now) < deadline`), and a plain read of self, a local or an instance

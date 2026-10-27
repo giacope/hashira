@@ -120,7 +120,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def retries = @_retries ||= Hashira::Smells::Retries.new(subject.node)
 
-  def course = @_course ||= Hashira::Smells::Course.new(subject.node, every, discards, branches)
+  def course = @_course ||= Hashira::Smells::Course.new(subject, every, discards, branches)
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 

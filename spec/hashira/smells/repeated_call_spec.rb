@@ -1373,6 +1373,62 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     )
   end
 
+  it "parts reads of an instance variable around a call on self whose method moves it, however deep" do
+    reads = ->(between) { "[@scanner.pos, #{between}, @scanner.pos, #{between}, @scanner.pos]" }
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Lexer
+            attr_reader :scanner
+
+            def initialize(text) = @scanner = StringScanner.new(text)
+
+            def helped = #{reads["word"]}
+            def deep = #{reads["step"]}
+            def selfish = #{reads["self.word"]}
+            def reset = #{reads["restart"]}
+            def asked = #{reads["done?"]}
+            def same = #{reads["at"]}
+            def other = #{reads["note"]}
+            def cleared = #{reads["clear"]}
+            def foreign = #{reads["advance"]}
+            def elsewhere = #{reads["@peer.word"]}
+            def reader = [scanner.pos, skip, scanner.pos, skip, scanner.pos]
+            def peeked = #{reads["ahead"]}
+            def skipped = #{reads["blank"]}
+            def returned = #{reads["back"]}
+
+            private
+
+            def word = @scanner.scan(/\\w+/)
+            def step = word
+            def restart = @scanner = StringScanner.new("")
+            def done? = @scanner.eos?
+            def at = @scanner.pos
+            def note = @log.write(1)
+            def clear = @log = []
+            def skip = scanner.scan(/ /)
+            def ahead = "\#{@scanner.peek(1)}!"
+
+            def blank
+              @scanner.skip(/ +/)
+              true
+            end
+
+            def back
+              return @scanner.scan(/x/) if @flag
+
+              nil
+            end
+          end
+        end
+      end
+    RUBY
+    shown = findings.flat_map(&:evidence).map { it[/\A\S+/] }
+    expect(shown).to(eq((%w[@scanner.pos] * 6) + %w[scanner.pos @scanner.pos]))
+    expect(findings.flat_map(&:evidence).map { it[/lines? (\d+)/, 1] }).to(eq(%w[12 13 14 15 16 17 18 19]))
+  end
+
   it "excuses generated values and reads of the last regexp match, which any match replaces" do
     findings = repeated(<<~RUBY)
       module App

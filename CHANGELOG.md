@@ -746,6 +746,21 @@ From the third field test (thirty MIT-licensed codebases):
     fills (`parser = self.parser unless parser`, mechanize's
     `Page#encoding_error?`) stays an optional argument in either spelling,
     `if parser.nil?` included, which the old one-statement reading let pass.
+  - `repeated_call` parts two reads of an instance variable around a call on
+    self whose method moves it: mechanize's `WWWAuthenticateParser#parse`
+    reads `@scanner.pos` around `auth_scheme`, `spaces` and `auth_param`,
+    private helpers that scan `@scanner` forward, and naming the read would
+    give every challenge the same raw text. A self call between the reads
+    disturbs them when the method it reaches (or one that method calls on
+    self) sends the instance variable a message as a command (its result
+    thrown away) or as its own answer, other than a predicate or the same
+    reader, or reassigns it, as a command on the receiver already did. Still
+    reported: a helper that only asks (`@scanner.eos?`), rereads, or reads
+    the field to compute something else (rack-mini-profiler's
+    `matches_action?` builds a pattern from `@config.profile_parameter`),
+    one that touches another field, a method the class does not define, a
+    call on another receiver, and a receiver that is not an instance
+    variable (a reader or a local).
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

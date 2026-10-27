@@ -1,0 +1,16 @@
+# R6B3-H6. mechanize's WWWAuthenticateParser#parse reads @scanner.pos around
+# private helpers (auth_scheme, spaces, auth_param) that scan @scanner
+# forward: each read is a new position, and naming it made every
+# challenge's raw text the same slice. A call on self whose method (or a
+# method it calls on self) sends the instance variable a message as a
+# command or as its own answer (anything but a predicate or the same
+# reader), or reassigns it, parts the reads as a command on it does.
+# Still reported: Meter's helper only asks @scanner.eos?, and Gate's reads
+# @config.parameter to build a pattern (rack-mini-profiler's
+# matches_action?), which moves nothing.
+present:
+  - {kind: repeated_call, package: "Shop::Meter"}
+  - {kind: repeated_call, package: "Shop::Gate"}
+absent:
+  - {kind: repeated_call, package: "Shop::Lexer"}
+evidence: [repeated_call]
