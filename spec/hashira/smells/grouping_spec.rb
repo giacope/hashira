@@ -29,11 +29,11 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       eq(
         [
           [
-            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event", mode: :built },
+            "App::Event", { site: "events.rb:2", places: 2, parent: "App::Event" },
             ["App::Added (events.rb:3)", "App::Removed (events.rb:4)", "App::Event.new (events.rb:5)"]
           ],
           [
-            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper", mode: :built },
+            "App::Mapper", { site: "events.rb:6", places: 1, parent: "App::Mapper" },
             ["App::Fancy (events.rb:7)", "App::Mapper.new (events.rb:5)"]
           ]
         ]
@@ -208,6 +208,11 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     plural = "is a concrete class, and 2 subclasses override its working methods "
     expect(said).to(eq([plural, "is a concrete class, and a subclass overrides its working methods "]))
     expect(grouped({ "lib/app/charge.rb" => charges }, "concrete_inheritance")).to(be_empty)
+  end
+
+  it "names a strict finding's mode in its detail, where a parent built on its own names none" do
+    expect(tightly({ "lib/app/charge.rb" => charges }, "concrete_inheritance").map { it.detail.to_h[:mode] })
+      .to(eq([:overriding]))
   end
 
   def catalog = "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n"

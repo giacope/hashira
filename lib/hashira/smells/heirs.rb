@@ -3,7 +3,12 @@
 class Hashira::Smells::Heirs
   KIND = "concrete_inheritance"
 
-  Kin = Data.define(:site, :places, :parent, :mode)
+  BUILT = :built
+
+  Kin =
+    Data.define(:site, :places, :parent, :mode) do
+      def to_h = mode == BUILT ? super.except(:mode) : super
+    end
 
   def initialize(findings)
     @findings = findings

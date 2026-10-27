@@ -405,9 +405,9 @@ things a baseline sees:
     `Hash`, `String` or `Set` is reported on its own (V1 P26: `class LineItems
     < Array`), told to hold one in a field. A parent named `Base…` reads as
     abstract, like `…Base`. 24 new findings in the 30 round-6 projects, all
-    judged right on reading. The JSON detail of a `concrete_inheritance`
-    finding carries `mode` (`built`, `overriding` or `core`); without strict
-    it is always `built`.
+    judged right on reading. The JSON detail of such a finding carries
+    `mode` (`overriding` or `core`); a parent the project builds itself, the
+    only kind without strict, carries none, as before.
   - Under `strict: true`, `data_class` no longer exempts a value by
     declaration (V1 P28): a bare `Struct` or `Data` value, or an ActiveRecord
     model with no behavior of its own, is reported once another owned class
