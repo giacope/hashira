@@ -492,6 +492,13 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(found).to(eq([%w[held found], %w[held found optional keyword]]))
   end
 
+  it "takes a private method's nil default for a nil the code leaves, behind &., under strict only" do
+    source = "module App\n  class Thing\n    def run = label\n\n    private\n\n    " \
+      "def label(name = nil) = name&.upcase\n  end\nend\n"
+    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map(&:package) }
+    expect(found).to(eq([[], ["App::Thing#label"]]))
+  end
+
   it "flags blank? on a value the object holds, but not on a public argument or a method's result" do
     findings = checked(<<~RUBY)
       module App
