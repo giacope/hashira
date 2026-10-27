@@ -96,13 +96,15 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { path.last.end_with?(it) }
   end
 
-  def framed?(member) = patch?(member) || (member.exposed ? hosted?(member.owner) : surface.backed?(member.owner))
+  def framed?(member) = [member, *surface.forebears(member)].any? { hooked?(it) }
+
+  def hooked?(member) = patch?(member) || (member.exposed ? hosted?(member.owner) : surface.backed?(member.owner))
 
   def hosted?(path) = hosted[path]
 
   def hosted = @_hosted ||= Hash.new { |found, path| found.store(path, false) || found[path] = settle(path) }
 
-  def settle(path) = lineage(path).any? { surface.outside?(it) } || hosting?(path)
+  def settle(path) = surface.lineage(path).any? { surface.outside?(it) } || hosting?(path)
 
   def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
 
@@ -116,10 +118,8 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def open?(member)
     @_opened ||= surface.openings.select { mentions.open.include?(it.node) }.to_set(&:path)
-    lineage(member.owner).any? { @_opened.include?(it) }
+    surface.lineage(member.owner).any? { @_opened.include?(it) }
   end
-
-  def lineage(path) = [path, *surface.ancestors(path)]
 
   def rooted?(member) = declared?(member) || entry?(member.file) || api?(member)
 

@@ -632,6 +632,14 @@ From the third field test (thirty MIT-licensed codebases):
     `Json#sent` and `#received`, stateless because JSON is never colored,
     are its protocol and not `utility_function`s. A class an array, a fork
     or a table names without building is a peer the same way.
+  - `dead_code` leaves an override of a library hook to the library however
+    deep the subclass sits: dry-monads' `RegularConstructor <
+    ::SuperDiff::…::CustomObject` fills the flattener's private `open_token`
+    and `close_token` hooks and was left alone, but `TupleConstructor <
+    RegularConstructor` overriding the same two (and `CompareTuples`'s
+    `build_operation_tree`) were "never called", though deleting them turns
+    `Success[` into `Success(`. A private method no ancestor leaves to the
+    library is still judged.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,

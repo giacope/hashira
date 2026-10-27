@@ -1,0 +1,13 @@
+# R6B2-H1. dry-monads' TupleConstructor < RegularConstructor <
+# SuperDiff's CustomObject flattener: RegularConstructor's private
+# open_token/close_token fill the library's template hooks and are left
+# alone, and TupleConstructor's overrides of the same hooks were reported as
+# never called, though deleting them changes the diff (`Success[` becomes
+# `Success(`). An override of a hook an owned ancestor leaves to the library
+# is that hook too; a private method no ancestor defines is still judged.
+present:
+  - {kind: dead_code, package: "Shop::TupleFlattener#stale"}
+absent:
+  - {kind: dead_code, package: "Shop::Flattener#open_token"}
+  - {kind: dead_code, package: "Shop::TupleFlattener#open_token"}
+  - {kind: dead_code, package: "Shop::TupleFlattener#close_token"}

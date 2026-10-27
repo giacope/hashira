@@ -396,6 +396,47 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
     expect(dead(cache)).to(eq(%w[App::Tally#recount]))
   end
 
+  it "frames a private override of a hook an owned ancestor leaves to the library, however deep the subclass sits" do
+    diff = {
+      "lib/app/flattener.rb" => <<~RUBY
+        module App
+          class Flattener < ::FancyDiff::Flattener
+            private
+
+            def open_token = "("
+            def close_token = ")"
+          end
+
+          class TupleFlattener < Flattener
+            private
+
+            def open_token = "["
+            def spare = 1
+          end
+
+          class SetFlattener < TupleFlattener
+            private
+
+            def open_token = "{"
+          end
+
+          class Ledger
+            private
+
+            def recount = 1
+          end
+
+          class Audit < Ledger
+            private
+
+            def recount = 2
+          end
+        end
+      RUBY
+    }
+    expect(dead(diff)).to(eq(%w[App::TupleFlattener#spare App::Ledger#recount App::Audit#recount]))
+  end
+
   it "takes the constants of the namespaces an interpolated eval runs in for ones it may name, and reads a plain one" do
     pager = rails.merge(
       "app/models/pager/paginator.rb" => <<~'RUBY',

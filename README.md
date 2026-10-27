@@ -386,8 +386,9 @@ misses dead code rather than report live code. Also left alone:
   one: the framework calls them. So are a private method of such a class, which
   may fill the library's template hook (`RuboCop::Runner#file_finished`), or of
   a module such a class includes (solid_cache's `Store::Api#read_multi_entries`,
-  which ActiveSupport's `Cache::Store#read_multi` calls), and
-  the override points frameworks document by name (Devise's
+  which ActiveSupport's `Cache::Store#read_multi` calls), an override of such a
+  hook in a subclass however deep (dry-monads' `TupleConstructor#open_token`
+  under `RegularConstructor`'s), and the override points frameworks document by name (Devise's
   `active_for_authentication?`, FriendlyId's `should_generate_new_friendly_id?`,
   a routing constraint's `matches?`).
 - A module handed to a library from outside its own body (`Lib.prepend(M)`,

@@ -14,6 +14,8 @@ class Hashira::Coupling::Surface
       def place = [file, site[/\d+\z/].to_i]
 
       def hosts = exposed ? [path[...-1]].reject(&:empty?) : []
+
+      def sign = name.delete_suffix(selector)[-1]
     end
 
   def initialize(project, trees, census)
@@ -40,6 +42,10 @@ class Hashira::Coupling::Surface
     end
   end
 
+  def lineage(path) = [path, *ancestors(path)]
+
+  def forebears(member) = ancestors(member.owner).flat_map { selectors.fetch([it, member.sign, member.selector], []) }
+
   def mixers(path) = (@_mixers ||= mixed).fetch(path, [])
 
   def outside?(path) = outside[path]
@@ -49,6 +55,8 @@ class Hashira::Coupling::Surface
   def patched?(path) = @census.abroad?(path)
 
   private
+
+  def selectors = @_selectors ||= methods.group_by { [it.owner, it.sign, it.selector] }
 
   def outside = @_outside ||= Hash.new { |found, path| found[path] = types.fetch(path, []).any? { hosted?(it) } }
 
