@@ -134,7 +134,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def split(text, nodes) = nodes.group_by { binding(it) }.map { |held, same| [[text, held], same] }
 
-  def binding(node) = [bindings.free(node), enclosure(node)]
+  def binding(node) = [bindings.free(node), enclosure(node), lines(beneath(node).grep(Prism::SourceLineNode))]
 
   def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
 

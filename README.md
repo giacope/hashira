@@ -751,7 +751,8 @@ Findings (3):
   prefix count once, as the prefix (`qm.message × 5` for `qm.message.scope`,
   `qm.message.rcpt_to`, …), since one local fixes them all; an index read
   shows as written (`params[:user]`). Identity is by value: a local counts by its binding, a literal block is
-  part of the call, a reassignment between makes two values. Left alone: calls
+  part of the call, a reassignment between makes two values, and `__LINE__` is
+  the line it is written on (`__LINE__ + 1` on two lines is two values). Left alone: calls
   that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a read that
   draws the next item from a stream or a queue (`io.gets`, `getc`,
   `readpartial(n)`, `recv(n)`, `queue.pop`, `args.shift`; not `read` or

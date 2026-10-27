@@ -1,0 +1,10 @@
+# R6B3-H7. ancestry's InstanceMethodsBuilder.build hands two class_eval
+# heredocs `__FILE__, __LINE__ + 1` on lines 40 and 462: two values (41 and
+# 463), and naming the first gives the second heredoc the first's line
+# numbers in every backtrace. __LINE__ is read as the line it is written on.
+# Stamp repeats a real chain, `@mod.name.downcase`: still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Stamp"}
+absent:
+  - {kind: repeated_call, package: "Shop::Builder"}
+evidence: [repeated_call]

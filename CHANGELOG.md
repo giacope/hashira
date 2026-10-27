@@ -761,6 +761,12 @@ From the third field test (thirty MIT-licensed codebases):
     one that touches another field, a method the class does not define, a
     call on another receiver, and a receiver that is not an instance
     variable (a reader or a local).
+  - `repeated_call` reads `__LINE__` as the line it is written on: ancestry's
+    `InstanceMethodsBuilder.build` passes `__FILE__, __LINE__ + 1` with two
+    `class_eval` heredocs, on lines 40 and 462, and was told to name
+    `__LINE__.+(1)` in a local, which would give the second heredoc the
+    first's line numbers in every backtrace. The same text twice on one line
+    is still one value.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

@@ -1429,6 +1429,33 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.flat_map(&:evidence).map { it[/lines? (\d+)/, 1] }).to(eq(%w[12 13 14 15 16 17 18 19]))
   end
 
+  it "reads __LINE__ as the line it is written on, so the same text on two lines is two values" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Builder
+            def build
+              @mod.class_eval(@first, __FILE__, __LINE__ + 1)
+              @mod.class_eval(@second, __FILE__, __LINE__ + 1)
+            end
+
+            def twice = [__LINE__ + 1, __LINE__ + 1]
+
+            def named = [File.basename(__FILE__), File.basename(__FILE__)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "__LINE__.+(1) × 2 (line 9)",
+          "File.basename(__FILE__) × 2 (line 11)"
+        ]
+      )
+    )
+  end
+
   it "excuses generated values and reads of the last regexp match, which any match replaces" do
     findings = repeated(<<~RUBY)
       module App
