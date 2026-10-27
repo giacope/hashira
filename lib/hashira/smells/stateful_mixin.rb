@@ -8,6 +8,12 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
     belongs_to has_one has_many has_and_belongs_to_many
   ].freeze
 
+  SHARED = %i[
+    mattr_reader mattr_writer mattr_accessor cattr_reader cattr_writer cattr_accessor
+    thread_mattr_reader thread_mattr_writer thread_mattr_accessor
+    thread_cattr_reader thread_cattr_writer thread_cattr_accessor
+  ].freeze
+
   HOOKS = /\A(?:(?:before|after|around)_\w+|validates?(?:_\w+)?)\z/
 
   KEPT = [
@@ -68,9 +74,17 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def included = @_included ||= statements.grep(Prism::DefNode).select { it.name == INCLUDED && it.receiver }
 
-  def installs?(node)
-    node.is_a?(Prism::CallNode) && host?(node.receiver) && (FIELDS.include?(node.name) || HOOKS.match?(node.name.to_s))
-  end
+  def installs?(node) = node.is_a?(Prism::CallNode) && (field?(node) || shared?(node))
+
+  def field?(call) = host?(call.receiver) && (FIELDS.include?(call.name) || HOOKS.match?(call.name.to_s))
+
+  def shared?(call) = SHARED.include?(call.name) && (based?(call.receiver) || hosted?(call))
+
+  def hosted?(call) = SELVES.include?(call.receiver.class) && hosts.any? { it.covers?(call) }
+
+  def hosts = @_hosts ||= hooks.map { Hashira::Smells::Scope.new(it) }
+
+  def hooks = statements.grep(Prism::CallNode).select { it.name == INCLUDED }
 
   def host?(receiver) = SELVES.include?(receiver.class) || based?(receiver)
 

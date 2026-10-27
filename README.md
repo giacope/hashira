@@ -904,7 +904,10 @@ Findings (3):
   cannot see, `extend Forwardable`), keep state of
   their own in the host (`@events = …`), or it installs fields, associations,
   callbacks or validations on the host (`included do after_save :track end`,
-  `base.validate`, `attr_accessor`), with or without methods of its own; a
+  `base.validate`, `attr_accessor`, `mattr_accessor` in its `included`
+  block), with or without methods of its own; a module attribute
+  (`mattr_accessor`, `cattr_reader`) in the module's own body is the
+  module's, not its host's, and a
   call in a block that opens another object (`refine String do`,
   `Struct.new do`) installs nothing on the host. Elegant Objects composes
   decorators instead: wrap the host and reach it through its public methods. One finding

@@ -100,6 +100,60 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     )
   end
 
+  it "takes ActiveSupport's module attribute macros for fields when sent to the host, not to the module itself" do
+    findings = mixed(<<~RUBY)
+      module Suppressed
+        extend ActiveSupport::Concern
+
+        included do
+          thread_mattr_accessor :quiet, instance_accessor: false
+          delegate :quiet?, to: "self.class"
+        end
+
+        def broadcast = quiet? || Channel.send(self)
+      end
+
+      module Shared
+        extend ActiveSupport::Concern
+
+        included do
+          mattr_accessor :limit
+          cattr_reader :mode
+          thread_cattr_writer :scope
+        end
+      end
+
+      module Scoped
+        def self.included(base) = base.cattr_accessor(:scope)
+      end
+
+      module Settings
+        mattr_accessor :batch_size
+        self.batch_size = 1000
+
+        def self.config = yield(self)
+      end
+
+      module Configured
+        extend ActiveSupport::Concern
+
+        mattr_reader :mode
+
+        included { has_paper_trail }
+      end
+    RUBY
+    expect(findings.to_h { [it.package, it.evidence] }).to(
+      eq(
+        "Suppressed" => ["installs thread_mattr_accessor (line 5)"],
+        "Shared" => [
+          "installs mattr_accessor (line 16)", "installs cattr_reader (line 17)",
+          "installs thread_cattr_writer (line 18)"
+        ],
+        "Scoped" => ["installs cattr_accessor (line 23)"]
+      )
+    )
+  end
+
   it "flags a mixin that only installs hooks or fields on its host, with no method, but not a class-level one" do
     findings = mixed(<<~RUBY)
       module Pageish

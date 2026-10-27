@@ -693,6 +693,16 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's fifth batch (local-links-manager, bullet,
+  excon, counter_culture, turbo-rails):
+  - `stateful_mixin` takes ActiveSupport's module, class and thread
+    attribute macros (`mattr_accessor`, `cattr_reader`,
+    `thread_mattr_accessor`, ...) for fields a mixin installs on its host, as
+    it took `class_attribute`: turbo-rails' `Turbo::Broadcastable`, whose
+    `included` block installs `thread_mattr_accessor
+    :suppressed_turbo_broadcasts` on every model and whose methods test it,
+    went unreported under strict. One in the module's own body (ahoy's and
+    counter_culture's configuration) stays the module's.
 - Found by the sixth field test's fourth batch (transition, WebsiteOne,
   unparser, strong_migrations, hashie):
   - `low_cohesion` under strict reads a model's columns in every spelling the
