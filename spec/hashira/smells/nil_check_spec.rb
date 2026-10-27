@@ -755,6 +755,40 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(["Builder#warn"]))
   end
 
+  it "leaves a check alone whose branch calls a method of the class that always raises, as it would the raise" do
+    findings = checked(<<~RUBY)
+      class Form
+        def assign(name, value) = [verify!(name, value), deep!(name, value), loose!(name, value), soft!(name, value)]
+        def store(name, value) = [peer!(name, value), cycle!(name, value)]
+
+        private
+
+        def verify!(name, value) = (missing!(name) if value.nil?)
+        def deep!(name, value) = (absent!(name) if value.nil?)
+        def loose!(name, value) = (maybe!(name) if value.nil?)
+        def soft!(name, value) = (notice(name) if value.nil?)
+        def peer!(name, value) = (@peer.missing!(name) if value.nil?)
+        def cycle!(name, value) = (again!(name) if value.nil?)
+
+        def missing!(name)
+          message = "the field \#{name} is required"
+          raise ArgumentError, message
+        end
+
+        def absent!(name) = self.missing!(name)
+
+        def maybe!(name)
+          return if name == :id
+          raise ArgumentError, name.to_s
+        end
+
+        def notice(name) = @log.warn(name)
+        def again!(name) = again!(name)
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[Form#loose! Form#soft! Form#peer! Form#cycle!]))
+  end
+
   it "lets a one-line predicate answer its own nil test, but not one that branches or does more first" do
     findings = checked(<<~RUBY)
       class Box

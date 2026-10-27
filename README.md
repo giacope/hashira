@@ -866,9 +866,10 @@ Findings (3):
   answer (a node's absent receiver, a URI's missing scheme, Ruby's answer to a
   core value an owned constant holds: `PATTERN.match(path)` with `PATTERN =
   %r{…}`) are someone else's contract. A validator's guard on an attribute a presence validation already
-  reports, a check replaced by its default, a check whose branch raises (the
-  guard asserts against the nil), memoization in any of its spellings (`@x ||=
-  v`, `@x = v unless @x`, `@x = v if @x.nil?`, an `else` that only answers
+  reports, a check replaced by its default, a check whose branch raises, itself
+  or through a method of the class that always raises (its last statement
+  raises and it never returns early: the guard asserts against the nil),
+  memoization in any of its spellings (`@x ||= v`, `@x = v unless @x`, `@x = v if @x.nil?`, an `else` that only answers
   `@x`, a fill whose last statement writes `@x`, `return @x unless @x.nil?`
   before the fill), and a one-line predicate that
   answers a nil test (`def adapter_set? = !@adapter.nil?`) stay quiet. By

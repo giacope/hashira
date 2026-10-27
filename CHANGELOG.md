@@ -710,6 +710,15 @@ From the third field test (thirty MIT-licensed codebases):
     :site`, with its `prefix:`) is the association's field, as a
     `def_delegators` reader already was its target's. A column only written
     still makes no group of its own.
+  - `nil_check` leaves a guard alone whose branch raises through a method of
+    the class that always raises, as it leaves an inline `raise`: hashie's
+    `Dash#_assert_property_set!` and `#_assert_property_required!` call
+    `_fail_property_required_error!`, which builds the message and raises,
+    and were told to prefer a default or a null object, which would drop
+    Dash's required-property assertion. A method always raises when its last
+    statement raises (itself, or through another such method) and it never
+    returns early; a helper that may return, logs, or belongs to another
+    object leaves the check reported.
 - Found by the sixth field test's third batch (collections-publisher,
   travel-advice-publisher, mechanize, ancestry, ahoy):
   - `low_cohesion` under strict reads an association and the columns that back

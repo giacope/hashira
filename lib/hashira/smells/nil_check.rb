@@ -96,13 +96,13 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def memo?(check) = asserted(check).any? { Hashira::Smells::Memo.new(it, check).fills?(tested(check), subject.node) }
 
-  def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raise?(it) } }
+  def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raises.raise?(it) } }
 
   def asserted(check) = body.select { asserts?(it, check) }
 
   def asserts?(node, check) = GUARDS.include?(node.class) && [node, *within(node.predicate)].any? { it.equal?(check) }
 
-  def raise?(node) = Hashira::Smells::Exits.new(node).raise?
+  def raises = @_raises ||= Hashira::Smells::Raises.new(subject.home)
 
   def answering?(check) = predicate? && body.none? { BRANCHES.include?(it.class) } && !fetching?(check)
 

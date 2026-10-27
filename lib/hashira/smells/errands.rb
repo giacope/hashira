@@ -11,6 +11,8 @@ class Hashira::Smells::Errands
 
   def own?(call) = Hashira::Smells::Origin::SELVES.include?(call.receiver.class) && definitions.key?(call.name)
 
+  def reached(call) = own?(call) ? [definitions.fetch(call.name)] : []
+
   def of(name)
     reaches.fetch(name) do
       found = [name]
