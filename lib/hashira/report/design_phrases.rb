@@ -7,7 +7,9 @@ class Hashira::Report::Phrases
 
   COHESION = "Split the class along that seam."
 
-  DATA_CLASS = "Move the code that works on these fields into the class, or declare it a Data value."
+  DATA_CLASS = "Move the code that works on these fields into the class."
+
+  BAGGED = "Move that code into the class, so the data and what it means live together."
 
   MIDDLE_MAN = "Let callers talk to the delegate directly, or give the class work of its own."
 
@@ -16,12 +18,30 @@ class Hashira::Report::Phrases
   def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
 
   def on_concrete_inheritance(finding)
-    detail = finding.detail
+    detail = finding.detail.to_h
     places = detail[:places]
-    parent = detail[:parent]
-    return plain(finding, "inherits from #{parent}, a concrete class the project also builds", CONCRETE) unless places
+    mode = detail[:mode]
+    return cored(finding, detail[:parent]) if mode == :core
+    return plain(finding, inherits(detail), CONCRETE) unless places
+    if mode == :overriding
+      return plain(finding, "is a concrete class, and #{overriders(places)} its working methods", CONCRETE)
+    end
     extended = places == 1 ? "a subclass extends" : "#{places} subclasses extend"
     plain(finding, "is a concrete class the project also builds, and #{extended} it", CONCRETE)
+  end
+
+  def inherits(detail)
+    parent = detail[:parent]
+    return "overrides working methods of #{parent}, a concrete class" if detail[:mode] == :overriding
+    "inherits from #{parent}, a concrete class the project also builds"
+  end
+
+  def overriders(places) = "#{refusers(places)} override#{"s" if places == 1}"
+
+  def cored(finding, parent)
+    advice = "Keep one in a field and give the class methods of its own: what it inherits (map, select, merge) " \
+      "answers a plain #{parent}, not this class."
+    plain(finding, "extends #{parent}, a concrete core class", advice)
   end
 
   def on_refused_bequest(finding)
@@ -47,7 +67,11 @@ class Hashira::Report::Phrases
   def reaching(places) = places ? "— #{count(places, "method")} reach#{"es" if places == 1} through" : "reaches through"
 
   def on_data_class(finding)
-    plain(finding, "holds #{quoted(finding.detail[:fields])} and does nothing else", DATA_CLASS)
+    detail = finding.detail
+    users = detail[:users]
+    said = "holds #{quoted(detail[:fields])} and does nothing else"
+    return plain(finding, said, DATA_CLASS) unless users
+    plain(finding, "#{said}, while #{count(users, "method")} elsewhere compute#{"s" if users == 1} with them", BAGGED)
   end
 
   def on_middle_man(finding)

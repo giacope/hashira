@@ -31,6 +31,12 @@ class Hashira::Smells::Hierarchy
 
   def framed?(name) = [name, *ancestors(name)].any? { table.fetch(it, NONE).foreign }
 
+  def root(name)
+    framed = [name, *ancestors(name)].find { table.fetch(it, NONE).foreign }
+    written = table.fetch(framed, NONE).openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
+    Hashira::Analysis::Syntax.new(written).segments.join("::")
+  end
+
   def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
 
   def mixed(name) = table.fetch(name, NONE).openings.flat_map { lineage.mixins(it) }.flat_map { definitions(it) }

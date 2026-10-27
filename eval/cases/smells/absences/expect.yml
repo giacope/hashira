@@ -1,0 +1,21 @@
+# Never accept nil, never return nil (V1 P19, P24; round-6 GH5), under strict. Price tests
+# its own nil-defaulted coupon: an optional argument, two methods in one.
+# Cart checks what Catalog#find answers (a detect, nil when nothing
+# matches), and Unpublisher checks what a Finder built on the spot answers
+# (an early bare return): each nil is named for the owned method that makes
+# it. Left alone: Catalog#fetch, which raises instead, and Signup, which takes
+# a referral object and never tests it.
+config:
+  strict: true
+present:
+  - {kind: nil_check, package: "App::Price#discounted"}
+  - {kind: nil_check, package: "App::Catalog#find"}
+  - {kind: nil_check, package: "App::Finder#parent"}
+absent:
+  - {kind: nil_check, package: "App::Catalog#fetch"}
+  - {kind: nil_check, package: "App::Cart#sure"}
+  - {kind: nil_check, package: "App::Signup#welcome"}
+messages:
+  - {kind: nil_check, package: "App::Price#discounted", includes: "'coupon' defaults to nil"}
+  - {kind: nil_check, package: "App::Catalog#find", includes: "may be nil, and 1 method checks for it"}
+evidence: [nil_check]

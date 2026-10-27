@@ -23,7 +23,7 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
 
   def smelly? = subject.kind == :class && subject.claimed? && assigned && assumed.any? && legible?
 
-  def legible? = subject.sweep.none? { Hashira::Smells::Opaque.new([it]).any? }
+  def legible? = subject.legible?
 
   def assigned = subject.assigned
 

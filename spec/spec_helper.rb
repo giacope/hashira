@@ -69,9 +69,11 @@ module Fixtures
     end
   end
 
-  def sniffed(files, kind)
-    smells(files, rules: Hashira::Config::Rules::ALL) { |report| return report.findings.select { it.kind == kind } }
+  def sniffed(files, kind, rules: Hashira::Config::Rules::ALL)
+    smells(files, rules:) { |report| return report.findings.select { it.kind == kind } }
   end
+
+  def strictly(files, kind) = sniffed(files, kind, rules: STRICT)
 
   def fragments(sources)
     project = Object.new
@@ -111,6 +113,8 @@ module Fixtures
   end
 
   NONE = Hashira::Config::Rules::NONE
+
+  STRICT = Hashira::Config::Rules::ALL.tightened
 
   CLEAR = Hashira::Suppression::Suppressions::CLEAR
 

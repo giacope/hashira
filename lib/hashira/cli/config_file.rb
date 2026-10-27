@@ -5,7 +5,9 @@ require "yaml"
 class Hashira::CLI::ConfigFile
   DEFAULT = ".hashira.yml"
   FLAGS = %w[fail-on skip kind top package-by baseline].freeze
-  KEYS = ["directories", "checks", "layers", "boundaries", *FLAGS].freeze
+  KEYS = ["directories", "checks", "strict", "layers", "boundaries", *FLAGS].freeze
+
+  SWITCHES = [true, false].freeze
 
   def initialize(argv, home)
     @argv = argv
@@ -18,7 +20,7 @@ class Hashira::CLI::ConfigFile
 
   def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
 
-  def rules = blamed { checked_rules.layered(layers).bounded(declared) }
+  def rules = blamed { tightened(checked_rules.layered(layers).bounded(declared)) }
 
   def checked_rules = settings.key?("checks") ? checks : Hashira::Config::Rules::NONE
 
@@ -47,6 +49,14 @@ class Hashira::CLI::ConfigFile
   end
 
   def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Pipeline::KINDS)
+
+  def tightened(rules) = strict? ? rules.tightened : rules
+
+  def strict?
+    chosen = settings.fetch("strict", false)
+    return chosen if SWITCHES.include?(chosen)
+    raise(Hashira::Error, "strict takes true or false, not #{chosen.inspect}")
+  end
 
   def layers = Hashira::Config::Layers.parse(settings["layers"], @home.path)
 

@@ -1,13 +1,17 @@
 # A hand-rolled bag of accessors with nothing to do (Options) is a data class:
 # the behavior that reads its fields lives elsewhere. Left alone: a Data
 # value (declared intent), an error carrying a code (framework base), and a
-# class with behavior of its own.
+# class with behavior of its own. Without strict, Address (a bare Struct) and
+# Order (a record with nothing but an association) are left alone even though
+# Invoice computes with their fields: bags_strict reports them.
 present:
   - {kind: data_class, package: "App::Options"}
 absent:
   - {kind: data_class, package: "App::Size"}
   - {kind: data_class, package: "App::ApiError"}
   - {kind: data_class, package: "App::Range"}
+  - {kind: data_class, package: "App::Address"}
+  - {kind: data_class, package: "App::Order"}
 messages:
   - {kind: data_class, package: "App::Options", includes: "'timeout', 'retries', 'verbose'"}
 evidence: [data_class]

@@ -28,13 +28,21 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   LISTING = :instance_variables
 
+  STOCK = (Hashira::Smells::Readings::PERSISTENCE + Hashira::Analysis::UNIVERSAL.to_a).to_set.freeze
+
+  PRESENTATION = /(?:Controller|Mailer|Job|Channel|Mailbox)(?:::[A-Z]\w*)?\z/
+
   PEEK = :instance_variable_get
 
   private
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
 
-  def framed? = subject.family.framed?(subject.subject)
+  def framed? = strict? ? presented? : family.framed?(label)
+
+  def presented? = [label, root].any? { PRESENTATION.match?(it) }
+
+  def root = @_root ||= family.root(label)
 
   def methods = @_methods ||= subject.owned.reject { constructor?(it) }
 
@@ -92,7 +100,15 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
 
-  def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] }
+  def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] || column(it) }
+
+  def column(call) = (:"@#{call.name}" if columned?(call))
+
+  def columned?(call) = record? && call.variable_call? && !known.include?(call.name) && !STOCK.include?(call.name)
+
+  def record? = Hashira::Smells::Records::RECORD.match?(root)
+
+  def columns = sweep.grep(Prism::CallNode).select { columned?(it) }.to_set { :"@#{it.name}" }
 
   def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 
@@ -127,7 +143,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.to_set(&:to_sym)
 
-  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal&.to_sym
+  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal.to_s.to_sym
 
   def sweep = @_sweep ||= subject.sweep
 
@@ -139,11 +155,11 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     Hashira::Smells::Attributes.new(sweep).macros(DELEGATORS).flat_map do |call|
       target, *names = Array(call.arguments&.arguments).map { symbol(it) }
       field = target.to_s.start_with?("@") ? target : :"@#{target}"
-      names.compact.map { [it.to_s, field] }
+      names.reject(&:empty?).map { [it.to_s, field] }
     end.to_h
   end
 
-  def kept = @_kept ||= sweep.select { READS.include?(it.class) }.to_set(&:name) | attributes.values
+  def kept = @_kept ||= sweep.select { READS.include?(it.class) }.to_set(&:name) | attributes.values | columns
 
   def detail = { site:, count: groups.size, size: methods.size }
 

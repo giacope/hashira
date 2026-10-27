@@ -64,6 +64,15 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
+      name: "--strict", field: :strict,
+      text: [
+        "turn on the strict set: stateful_mixin and the",
+        "stricter readings of nil_check, concrete_inheritance,",
+        "data_class and low_cohesion (as strict: true in",
+        ".hashira.yml); off, even under checks: all"
+      ]
+    ),
+    Flag.new(
       name: "--package-by", arg: "WHAT", field: :packaging,
       parse: Choice.new("--package-by", PackageBy::CHOICES, :auto),
       text: [

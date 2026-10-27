@@ -1,0 +1,16 @@
+# Under strict, a framework root no longer exempts a hierarchy (V1 P26,
+# round-6 GH2): StripeCharge overrides a working method of Charge, a concrete
+# record (single-table inheritance), and LineItems extends Array; GiftCharge
+# only adds a method and is no evidence. Record is abstract.
+config:
+  strict: true
+present:
+  - {kind: concrete_inheritance, package: "App::Charge"}
+  - {kind: concrete_inheritance, package: "App::LineItems"}
+absent:
+  - {kind: concrete_inheritance, package: "App::Record"}
+  - {kind: concrete_inheritance, package: "App::GiftCharge"}
+messages:
+  - {kind: concrete_inheritance, package: "App::Charge", includes: "a subclass overrides its working methods"}
+  - {kind: concrete_inheritance, package: "App::LineItems", includes: "extends Array, a concrete core class"}
+evidence: [concrete_inheritance]

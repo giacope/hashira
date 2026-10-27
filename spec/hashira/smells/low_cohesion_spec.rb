@@ -170,8 +170,41 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     expect([split(small).size, split(small, rules).size]).to(eq([0, 1]))
   end
 
-  it "leaves modules alone, and classes whose owned root extends a framework class" do
-    framed = account("", "class Account < ApplicationRecord")
-    expect([split(account.sub("class Account", "module Account")), split(framed)]).to(all(be_empty))
+  it "leaves modules alone, and the presentation stratum: controllers, mailers, jobs, channels" do
+    heads = [
+      "class AccountsController < ApplicationController", "class Account < ActionMailer::Base",
+      "class Account < ActiveJob::Base", "class Account < ApplicationCable::Channel"
+    ]
+    framed = heads.flat_map { [split(account("", it)), split(account("", it), Fixtures::STRICT)] }
+    expect([split(account.sub("class Account", "module Account")), *framed]).to(all(be_empty))
+  end
+
+  it "judges a model like any class, its column readers counting as fields" do
+    model = <<~RUBY
+      class Account < ApplicationRecord
+        belongs_to :owner
+        def debt = balance.negative? ? -balance : 0
+        def credit = balance.positive? ? balance : 0
+        def overdrawn? = balance < -100
+        def domain = email.split("@").last
+        def masked = email.sub(/\A[^@]+/, "***")
+        def corporate? = domain != "gmail.com" && !errors.any?
+      end
+    RUBY
+    strict = [account("", "class Account < ApplicationRecord"), model].map { split(it, Fixtures::STRICT).size }
+    expect([strict, [model].map { split(it).size + split(it, Hashira::Config::Rules::ALL).size }]).to(eq([[1, 1], [0]]))
+    expect(split(model, Fixtures::STRICT).first.evidence).to(
+      eq(
+        [
+          "debt, credit, overdrawn? (@balance)",
+          "domain, masked, corporate? (@email)"
+        ]
+      )
+    )
+  end
+
+  it "takes a bare call for a field only in a model" do
+    plain = account.sub("def balance = @balance", "def balance = audit && @balance")
+    expect(split(plain.sub("def ping = @mailer.ping", "def ping = audit && @mailer.ping")).size).to(eq(1))
   end
 end

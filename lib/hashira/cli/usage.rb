@@ -31,9 +31,10 @@ class Hashira::CLI::Usage
     A .hashira.yml in the project's root sets default options, each key a
     flag without its dashes (fail-on, skip, kind, top, package-by,
     baseline) plus directories, and checks: turns a kind on or off or
-    sets its threshold (checks: all turns on the opt-in kinds too). A
-    flag typed on the command line wins, and a setting the command
-    line rules out (fail-on under --json) sits that run out.
+    sets its threshold (checks: all turns on the opt-in kinds too).
+    strict: true is --strict. A flag typed on the command line wins,
+    and a setting the command line rules out (fail-on under --json)
+    sits that run out.
 
     A "# hashira:disable KIND -- REASON" comment silences a finding on
     its line (disable-next-line: the line below); the reason is required,
