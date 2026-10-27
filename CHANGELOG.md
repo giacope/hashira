@@ -718,6 +718,20 @@ From the third field test (thirty MIT-licensed codebases):
     `refused_bequest` and the strict "working method" reading already took
     any raise-only stub for unimplemented. A method that raises another error
     (`ArgumentError`) is still a working method.
+  - A library's hook stays a hook unless the project sends its name to an
+    object of the class's own lineage: collections-publisher's
+    `DependentTagPublishJob#perform`, which Sidekiq calls, lost its exemption
+    because controllers call an unrelated `ListPublisher.new(@tag).perform`,
+    and `SlugValidator#validate`, which ActiveModel calls, because a model
+    writes `save!(validate: false)`; `utility_function` said to make each
+    private (NoMethodError). A message now counts for a class when it goes to
+    `self` inside its lineage (the class, an ancestor, a subclass, a mixin),
+    to an object built from a class of that lineage, or to a receiver hashira
+    cannot type; one sent to another class's objects or to a library's does
+    not, and a hash key or keyword is a label, not a message. warden's
+    `Config#serialize_into_session` and `#serialize_from_session` (forwarders
+    to `Warden::Manager`'s class methods, on a `Hash` subclass) go quiet the
+    same way.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

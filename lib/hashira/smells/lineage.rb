@@ -35,8 +35,9 @@ class Hashira::Smells::Lineage
   def mixins(type) = named(type, MIXINS).filter_map { resolve(type.name, Hashira::Analysis::Syntax.new(it).segments) }
 
   def messages(type)
-    told = Set.new.compare_by_identity.merge(macros(type))
-    sweep(type).reject { told.include?(it) }.filter_map { message(it) }
+    swept = sweep(type)
+    told = Set.new.compare_by_identity.merge(macros(type)).merge(swept.grep(Prism::AssocNode).map(&:key))
+    swept.reject { told.include?(it) }.filter_map { message(type, it) }
   end
 
   def candidates(owner, segments)
@@ -49,11 +50,18 @@ class Hashira::Smells::Lineage
 
   private
 
-  def message(node)
+  def message(type, node)
     case node
-    when Prism::CallNode then node.name
-    when Prism::SymbolNode then Hashira::Analysis::Syntax.new(node).symbol
+    when Prism::CallNode then [node.name, addressee(type, node.receiver)]
+    when Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).symbol, nil]
     end
+  end
+
+  def addressee(type, receiver)
+    return type.name if Hashira::Smells::Origin::SELVES.include?(receiver.class)
+    built = receiver.is_a?(Prism::CallNode) && receiver.name == :new
+    segments = Hashira::Analysis::Syntax.new(built ? receiver.receiver : receiver).segments
+    candidates(type.name, segments).find { index.key?(it) } || segments if segments.any?
   end
 
   def descendants(name)

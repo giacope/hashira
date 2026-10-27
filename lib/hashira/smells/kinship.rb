@@ -10,13 +10,21 @@ class Hashira::Smells::Kinship
 
   def protocol(type)
     name = type.name
-    sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
     spoken = words(name)
-    hooks = adopted?(name) ? spoken - (sent - heritage(name)) : Set.new
+    hooks = adopted?(name) ? spoken - (told(name) - heritage(name)) : Set.new
     (spoken & kindred(name)) | hooks
   end
 
   private
+
+  def told(name)
+    kin = [nil, name, *reach(name, ancestry), *reach(name, descent)]
+    kin.map { letters.fetch(it, Set.new) }.reduce(:|)
+  end
+
+  def letters
+    @_letters ||= @types.flat_map { @lineage.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
+  end
 
   def kindred(name)
     rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)

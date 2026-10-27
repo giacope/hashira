@@ -824,6 +824,11 @@ Findings (3):
   hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
   `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
   `local_variables` may touch any local, instance variable or method in scope.
+  A hook's name is the project's own only where it goes to `self`, to an
+  object of the class's own lineage or to one hashira cannot type: sent only
+  to another class's objects (`ListPublisher.new(tag).perform` beside a
+  Sidekiq job's `perform`) or spelled as a hash key (`save!(validate:
+  false)`), it stays the library's.
 - **manual_dispatch** — a `respond_to?` probe, or a `case`/`is_a?` ladder over
   two or more of the codebase's own classes or the object's own status. The
   probe must be on self or on an object whose owned class can be named (a value

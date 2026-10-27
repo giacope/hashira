@@ -239,7 +239,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
 
         class User
-          def go = @task.handle(1)
+          def go = @task.handle(1) && @job.perform(1)
         end
       end
     RUBY
@@ -417,6 +417,83 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     RUBY
     findings = sniffed({ "lib/app/place.rb" => validator }, "utility_function")
     expect(findings.map(&:package)).to(eq(%w[App::NewestOnly#check App::Audit#run]))
+  end
+
+  def jobs(extra, head = "PublishJob") = <<~RUBY
+    module App
+      class BaseJob
+        def run(id) = id.to_s
+      end
+
+      module Retried
+        def again(id) = id.to_s
+      end
+
+      class #{head}
+        include Sidekiq::Job
+
+        def perform(id) = Tag.find(id).publish
+      end
+
+      class UrgentJob < PublishJob
+      end
+
+      class ListPublisher
+        def initialize(tag) = @tag = tag
+
+        def perform = @tag.publish
+
+        def run = perform
+      end
+
+      class Lists
+        def create = ListPublisher.new(@tag).perform
+        def other = Library::Runner.new.perform
+        def settle = { perform: true }.merge(@tag)
+        def pick = ListPublisher.perform(@tag)
+        #{extra}
+      end
+    end
+  RUBY
+
+  def performs?(source)
+    sniffed({ "lib/app/jobs.rb" => source }, "utility_function").map(&:package).include?("App::PublishJob#perform")
+  end
+
+  it "keeps a library hook a hook unless the project sends its name to an object of the class's own lineage" do
+    sent = [
+      "", "def again(id) = PublishJob.new.perform(id)", "def later(id) = UrgentJob.new.perform(id)",
+      "def any(job) = job.perform(1)", "def told(job) = job.send(:perform)", "def own = PublishJob.perform(1)",
+      "def found = Registry.find(1).perform"
+    ]
+    expect(sent.map { performs?(jobs(it)) }).to(eq([false, true, true, true, true, true, true]))
+  end
+
+  it "counts a bare call to a library hook as sent to the class only from its own lineage" do
+    lineage = [
+      jobs("", "PublishJob < BaseJob").sub("def run(id) = id.to_s", "def run(id) = perform(id)"),
+      jobs("", "PublishJob\n    include Retried").sub("def again(id) = id.to_s", "def again(id) = self.perform(id)")
+    ]
+    expect(lineage.map { performs?(it) }).to(eq([true, true]))
+  end
+
+  it "reads a hash key or a keyword argument as a label, not a message, so a validator keeps its hook" do
+    validator = <<~RUBY
+      module App
+        class SlugValidator < ActiveModel::Validator
+          def validate(record) = record.errors.add(:slug, "bad") unless record.slug
+        end
+
+        class Page < ActiveRecord::Base
+          validates_with SlugValidator
+          def import! = save!(validate: false)
+          def check(record) = validate(record)
+        end
+      end
+    RUBY
+    told = validator.sub("def check(record) = validate(record)", "def check(checker) = checker.validate(self)")
+    flagged = [validator, told].map { sniffed({ "lib/app/page.rb" => it }, "utility_function").map(&:package) }
+    expect(flagged.map { it.include?("App::SlugValidator#validate") }).to(eq([false, true]))
   end
 
   it "traces a finding by the code it names, so a rename still matches and a different method does not" do
