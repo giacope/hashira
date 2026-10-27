@@ -8,6 +8,11 @@ require_relative "refs"
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   MINTS = %i[new dup clone allocate rand srand generate].freeze
 
+  DRAWS = %i[
+    gets getc getbyte getch readline readchar readbyte readpartial read_nonblock sysread
+    recv recvfrom recv_nonblock recvmsg accept_nonblock pop shift deq
+  ].freeze
+
   SOURCES = %w[SecureRandom Random].freeze
 
   LITERALS = [
@@ -55,7 +60,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def minted?(node) = mints?(node.name) || spawns?(node.receiver)
 
-  def mints?(name) = MINTS.include?(name)
+  def mints?(name) = MINTS.include?(name) || DRAWS.include?(name)
 
   def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
 

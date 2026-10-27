@@ -603,6 +603,35 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "excuses reads that draw the next item from a stream or a queue, which each call consumes" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def handshake
+              status = @socket.gets("\\n")
+              while (line = @socket.gets("\\n"))
+                break if line == "\\r\\n"
+              end
+              status
+            end
+
+            def pair(queue) = [queue.pop, queue.pop, queue.shift, queue.shift, queue.deq, queue.deq]
+
+            def chunks = [@io.readpartial(512), @io.readpartial(512), @io.read_nonblock(9), @io.read_nonblock(9)]
+
+            def bytes = [@io.getc, @io.getc, @io.getbyte, @io.getbyte, @io.readline, @io.readline]
+
+            def heads(items) = [items.first(2), items.first(2)]
+
+            def lines(path) = [File.readlines(path), File.readlines(path)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[heads lines]))
+  end
+
   it "excuses repeats that no single run can reach twice" do
     findings = repeated(<<~RUBY)
       module App

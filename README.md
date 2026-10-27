@@ -728,7 +728,10 @@ Findings (3):
   `qm.message.rcpt_to`, …), since one local fixes them all; an index read
   shows as written (`params[:user]`). Identity is by value: a local counts by its binding, a literal block is
   part of the call, a reassignment between makes two values. Left alone: calls
-  that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a command whose
+  that mint a fresh value (`dup`, `rand`, `SecureRandom.hex`), a read that
+  draws the next item from a stream or a queue (`io.gets`, `getc`,
+  `readpartial(n)`, `recv(n)`, `queue.pop`, `args.shift`; not `read` or
+  `File.readlines(path)`, which a file answers alike twice), a command whose
   result is thrown away, two reads no single run reaches both of (`return`,
   `raise` and the `render :index and return` idiom end a run; `x or return`
   is a guard the run passes), a read after a

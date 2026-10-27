@@ -646,6 +646,13 @@ From the third field test (thirty MIT-licensed codebases):
     as one value to name, and naming it freezes `now`, so the loop never
     ends. The comparison's operand is read through its parentheses and the
     local it writes, as README's "a deadline loop" says.
+  - `repeated_call` leaves alone a read that draws the next item from a
+    stream or a queue (`gets`, `getc`, `getbyte`, `readline`, `readpartial`,
+    `read_nonblock`, `recv`, `accept_nonblock`, `pop`, `shift`, `deq`, …):
+    ferrum's proxy reads the upstream status line and then each header line
+    with the same `os.gets(WEBrick::LF)`, and naming the result would reuse
+    the status line and never end the header loop. `read` and
+    `File.readlines(path)` read twice are still reported.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,
