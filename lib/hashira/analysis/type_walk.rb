@@ -17,6 +17,8 @@ module Hashira
 
       def sections = Visibility.new(@node).entries
 
+      def written = Visibility.new(@node).written
+
       def dsl?(host = nil) = @node.is_a?(Prism::CallNode) && Block.new(@node, host).dsl?
 
       def type? = @block || @opens || @node.is_a?(Prism::ClassNode) || @node.is_a?(Prism::ModuleNode)

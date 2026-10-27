@@ -61,18 +61,24 @@ module Hashira
       end
 
     Sketch =
-      Data.define(:name, :node, :kind, :file, :lexical) do
+      Data.define(:name, :node, :kind, :file, :lexical, :handed) do
+        def initialize(handed: true, **) = super
+
         def parent = (node.superclass if node.is_a?(Prism::ClassNode))
 
-        def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name
+        def owner = kind == :module && handed ? name.delete_suffix(Hashira::Smells::Concerns::LEVEL) : name
 
         def settle(protocol:, ownership:, **facts)
           TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), **facts)
         end
 
         def defs(protocol, ownership)
-          Hashira::Analysis::TypeWalk.new(node).sections.map do |definition, section|
-            MethodContext.new(owner:, node: definition, file:, section:, ownership:, host: kind, protocol:, home: node)
+          walk = Hashira::Analysis::TypeWalk.new(node)
+          (handed ? walk.sections : walk.written).map do |definition, section|
+            MethodContext.new(
+              owner: definition.receiver ? name : owner, node: definition, file:, section:, ownership:, host: kind,
+              protocol:, home: node
+            )
           end
         end
       end

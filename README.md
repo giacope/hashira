@@ -1031,7 +1031,14 @@ one keep the enclosing owner: `included`, `class_methods`, `concerning`,
 `class_eval` on self, Thor's `no_tasks`/`no_commands`, `helpers` in a class
 whose superclass is Sinatra's or Padrino's, `Class.new`, `Module.new`,
 `Struct.new`, `Data.define`. A block a constant evaluates
-(`Rack::Request.class_eval do … end`) belongs to that constant.
+(`Rack::Request.class_eval do … end`) belongs to that constant. The design
+smells name a concern's class-level methods for the concern with a dot
+(`Searchable.search`), from `class_methods do` or from a `ClassMethods`
+module its namespace hands its host or takes itself (`extend
+ActiveSupport::Concern`, an `included` block, `base.extend` in
+`self.included`, or `extend ClassMethods`); any other
+`ClassMethods` module keeps its own name (`Ancestry::ClassMethods#tree_view`),
+and a `def self.` inside one is that module's (`Ancestry::ClassMethods.check!`).
 
 ## Hotspots
 

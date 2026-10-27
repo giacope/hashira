@@ -767,6 +767,20 @@ From the third field test (thirty MIT-licensed codebases):
     `__LINE__.+(1)` in a local, which would give the second heredoc the
     first's line numbers in every backtrace. The same text twice on one line
     is still one value.
+  - The design smells name a `ClassMethods` module's methods for its
+    namespace (`Concern.method`) only when that namespace hands the module to
+    its host or extends it itself (`extend ActiveSupport::Concern`, an
+    `included` or `class_methods` block, `base.extend` in `self.included`, or
+    `extend ClassMethods`), and never a `def self.` inside it, which is the module's own: ancestry's
+    `nil_check` and `repeated_call` named `Ancestry.tree_view`,
+    `Ancestry.restore_ancestry_integrity!` and
+    `Ancestry._check_ancestry_integrity!`, methods `Ancestry` does not answer
+    (the macro `has_ancestry` extends `Ancestry::ClassMethods` into each
+    model, and the code calls `Ancestry::ClassMethods._check…`), while the
+    complexity table named them `Ancestry::ClassMethods#…`. Any other
+    `ClassMethods` module's methods now keep that name, `#` and their own
+    visibility. Baseline entries named the old way move until
+    `--update-baseline`.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

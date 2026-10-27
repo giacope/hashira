@@ -190,7 +190,48 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       eq(
         %w[
           App::Zone::Greets.summon App::Zone::Greets.stash App::Zone::Greets.shelve App::Zone::Greets#greet
-          App::Zone::Greets.gather App::Zone.bare App::Zone::Styles::ClassMethods#check
+          App::Zone::Greets.gather App::Zone::ClassMethods#bare App::Zone::Styles::ClassMethods#check
+        ]
+      )
+    )
+  end
+
+  def concern(name, hook) = <<~RUBY
+    module #{name}
+      #{hook}
+
+      module ClassMethods
+        def find(duck) = (duck.honk if duck.respond_to?(:honk))
+
+        private
+
+        def hide(duck) = (duck.honk if duck.respond_to?(:honk))
+        def self.own(duck) = (duck.honk if duck.respond_to?(:honk))
+      end
+    end
+  RUBY
+
+  def hooks
+    {
+      "Concerned" => "extend ActiveSupport::Concern", "Hooked" => "def self.included(base) = base.extend(ClassMethods)",
+      "Blocked" => "included { scope :live }", "Plain" => "", "Told" => "def self.included(base) = base.include(Other)",
+      "Bare" => "extend", "Inert" => "included", "Extended" => "extend ClassMethods", "Helped" => "extend Helpers"
+    }
+  end
+
+  it "names a ClassMethods module's methods for the concern only when the concern hands it to its host" do
+    files = hooks.to_h { |name, hook| ["lib/app/#{name.downcase}.rb", concern(name, hook)] }
+    files["lib/app/duck.rb"] = "class Duck\n  def honk = 1\n  def moo = 1\nend\n"
+    expect(sniffed(files, "manual_dispatch").map(&:package).sort).to(
+      eq(
+        %w[
+          Bare::ClassMethods#find Bare::ClassMethods#hide Bare::ClassMethods.own Blocked.find Blocked.hide
+          Blocked::ClassMethods.own Concerned.find Concerned.hide Concerned::ClassMethods.own Extended.find
+          Extended.hide Extended::ClassMethods.own Helped::ClassMethods#find Helped::ClassMethods#hide
+          Helped::ClassMethods.own Hooked.find Hooked.hide
+          Hooked::ClassMethods.own Inert::ClassMethods#find Inert::ClassMethods#hide Inert::ClassMethods.own
+          Plain::ClassMethods#find Plain::ClassMethods#hide Plain::ClassMethods.own Told::ClassMethods#find
+          Told::ClassMethods#hide Told::ClassMethods.own
         ]
       )
     )
