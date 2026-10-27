@@ -135,6 +135,39 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
     expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Types::Pick#add]))
   end
 
+  it "reads a ::-rooted constant a value is tested against at the root, beside an owned namesake" do
+    files = {
+      "lib/app/hash.rb" => "module App\n  class Hash < ::Hash; end\nend\n",
+      "lib/app/mixin.rb" => <<~RUBY
+        module App
+          module Mixin
+            def indifferent? = true
+            def merge_in(other) = other.is_a?(::Hash) && other.respond_to?(:indifferent?) && other.indifferent?
+            def blend(other) = other.is_a?(Hash) && other.respond_to?(:indifferent?) && other.indifferent?
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Mixin#blend]))
+  end
+
+  it "takes a test against a computed class for no type evidence, leaving the name to type the value" do
+    files = {
+      "lib/app/node.rb" => <<~RUBY
+        module App
+          class Node
+            def name = "n"
+          end
+
+          class Walker
+            def computed(node, kind) = node.is_a?(kind) && node.respond_to?(:name) && node.name
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Walker#computed]))
+  end
+
   it "lets a rescued library exception be probed even where its name reads as an owned class" do
     files = {
       "lib/app/client.rb" => <<~RUBY

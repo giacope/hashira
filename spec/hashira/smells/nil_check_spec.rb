@@ -931,6 +931,31 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     )
   end
 
+  it "types a local built from a ::-rooted constant at the root, not as the owned class of the same name" do
+    files = {
+      "lib/app/shop/catalog.rb" =>
+        "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n",
+      "lib/app/shop/cart.rb" => <<~RUBY
+        module Shop
+          class Cart
+            def owned
+              catalog = Catalog.new(@codes)
+              found = catalog.find(2)
+              found || 0
+            end
+
+            def rooted
+              catalog = ::Catalog.new(@codes)
+              found = catalog.find(2)
+              found || 0
+            end
+          end
+        end
+      RUBY
+    }
+    expect(strictly(files, "nil_check").map(&:package)).to(eq(["Shop::Cart#owned"]))
+  end
+
   def answers(body)
     store = "module Shop\n  class Store\n    def get\n    #{body}\n    end\n  end\nend\n"
     user = "module Shop\n  class User\n    def go = @store.get.nil?\n  end\nend\n"

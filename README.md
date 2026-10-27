@@ -837,7 +837,9 @@ Findings (3):
 - **manual_dispatch** — a `respond_to?` probe, or a `case`/`is_a?` ladder over
   two or more of the codebase's own classes or the object's own status. The
   probe must be on self or on an object whose owned class can be named (a value
-  of unknown type is never taken for the method's own class), and ask for a
+  of unknown type is never taken for the method's own class; a constant it is
+  tested against, built from or rescued as resolves as Ruby resolves it, so
+  `other.is_a?(::Hash)` is Ruby's Hash beside a `Shop::Hash`), and ask for a
   message the codebase defines, which a computed message never is. Where the
   receiver's only type evidence is its name (`template` read as
   `Shop::Template`), the probe is the codebase's only if that class or its

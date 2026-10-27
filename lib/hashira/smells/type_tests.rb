@@ -20,7 +20,8 @@ class Hashira::Smells::TypeTests
   end
 
   def of(&)
-    (probes(&) + arms(&)).map { Hashira::Analysis::Syntax.new(it).segments }.reject(&:empty?) + lookups(&)
+    written = (probes(&) + arms(&)).map { Hashira::Analysis::Syntax.new(it) }.reject { it.segments.empty? }
+    written.map { [it.segments, it.rooted?] } + lookups(&).map { [it, false] }
   end
 
   private

@@ -727,6 +727,15 @@ From the third field test (thirty MIT-licensed codebases):
     That state is kata's to report (`Kata/NoClassMethodLogic`,
     `Kata/FrozenState`); `stateful_mixin` already read such a module as no
     mixin.
+  - A `::`-rooted constant a value is tested against (`is_a?`, `case`),
+    built from (`::Catalog.new`) or rescued as types the value at the root,
+    not as the owned class of the same name: hashie's
+    `IndifferentAccess#_hash_lacking_indifference?` and
+    `#_hash_with_indifference?` test `other.is_a?(::Hash)`, Ruby's Hash, and
+    `manual_dispatch` read it as `Hashie::Hash` and reported their
+    `respond_to?` probes on a value of no owned class. The same root reaches
+    strict `nil_check`'s typing of a built local and `boundary_sprawl`'s
+    foreign roots (`::Ast::Node` beside an owned `App::Ast::Node`).
 - Found by the sixth field test's third batch (collections-publisher,
   travel-advice-publisher, mechanize, ancestry, ahoy):
   - `low_cohesion` under strict reads an association and the columns that back

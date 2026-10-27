@@ -23,6 +23,8 @@ class Hashira::Smells::Foreign
 
   SHAPES = %i[permit to_h to_a map flat_map filter_map].freeze
 
+  TOP = ""
+
   STATE = [
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode,
     Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode,
@@ -40,16 +42,16 @@ class Hashira::Smells::Foreign
   end
 
   def reaches
-    owner = @subject.owner
-    sources = tests { true }.map { @ownership.origin(it, owner) }
-    sources.reject { @ownership.owned?(it, owner) }.map(&:first).uniq
+    scoped = tests { true }.map { |path, rooted| [path, scope(rooted)] }
+    sources = scoped.map { |path, within| [@ownership.origin(path, within), within] }
+    sources.reject { |path, within| @ownership.owned?(path, within) }.map { |path, _| path.first }.uniq
   end
 
   def external?(name) = fenced?(name) || rescued?(name) || writes(name).any? { spawned?(it.value) }
 
   def kinds(local)
-    known(local).filter_map do
-      @ownership.place(it, @subject.owner)
+    known(local).filter_map do |path, rooted|
+      @ownership.place(path, @subject.owner, rooted:)
     end.uniq.reject { it == @subject.owner }.map { it.split("::") }
   end
 
@@ -60,6 +62,8 @@ class Hashira::Smells::Foreign
   def writes(name) = among(Prism::LocalVariableWriteNode, name)
 
   private
+
+  def scope(rooted) = rooted ? TOP : @subject.owner
 
   def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 
@@ -74,7 +78,7 @@ class Hashira::Smells::Foreign
 
   def fenced?(name)
     tested = tests { it == name }
-    tested.any? && (tested.none? { @ownership.owned?(it, @subject.owner) } || indexed?(name))
+    tested.any? && (tested.none? { |path, rooted| @ownership.owned?(path, @subject.owner, rooted:) } || indexed?(name))
   end
 
   def indexed?(name) = body.grep(Prism::CallNode).any? { local?(it.receiver) { it == name } && keyed?(it) }
@@ -94,18 +98,19 @@ class Hashira::Smells::Foreign
 
   def known(local)
     tested = evidence(local)
-    tested.empty? ? Hashira::Smells::Naming.new(local.name).types : tested
+    tested.empty? ? Hashira::Smells::Naming.new(local.name).types.map { [it, false] } : tested
   end
 
   def evidence(local)
     name = local.name
-    (sources(local).map { made(it) } + caught(name) + tests { it == name }).reject(&:empty?)
+    made = sources(local).grep(Prism::CallNode).map { path(it.receiver) }
+    (made + caught(name) + tests { it == name }).reject { |segments, _| segments.empty? }
   end
 
-  def made(value) = value.is_a?(Prism::CallNode) ? Hashira::Analysis::Syntax.new(value.receiver).segments : []
+  def path(node) = Hashira::Analysis::Syntax.new(node).then { [it.segments, it.rooted?] }
 
   def caught(name)
-    snares(name).flat_map { |clause| clause.exceptions.map { Hashira::Analysis::Syntax.new(it).segments } }
+    snares(name).flat_map { |clause| clause.exceptions.map { path(it) } }
   end
 
   def yielders(local)

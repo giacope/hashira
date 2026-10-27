@@ -1,0 +1,9 @@
+# R6B4-H4. hashie's IndifferentAccess tests its argument with
+# `other.is_a?(::Hash)` before probing it: `::Hash` is Ruby's Hash, a value
+# of no owned class, whatever the project calls Hashie::Hash. Read lexically
+# it became the project's Shop::Hash and the probe was reported. `Hash`
+# unrooted inside Shop is Shop::Hash, as Ruby resolves it, and stays reported.
+present:
+  - {kind: manual_dispatch, package: "Shop::Mixin#blend"}
+absent:
+  - {kind: manual_dispatch, package: "Shop::Mixin#merge_in"}
