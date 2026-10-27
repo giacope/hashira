@@ -40,10 +40,14 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
   def lines(seen) = seen.map(&:last).uniq.sort
 
   def read
-    assigned = Array(subject.assigned)
+    assigned = subject.assigned || own
     lent.flat_map { harvest(it.node) }.reject { |name, _| assigned.include?(name) || cache?(name) }
       .map { |name, line| ["reads #{name}", line] }
   end
+
+  def own = subject.openings.flat_map { installs(it).names }
+
+  def installs(opening) = Hashira::Smells::Installs.new(opening, Hashira::Smells::Scope.new(opening.node).sweep)
 
   def harvest(definition)
     Hashira::Smells::Scope.new(definition).inside.grep(Prism::InstanceVariableReadNode).map { [it.name, line(it)] }

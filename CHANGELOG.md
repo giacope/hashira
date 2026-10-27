@@ -702,6 +702,14 @@ From the third field test (thirty MIT-licensed codebases):
     :lists` reads through `lists`, into a group of their own. A
     `belongs_to`'s key column (its `foreign_key:`, and its `_type` when
     polymorphic) and a `through:` association are now the association's field.
+  - `stateful_mixin` counts what a module assigns itself as its own when it
+    extends or includes a module hashira cannot see: mechanize's `Parser`
+    (`extend Forwardable`) was said to read `@response`, `@uri` and
+    `@filename` from its host, though it assigns `@response` and `@filename`
+    and mints `uri` with `attr_accessor`, and a memo cache under the same
+    extend (`@entries ||= {}`, then `@entries.fetch`) was reported, though
+    memo caches are left alone. A field nothing in the module assigns is
+    still the host's.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:

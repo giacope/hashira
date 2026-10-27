@@ -166,6 +166,34 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
     expect(findings.map { [it.package, it.evidence] }).to(eq([["Base", ["keeps @started in its host (line 2)"]]]))
   end
 
+  it "counts what a mixin assigns itself as its own when it extends or includes a module it cannot see" do
+    findings = mixed(<<~RUBY)
+      module Parser
+        extend Forwardable
+
+        def_delegator :header, :[], :[]
+
+        def fill(response) = @header = response.to_h
+
+        def header = @header
+
+        def size = @length
+      end
+
+      module Registry
+        include Enumerable
+
+        def entries = @entries ||= {}
+
+        def each(&) = @entries.each(&)
+
+        def mime = @type
+      end
+    RUBY
+    evidence = [["keeps @header in its host (line 6)", "reads @length (line 10)"], ["reads @type (line 20)"]]
+    expect(findings.map(&:evidence)).to(eq(evidence))
+  end
+
   it "takes a bare extend for a call, not for extending the module itself" do
     findings = mixed("module Odd\n  extend\n\n  def read = @value\nend\n")
     expect(findings.map(&:evidence)).to(eq([["reads @value (line 4)"]]))

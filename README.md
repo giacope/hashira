@@ -882,7 +882,9 @@ Findings (3):
 - **stateful_mixin** (strict: on only under `strict: true`) — a mixin whose
   behavior works on its host's state rather
   than through the host's public methods: its methods read an instance
-  variable nothing in the module assigns (the host's `@text`), keep state of
+  variable nothing in the module assigns (the host's `@text`; what the module
+  assigns itself counts even when it extends or includes a module hashira
+  cannot see, `extend Forwardable`), keep state of
   their own in the host (`@events = …`), or it installs fields, associations,
   callbacks or validations on the host (`included do after_save :track end`,
   `base.validate`, `attr_accessor`). Elegant Objects composes decorators
