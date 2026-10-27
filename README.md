@@ -944,8 +944,8 @@ project's own, so a framework's base classes stay out of all of them.
 - **low_cohesion** — LCOM4: a class of six or more methods (constructor aside)
   whose methods fall into two or more groups that share no instance variable
   and never call each other, each group holding two or more methods and a field
-  some method reads. Readers, writers and `def_delegators :@field` count as
-  touching their field; `send(:name)` and `method(:name)` count as calls, and a
+  some method reads. Readers, writers, `def_delegators :@field` and
+  `delegate :name, to: :field` count as touching their field; `send(:name)` and `method(:name)` count as calls, and a
   computed `send("matches_on_#{name}?")` calls every method its literal parts
   spell, as dead_code reads it; one that spells a writer (`send("#{name}=",
   value)`, a mass assignment) calls every writer, hand-written or minted by
@@ -962,11 +962,17 @@ project's own, so a framework's base classes stay out of all of them.
   exemption narrows to the presentation stratum — controllers, mailers, jobs,
   channels and mailboxes, by name or by the framework base they extend — and a
   model is judged like any class: hashira does not read the schema, so its
-  column readers (a bare call to a name the class does not define, `state`,
-  `http_status`) count as fields. An association and the columns that back it
-  are one field: `parent_id` (or its `foreign_key:`, and `parent_type` when
-  polymorphic) is `belongs_to :parent`'s, and a `through: :lists` association
-  is `lists`'s.
+  columns count as fields in every spelling a model touches them: a bare call
+  or a call on `self` to a name the class does not define (`state`,
+  `self.state`, `self.state = …`, `self.count += 1`), and the column a
+  persistence call names (`update_column(:state, …)`, `update_attribute`,
+  `write_attribute`, `read_attribute`, `self[:state]`, the keys of
+  `update(state: …)`, `update_columns` and `assign_attributes`). A Kernel
+  method called bare (`raise`, `binding`) is not a column, and a reader
+  `delegate`d to an association is that association's field. An association
+  and the columns that back it are one field: `parent_id` (or its
+  `foreign_key:`, and `parent_type` when polymorphic) is `belongs_to
+  :parent`'s, and a `through: :lists` association is `lists`'s.
 - **message_chain** — the Law of Demeter, on one chain: `order.customer.address`
   calls a method on what an owned object's reader returned. Every link must be
   typed and owned: the start (a parameter, local, instance variable or own

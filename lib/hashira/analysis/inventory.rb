@@ -12,6 +12,8 @@ module Hashira
 
     MACROS = SHIPPED.fetch("macros").to_set(&:to_sym).freeze
 
+    KERNEL = SHIPPED.fetch("kernel").to_set(&:to_sym).freeze
+
     CORE = SHIPPED.fetch("constants").to_set.freeze
 
     LIBRARIES = SHIPPED.fetch("libraries").to_set.freeze

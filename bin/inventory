@@ -5,6 +5,7 @@ shipped = { "ruby" => [RUBY_VERSION] }
 shipped["universal"] = BasicObject.instance_methods + Kernel.instance_methods
 shipped["values"] = [Integer, Float, String, Symbol, Array, Hash, Range].flat_map(&:public_instance_methods)
 shipped["macros"] = Class.new.then { it.methods + it.private_methods }
+shipped["kernel"] = Kernel.private_instance_methods
 shipped["constants"] = Object.constants.select { Object.const_get(it).is_a?(Module) }
 roots = [Object, Kernel, BasicObject]
 classes = Object.constants.map { Object.const_get(it) }.grep(Class) - roots

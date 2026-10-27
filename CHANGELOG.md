@@ -693,6 +693,23 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's fourth batch (transition, WebsiteOne,
+  unparser, strong_migrations, hashie):
+  - `low_cohesion` under strict reads a model's columns in every spelling the
+    model touches them, not only a bare read: transition's `MappingsBatch`
+    split its `finished?`, `succeeded?` and `failed?` (which read `state`) from
+    `with_state_tracking`, which writes `state` with `update_column(:state,
+    …)` three times, and joined the rest through `@raise`, the bare `raise`
+    in its `rescue`. A call on `self` (`self.state`, `self.state = …`,
+    `self.count += 1`) and the column a persistence call names
+    (`update_column`, `update_attribute`, `write_attribute`,
+    `read_attribute`, `self[:state]`, and the keys of `update`,
+    `update_columns` and `assign_attributes`) now touch the column; a Kernel
+    method called bare (`raise`, `binding`, `caller_locations`) is Kernel's,
+    and a reader `delegate`d to an association (`delegate :hostname, to:
+    :site`, with its `prefix:`) is the association's field, as a
+    `def_delegators` reader already was its target's. A column only written
+    still makes no group of its own.
 - Found by the sixth field test's third batch (collections-publisher,
   travel-advice-publisher, mechanize, ancestry, ahoy):
   - `low_cohesion` under strict reads an association and the columns that back

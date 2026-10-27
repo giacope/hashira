@@ -20,8 +20,6 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     Prism::InstanceVariableReadNode, Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
 
-  DELEGATORS = %i[def_delegator def_delegators def_instance_delegator def_instance_delegators].freeze
-
   SENDS = Hashira::Analysis::Syntax::SENDS
 
   INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
@@ -29,6 +27,8 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   LISTING = :instance_variables
 
   STOCK = (Hashira::Smells::Readings::PERSISTENCE + Hashira::Analysis::UNIVERSAL.to_a).to_set.freeze
+
+  KERNEL = Hashira::Analysis::KERNEL
 
   PRESENTATION = /(?:Controller|Mailer|Job|Channel|Mailbox)(?:::[A-Z]\w*)?\z/
 
@@ -100,15 +100,17 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
 
-  def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] || column(it) }
+  def attributed(found)
+    selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] } + columned(Hashira::Smells::Columns.new(found).touched)
+  end
 
-  def column(call) = (bonds.field(call.name) if columned?(call))
+  def columned(names) = record? ? names.reject { declared?(it) }.map { bonds.field(it) } : []
 
-  def columned?(call) = record? && call.variable_call? && !known.include?(call.name) && !STOCK.include?(call.name)
+  def declared?(name) = [known, STOCK, KERNEL, forwards.names].any? { it.include?(name) } || attributes.key?(name.to_s)
 
   def record? = Hashira::Smells::Records::RECORD.match?(root)
 
-  def columns = sweep.grep(Prism::CallNode).filter_map { column(it) }.to_set
+  def columns = columned(Hashira::Smells::Columns.new(sweep).read).to_set
 
   def bonds = @_bonds ||= Hashira::Smells::Bonds.new(sweep)
 
@@ -145,20 +147,12 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.to_set(&:to_sym)
 
-  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal.to_s.to_sym
-
   def sweep = @_sweep ||= subject.sweep
 
-  def attributes
-    @_attributes ||= Hashira::Smells::Attributes.new(sweep).declared.to_h { [it, :"@#{it}"] }.merge(delegated)
-  end
+  def forwards = @_forwards ||= Hashira::Smells::Forwards.new(sweep, bonds, STOCK)
 
-  def delegated
-    Hashira::Smells::Attributes.new(sweep).macros(DELEGATORS).flat_map do |call|
-      target, *names = Array(call.arguments&.arguments).map { symbol(it) }
-      field = target.to_s.start_with?("@") ? target : :"@#{target}"
-      names.reject(&:empty?).map { [it.to_s, field] }
-    end.to_h
+  def attributes
+    @_attributes ||= Hashira::Smells::Attributes.new(sweep).declared.to_h { [it, :"@#{it}"] }.merge(forwards.to_h)
   end
 
   def kept = @_kept ||= sweep.select { READS.include?(it.class) }.to_set(&:name) | attributes.values | columns

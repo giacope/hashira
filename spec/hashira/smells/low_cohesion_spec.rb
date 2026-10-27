@@ -238,4 +238,122 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     plain = account.sub("def balance = @balance", "def balance = audit && @balance")
     expect(split(plain.sub("def ping = @mailer.ping", "def ping = audit && @mailer.ping")).size).to(eq(1))
   end
+
+  def batch(touch) = <<~RUBY
+    class Batch < ApplicationRecord
+      has_many :entries
+      def finished? = %w[succeeded failed].include?(state)
+      def succeeded? = state == "succeeded"
+      def failed? = state == "failed"
+      def process = tracking { entries.each(&:apply) }
+      def pending = entries.reject(&:done?)
+      def tracking
+        #{touch}
+        yield
+      end
+    end
+  RUBY
+
+  def joined(*touches) = touches.map { split(batch(it), Fixtures::STRICT).size }
+
+  it "keeps a model apart whose methods touch none of each other's columns" do
+    apart = [
+      "update_column(:status, 1)", "self.status = 1", "other.state", "@log.update(state: 1)", "update!",
+      "toggle!(flag)", "audit(state: 1)"
+    ]
+    expect(joined(*apart)).to(eq([1, 1, 1, 1, 1, 1, 1]))
+  end
+
+  it "reads a column read through self as the column" do
+    expect(joined("return if self.state == \"processing\"")).to(eq([0]))
+  end
+
+  it "reads a column written through self as the column" do
+    expect(joined("self.state = \"processing\"; save!")).to(eq([0]))
+  end
+
+  it "reads a compound write through self as the column" do
+    expect(joined("self.state ||= \"processing\"", "self.state += \"!\"")).to(eq([0, 0]))
+  end
+
+  it "reads update_column and update_attribute as writing the column they name" do
+    expect(joined("update_column(:state, \"processing\")", "self.update_attribute(\"state\", 1)")).to(eq([0, 0]))
+  end
+
+  it "reads the keys of update, update_columns and assign_attributes as the columns they write" do
+    filled = ["update!(state: 1)", "update_columns(state: 1, at: 2)", "assign_attributes(\"state\" => 1)"]
+    expect(joined(*filled)).to(eq([0, 0, 0]))
+  end
+
+  it "reads write_attribute and read_attribute as touching the column they name" do
+    expect(joined("write_attribute(:state, 1)", "read_attribute(:state)")).to(eq([0, 0]))
+  end
+
+  it "reads an index on self as the column it names" do
+    expect(joined("self[:state] = 1", "self[:state]")).to(eq([0, 0]))
+  end
+
+  it "counts a column only written as no group's field, like an instance variable" do
+    stamps = <<~RUBY
+      class Batch < ApplicationRecord
+        def finished? = %w[succeeded failed].include?(state)
+        def succeeded? = state == "succeeded"
+        def failed? = state == "failed"
+        def label = state.humanize
+        def stamp = update_column(:stamped_at, Time.current)
+        def restamp = self.stamped_at = nil
+      end
+    RUBY
+    read = stamps.sub("self.stamped_at = nil", "stamped_at || stamp")
+    expect([stamps, read].map { split(it, Fixtures::STRICT).size }).to(eq([0, 1]))
+  end
+
+  def hit(rescued) = <<~RUBY
+    class Hit < ApplicationRecord
+      def error? = http_status == "404"#{rescued}
+      def archive? = http_status == "410"
+      def redirect? = http_status == "301"
+      def homepage? = path == "/"#{rescued}
+      def default_url = "http://\#{hostname}\#{path}"
+      def short_path = path.first(10)
+    end
+  RUBY
+
+  it "takes a bare call to a Kernel method for that method, not a column" do
+    calls = ["", " rescue raise", " rescue fail", " && binding", " && caller_locations"]
+    expect(calls.map { split(hit(it), Fixtures::STRICT).size }).to(eq([1, 1, 1, 1, 1]))
+  end
+
+  def entry(delegation, reader = "hostname") = <<~RUBY
+    class Entry < ApplicationRecord
+      belongs_to :site
+      #{delegation}
+      def old_url = "http://\#{#{reader}}\#{path}"
+      def label = "\#{#{reader}} (\#{path})"
+      def organisation = site.organisation
+      def tna_timestamp = site.tna_timestamp
+      def site_title = site.title
+      def launched? = site.launched?
+    end
+  RUBY
+
+  it "reads a reader delegated to an association as that association's field" do
+    delegations = [
+      ["delegate :hostname, to: :site"], ["delegate :hostname, :launch_date, to: :site, allow_nil: true"],
+      ["delegate :hostname, to: :site, prefix: true", "site_hostname"],
+      ["delegate :hostname, to: :site, prefix: :host", "host_hostname"],
+      ["delegate :hostname, to: :site, prefix: true"], ["delegate :hostname, to: :owner"],
+      ["delegate :hostname, to: :class"]
+    ]
+    expect(delegations.map { split(entry(*it), Fixtures::STRICT).size }).to(eq([0, 0, 0, 0, 1, 1, 1]))
+  end
+
+  it "reads no field behind a reader delegated to the class, or to a target it cannot name, nor a column" do
+    delegations = ["delegate :hostname, :region, to: :class", "delegate :hostname, :region, to: TARGET"]
+    sources = delegations.map { entry(it).sub("site.title", "site.title + region") }
+    expect(sources.map { split(it, Fixtures::STRICT).size }).to(eq([1, 1]))
+    expect(split(sources.first, Fixtures::STRICT).first.evidence).to(
+      eq(["old_url, label (@path)", "organisation, tna_timestamp, site_title, launched? (@site)"])
+    )
+  end
 end

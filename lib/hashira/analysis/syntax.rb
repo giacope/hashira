@@ -57,6 +57,8 @@ module Hashira
 
       def symbol = text.to_sym
 
+      def words = word? ? [symbol] : []
+
       def literal = (text if word?)
 
       def named?(key) = @node.is_a?(Prism::SymbolNode) && text == key.to_s

@@ -26,8 +26,5 @@ class Hashira::Smells::Bond
 
   def option(key) = Hashira::Analysis::Syntax.new(@call).option(key)
 
-  def words(node)
-    syntax = Hashira::Analysis::Syntax.new(node)
-    syntax.word? ? [syntax.symbol] : []
-  end
+  def words(node) = Hashira::Analysis::Syntax.new(node).words
 end
