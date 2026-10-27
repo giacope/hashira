@@ -872,7 +872,9 @@ project's own, so a framework's base classes stay out of all of them.
   some method reads. Readers, writers and `def_delegators :@field` count as
   touching their field; `send(:name)` and `method(:name)` count as calls, and a
   computed `send("matches_on_#{name}?")` calls every method its literal parts
-  spell, as dead_code reads it. A method that reads fields by computed name
+  spell, as dead_code reads it; one that spells a writer (`send("#{name}=",
+  value)`, a mass assignment) calls every writer, hand-written or minted by
+  `attr_writer`/`attr_accessor`, and so touches their fields. A method that reads fields by computed name
   (`instance_variables`, `instance_variable_get(ivar)`), in the class or in a
   module it includes, may touch any of them and joins every group (caxlsx's
   `SerializedAttributes` writing one XML element's attributes). The

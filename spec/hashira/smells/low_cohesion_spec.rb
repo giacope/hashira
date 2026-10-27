@@ -115,6 +115,17 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     expect(dispatched.map { split(account(it)).size }).to(eq([0, 0, 1, 1, 1]))
   end
 
+  def assigned(writers) = account("#{writers}\n  #{applied}")
+
+  def applied = "def apply(values) = values.each { |name, value| send(\"\#{name}=\", value) }"
+
+  it "joins a computed send of a writer name to every writer, minted or hand-written, and so to their fields" do
+    writers = ["attr_writer :balance, :mailer", "attr_accessor :mailer\n  attr_writer :balance"]
+    writers << "attr_writer :balance\n  def mailer=(value)\n    @mailer = value\n  end"
+    lone = account("def apply(values) = values.each { |name, value| send(\"\#{name}_at\", value) }")
+    expect(writers.map { split(assigned(it)).size } + [split(lone).size]).to(eq([0, 0, 0, 1]))
+  end
+
   def mixed(body, head = "") = "#{head}#{account("#{body}\n  def audit = [bridge, held, ping]")}"
 
   it "joins methods through a project module the class includes, whose methods call back into the class" do

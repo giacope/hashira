@@ -84,7 +84,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     left.fields.intersect?(right.fields) || left.calls.intersect?(right.names) || right.calls.intersect?(left.names)
   end
 
-  def fields(found) = (touched(found) + attributed(found) + (peeks?(found) ? kept.to_a : [])).uniq
+  def fields(found) = (touched(found) + attributed(found) + reached(found) + (peeks?(found) ? kept.to_a : [])).uniq
 
   def peeks?(found) = selves(found).any? { it.name == LISTING || (it.name == PEEK && computed?(it)) }
 
@@ -104,6 +104,8 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     selves(found).select { SENDS.include?(it.name) }.flat_map { aimed(Array(it.arguments&.arguments).first) }
   end
 
+  def reached(found) = sent(found).filter_map { attributes[it.to_s.delete_suffix("=")] }
+
   def aimed(name)
     return [] unless name
     return [Hashira::Analysis::Syntax.new(name).symbol] if Hashira::Analysis::Syntax.new(name).word?
@@ -112,9 +114,14 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def affixed(name)
     head, tail = Hashira::Coupling::Affixes.new(name.parts).to_a
+    return writers.select { it.start_with?(head) } if written?(name)
     return tabled if head.empty? && tail.empty?
     names.select { it.start_with?(head) && it.end_with?(tail) }
   end
+
+  def written?(name) = Hashira::Analysis::Syntax.new(name.parts.last).literal == "="
+
+  def writers = @_writers ||= names.select { it.end_with?("=") } + Hashira::Smells::Attributes.new(sweep).writers
 
   def tabled = @_tabled ||= names.select { listed.include?(it) }
 

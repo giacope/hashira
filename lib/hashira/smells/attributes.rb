@@ -19,6 +19,8 @@ class Hashira::Smells::Attributes
 
   def ivars(kinds) = @nodes.select { kinds.include?(it.class) }.map(&:name)
 
+  def writers = declared(WRITERS).map { :"#{it}=" }
+
   private
 
   def names(call)

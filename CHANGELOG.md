@@ -653,6 +653,12 @@ From the third field test (thirty MIT-licensed codebases):
     with the same `os.gets(WEBrick::LF)`, and naming the result would reuse
     the status line and never end the header loop. `read` and
     `File.readlines(path)` read twice are still reported.
+  - `low_cohesion` reads a computed send that spells a writer (`send
+    "#{name}=", value`) as calling every writer, the ones `attr_writer` and
+    `attr_accessor` mint as well as hand-written ones, so it touches their
+    fields: friendly_id's `Configuration#set`, its mass assignment, reaches
+    `model_class=` and `base=`, and the class is no longer split into a
+    `@model_class` group and a `@base` group.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,
