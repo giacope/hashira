@@ -949,7 +949,10 @@ project's own, so a framework's base classes stay out of all of them.
   channels and mailboxes, by name or by the framework base they extend — and a
   model is judged like any class: hashira does not read the schema, so its
   column readers (a bare call to a name the class does not define, `state`,
-  `http_status`) count as fields.
+  `http_status`) count as fields. An association and the columns that back it
+  are one field: `parent_id` (or its `foreign_key:`, and `parent_type` when
+  polymorphic) is `belongs_to :parent`'s, and a `through: :lists` association
+  is `lists`'s.
 - **message_chain** — the Law of Demeter, on one chain: `order.customer.address`
   calls a method on what an owned object's reader returned. Every link must be
   typed and owned: the start (a parameter, local, instance variable or own

@@ -203,6 +203,37 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     )
   end
 
+  def tag(macros, key) = <<~RUBY
+    class Tag < ApplicationRecord
+      #{macros}
+      def root? = #{key}.blank?
+      def sort_mode = root? ? :none : :curated
+      def level = root? ? 1 : 2
+      def nested? = parent.present?
+      def trail = nested? ? parent.title : title
+      def path = [parent&.slug, slug].compact.join("/")
+    end
+  RUBY
+
+  it "reads an association, its key column and an association through it as one field" do
+    bonded = [
+      ["belongs_to :parent", "parent_id"], ["belongs_to :parent, foreign_key: \"up_id\"", "up_id"],
+      ["belongs_to :parent, polymorphic: true", "parent_type"],
+      ["has_one :tree\n  has_one :parent, through: :tree", "tree"]
+    ]
+    expect(bonded.map { split(tag(*it), Fixtures::STRICT).size }).to(eq([0, 0, 0, 0]))
+  end
+
+  it "keeps a column apart that backs no association it is read with" do
+    apart = [
+      ["belongs_to :guardian", "parent_id"], ["belongs_to :parent, foreign_key: :up_id", "parent_id"],
+      ["belongs_to :parent", "parent_type"], ["has_one :parent, foreign_key: :up_id", "up_id"],
+      ["has_one :parent, through: :parent", "parent_id"],
+      ["has_one :parent\n  def via = Map.find :tree, through: :parent", "tree"]
+    ]
+    expect(apart.map { split(tag(*it), Fixtures::STRICT).size }).to(eq([1, 1, 1, 1, 1, 1]))
+  end
+
   it "takes a bare call for a field only in a model" do
     plain = account.sub("def balance = @balance", "def balance = audit && @balance")
     expect(split(plain.sub("def ping = @mailer.ping", "def ping = audit && @mailer.ping")).size).to(eq(1))

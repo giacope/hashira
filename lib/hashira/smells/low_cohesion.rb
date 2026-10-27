@@ -102,13 +102,15 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def attributed(found) = selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] || column(it) }
 
-  def column(call) = (:"@#{call.name}" if columned?(call))
+  def column(call) = (bonds.field(call.name) if columned?(call))
 
   def columned?(call) = record? && call.variable_call? && !known.include?(call.name) && !STOCK.include?(call.name)
 
   def record? = Hashira::Smells::Records::RECORD.match?(root)
 
-  def columns = sweep.grep(Prism::CallNode).select { columned?(it) }.to_set { :"@#{it.name}" }
+  def columns = sweep.grep(Prism::CallNode).filter_map { column(it) }.to_set
+
+  def bonds = @_bonds ||= Hashira::Smells::Bonds.new(sweep)
 
   def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 

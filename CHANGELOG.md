@@ -693,6 +693,15 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's third batch (collections-publisher,
+  travel-advice-publisher, mechanize, ancestry, ahoy):
+  - `low_cohesion` under strict reads an association and the columns that back
+    it as one field: collections-publisher's `Tag` split into a `parent_id`
+    group (`can_have_children?`) and a `parent` group (`has_parent?`), two
+    spellings of one fact, and `list_items`, which `has_many …, through:
+    :lists` reads through `lists`, into a group of their own. A
+    `belongs_to`'s key column (its `foreign_key:`, and its `_type` when
+    polymorphic) and a `through:` association are now the association's field.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:
