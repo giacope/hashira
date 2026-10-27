@@ -422,7 +422,11 @@ misses dead code rather than report live code. Also left alone:
 - A module handed to a library from outside its own body (`Lib.prepend(M)`,
   `register_filter(M)`), resolved the way Ruby reads the name where the call
   sits (`Host.include Extension` inside a namespace), or from inside it
-  (`ActionDispatch::Routing::Mapper.include(self)`); a class or module whose
+  (`ActionDispatch::Routing::Mapper.include(self)`), or mixed in bare inside a
+  library's load hook, which Rails runs on its framework class
+  (`ActiveSupport.on_load(:active_record) { include M }`, `extend`,
+  `prepend`), in a project file or one outside the analysed directories
+  (`config/initializers/`); a class or module whose
   body runs code at load (a hook registration such as
   `Warden::Manager.after_set_user`); and every constant a computed `const_get` can reach
   under its receiver, the constant-world twin of `send(name)`. A name built

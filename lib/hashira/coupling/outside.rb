@@ -27,6 +27,8 @@ class Hashira::Coupling::Outside
 
   LISTING = %w[ls-files -z --cached --others --exclude-standard].freeze
 
+  RUBY = ".rb"
+
   def initialize(project)
     @project = project
   end
@@ -54,9 +56,7 @@ class Hashira::Coupling::Outside
 
   def files = listed.map { File.join(home, it) }.select { wanted?(it) }.reject { analyzed?(it) }
 
-  def spec?(path) = path.end_with?(".rb") && path.delete_prefix("#{home}/").match?(SPECS)
-
-  def called(path) = Hashira::Coupling::SpecWords.new(@project.tree(path)).to_a
+  def spec?(path) = path.end_with?(RUBY) && path.delete_prefix("#{home}/").match?(SPECS)
 
   def listed
     tracked = IO.popen(["git", "-C", home, *LISTING], err: File::NULL, &:read).split("\0")
@@ -86,7 +86,16 @@ class Hashira::Coupling::Outside
 
   def read(path)
     text = File.binread(path)
-    words = spec?(path) ? called(path) : text.scan(WORD).map { it.force_encoding(Encoding::UTF_8) }
-    [words, text.scan(HANDED).flatten.map { it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }]
+    tree = (@project.tree(path) if path.end_with?(RUBY))
+    [spec?(path) ? Hashira::Coupling::SpecWords.new(tree).to_a : said(text), given(text) + hooks(tree)]
+  end
+
+  def said(text) = text.scan(WORD).map { it.force_encoding(Encoding::UTF_8) }
+
+  def given(text) = text.scan(HANDED).flatten.map { it.delete_prefix("::").force_encoding(Encoding::UTF_8).split("::") }
+
+  def hooks(tree)
+    calls = [tree].compact.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }.grep(Prism::CallNode)
+    calls.flat_map { Hashira::Coupling::Hand.new(it).loaded }.flat_map { Hashira::Coupling::Hand.new(it).given }
   end
 end

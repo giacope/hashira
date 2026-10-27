@@ -14,10 +14,6 @@ class Hashira::Coupling::Mentions
 
   REFLECTIONS = %i[subclasses descendants].freeze
 
-  HANDS = %i[include prepend extend].freeze
-
-  SENT = %i[send __send__].freeze
-
   STATIC = [NilClass, Prism::ConstantReadNode].freeze
 
   TOKEN = /[A-Za-z_]\w*[?!=]?/
@@ -89,7 +85,7 @@ class Hashira::Coupling::Mentions
 
   def passed(call, owner, nesting)
     found.evaluated.merge(nesting) if evaluates?(call)
-    found.handed.concat(Hashira::Coupling::Gift.new(call, nesting).to_a) if handing?(call)
+    found.handed.concat(gifts(call, nesting))
     mirror(call.receiver, owner) if call.name == :const_get && computed?(call)
   end
 
@@ -108,14 +104,14 @@ class Hashira::Coupling::Mentions
 
   def opened(call, owner) = (found.open << owner if owner && dynamic?(call))
 
-  def handing?(call) = (hands?(call) || call.name.start_with?("register")) && !own?(call.receiver)
+  def handing?(call) = (hand(call).hands? || call.name.start_with?("register")) && !own?(call.receiver)
 
-  def hands?(call) = HANDS.include?(call.name) || (SENT.include?(call.name) && HANDS.include?(message(call)))
-
-  def message(call)
-    first = call.arguments&.arguments&.first
-    Hashira::Analysis::Syntax.new(first).symbol if first.is_a?(Prism::SymbolNode)
+  def gifts(call, nesting)
+    loaded = hand(call).loaded.map { Hashira::Coupling::Gift.new(it, nesting, call.receiver) }
+    (handing?(call) ? [Hashira::Coupling::Gift.new(call, nesting), *loaded] : loaded).flat_map(&:to_a)
   end
+
+  def hand(call) = Hashira::Coupling::Hand.new(call)
 
   def dynamic?(call) = SENDS.include?(call.name) && own?(call.receiver) && computed?(call)
 

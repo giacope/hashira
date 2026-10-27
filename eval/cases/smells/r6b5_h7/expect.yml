@@ -1,0 +1,13 @@
+# R6B5-H7. turbo-rails' engine mixes its Broadcastable concern into every
+# model with `ActiveSupport.on_load(:active_record) { include
+# Turbo::Broadcastable }`: Rails runs that block on ActiveRecord::Base, so the
+# bare include hands the module to the framework class, as
+# `ActiveRecord::Base.include(...)` would, and its public macros
+# (`broadcasts_refreshes_to`) are what host apps call. A module included bare
+# in a block nothing loads into a framework class stays judged.
+args: [app, lib]
+present:
+  - {kind: dead_code, package: "Shop::Stray#wander"}
+absent:
+  - {kind: dead_code, package: "Shop::Broadcastable.broadcasts_refreshes_to"}
+  - {kind: dead_code, package: "Shop::Broadcastable#broadcast_later_to"}
