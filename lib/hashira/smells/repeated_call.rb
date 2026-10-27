@@ -29,7 +29,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def rating = repeats.each_value.all? { lesser?(it) } ? { confidence: :low } : {}
 
-  def lesser?(nodes) = Hashira::Smells::Lookup.new(nodes.first).cheap? || !reachable?(nodes.reject { preset?(it) })
+  def lesser?(nodes) = cheap?(nodes) || !reachable?(nodes.reject { preset?(it) })
+
+  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, subject.home).cheap?
 
   def preset?(node) = presets.include?(node)
 
@@ -87,7 +89,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
 
-  def glance?(nodes) = Hashira::Smells::Lookup.new(nodes.first).cheap? && nodes.combination(3).none? { thrice?(it) }
+  def glance?(nodes) = cheap?(nodes) && nodes.combination(3).none? { thrice?(it) }
 
   def thrice?(trio) = trio.combination(2).all? { reachable?(it) }
 

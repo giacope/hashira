@@ -5,7 +5,7 @@ require "prism"
 class Hashira::Smells::Rivals
   STAND_IN = /\A(?:Fake|Null|Stub|Dummy|Mock)(?:s?\z|[[:upper:]])|[[:lower:]](?:Stub|Fake|Double|Mock)s?\z/
 
-  FORKS = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode].freeze
+  PLACES = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode, Prism::ArrayNode].freeze
 
   def initialize(types, lineage)
     @types = types
@@ -26,8 +26,8 @@ class Hashira::Smells::Rivals
 
   def sites
     @types.flat_map do |type|
-      forks = Hashira::Smells::Scope.new(type.node).sweep.select { FORKS.include?(it.class) }
-      forks.map { |fork| outcomes(fork).filter_map { built(type, it) } }
+      places = Hashira::Smells::Scope.new(type.node).sweep.select { PLACES.include?(it.class) }
+      places.map { |place| outcomes(place).filter_map { built(type, it) } }
     end
   end
 
@@ -36,6 +36,7 @@ class Hashira::Smells::Rivals
       case node
       when Prism::IfNode, Prism::UnlessNode then node.compact_child_nodes.drop(1)
       when Prism::OrNode then node.compact_child_nodes
+      when Prism::ArrayNode then node.elements
       when Prism::ElseNode, Prism::ParenthesesNode, Prism::StatementsNode then node.compact_child_nodes.last(1)
       end
     choices&.flat_map { outcomes(it) } || [node]

@@ -152,7 +152,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def detail = { site: spots(checks), origin:, sources: }.compact
 
-  def sources = checks.flat_map { tested(it) }.filter_map { origin_of(it) }.uniq.sort
+  def sources = sightings.group_by(&:first).sort.to_h { |name, pairs| [name, spots(pairs.map(&:last))] }
+
+  def sightings = checks.flat_map { |check| tested(check).filter_map { origin_of(it) }.map { [it, check] } }
 
   def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject.singleton?)
 

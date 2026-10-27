@@ -1,0 +1,9 @@
+# R6B1-H10. `PATTERN.match(@text)` answers nil when nothing matches: that is
+# Regexp#match's contract, Ruby's answer, and the constant only holds the
+# regexp, as the same literal written inline does. An owned module's own
+# `nil` (Shop::Pages.find) is still the codebase's.
+present:
+  - {kind: nil_check, package: "Shop::Path#page"}
+absent:
+  - {kind: nil_check, package: "Shop::Path#prefix"}
+  - {kind: nil_check, package: "Shop::Path#slug"}

@@ -1,0 +1,10 @@
+# R6B1-H4. searchkick's Query#execute tests @json on one line and
+# @highlighted_fields on another; the nil_check grouped by each source cited
+# both lines for both. Each grouped finding names only the lines that test
+# its own nil.
+present:
+  - {kind: nil_check, package: "Shop::Query@json"}
+  - {kind: nil_check, package: "Shop::Query@fields"}
+messages:
+  - {kind: nil_check, package: "Shop::Query@json", includes: "checks for it (shop/query.rb:12)."}
+  - {kind: nil_check, package: "Shop::Query@fields", includes: "checks for it (shop/query.rb:14)."}

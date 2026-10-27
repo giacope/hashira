@@ -57,6 +57,67 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Error.code App::Labels#tag]))
   end
 
+  it "takes a reader that answers a literal, or memoizes one, for a value that is never nil" do
+    findings = checked(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def successors = @successors ||= {}
+
+            def states
+              @states ||= []
+            end
+
+            def label = "thing"
+
+            def lazy = @lazy ||= load
+
+            def guarded
+              return if @off
+              @guarded ||= []
+            end
+
+            def drop(from) = successors.nil? ? @a : successors.delete(from)
+            def known(state) = states.nil? ? @a : states.include?(state)
+            def shown = label.nil? ? @a : label
+            def loaded = lazy.nil? ? @a : lazy
+            def watched = guarded.nil? ? @a : guarded
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#loaded App::Zone::Thing#watched]))
+  end
+
+  it "leaves a nil to Ruby when an owned constant only holds a core value, and owns what an owned class answers" do
+    findings = checked(<<~'RUBY')
+      module App
+        module Zone
+          class Thing
+            PATTERN = %r{\A/(?<slug>[a-z]+)\z}
+            NAMES = %w[a b].freeze
+
+            def initialize(text) = @text = text
+
+            def slug
+              parts = PATTERN.match(@text)
+              parts.nil? ? "" : parts[:slug]
+            end
+
+            def name = NAMES.first.nil? ? "" : @text
+
+            def found = Finder.lookup(@text).nil? ? "" : @text
+          end
+
+          class Finder
+            def self.lookup(text) = text
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#found]))
+  end
+
   it "reaches methods defined inside blocks and class << self" do
     findings = checked(<<~RUBY)
       module App

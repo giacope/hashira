@@ -144,6 +144,50 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       end
     end
 
+    it "takes a class built on a computed parent for a framework adapter, and a class with no parent for the app's" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/shop_record.rb" => "class ShopRecord < Shop.model_parent.constantize\nend\n",
+        "app/models/charge.rb" => "class Charge < ShopRecord\nend\n",
+        "app/models/plain.rb" => "class Plain\nend\n",
+        "app/models/leaf.rb" => "class Leaf < Plain\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Charge, ShopRecord, Leaf]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Charge", "Report -> Plain"))
+        expect(census.folds.map { it[:from] }).to(eq(%w[Leaf]))
+      end
+    end
+
+    it "keeps a record on ActiveRecord::Base that its subclasses extend unless it says it is abstract" do
+      files = Fixtures::RAILS_FILES.merge(
+        "app/models/notification.rb" => "class Notification < ActiveRecord::Base\nend\n",
+        "app/models/message.rb" => "class Message < Notification\nend\n",
+        "app/models/base_record.rb" => "class BaseRecord < ::ActiveRecord::Base\n  primary_abstract_class\nend\n",
+        "app/models/ledger.rb" => "class Ledger < BaseRecord\nend\n",
+        "app/services/report.rb" => "class Report\n  def r = [Message, Notification, Ledger, BaseRecord]\nend\n"
+      )
+      analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
+        expect(edges(graph).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Notification"))
+        expect(census.folds.map { it[:from] }).to(eq(%w[Message]))
+      end
+    end
+
+    it "takes an engine's adapter for one however its heirs spell it, so no model folds into it" do
+      shop = ->(name, parent) { "module Shop\n  class #{name} < #{parent}\n  end\nend\n" }
+      files = {
+        "shop.gemspec" => "",
+        "lib/shop/engine.rb" => shop.call("Engine", "::Rails::Engine"),
+        "app/models/shop/application_record.rb" => shop.call("ApplicationRecord", "ActiveRecord::Base"),
+        "app/models/shop/charge.rb" => shop.call("Charge", "Shop::ApplicationRecord"),
+        "app/models/shop/refund.rb" => shop.call("Refund", "Shop::ApplicationRecord"),
+        "app/models/shop/stripe/charge.rb" => shop.call("Stripe::Charge", "Shop::Charge"),
+        "app/models/shop/stripe/refund.rb" => shop.call("Stripe::Refund", "Shop::Refund")
+      }
+      analyze(files, directories: %w[app lib], packaging: :namespace) do |_project, census, graph|
+        expect([census.folds, edges(graph)]).to(eq([[], ["Stripe -> Charge", "Stripe -> Refund"]]))
+      end
+    end
+
     it "resolves an adapter's superclass where it is written, so a namespace mirroring a library's owns nothing" do
       files = Fixtures::RAILS_FILES.merge(
         "app/models/extensions/audit/active_record/base.rb" =>
@@ -161,7 +205,8 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     def lexical(parent)
       files = {
         "app/models/extensions/active_record/base.rb" => "module Extensions::ActiveRecord::Base\nend\n",
-        "app/models/extensions/record.rb" => "module Extensions\n  class ::Record < #{parent}\n  end\nend\n",
+        "app/models/extensions/record.rb" =>
+          "module Extensions\n  class ::Record < #{parent}\n    self.abstract_class = true\n  end\nend\n",
         "app/models/ledger.rb" => "class Ledger < Record\nend\n",
         "app/services/report.rb" => "class Report\n  def r = Record\nend\n"
       }

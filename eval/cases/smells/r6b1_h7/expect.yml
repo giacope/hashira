@@ -1,0 +1,10 @@
+# R6B1-H7. In a top-level class, Ruby resolves `Taxon` to ::Taxon, which
+# declares no `name` and no `parent_node`; the class that does is
+# Tree::Taxon (content-tagger's GovukTaxonomy::Taxon). The veto looked the
+# type up by every suffix, so ::Taxon answered Tree::Taxon's messages and
+# Report#rows was told it "may belong on Taxon". A method that sends ::Taxon
+# only what it declares is still advice toward it.
+present:
+  - {kind: feature_envy, package: "Label#text"}
+absent:
+  - {kind: feature_envy, package: "Report#rows"}

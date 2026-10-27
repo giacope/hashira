@@ -62,7 +62,7 @@ module Hashira
 
     Sketch =
       Data.define(:name, :node, :kind, :file, :lexical) do
-        def superclass = node.is_a?(Prism::ClassNode) ? Hashira::Analysis::Syntax.new(node.superclass).segments : []
+        def parent = (node.superclass if node.is_a?(Prism::ClassNode))
 
         def owner = kind == :module ? name.delete_suffix("::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}") : name
 

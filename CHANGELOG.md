@@ -607,6 +607,80 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by a sixth field test (content-tagger, support, searchkick,
+  statesman, pay):
+  - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,
+    pay's `ApplicationRecord < Pay.model_parent_class.constantize`) is a parent
+    the project cannot see, as `< ActiveJob::Base` is: the classes built on
+    the same expression are kin, so searchkick's three jobs' `perform` is their
+    shared role and not a `utility_function`; the classes under it are hosted,
+    so `dead_code` leaves pay's `Subscription#unpaid?` and
+    `Stripe::PaymentMethod.sync_setup_intent` to the framework; and a class
+    built on it is a framework adapter. `dead_code` still judges a class
+    under a parent Ruby builds (`Struct.new(…)`, `Data.define(…)`).
+  - An engine's `ApplicationRecord` is framework plumbing however its models
+    spell it: the adapter question is asked of the constant a reference
+    resolves to, not of its first written segment, and an adapter's heirs are
+    read past the engine's namespace. pay's six models wrote
+    `< Pay::ApplicationRecord`, so they folded into an `ApplicationRecord`
+    package that drew six `wide_edge` findings ("Front ApplicationRecord with
+    one facade"), a `mixed_audience` and a place in the cycle. A record
+    straight on `ActiveRecord::Base` is an adapter only when it says it is
+    abstract or is named `Application…`, so a concrete record with
+    single-table subclasses (mailboxer's `Notification`, which `Message`
+    extends) stays a package its subclasses fold into.
+  - `feature_envy` types a local by its name only if the class declares
+    every message the method sends it, as README says, not only the messages
+    the codebase itself speaks, when the class's ancestry stays in the
+    project: searchkick's `RelationIndexer#reindex` sends `primary_key` to an
+    ActiveRecord relation, which `Searchkick::Relation` (the query builder)
+    does not declare, so it is no longer told the method "may belong on
+    Relation". A class built on a library's parent (a model) still needs only
+    the codebase's own messages declared.
+  - `nil_check` does not take a reader that answers a literal or memoizes
+    one (`def successors = @successors ||= {}`) for the source of a nil:
+    statesman's `return if successors.nil?` and `callbacks.nil?` test values
+    that are never nil, so "Settle it where the nil is made" pointed at a
+    place that makes none. A reader that memoizes a call (`@parent ||=
+    find`) may still answer nil and is still the source.
+  - A `nil_check` grouped by the nil it tests cites only the lines that
+    test that nil, not every check line of the method: searchkick's
+    `Query@json` and `Query@highlighted_fields` each named both lines 125
+    and 128.
+  - The classes one array literal builds side by side
+    (`[FeedexSection.new(user), EmergencyContactDetailsSection.new(user)]`)
+    are kin, as the two arms of a fork are: the methods they share are a
+    protocol the collection is read through, so support's two section
+    `#link`s are not `utility_function`s to make private or move.
+  - `feature_envy` (and `nil_check`'s typed sources) read what a class
+    declares at the path Ruby resolves, not under every suffix of it: in a
+    top-level controller `taxon` is `::Taxon`, and content-tagger's
+    `ProjectsController#taxons` no longer borrows `GovukTaxonomy::Taxon`'s
+    `name` and `parent_node` to be told it "may belong on Taxon".
+  - `repeated_call` reads a literal-key lookup through an attribute reader
+    the class declares as the instance variable it is, as README's "plain
+    read of self" promises: searchkick's `options[:routing]` twice (with
+    `attr_reader :options`) is style like `@options[:routing]` twice (33 of
+    its evidence lines). A helper's result, or a framework method's such as
+    `params`, read twice is still reported.
+  - `state_sprawl` counts the fields an `attr_writer` or `attr_accessor`
+    mints: set from outside and read back, they are parked between calls
+    and weigh two. content-tagger's `Taxon` holds 17 fields, not the 4 its
+    hand-written writers set, and support's ActiveModel request forms
+    (`TimeConstraint`'s 10 accessors) are no longer invisible to it. A
+    constructor that sets a field through its own writer (`self.red = red`,
+    ferrum's `RGBA`) sets constructor state, as `@red = red` does.
+  - `nil_check` leaves Ruby's nil to Ruby when the receiver is an owned
+    constant that only holds a core value: content-tagger's
+    `PATH_COMPONENTS_REGEX.match(base_path)` answers nil for no match, as the
+    same regexp written inline does, so `Taxon#base_path=` checking it is no
+    finding. A class the project owns still answers for its own nil.
+  - A method that overrides what a core ancestor defines stays a hook when
+    the project sends that message too: pay's
+    `Braintree::AuthorizationError#message` overrides `Exception#message`,
+    which every `rescue => e; e.message` reads, and is no
+    `utility_function` to make private. `bin/inventory` records each core
+    class's methods (`inherited` in `inventory.yml`).
 - Found by a fifth field test (50 more MIT-licensed codebases):
   - A file is generated when its leading comments (before the first line of
     code) say "generated by" or "generated from", `@generated`,

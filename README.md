@@ -380,7 +380,8 @@ misses dead code rather than report live code. Also left alone:
 - Subclasses registered through an `inherited` hook or found with
   `.subclasses` or `.descendants`.
 - A `ClassMethods` module, and the public methods and constants of a class
-  whose ancestry leaves the project (`< ActiveRecord::Base`, `include
+  whose ancestry leaves the project (`< ActiveRecord::Base`, a parent computed
+  by a call, `< Pay.model_parent_class.constantize`, `include
   Sidekiq::Job`, Administrate's `ATTRIBUTE_TYPES`) or of a module mixed into
   one: the framework calls them. So are a private method of such a class, which
   may fill the library's template hook (`RuboCop::Runner#file_finished`), or of
@@ -511,7 +512,12 @@ Findings (1):
 - **Framework adapters are plumbing.** A top-level class that extends an outside
   class and that the app's classes extend (`ApplicationRecord <
   ActiveRecord::Base`, a `ApplicationCable::Channel`) is not a package anyone
-  depends on. A domain base class (`Billing::Base`) stays part of its domain.
+  depends on, however its heirs spell it (an engine's `Pay::ApplicationRecord`).
+  A domain base class (`Billing::Base`) stays part of its domain, and so does a
+  record straight on `ActiveRecord::Base` that neither says it is abstract
+  (`self.abstract_class = true`, `primary_abstract_class`) nor is named
+  `Application…`: its subclasses are single-table kinds of it (mailboxer's
+  `Message < Notification`).
 - **Presentation stays out of the domain.** Controllers, serializers and
   resources are one `(web)` package, counted once as a client of each package it
   uses.
@@ -693,7 +699,10 @@ Findings (3):
   and never a core class (`range`, `set`). A type test on a library class
   (`when Prism::ConstantPathNode`) outranks the name. That class, with
   its owned superclasses and mixins, must declare every message the method
-  sends. A parser node, a source range or an array is not envied. Comparators,
+  sends it (what every object answers, `to_s`, `nil?`, aside). A class whose
+  ancestry leaves the project (an ActiveRecord model) also answers what its
+  library and schema define, so for it only the messages the codebase itself
+  defines somewhere must be declared. A parser node, a source range or an array is not envied. Comparators,
   mappers that only copy fields into a hash or a constructor, and methods that
   fill a role peers share stay quiet.
 - **control_parameter** — an argument used only to pick a path, where some
@@ -726,7 +735,10 @@ Findings (3):
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop), and a plain read of self, a local or an instance
   variable — no arguments, or literal keys — made at most twice in any one run,
-  which is style. A chain (`order.customer.address`), a helper method's result,
+  which is style; a reader the class declares (`attr_reader :options`) reads
+  its instance variable, so `options[:routing]` twice is `@options[:routing]`
+  twice. A chain (`order.customer.address`), a helper method's result
+  (`settings[:a]`, a framework's `params[:id]`),
   a constant's query (`Time.now` twice is two times) or three reads in one run
   are reported.
 - **repeated_conditional** — one class testing the same condition in three or
@@ -739,8 +751,10 @@ Findings (3):
   `@w, @h = w, h`) is an input, a component's props or a job's arguments, and
   weighs nothing. Any other field the constructor (or a helper it calls, or a
   callback the class registers such as a `before_action`) sets weighs one. One
-  set elsewhere and taken up by another method or a reader is parked between
-  calls and weighs two; one set elsewhere that no method reads is handed on —
+  set elsewhere (a method, or an `attr_writer`/`attr_accessor`, which a caller
+  or ActiveModel's attribute assignment fills) and taken up by another method
+  or a reader is parked between calls and weighs two; one set elsewhere that
+  no method reads is handed on —
   to a template, to a caller — and weighs nothing. Memo caches (`@x ||=`,
   `@_x`, `defined?` guards) are not state, and a class whose methods use all
   its constructor fields together is one handle.
@@ -766,8 +780,11 @@ Findings (3):
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
   and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
-  library calls, a fake's side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
-  `Dummy`, `*Double`) is exempt, and so is a method whose body holds code
+  library calls, an override of a method a core ancestor defines such as an
+  error's `message`, even where the project sends that message too, a fake's
+  side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
+  `Dummy`, `*Double`; the classes one array literal builds side by side,
+  `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt, and so is a method whose body holds code
   hashira cannot read: an x-string (`` `self.write_proc(s)` ``, `%x{}`), an
   `eval`/`class_eval`/`instance_eval`/`module_eval` string, `binding` or
   `local_variables` may touch any local, instance variable or method in scope.
@@ -789,11 +806,14 @@ Findings (3):
 - **nil_check** — `nil?`, `== nil`, `when nil`, `blank?`, and, on a value the
   code itself leaves nil, `&.`, `unless x` and `x || default`. Reported only
   where the nil is the codebase's own: its state, a nil it assigns, its own
-  method's result, a private method's argument, a literal it built,
+  method's result (not a reader that answers a literal or memoizes one, `def
+  successors = @successors ||= {}`, which never answers nil), a private
+  method's argument, a literal it built,
   a record fetched from an owned class, or an attribute an owned class declares.
   A public method's argument, a payload read from outside and a library's
-  answer (a node's absent receiver, a URI's missing scheme) are someone else's
-  contract. A validator's guard on an attribute a presence validation already
+  answer (a node's absent receiver, a URI's missing scheme, Ruby's answer to a
+  core value an owned constant holds: `PATTERN.match(path)` with `PATTERN =
+  %r{…}`) are someone else's contract. A validator's guard on an attribute a presence validation already
   reports, a check replaced by its default, a check whose branch raises (the
   guard asserts against the nil), memoization in any of its spellings (`@x ||=
   v`, `@x = v unless @x`, `@x = v if @x.nil?`), and a one-line predicate that

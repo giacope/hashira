@@ -43,6 +43,21 @@ RSpec.describe(Hashira::Smells::Repertoire, :aggregate_failures) do
     expect([%w[Shop Order], %w[Order], %w[Loop]].map { answers(source, *it) }).to(eq([%w[id price], %w[id price], []]))
   end
 
+  it "answers for the class at the path it is asked about, not for a same-named class in another namespace" do
+    source = <<~RUBY
+      class Taxon
+        attr_accessor :title
+      end
+
+      module Tree
+        class Taxon
+          attr_reader :name
+        end
+      end
+    RUBY
+    expect([%w[Taxon], %w[Tree Taxon]].map { answers(source, *it) }).to(eq([%w[title], %w[name]]))
+  end
+
   it "reads the members and block methods of Struct, Data and Class.new constants" do
     source = <<~RUBY
       module Shop

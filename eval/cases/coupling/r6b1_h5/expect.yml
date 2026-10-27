@@ -1,0 +1,14 @@
+# R6B1-H5. An engine's ApplicationRecord is framework plumbing however its
+# models spell it: pay writes `class Charge < Pay::ApplicationRecord`. The
+# reference resolves to the adapter, so no model folds into it and the STI
+# subclasses under Stripe depend on the models themselves, not on a package
+# named ApplicationRecord. A concrete record on ActiveRecord::Base (Notice,
+# which Alert extends) is no adapter: Alert folds into it.
+args: [app, lib]
+edges:
+  - "Stripe -> Charge"
+  - "Stripe -> Customer"
+  - "Stripe -> Notice"
+  - "Stripe -> Refund"
+absent: ["Stripe -> ApplicationRecord", "Charge -> ApplicationRecord"]
+cycles: []

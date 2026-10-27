@@ -19,9 +19,14 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def type(holder) = foreign.kinds(holder).find { serves?(it, holder) }&.last
 
-  def serves?(type, holder) = asked(holder).subset?(subject.ownership.repertoire.of(type))
+  def serves?(type, holder) = asked(holder, type).subset?(repertoire.of(type))
 
-  def asked(holder) = refs.reads(holder).to_set { it.name.to_s.delete_suffix("=") }
+  def asked(holder, type)
+    seen = repertoire.closed?(type) ? refs.sends(holder) : refs.reads(holder)
+    seen.to_set { it.name.to_s.delete_suffix("=") }
+  end
+
+  def repertoire = subject.ownership.repertoire
 
   def transit = @_transit ||= Hashira::Smells::Transit.new(subject.node, refs)
 

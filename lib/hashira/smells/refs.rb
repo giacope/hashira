@@ -29,6 +29,8 @@ class Hashira::Smells::Refs
 
   def reads(holder) = tallies.fetch(holder, [])
 
+  def sends(holder) = sent.fetch(holder, [])
+
   def envious
     peak = tallies.values.map(&:size).max
     holders = tallies.filter_map { |holder, sightings| holder if sightings.size == peak }
@@ -37,26 +39,28 @@ class Hashira::Smells::Refs
 
   private
 
-  def tallies
-    return @_tallies if @_tallies
-    @_tallies = {}
-    walk(@node, [@node])
-    @_tallies
+  def tallies = @_tallies ||= tally { @vocabulary.speaks?(it.name) }
+
+  def sent = @_sent ||= tally { !Hashira::Analysis::UNIVERSAL.include?(it.name) }
+
+  def tally
+    kept = sightings.select { |holder, node| holder == SELF || yield(node) }
+    kept.group_by(&:first).transform_values { it.map(&:last) }
   end
 
+  def sightings = @_sightings ||= walk(@node, [@node])
+
   def walk(root, scopes)
-    root.compact_child_nodes.each do |child|
-      next if Hashira::Smells::Scope::FENCES.include?(child.class)
-      record(child, scopes)
-      walk(child, nested(child, scopes))
+    root.compact_child_nodes.reject { Hashira::Smells::Scope::FENCES.include?(it.class) }.flat_map do |child|
+      [*sighting(child, scopes), *walk(child, nested(child, scopes))]
     end
   end
 
   def nested(node, scopes) = SCOPES.include?(node.class) ? scopes + [node] : scopes
 
-  def record(node, scopes)
-    return note(SELF, node) if selfish?(node)
-    note(holder(node.receiver, scopes), node) if envy?(node)
+  def sighting(node, scopes)
+    return [[SELF, node]] if selfish?(node)
+    local?(node) ? [[holder(node.receiver, scopes), node]] : []
   end
 
   def holder(local, scopes) = Local.new(local.name, scopes[-1 - local.depth])
@@ -67,9 +71,5 @@ class Hashira::Smells::Refs
 
   def implicit?(node) = node.is_a?(Prism::CallNode) && !node.receiver
 
-  def envy?(node) = local?(node) && @vocabulary.speaks?(node.name)
-
   def local?(node) = node.is_a?(Prism::CallNode) && LOCALS.include?(node.receiver.class) && node.name != :new
-
-  def note(holder, node) = (@_tallies[holder] ||= []) << node
 end

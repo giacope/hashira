@@ -706,6 +706,17 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       .to(eq(%w[Plan Plan#lost]))
   end
 
+  it "leaves the classes under a computed parent to the framework, unless Ruby builds the parent" do
+    computed = rails.merge(
+      "app/models/shop_record.rb" => "class ShopRecord < Shop.model_parent.constantize\n  def self.prune = 1\nend\n",
+      "app/models/charge.rb" => "class Charge < ShopRecord\n  def label = 1\nend\n",
+      "app/models/remote.rb" => "class Remote < remote_base\n  def ping = 1\nend\n",
+      "app/models/point.rb" => "class Point < Struct.new(:x)\n  def far = 1\nend\n"
+    )
+    expect(dead(computed, directories: %w[app lib]) - %w[Order#stale_scope Pricing Pricing#quote Pricing.rate])
+      .to(eq(%w[Point Point#far]))
+  end
+
   it "counts a type whose body runs code at load, a hook registration or a hand-over, as used" do
     hooked = rails.merge(
       "lib/hooks/two_step.rb" => "module Hooks\n  module TwoStep\n    Warden::Manager.after_user { 1 }\n  end\nend\n",

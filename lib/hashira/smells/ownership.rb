@@ -1,6 +1,12 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Ownership
+  LITERALS = [
+    Prism::RegularExpressionNode, Prism::InterpolatedRegularExpressionNode, Prism::StringNode,
+    Prism::InterpolatedStringNode, Prism::SymbolNode, Prism::IntegerNode, Prism::FloatNode,
+    Prism::RangeNode, Prism::ArrayNode, Prism::HashNode
+  ].freeze
+
   def initialize(trees, catalog = nil)
     @trees = trees
     @catalog = catalog
@@ -10,9 +16,9 @@ class Hashira::Smells::Ownership
 
   def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
 
-  def owns?(node, owner = nil)
-    owned?(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
-  end
+  def owns?(node, owner = nil) = !placed(node, owner).nil?
+
+  def answers?(node, owner) = owns?(node, owner) && !LITERALS.include?(held[placed(node, owner)].class)
 
   def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
 
@@ -31,6 +37,16 @@ class Hashira::Smells::Ownership
   private
 
   def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
+
+  def placed(node, owner)
+    place(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
+  end
+
+  def held
+    @_held ||=
+      claimed.flat_map { |node, full| named(node, full).zip(Hashira::Analysis::Syntax.new(node).constants) }
+        .to_h { |path, constant| [path.join("::"), Hashira::Analysis::Syntax.new(constant.value).thaw] }
+  end
 
   def among(known, segments, owner, rooted)
     (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }

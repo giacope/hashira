@@ -29,13 +29,26 @@ class Hashira::Smells::Provenance
   def answered?(call)
     receiver = call.receiver
     return own?(call.name) if receiver.nil? || receiver.is_a?(Prism::SelfNode)
-    return @subject.ownership.owns?(receiver, @subject.owner) if constant?(receiver)
+    return @subject.ownership.answers?(receiver, @subject.owner) if constant?(receiver)
     receiver.is_a?(Prism::LocalVariableReadNode) && (@foreign.built?(receiver.name) || typed?(receiver.name, call.name))
   end
 
   def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
 
-  def own?(name) = answers.include?(name.to_s.delete_suffix("=")) || @subject.neighbors.include?(name) || hosted?(name)
+  def own?(name) = !filled?(name) && (known?(name) || @subject.neighbors.include?(name) || hosted?(name))
+
+  def known?(name) = answers.include?(name.to_s.delete_suffix("="))
+
+  def filled?(name)
+    found = Hashira::Analysis::TypeWalk.new(@subject.home).sections.map(&:first).select { it.name == name }
+    found.any? && found.all? { settled?(Hashira::Analysis::Syntax.new(it).statements) }
+  end
+
+  def settled?(statements)
+    tail = statements.last
+    value = tail.is_a?(Prism::InstanceVariableOrWriteNode) ? tail.value : tail
+    statements.one? && Hashira::Smells::NilCheck::DEFAULTS.include?(value.class)
+  end
 
   def hosted?(name) = @subject.host == :module && @subject.ownership.vocabulary.speaks?(name)
 

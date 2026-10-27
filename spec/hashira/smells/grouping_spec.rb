@@ -163,6 +163,34 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def query = <<~RUBY
+    module Shop
+      class Query
+        def initialize(options)
+          @json = options[:plain] ? nil : options[:body]
+          @fields = options[:plain] ? nil : options[:fields]
+        end
+
+        def response
+          {
+            json: !@json.nil?,
+            fields: @fields.nil? ? [] : @fields
+          }
+        end
+      end
+    end
+  RUBY
+
+  it "cites, for each nil a method checks, only the lines that test that nil" do
+    found = grouped({ "lib/app/query.rb" => query }, "nil_check").to_h { [it.package, it.evidence] }
+    expect(found).to(
+      eq(
+        "Shop::Query@fields" => ["Shop::Query#response (query.rb:11)"],
+        "Shop::Query@json" => ["Shop::Query#response (query.rb:10)"]
+      )
+    )
+  end
+
   def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }
 
   def counter

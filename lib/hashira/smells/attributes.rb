@@ -5,6 +5,8 @@ require "prism"
 class Hashira::Smells::Attributes
   READERS = %i[attr_reader attr_accessor].freeze
 
+  WRITERS = %i[attr_writer attr_accessor].freeze
+
   EVERY = %i[attr_reader attr_writer attr_accessor].freeze
 
   def initialize(nodes)

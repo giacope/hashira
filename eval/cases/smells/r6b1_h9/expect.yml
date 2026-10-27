@@ -1,0 +1,9 @@
+# R6B1-H9. Fields an attr_writer or attr_accessor mints are set from
+# outside (a caller, ActiveModel's attribute assignment) and read back:
+# parked between calls, they weigh two, exactly as the same fields set by
+# hand-written writers do. Shop::Form's five accessors weigh ten.
+present:
+  - {kind: state_sprawl, package: "Shop::Form"}
+  - {kind: state_sprawl, package: "Shop::Sheet"}
+messages:
+  - {kind: state_sprawl, package: "Shop::Form", includes: "holds 5 instance variables, weighing 10"}

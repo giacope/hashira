@@ -6,6 +6,13 @@ shipped["universal"] = BasicObject.instance_methods + Kernel.instance_methods
 shipped["values"] = [Integer, Float, String, Symbol, Array, Hash, Range].flat_map(&:public_instance_methods)
 shipped["macros"] = Class.new.then { it.methods + it.private_methods }
 shipped["constants"] = Object.constants.select { Object.const_get(it).is_a?(Module) }
+roots = [Object, Kernel, BasicObject]
+classes = Object.constants.map { Object.const_get(it) }.grep(Class) - roots
+inherited =
+  classes.to_h do |klass|
+    own = klass.ancestors.take_while { !roots.include?(it) }
+    [klass.name, own.flat_map { it.instance_methods(false) + it.private_instance_methods(false) }.map(&:to_s).uniq.sort]
+  end
 
 require "rbconfig"
 require "rubygems"
@@ -21,4 +28,5 @@ gems = Gem::Specification.select(&:default_gem?).map(&:name) + Gem::BUNDLED_GEMS
 shipped["libraries"] = (in_library + compiled + gems + already_listed).grep(/\A[a-z][a-z0-9_]*\z/)
 
 inventory = shipped.transform_values { it.map(&:to_s).uniq.sort }.merge("ruby" => RUBY_VERSION)
+inventory["inherited"] = inherited.sort.to_h
 File.write(target, YAML.dump(inventory))

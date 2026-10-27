@@ -12,7 +12,7 @@ class Hashira::Smells::Kinship
     name = type.name
     sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
     spoken = words(name)
-    hooks = adopted?(name) ? spoken - sent : Set.new
+    hooks = adopted?(name) ? spoken - (sent - heritage(name)) : Set.new
     (spoken & kindred(name)) | hooks
   end
 
@@ -51,8 +51,8 @@ class Hashira::Smells::Kinship
   end
 
   def brood(name)
-    segments = index.fetch(name).map(&:superclass).find(&:any?)
-    @lineage.resolve(name, segments) || segments.join("::") if segments
+    node = index.fetch(name).filter_map(&:parent).first
+    @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments) || node.slice.delete_prefix("::") if node
   end
 
   def words(name) = said[name]
@@ -60,6 +60,11 @@ class Hashira::Smells::Kinship
   def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
 
   def foreign?(name) = index.fetch(name).any? { @lineage.pointed(it).include?(nil) }
+
+  def heritage(name)
+    parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @lineage.abroad(it) }
+    parents.reduce(Set.new) { |all, parent| all | Hashira::Analysis::INHERITED.fetch(parent, Set.new) }
+  end
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
 
