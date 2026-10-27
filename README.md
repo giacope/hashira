@@ -917,7 +917,10 @@ project's own, so a framework's base classes stay out of all of them.
   spread over several collaborators, and a method that fills a role its kin
   share.
 
-Class-level kinds judge a class across every file that reopens it. A `def`
+Class-level kinds judge a class across every file that reopens it, and site
+it at the opening in the file named for it (`shop/report.rb` for
+`Shop::Report`), else at the opening with the most statements, the choice
+rubocop-kata's `Kata/Reopening` makes. A `def`
 inside a block handed to a call (a DSL such as rodauth's
 `Feature.define(:change_login, :ChangeLogin) do … end`) is not the enclosing
 module's: it belongs to the constant the call names by a CamelCase symbol or

@@ -69,6 +69,14 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
     expect([concrete(reports), concrete(reports, built("Daily.new"))]).to(all(be_empty))
   end
 
+  it "sites the parent at its own file, not at an earlier file that reopens it to add a method" do
+    files = {
+      "lib/app/conversions.rb" => "module App\n  class Report\n    def to_csv = rows.join(\",\")\n  end\nend\n",
+      "lib/app/report.rb" => reports, "lib/app/use.rb" => built
+    }
+    expect(sniffed(files, "concrete_inheritance").map { it.detail[:home] }).to(eq(["report.rb:2"]))
+  end
+
   it "resolves the built constant lexically, from the caller's namespace outward, and through a full path" do
     paths = ["App::Report.new", "::App::Report.new"].map { concrete(reports, built(it)).size }
     other = concrete(reports, "module Else\n  class Report\n  end\n\n  def self.go = Report.new\nend\n")

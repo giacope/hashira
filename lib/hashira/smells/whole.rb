@@ -10,7 +10,18 @@ module Hashira
 
         def kind = first.kind
 
-        def site = first.site
+        def site = home.site
+
+        def home = openings.find { named?(it) } || largest
+
+        def largest = openings.max_by { Analysis::Syntax.new(it.node).statements.compact.size }
+
+        def named?(opening)
+          short, long = [spelled(opening.file.delete_suffix(".rb"), "/"), spelled(subject, "::")].sort_by(&:size)
+          long.last(short.size) == short
+        end
+
+        def spelled(text, separator) = text.downcase.delete("_").split(separator)
 
         def assigned = first.assigned
 

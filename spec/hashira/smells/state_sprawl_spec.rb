@@ -28,6 +28,21 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
     expect(message(findings.first)).to(include("holds 5 instance variables", "zone/thing.rb:3"))
   end
 
+  def report = "module App\n  class Report\n    attr_reader :f1\n\n    def initialize\n#{fields}    end\n  end\nend\n"
+
+  def fields = (1..5).map { "      @f#{it} = #{it}\n" }.join
+
+  def extra = "module App\n  class Report\n    def to_csv = @f1.to_s\n  end\nend\n"
+
+  def placed(files) = message(sniffed(files, "state_sprawl").first)[/\(([^)]+)\)\./, 1]
+
+  it "sites a class reopened across files at the file named for it, else at its largest opening" do
+    named = { "lib/app/conversions.rb" => extra, "lib/app/report.rb" => report }
+    largest = { "lib/app/a_csv.rb" => extra, "lib/app/b_body.rb" => report, "lib/app/c_csv.rb" => extra }
+    tied = { "lib/app/a_body.rb" => report, "lib/app/b_body.rb" => report.sub("@f1 = 1", "@f6 = 6") }
+    expect([named, largest, tied].map { placed(it) }).to(eq(%w[report.rb:2 b_body.rb:2 a_body.rb:2]))
+  end
+
   it "does not count memoization, repeats, or module state" do
     findings = crowded(<<~RUBY)
       module App

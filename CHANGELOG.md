@@ -659,6 +659,13 @@ From the third field test (thirty MIT-licensed codebases):
     fields: friendly_id's `Configuration#set`, its mass assignment, reaches
     `model_class=` and `base=`, and the class is no longer split into a
     `@model_class` group and a `@base` group.
+  - A class-level finding sits at the class's own file, not at the
+    alphabetically first file that reopens it: dry-monads'
+    `concrete_inheritance: Dry::Monads::Task` named `maybe.rb:374`, where
+    Maybe's file adds `Task#to_maybe`, instead of `task.rb:12`. The site is
+    the opening in the file named for the class, else the one with the most
+    statements, as rubocop-kata's `Kata/Reopening` chooses; a subclass's
+    place in `concrete_inheritance` evidence reads the same way.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,
