@@ -21,15 +21,11 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   private
 
-  def smelly? = mixin? && lent.any? && !singular? && uses.any? && subject.legible?
+  def smelly? = mixin? && lent.any? && !subject.singular? && uses.any? && subject.legible?
 
   def mixin? = subject.kind == :module && subject.claimed? && subject.nodes.any?(Prism::ModuleNode)
 
   def lent = @_lent ||= subject.owned.reject(&:mixin?)
-
-  def singular? = statements.any? { it.is_a?(Prism::CallNode) && extends_self?(it) }
-
-  def extends_self?(call) = call.name == :extend && Array(call.arguments&.arguments).any?(Prism::SelfNode)
 
   def statements = @_statements ||= subject.statements
 

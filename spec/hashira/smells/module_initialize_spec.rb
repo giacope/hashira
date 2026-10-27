@@ -84,4 +84,28 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
     }
     expect(sniffed(files, "module_initialize").map(&:package)).to(eq(["App::Mixin"]))
   end
+
+  it "leaves alone a module that extends itself: no mixin, its initialize an ordinary method" do
+    files = {
+      "lib/app/zone/thing.rb" => <<~RUBY
+        module App
+          module Zone
+            module Sync
+              extend self
+
+              def initialize = @client = Client.new
+              def run = initialize && @client.pull
+            end
+
+            module Mixin
+              extend Forwardable
+
+              def initialize = @client = Client.new
+            end
+          end
+        end
+      RUBY
+    }
+    expect(sniffed(files, "module_initialize").map(&:package)).to(eq(["App::Zone::Mixin"]))
+  end
 end

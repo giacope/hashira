@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "prism"
+
 module Hashira
   module Smells
     Whole =
@@ -40,6 +42,10 @@ module Hashira
         def statements = nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
 
         def legible? = sweep.none? { Opaque.new([it]).any? }
+
+        def singular? = statements.grep(Prism::CallNode).any? { extends_self?(it) }
+
+        def extends_self?(call) = call.name == :extend && Array(call.arguments&.arguments).any?(Prism::SelfNode)
 
         def first = openings.first
       end

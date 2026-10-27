@@ -891,7 +891,9 @@ Findings (3):
   one it came from: `const_set(name, Prism.const_get(name))` copies Prism's,
   and `Node = Parser::AST::Node` aliases Parser's.
 - **module_initialize** — `initialize` in a mixin: constructor state carried
-  into every includer.
+  into every includer. A module that extends itself (`extend self`) is no
+  mixin and has no includer: its `initialize` is an ordinary method, and the
+  module-level state it sets is kata's to report.
 - **stateful_mixin** (strict: on only under `strict: true`) — a mixin whose
   behavior works on its host's state rather
   than through the host's public methods: its methods read an instance

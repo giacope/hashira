@@ -719,6 +719,14 @@ From the third field test (thirty MIT-licensed codebases):
     statement raises (itself, or through another such method) and it never
     returns early; a helper that may return, logs, or belongs to another
     object leaves the check reported.
+  - `module_initialize` leaves alone a module that extends itself:
+    WebsiteOne's `GithubCommitsJob` (`extend self`, never included, its `run`
+    calling `initialize` to set the module's own client) was said to carry
+    constructor state into its includers, which it has none of; renaming the
+    method made the finding vanish with the module-level state unchanged.
+    That state is kata's to report (`Kata/NoClassMethodLogic`,
+    `Kata/FrozenState`); `stateful_mixin` already read such a module as no
+    mixin.
 - Found by the sixth field test's third batch (collections-publisher,
   travel-advice-publisher, mechanize, ancestry, ahoy):
   - `low_cohesion` under strict reads an association and the columns that back

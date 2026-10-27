@@ -1,0 +1,10 @@
+# R6B4-H3. WebsiteOne's GithubCommitsJob is `extend self` and never
+# included: `run` calls `initialize` as an ordinary method to set the module's
+# own client. A module that extends itself is no mixin, so there is no
+# includer to carry constructor state into (its module-level state is kata's
+# to report). Tracking, a mixin whose initialize keeps events in every
+# includer, is still reported.
+present:
+  - {kind: module_initialize, package: "Shop::Tracking"}
+absent:
+  - {kind: module_initialize, package: "Shop::Sync"}
