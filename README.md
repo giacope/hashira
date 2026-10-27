@@ -785,7 +785,9 @@ Findings (3):
   error's `message`, even where the project sends that message too, a fake's
   side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,
   `Dummy`, `*Double`; the classes one array literal builds side by side,
-  `[HelpSection.new(user), FeedexSection.new(user)]`) is exempt. So is what
+  `[HelpSection.new(user), FeedexSection.new(user)]`, or one hash literal
+  holds as its values, built or as a table of classes to pick from,
+  `FORMATS = { plain: Plain, json: Json }`) is exempt. So is what
   Ruby asks of every object, at the arity it asks it (`==`, `eql?`, `equal?`,
   `<=>`, `===`, `coerce` taking one argument; `hash`, `inspect`, `to_s` taking
   none): a null object's `eql?` answers without state, and Hash, `sort` and

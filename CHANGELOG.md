@@ -624,6 +624,14 @@ From the third field test (thirty MIT-licensed codebases):
     project's own message, and `utility_function` said to make it private
     (every update would raise NoMethodError). A name the project sends an
     instance still counts.
+  - The classes one hash literal holds as its values are kin, as the
+    classes one array literal builds are, whether it builds them or holds the
+    classes themselves for the code to pick one: ferrum's `Log::FORMATS = {
+    default: Default, json: Json, annotated: Annotated }`, read through
+    `FORMATS.fetch(format).new(color: @color)`, is a strategy table, so
+    `Json#sent` and `#received`, stateless because JSON is never colored,
+    are its protocol and not `utility_function`s. A class an array, a fork
+    or a table names without building is a peer the same way.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,

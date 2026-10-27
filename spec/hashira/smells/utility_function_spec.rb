@@ -268,6 +268,41 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
   end
 
+  it "takes the classes one table holds, as classes or as the objects it builds, for peers that share a protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        class Plain
+          def initialize(color:) = @color = color
+          def sent(message) = @color.paint(message)
+          def shown(message) = @color.paint(message)
+        end
+
+        class Json
+          def initialize(color:) = @color = color
+          def sent(message) = JSON.generate(message)
+          def shown(message) = JSON.generate(message)
+          def received(message) = JSON.generate(message)
+        end
+
+        class Csv
+          def initialize(color:) = @color = color
+          def shown(message) = CSV.generate_line(message)
+        end
+
+        class Xml
+          def shown(message) = message.to_xml
+        end
+
+        class Log
+          FORMATS = { plain: Plain, json: Json }.freeze
+          def initialize(format) = @formatter = FORMATS.fetch(format).new(color: true)
+          def views = { plain: Plain.new(color: @formatter), csv: Csv.new(color: 1), xml: Xml.build, **FORMATS }
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Json#received App::Xml#shown]))
+  end
+
   it "keeps an override of a core ancestor's method a hook, though the project sends that message too" do
     findings = utility(<<~RUBY)
       module App

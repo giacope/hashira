@@ -1,0 +1,11 @@
+# R6B2-H5. ferrum's Log picks its formatter from a table of interchangeable
+# classes (FORMATS = { default: Default, json: Json, annotated: Annotated };
+# FORMATS.fetch(format).new(color: @color)) and sends it `sent` and
+# `received`. Json's side is stateless because JSON is never colored: it is
+# the protocol's answer, not a utility_function to make private or move. A
+# stateless method only one of them has is still reported.
+present:
+  - {kind: utility_function, package: "Shop::Log::Json#pretty"}
+absent:
+  - {kind: utility_function, package: "Shop::Log::Json#sent"}
+  - {kind: utility_function, package: "Shop::Log::Json#received"}
