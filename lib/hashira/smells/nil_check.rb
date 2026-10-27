@@ -94,9 +94,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check) || memo?(check)
 
-  def memo?(check)
-    body.grep(Prism::IfNode).any? { it.predicate.equal?(check) && Hashira::Smells::Memo.new(it).fills?(tested(check)) }
-  end
+  def memo?(check) = asserted(check).any? { Hashira::Smells::Memo.new(it, check).fills?(tested(check), subject.node) }
 
   def raising?(check) = asserted(check).any? { |branch| Array(branch.statements&.body).any? { raise?(it) } }
 

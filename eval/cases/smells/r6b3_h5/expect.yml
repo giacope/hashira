@@ -1,0 +1,14 @@
+# R6B3-H5. Memoization in the spellings the README names stays quiet:
+# collections-publisher's boolean memo (`if @x.nil? then @x = v else @x end`,
+# since `||=` cannot keep false), Tag#sized?'s guard return (`return @sized
+# unless @sized.nil?`, then the fill), and mechanize's Page#labels_hash
+# (`unless @x` around a fill whose last statement writes it, the cache
+# cleared to nil elsewhere). Page#names clears a collection in its else
+# branch: not a memo, still reported.
+present:
+  - {kind: nil_check, package: "Shop::Page@names"}
+absent:
+  - {kind: nil_check, package: "Shop::Tag@curated"}
+  - {kind: nil_check, package: "Shop::Tag@sized"}
+  - {kind: nil_check, package: "Shop::Page@index"}
+evidence: [nil_check]

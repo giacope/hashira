@@ -593,6 +593,90 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[other twice otherwise shared]))
   end
 
+  it "reads memoization with an else that answers the value, a longer fill, or a guard return before the fill" do
+    findings = checked(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def clear = @hash = nil
+
+            def curated? = @curated.nil? ? (@curated = @lists.any?) : @curated
+
+            def hash
+              unless @hash
+                found = {}
+                @lists.each { found[it] = 1 }
+                @hash = found
+              end
+              @hash
+            end
+
+            def sized?
+              return @sized unless @sized.nil?
+
+              @sized = @lists.size > 2
+            end
+
+            def gathered(name)
+              seen = nil
+              seen = Set.new if seen.nil?
+              seen << name
+            end
+
+            def other = @a.nil? ? (@a = 1) : @b
+
+            def chatty?
+              if @f.nil?
+                @f = 1
+              else
+                @log.write(1)
+                @f
+              end
+            end
+
+            def late
+              return @c unless @c.nil?
+
+              @lists.size
+            end
+
+            def wrong
+              return @log unless @d.nil?
+
+              @d = 1
+            end
+
+            def inverted
+              @e = 1 unless @e.nil?
+            end
+
+            def noisy
+              unless @g.nil?
+                @log.write(1)
+                return @g
+              end
+              @g = 1
+            end
+
+            def either
+              return @k unless @k.nil? || @lists.empty?
+
+              @k = 1
+            end
+
+            def idle
+              if @idle.nil?
+              else
+                @idle
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[other chatty? late wrong inverted noisy either idle]))
+  end
+
   it "flags unless on a value the codebase leaves nil, but not on a flag or a method's result" do
     findings = checked(<<~RUBY)
       module App
@@ -724,6 +808,28 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
           "nothing and the method is two in one: split it, or ask for a null object instead of nil."
       )
     )
+  end
+
+  it "reads a nil-defaulted parameter filled in the body as an optional argument under strict, not as memoization" do
+    source = <<~RUBY
+      module App
+        class Page
+          def initialize(parser) = @parser = parser
+
+          def shorthand(parser = nil)
+            parser = @parser unless parser
+            parser.ok?
+          end
+
+          def tested(parser = nil)
+            parser = @parser if parser.nil?
+            parser.ok?
+          end
+        end
+      end
+    RUBY
+    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map(&:package) }
+    expect(found).to(eq([[], ["App::Page#shorthand", "App::Page#tested"]]))
   end
 
   it "names, under strict, an owned method that can answer nil as the source of a check on its answer" do

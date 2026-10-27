@@ -732,6 +732,20 @@ From the third field test (thirty MIT-licensed codebases):
     `Config#serialize_into_session` and `#serialize_from_session` (forwarders
     to `Warden::Manager`'s class methods, on a `Hash` subclass) go quiet the
     same way.
+  - `nil_check` reads memoization in the rest of its spellings:
+    collections-publisher's boolean memo (`if @x.nil? then @x = lists.any?
+    else @x end`, since `||=` cannot keep `false`), a guard return before the
+    fill (`return @x unless @x.nil?`), and mechanize's `Page#labels_hash`
+    (`unless @x` around a fill whose last statement writes it, a cache the page
+    clears to nil). Only a fill that sets the value tested, and an `else` that
+    only answers it, count: an `else` that does more, a guard that returns
+    something else or is never followed by the fill, and a write on the
+    non-nil side are still reported. mechanize's `Form#set_fields` (`value =
+    val unless value`, the `||=` spelling on a local) goes quiet the same way.
+    A parameter is never memoized: under strict a nil-defaulted one the body
+    fills (`parser = self.parser unless parser`, mechanize's
+    `Page#encoding_error?`) stays an optional argument in either spelling,
+    `if parser.nil?` included, which the old one-statement reading let pass.
 - Found by the sixth field test's second batch (manuals-publisher,
   places-manager, ferrum, friendly_id, dry-monads):
   - `utility_function` leaves to the object what Ruby asks of every object:
