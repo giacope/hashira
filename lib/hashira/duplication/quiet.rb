@@ -12,7 +12,12 @@ class Hashira::Duplication::Quiet
 
   private
 
-  def stores = @nodes.grep(Prism::DefNode).select { storing?(it) }.flat_map { @walks.nodes([it]) }
+  def stores = @nodes.grep(Prism::DefNode).select { storing?(it) || stub?(it) }.flat_map { @walks.nodes([it]) }
+
+  def stub?(definition)
+    statements = Hashira::Analysis::Syntax.new(definition).statements
+    statements.one? && (statements.first in Prism::CallNode[receiver: nil, name: :raise | :fail])
+  end
 
   def storing?(definition)
     definition.name == :initialize && Hashira::Analysis::Syntax.new(definition).statements.all? { stored?(it) }

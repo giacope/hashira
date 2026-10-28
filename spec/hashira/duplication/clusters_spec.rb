@@ -541,6 +541,23 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect(sources.map { clusters(it).size }).to(eq([0, 1]))
   end
 
+  def stubs(names, error)
+    names.map { "  def #{it}\n    raise #{error}, \"\#{self.class} must implement \#{__method__}.\"\n  end\n" }.join
+  end
+
+  def hooks(error)
+    helpers = "module B\n#{stubs(%w[root directory], error)}end\n"
+    { "a.rb" => "class A\n#{stubs(%w[file_name render], error)}end\n", "b.rb" => helpers }
+  end
+
+  it "weighs a method that only raises, an abstract hook, as nothing: distinct hooks are no body to alias" do
+    work = "@log.write(:x, :y, :z)\n    @log.flush(:x, :y)"
+    working = hooks("NotImplementedError").transform_values { it.gsub(/raise .*/, work) }
+    failing = hooks("NotImplementedError").transform_values { it.gsub("raise ", "fail ") }
+    stubbed = %w[NotImplementedError NoMethodError ArgumentError].map { hooks(it) } + [failing]
+    expect((stubbed + [working]).map { clusters(it).size }).to(eq([0, 0, 0, 0, 1]))
+  end
+
   describe(Hashira::Duplication::Index) do
     it "files each fragment under its rarest token types, so a shared rare type brings a pair together" do
       sources = { "a.rb" => "foo(1)\n", "b.rb" => "bar(2)\n", "c.rb" => "baz(:s)\n", "d.rb" => "qux(:t)\n" }

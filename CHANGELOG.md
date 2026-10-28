@@ -727,6 +727,13 @@ From the third field test (thirty MIT-licensed codebases):
     `Formatter::SimpleText#colorize` overrides the `colorize` its parent
     defines with `def_delegators :@color, :colorize` and calls, and was told
     to move or go private, which breaks the override.
+  - `duplication` weighs a method whose body only raises, an abstract hook,
+    as nothing: rubycritic's generator `Base` and `ViewHelpers` stub four
+    different hooks with the same `raise NotImplementedError, "The
+    #{self.class} class must implement the #{__method__} method."`, and the
+    clone said to alias one or call it from the others. Aliased, a missing
+    `render` says it must implement `file_name`; called, it stops failing at
+    all. Code around a stub is still compared.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread

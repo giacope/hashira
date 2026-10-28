@@ -691,6 +691,10 @@ What is not counted:
   is still compared on its own, so copies inside it are a clone.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
+- **Abstract hooks.** A method whose body only raises (`raise
+  NotImplementedError, "… must implement #{__method__}"`) weighs nothing: each
+  is a separate contract its heirs fill, and aliasing one to another, or
+  calling one from another, would name the wrong hook or stop it failing fast.
 
 A smaller clone inside a bigger one is reported only when two of its sites lie
 outside it. The mass floor rises as a shape gets more common and when two sites
