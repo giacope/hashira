@@ -11,8 +11,9 @@ class Hashira::CI::RatchetReport
     return unchanged(tally) if quiet?(edges, findings)
     details(edges, findings)
     advice(edges, findings)
-    verdict(edges, findings)
   end
+
+  def status(edges, findings) = quiet?(edges, findings) ? 0 : verdict(edges, findings)
 
   private
 
@@ -20,7 +21,6 @@ class Hashira::CI::RatchetReport
 
   def unchanged(tally)
     @io.puts("Ratchet OK: #{tally}, unchanged.")
-    0
   end
 
   def verdict(*diffs) = diffs.compact.any?(&:worse?) ? 1 : 3

@@ -7,10 +7,9 @@ class Hashira::Diagram::Source
     @io = io
   end
 
-  def print
-    @io.puts(drawing.new(@graph.weighted, @graph.packages.sort).source)
-    0
-  end
+  def print = @io.puts(drawing.new(@graph.weighted, @graph.packages.sort).source)
+
+  def status = 0
 
   private
 

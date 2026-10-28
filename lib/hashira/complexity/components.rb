@@ -9,14 +9,13 @@ class Hashira::Complexity::Components
       end
       private
       def start(root)
-        work.push([root, enter(root)])
+        descend(root)
         step until work.empty?
       end
 
       def enter(node)
         low[node] = index[node] = index.size
         stack.push(node)
-        0
       end
 
       def step
@@ -27,8 +26,13 @@ class Hashira::Complexity::Components
 
       def advance(node, child)
         work.last[-1] += 1
-        return work.push([child, enter(child)]) unless index.key?(child)
+        return descend(child) unless index.key?(child)
         lower(node, index[child]) if low.key?(child)
+      end
+
+      def descend(node)
+        enter(node)
+        work.push([node, 0])
       end
 
       def finish

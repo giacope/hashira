@@ -50,6 +50,8 @@ class Hashira::CLI::Usage
 
   def page?(mode) = @flags.page?(mode)
 
+  def status = 0
+
   private
 
   def options = @flags.map { rows(it) }.join
@@ -59,8 +61,5 @@ class Hashira::CLI::Usage
     ["  #{flag.label.ljust(21)}#{first}\n", *rest.map { "#{" " * 23}#{it}\n" }].join
   end
 
-  def emit(output)
-    @io.puts(output)
-    0
-  end
+  def emit(output) = @io.puts(output)
 end

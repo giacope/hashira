@@ -9,9 +9,10 @@ class Hashira::CLI::ConfigFile
 
   SWITCHES = [true, false].freeze
 
-  def initialize(argv, home)
+  def initialize(argv, home, checks = Hashira::Checks.new)
     @argv = argv
     @home = home
+    @checks = checks
   end
 
   attr_reader :home
@@ -48,7 +49,7 @@ class Hashira::CLI::ConfigFile
     File.exist?(found) ? found : ""
   end
 
-  def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Checks.new.to_a)
+  def checks = Hashira::Config::Rules.parse(settings["checks"], @checks.to_a)
 
   def tightened(rules) = strict? ? rules.tightened : rules
 

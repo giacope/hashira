@@ -13,8 +13,9 @@ class Hashira::Report::Json
   def print
     payload = about.merge(base).merge(coupling).merge(sections.compact).merge(withheld).merge(unjudged)
     @io.puts(@view.compact ? JSON.generate(payload) : JSON.pretty_generate(payload))
-    0
   end
+
+  def status = 0
 
   private
 

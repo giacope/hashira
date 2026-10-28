@@ -10,18 +10,22 @@ class Hashira::CI::Ratchet
     @io = io
   end
 
-  def update
+  def record
     @baseline.write(edges, scored(@findings), packaging:)
     @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
-    0
   end
 
   def check(focus)
     newer
     compared = focus.narrowing? ? Hashira::CI::Slice.new(@baseline) : Hashira::CI::Sweep.new(@baseline)
     delta = compared.findings(scored(judged)) if @baseline.findings?
-    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(compared.edges(drift), delta, tally(compared))
+    edges = compared.edges(drift)
+    report = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
+    report.print(edges, delta, tally(compared))
+    report.status(edges, delta)
   end
+
+  def update(path) = Hashira::CI::Update.new(self, path)
 
   def blocker
     return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?

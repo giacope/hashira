@@ -53,7 +53,12 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
 
   def told(findings = [], focus = sweeping) = noted { ratchet(findings, io: it).check(focus) }
 
-  def updated(findings) = noted { ratchet(findings, io: it).update }
+  def updated(findings) = noted { shown(Hashira::CI::Update.new(ratchet(findings, io: it), "b.json")) }
+
+  def shown(printer)
+    printer.print
+    printer.status
+  end
 
   it "writes edges and finding signatures on update, and passes when unchanged" do
     expect(updated([finding("cycle", "alpha")])).to(eq([0, "Baseline updated: 3 edges, 1 findings.\n"]))
@@ -69,7 +74,7 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
 
   it "records the kinds it knew, and lets pass, with a note, findings of a kind a baseline predates" do
     known = Hashira::CI::Baseline.new("baseline.json", kinds: %w[cycle nil_check])
-    described_class.new(graph, [finding("cycle", "alpha")], known, io: StringIO.new).update
+    described_class.new(graph, [finding("cycle", "alpha")], known, io: StringIO.new).record
     expect(saved["kinds"]).to(eq(%w[cycle nil_check]))
     newer = [finding("cycle", "alpha"), finding("indirection", "A#run"), finding("indirection", "B#run")]
     expect(told(newer)).to(match([0, start_with("Not ratcheted: 2 indirection — kinds this baseline predates.")]))
@@ -135,7 +140,7 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
   end
 
   it "records the magnitude of every finding that has one" do
-    ratchet([scored("complexity", "App#run", 12), finding("duplication", "orders.rb:4", digest: "a3f9c1")]).update
+    ratchet([scored("complexity", "App#run", 12), finding("duplication", "orders.rb:4", digest: "a3f9c1")]).record
     expect(saved.values_at("findings", "traces")).to(
       eq(
         [
@@ -180,7 +185,7 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
   it "keeps accepted entries when rewriting the baseline" do
     accepted = [{ kind: "cycle", package: "app", reason: "by design" }]
     File.write("baseline.json", JSON.generate(version: 1, edges: [], accepted:))
-    ratchet.update
+    ratchet.record
     expect(saved.values_at("accepted", "edges")).to(
       match([[accepted.first.transform_keys(&:to_s).transform_values(&:to_s)], have_attributes(size: 3)])
     )
@@ -202,13 +207,13 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
     end
 
     it "records the packaging mode and accepts a matching run" do
-      ratchet.update
+      ratchet.record
       expect([saved["packaging"], ratchet.check(sweeping)]).to(eq(["namespace", 0]))
     end
   end
 
   it "refuses a run that analyzes less, or elsewhere, than the baseline recorded" do
-    scoped(analyzers: %i[coupling smells], targets: ["lib/app"]).update
+    scoped(analyzers: %i[coupling smells], targets: ["lib/app"]).record
     expect(scoped(analyzers: %i[coupling], targets: ["lib/app"]).blocker).to(
       eq(
         "baseline baseline.json was recorded with the analyzers coupling, smells, but this run uses " \
@@ -244,33 +249,33 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
   end
 
   it "carries a finding across a rename instead of calling it resolved and new at once" do
-    ratchet([smell("nil_check", "Widget#ready")]).update
+    ratchet([smell("nil_check", "Widget#ready")]).record
     expect(told([smell("nil_check", "Gadget#ready")])).to(eq([0, "Ratchet OK: 3 edges, 1 findings, unchanged.\n"]))
   end
 
   it "matches a rename one for one, so a finding that arrived with it still fails" do
-    ratchet([smell("nil_check", "Widget#ready")]).update
+    ratchet([smell("nil_check", "Widget#ready")]).record
     code, output = told([smell("nil_check", "Gadget#ready"), smell("nil_check", "Gadget#idle")])
     expect([code, output.scan("NEW FINDING:").size]).to(eq([1, 1]))
     expect(output).not_to(include("Findings resolved"))
   end
 
   it "tells a finding fixed in one method and arrived in another from a rename, when neither carries evidence" do
-    ratchet([smell("nil_check", "Shop#tax", shape: "tax-body")]).update
+    ratchet([smell("nil_check", "Shop#tax", shape: "tax-body")]).record
     expect(told([smell("nil_check", "Shop#discount", shape: "discount-body")])).to(
       match([1, include("NEW FINDING:", "Findings resolved (improvement!): nil_check:Shop#tax")])
     )
   end
 
   it "still carries a rename across when the renamed method's code is unchanged" do
-    ratchet([smell("nil_check", "Shop#tax", shape: "tax-body")]).update
+    ratchet([smell("nil_check", "Shop#tax", shape: "tax-body")]).record
     expect(told([smell("nil_check", "Shop#levy", shape: "tax-body")])).to(
       eq([0, "Ratchet OK: 3 edges, 1 findings, unchanged.\n"])
     )
   end
 
   it "still reports a renamed finding that got worse on the way" do
-    ratchet([scored("complexity", "App#run", 10)]).update
+    ratchet([scored("complexity", "App#run", 10)]).record
     expect(told([scored("complexity", "App#total", 54)])).to(
       match([1, include("WORSE FINDING (was 10, now 54):", "complexity: App#total")])
     )
@@ -284,14 +289,14 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
   end
 
   it "fails a focused ratchet on what the named files introduced, without calling the rest resolved" do
-    ratchet([finding("cycle", "alpha")]).update
+    ratchet([finding("cycle", "alpha")]).record
     expect(told([smell("nil_check", "Gadget#idle")], focused)).to(
       match([1, include("NEW FINDING:", "nil_check: Gadget#idle").and(exclude("resolved"))])
     )
   end
 
   it "carries a rename across a focused ratchet, without judging what it was not shown" do
-    ratchet([smell("nil_check", "Widget#ready"), finding("cycle", "alpha")]).update
+    ratchet([smell("nil_check", "Widget#ready"), finding("cycle", "alpha")]).record
     expect(told([smell("nil_check", "Gadget#ready")], focused)).to(eq([0, "Ratchet OK: 1 findings, unchanged.\n"]))
   end
 end

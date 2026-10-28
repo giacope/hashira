@@ -11,8 +11,9 @@ class Hashira::Report::Text
     complexity if @view.complexity
     hotspots if @view.hotspots
     findings
-    0
   end
+
+  def status = 0
 
   private
 

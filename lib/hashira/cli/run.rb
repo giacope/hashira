@@ -24,11 +24,7 @@ class Hashira::CLI::Run
 
   def accepted = Hashira::CI::Accepted.build(@options.baseline)
 
-  def update
-    ratchet.update
-  rescue SystemCallError => error
-    raise(Hashira::Error, "cannot write #{@options.baseline} (#{error.message})")
-  end
+  def update = shown(ratchet.update(@options.baseline))
 
   def check
     stop = ratchet.blocker
@@ -36,9 +32,9 @@ class Hashira::CLI::Run
     ratchet.check(sieve)
   end
 
-  def guard = gate.check
+  def guard = shown(Hashira::CI::Gate.new(findings, gated))
 
-  def diagram = source.print
+  def diagram = shown(source)
 
   def json = report(Hashira::Report::Json)
 
@@ -46,7 +42,12 @@ class Hashira::CLI::Run
 
   def report(kind)
     notices
-    kind.new(view).print
+    shown(kind.new(view))
+  end
+
+  def shown(printer)
+    printer.print
+    printer.status
   end
 
   def notices = @pipeline.notify(Hashira::Report::Notices.new)
@@ -58,8 +59,6 @@ class Hashira::CLI::Run
   end
 
   def targets = @pipeline.targets(@options.home)
-
-  def gate = Hashira::CI::Gate.new(findings, gated)
 
   def gated = Hashira::CLI::FailOn.new(@options.fail_on).every? ? checked : @options.fail_on
 

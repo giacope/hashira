@@ -20,7 +20,12 @@ class Hashira::CLI::Session
   private
 
   def dispatch(options)
-    @usage.page?(options.mode) ? @usage.public_send(options.mode) : timed(options)
+    @usage.page?(options.mode) ? page(options.mode) : timed(options)
+  end
+
+  def page(mode)
+    @usage.public_send(mode)
+    @usage.status
   end
 
   def timed(options, clock: Process)

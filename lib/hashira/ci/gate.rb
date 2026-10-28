@@ -8,19 +8,19 @@ class Hashira::CI::Gate
     @error = error
   end
 
-  def check
-    offending = @findings.all.select { @kinds.include?(it.kind) }
-    offending.empty? ? clean : failure(offending)
-  end
+  def print = offending.empty? ? clean : failure
+
+  def status = offending.empty? ? 0 : 1
 
   private
 
-  def failure(offending)
+  def offending = @_offending ||= @findings.all.select { @kinds.include?(it.kind) }
+
+  def failure
     offending.each { Hashira::Report::FindingLines.new(it, io: @io).print }
     verdict = "Gate FAILED: #{offending.size} finding(s) — #{tally(offending)}."
     @io.puts("\n#{verdict}")
     @error.puts(verdict)
-    1
   end
 
   def tally(offending)
@@ -30,6 +30,5 @@ class Hashira::CI::Gate
 
   def clean
     @io.puts("Gate OK: no findings of kind #{@kinds.join(", ")}.")
-    0
   end
 end
