@@ -1,0 +1,15 @@
+# R6B6-H3. sshkit's Backend::Abstract#pwd_path (private) answers nil when
+# @pwd is blank, and Local and Netssh, which inherit it, test
+# `pwd_path.nil?` in upload! and download!: one nil source, which was
+# reported twice and named for each subclass (Local#pwd_path,
+# Netssh#pwd_path), neither of which makes it. A self-call source is named
+# for the class or mixin that defines it, so the checks are one finding
+# that points where the nil is made.
+present:
+  - {kind: nil_check, package: "Shop::Base#dir_path"}
+messages:
+  - {kind: nil_check, package: "Shop::Base#dir_path", includes: "2 methods check for it"}
+absent:
+  - {kind: nil_check, package: "Shop::Local#dir_path"}
+  - {kind: nil_check, package: "Shop::Remote#dir_path"}
+evidence: [nil_check]

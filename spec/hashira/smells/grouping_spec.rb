@@ -166,6 +166,50 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def backends = <<~RUBY
+    module Shop
+      module Paths
+        def home_path = @home.empty? ? nil : @home
+      end
+
+      class Base
+        include Paths
+        def initialize(dir) = @dir = dir
+        def listed = dir_path.nil? ? [] : [dir_path]
+        private
+        def dir_path = @dir.empty? ? nil : @dir
+      end
+
+      class Local < Base
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+        def home = home_path.nil? ? "~" : home_path
+      end
+
+      class Remote < Base
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+      end
+
+      class Mirror < Base
+        def dir_path = nil
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+      end
+    end
+  RUBY
+
+  it "names a nil an inherited or mixed-in method makes for the class that defines it, one finding for every heir" do
+    found = grouped({ "lib/app/backends.rb" => backends }, "nil_check").to_h { [it.package, it.evidence] }
+    expect(found).to(
+      eq(
+        "Shop::Base#dir_path" => [
+          "Shop::Base#listed (backends.rb:9)", "Shop::Local#upload (backends.rb:15)",
+          "Shop::Remote#upload (backends.rb:20)"
+        ],
+        "Shop::Paths#home_path" => ["Shop::Local#home (backends.rb:16)"],
+        "Shop::Mirror#dir_path" => ["Shop::Mirror#upload (backends.rb:25)"]
+      )
+    )
+  end
+
   def query = <<~RUBY
     module Shop
       class Query

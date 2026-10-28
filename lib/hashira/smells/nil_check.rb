@@ -157,7 +157,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def sightings = checks.flat_map { |check| tested(check).filter_map { origin_of(it) }.map { [it, check] } }
 
-  def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject.singleton?) || provenance.source(node)
+  def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject) || provenance.source(node)
 
   def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
 

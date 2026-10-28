@@ -16,7 +16,15 @@ class Hashira::Smells::Ancestry
 
   def openings(name) = opened.fetch(name, [])
 
+  def owner(name, selector) = up(name).find { |type| openings(type).any? { defines?(it, selector) } }
+
   private
+
+  def defines?(node, selector)
+    Hashira::Analysis::TypeWalk.new(node).sections.any? do |definition, section|
+      definition.name == selector && !definition.receiver && section != :singleton
+    end
+  end
 
   def climb(name, edges)
     found = [name]

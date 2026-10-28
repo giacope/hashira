@@ -909,9 +909,10 @@ Findings (3):
   Elegant Objects accepts no nil arguments. A predicate that fetches
   a record only to test it for nil is told to ask `exists?`. Checks of one
   nil source — an instance variable, a method that can return nil — are one
-  finding, named for the source (`Account@owner`, `Account#current`,
-  and, under strict, `Catalog#find` for `item = @catalog.find(code)` checked
-  in `Cart`), with
+  finding, named for the source (`Account@owner`, `Account#current`, a
+  method a parent or a mixin defines for that one, `Base#dir_path` however
+  many heirs check it, and, under strict, `Catalog#find` for `item =
+  @catalog.find(code)` checked in `Cart`), with
   each method that checks it as evidence: settle it where the nil is made.
 - **boundary_sprawl** — twelve or more methods across three or more files
   type-testing against one foreign root (`Prism`, `ActiveRecord`): a missing

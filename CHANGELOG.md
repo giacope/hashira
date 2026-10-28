@@ -713,6 +713,13 @@ From the third field test (thirty MIT-licensed codebases):
     as advised, made the assertion fail on every correct transition. A name
     the code computes with no literal tail (`send(event)`) is still read as
     a query.
+  - `nil_check` names a nil a method makes for the class or mixin that
+    defines the method: sshkit's `Backend::Abstract#pwd_path` answers nil,
+    and `Local` and `Netssh`, which inherit it, test `pwd_path.nil?`; that
+    was two findings named `Local#pwd_path` and `Netssh#pwd_path`, telling
+    to settle the nil in two classes that make nothing. It is now one
+    `Abstract#pwd_path` finding with the four checking methods. A subclass
+    that overrides the method keeps its own.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread
