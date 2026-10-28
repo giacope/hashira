@@ -786,9 +786,10 @@ Findings (3):
   it, `while (now = clock.now) < deadline`) and any call that holds such a
   reading (`[deadline - clock.now, 0].max`), and a plain read of self, a local or an instance
   variable — no arguments, or literal keys — made at most twice in any one run,
-  which is style; a reader the class declares (`attr_reader :options`) reads
-  its instance variable, so `options[:routing]` twice is `@options[:routing]`
-  twice. A chain (`order.customer.address`), a helper method's result
+  which is style; a reader the class, a parent or a mixin declares
+  (`attr_reader :options`, private too) reads its instance variable, so
+  `options[:routing]` or `guide.slug` twice is `@options[:routing]` or
+  `@guide.slug` twice. A chain (`order.customer.address`), a helper method's result
   (`settings[:a]`, a framework's `params[:id]`),
   a constant's query (`Time.now` twice is two times) or three reads in one run
   are reported.

@@ -73,6 +73,54 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[helper thrice computed chained called].map { "App::Zone::Thing##{it}" }))
   end
 
+  it "reads a call to a reader the class or an ancestor declares as the instance variable it reads, plain or keyed" do
+    findings = sniffed(
+      {
+        "lib/app/base.rb" => <<~RUBY,
+          module App
+            class Base
+              def initialize(options) = @options = options
+
+              private
+
+              attr_reader :options
+            end
+          end
+        RUBY
+        "lib/app/titled.rb" => <<~RUBY,
+          module App
+            module Titled
+              attr_accessor :title
+            end
+          end
+        RUBY
+        "lib/app/page.rb" => <<~RUBY
+          module App
+            class Page < Base
+              include Titled
+              attr_reader :guide
+
+              def plain = [guide.slug, guide.slug]
+              def keyed = [options[:on], options[:on]]
+              def mixed = [title.size, title.size]
+              def selfish = [self.guide.slug, self.guide.slug]
+              def thrice = [guide.slug, guide.slug, guide.slug]
+              def helper = [found.slug, found.slug]
+              def chained = [guide.topic.path, guide.topic.path]
+              def called = [guide(1).slug, guide(1).slug]
+              def blocked = [guide { 1 }.slug, guide { 1 }.slug]
+              def shifted = [guide.state, guide.advance!, guide.state, guide.advance!, guide.state]
+              def other(peer) = [guide.state, peer.advance!, guide.state, peer.advance!, guide.state]
+              def found = Guide.find(@id)
+            end
+          end
+        RUBY
+      },
+      "repeated_call"
+    )
+    expect(findings.map(&:package)).to(eq(%w[thrice helper chained called blocked other].map { "App::Page##{it}" }))
+  end
+
   it "counts the plain reads one run makes, not every read across branches that never run together" do
     findings = repeated(<<~RUBY)
       module App

@@ -5,8 +5,6 @@ require "prism"
 class Hashira::Smells::Fillings
   WRITES = [Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode].freeze
 
-  MIXINS = %i[include prepend].freeze
-
   BUILD = :new
 
   def initialize(walked, ownership)
@@ -15,31 +13,12 @@ class Hashira::Smells::Fillings
   end
 
   def types(name, owner)
-    up = ties.group_by(&:first).transform_values { it.map(&:last) }
-    down = ties.group_by(&:last).transform_values { it.map(&:first) }
-    kin = climb(owner, down).flat_map { climb(it, up) }.uniq
+    ancestry = @ownership.ancestry
+    kin = ancestry.down(owner).flat_map { ancestry.up(it) }.uniq
     kin.flat_map { written.fetch([it, name], []) }
   end
 
   private
-
-  def climb(name, edges)
-    found = [name]
-    found.each { found.concat(edges.fetch(it, []) - found) }
-  end
-
-  def ties
-    @_ties ||= @walked.flat_map do |node, full|
-      owner = full.join("::")
-      above(node).map { [owner, @ownership.placed(it, owner)] }
-    end.select(&:last)
-  end
-
-  def above(node)
-    calls = Hashira::Smells::Scope.new(node).sweep.grep(Prism::CallNode)
-    mixed = calls.select { Hashira::Analysis::Syntax.new(it).macro?(MIXINS) }.flat_map { it.arguments.arguments }
-    [*(node.superclass if node.is_a?(Prism::ClassNode)), *mixed]
-  end
 
   def written
     @_written ||= @walked.flat_map { |node, full| typed(node, full.join("::")) }

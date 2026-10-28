@@ -3,6 +3,7 @@
 require "prism"
 require_relative "course"
 require_relative "lookup"
+require_relative "readers"
 require_relative "refs"
 
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
@@ -33,7 +34,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def lesser?(nodes) = cheap?(nodes) || !reachable?(nodes.reject { preset?(it) })
 
-  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, subject.home).cheap?
+  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, readers).cheap?
+
+  def readers = @_readers ||= Hashira::Smells::Readers.new(subject)
 
   def preset?(node) = presets.include?(node)
 

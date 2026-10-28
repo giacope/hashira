@@ -35,6 +35,8 @@ class Hashira::Smells::Ownership
 
   def fillings = @_fillings ||= Hashira::Smells::Fillings.new(walked, self)
 
+  def ancestry = @_ancestry ||= Hashira::Smells::Ancestry.new(walked, self)
+
   def origin(segments, owner) = exports.origin(segments, owner)
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)

@@ -13,26 +13,16 @@ class Hashira::Smells::Lookup
     Prism::InstanceVariableReadNode
   ].freeze
 
-  SELVES = [NilClass, Prism::SelfNode].freeze
-
-  def initialize(call, home)
+  def initialize(call, readers)
     @call = call
-    @home = home
+    @readers = readers
   end
 
   def cheap? = !@call.block && (reader? || keyed?) && near?(@call.receiver)
 
   private
 
-  def near?(receiver) = NEAR.include?(receiver.class) || (keyed? && attribute?(receiver))
-
-  def attribute?(read) = read.is_a?(Prism::CallNode) && own?(read) && readers.include?(read.name.to_s)
-
-  def own?(read) = !read.arguments && SELVES.include?(read.receiver.class)
-
-  def readers
-    Hashira::Smells::Attributes.new(Hashira::Smells::Scope.new(@home).sweep).declared(Hashira::Smells::Attributes::READERS)
-  end
+  def near?(receiver) = NEAR.include?(receiver.class) || @readers.reads?(receiver)
 
   def reader? = !@call.arguments
 

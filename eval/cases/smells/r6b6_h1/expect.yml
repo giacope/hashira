@@ -1,0 +1,13 @@
+# R6B6-H1. README leaves a plain read twice alone as style, and says a
+# reader the class declares reads its instance variable. service-manual-
+# publisher's GuidePresenter reads `guide.slug` twice through `attr_reader
+# :guide`, and acts-as-taggable-on's AnyTagsQuery reads `options[:on]` twice
+# through its parent QueryBase's private `attr_reader :options`: each is
+# `@guide.slug` / `@options[:on]` twice, which is quiet. A helper's computed
+# result read twice is still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Presenter#computed"}
+absent:
+  - {kind: repeated_call, package: "Shop::Presenter#payload"}
+  - {kind: repeated_call, package: "Shop::AnyQuery#conditions"}
+evidence: [repeated_call]

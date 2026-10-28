@@ -693,6 +693,18 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's sixth batch (service-manual-publisher,
+  state_machines, rubycritic, sshkit, acts-as-taggable-on):
+  - `repeated_call` reads a call to any reader the class, a parent or a mixin
+    declares as the instance variable it reads, plain or keyed, as README's
+    "plain read of self" promises: service-manual-publisher's
+    `GuidePresenter` reading `guide.slug` twice through `attr_reader :guide`,
+    and acts-as-taggable-on's tag queries reading `options[:on]` twice
+    through their parent `QueryBase`'s private `attr_reader :options`, are
+    style like `@guide.slug` twice. Only a literal-key read through the
+    class's own reader was taken before (48 evidence lines in the corpus). A
+    helper method's result read twice, a chain, or three reads in one run
+    are still reported.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread
