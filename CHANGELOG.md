@@ -703,6 +703,19 @@ From the third field test (thirty MIT-licensed codebases):
     :suppressed_turbo_broadcasts` on every model and whose methods test it,
     went unreported under strict. One in the module's own body (ahoy's and
     counter_culture's configuration) stays the module's.
+  - `repeated_call` ends a run where Ruby does: at a `raise` (also one whose
+    message holds the first read, `raise E, "... #{attrs[:name]}"`), and
+    inside a block at `next` and `break`, whether the exit holds the first
+    read (`orphaned << child[:slug] && next`) or follows it as a statement
+    (`if c; skip(x); next; end; keep(x)`); a block's next pass no longer
+    brings round a read of what the block binds afresh (its parameter), and
+    a raise has no result to name. local-links-manager's `connect_parents`
+    and `create_or_update_la`, excon's six `socket.read(n) ||
+    raise(EOFError)`, rack-mini-profiler's five `@app.call(env)` (one per
+    exit: naming it would not call the app twice, it would not call it at
+    all on some paths) and ten other evidence lines across the corpus were
+    reads no run makes twice. A loop that does not rebind the read, and a
+    raise a `rescue` catches, still let a run reach both.
   - `dead_code` reads a module mixed in bare inside a library's load hook
     (`ActiveSupport.on_load(:active_record) { include M }`, and `extend`,
     `prepend`, `self.include`, `send(:include, M)`) as handed to the

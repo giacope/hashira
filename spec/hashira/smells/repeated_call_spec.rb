@@ -680,6 +680,133 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "ends a run at a raise and a block's run at next or break, held or a statement after the first read" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def linked(children, orphaned)
+              children.each do |child|
+                orphaned << child.slug(1) && next if child.orphan?
+                orphaned << child.slug(1) && break if child.stale?
+                child.adopt
+              end
+            end
+
+            def skipped(children)
+              children.each do |child|
+                if child.orphan?
+                  @finder.skip(child.parent(2))
+                  next
+                end
+                @finder.keep(child.parent(2))
+              end
+            end
+
+            def returned(child)
+              if child.orphan?
+                @finder.skip(child.parent(3))
+                return
+              end
+              @finder.keep(child.parent(3))
+            end
+
+            def raised(attrs)
+              raise ArgumentError, "no gss for \#{@store.name(4)}" if attrs.blank?
+              @store.put(@store.name(4))
+            end
+
+            def read(size, sink)
+              while size > 0
+                chunk = @socket.read(size) || raise(EOFError)
+                size -= sink.write(chunk)
+                sink.write(@socket.read(2) || raise(EOFError))
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a read an exit does not end the run of: a loop brings it round, a rescue catches the raise" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def hoisted(children)
+              children.each do |child|
+                if child.orphan?
+                  @finder.skip(@config.limit(1))
+                  next
+                end
+                @finder.keep(@config.limit(1))
+              end
+            end
+
+            def inner(rows)
+              rows.each do |row|
+                while row.more?
+                  @log.write(row.peek(2))
+                  next
+                end
+                @log.write(row.peek(2))
+              end
+            end
+
+            def rescued(attrs)
+              begin
+                raise ArgumentError, "no gss for \#{@store.name(3)}" if attrs.blank?
+              rescue ArgumentError
+                nil
+              end
+              @store.put(@store.name(3))
+            end
+
+            def chained(ready)
+              @log.write(@store.name(4))
+              ready && return
+              @store.put(@store.name(4))
+            end
+
+            def modified(attrs)
+              (raise ArgumentError, @store.name(5) if attrs.blank?) rescue nil
+              @store.put(@store.name(5))
+            end
+
+            def caught(attrs)
+              begin
+                @store.name(6) and raise(ArgumentError)
+              rescue ArgumentError
+                nil
+              end
+              @store.put(@store.name(6))
+            end
+
+            def looping(rows)
+              rows.each do |row|
+                while row.more?
+                  @log.write(row.peek(7)) && next
+                end
+                @log.write(row.peek(7))
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "@config.limit(1) × 2 (lines 7, 10)", "row.peek(2) × 2 (lines 17, 20)", "@store.name(3) × 2 (lines 26, 30)",
+          "@store.name(4) × 2 (lines 34, 36)", "@store.name(5) × 2 (lines 40, 41)", "@store.name(6) × 2 (lines 46, 50)",
+          "@log.write(row.peek(7)) × 2 (lines 56, 58)"
+        ]
+      )
+    )
+  end
+
   it "still counts repeats on separate conditions, which one run can reach both of" do
     findings = repeated(<<~RUBY)
       module App

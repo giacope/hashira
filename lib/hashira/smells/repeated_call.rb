@@ -46,7 +46,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def every = @_every ||= Hashira::Smells::Scope.new(subject.node).below(FENCES).grep(Prism::CallNode)
 
-  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) }
+  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) || raises?(it) }
+
+  def raises?(node) = Hashira::Smells::Exits.new(node).raise?
 
   def commanded?(node) = discards.include?(node)
 

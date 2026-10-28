@@ -766,9 +766,14 @@ Findings (3):
   draws the next item from a stream or a queue (`io.gets`, `getc`,
   `readpartial(n)`, `recv(n)`, `queue.pop`, `args.shift`; not `read` or
   `File.readlines(path)`, which a file answers alike twice), a command whose
-  result is thrown away, two reads no single run reaches both of (`return`,
-  `raise` and the `render :index and return` idiom end a run; `x or return`
-  is a guard the run passes), a read after a
+  result is thrown away, a `raise` (it has no result), two reads no single
+  run reaches both of (`return`, `raise` and the `render :index and return`
+  idiom end a run, and inside a block `next` and `break` end the block's run,
+  whether the exit holds the first read, `x && next`, or follows it as a
+  statement, `if c; skip(x); next; end; keep(x)`; a loop brings a read round
+  again unless the read depends on what the loop binds afresh each pass, a
+  block's parameter; a `rescue` around a raise catches it; `x or return` is a
+  guard the run passes), a read after a
   command on the receiver, or after a call on self whose method (or one it
   calls on self) sends the instance variable read a message as a command or
   as its own answer, but a predicate or that same reader, or reassigns it
