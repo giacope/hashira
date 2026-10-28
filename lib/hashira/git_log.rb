@@ -47,7 +47,7 @@ class Hashira::GitLog
 
   def git(*arguments)
     IO.popen([*GIT, "-C", @project.directories.first, *arguments], err: File::NULL, binmode: true, &:read)
-  rescue SystemCallError
+  rescue Errno::ENOENT
     ""
   end
 end

@@ -28,14 +28,18 @@ class Hashira::Coupling::Declared
     case node
     when Prism::ArrayNode then node.elements.flat_map { value(it) }
     when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).text]
-    else Array(expression(node))
+    when Prism::RegularExpressionNode then compiles?(node) ? [expression(node)] : []
+    else []
     end
   end
 
-  def expression(node)
-    Regexp.new(node.unescaped, node.ignore_case? ? Regexp::IGNORECASE : 0) if node.is_a?(Prism::RegularExpressionNode)
+  def expression(node) = Regexp.new(node.unescaped, node.ignore_case? ? Regexp::IGNORECASE : 0)
+
+  def compiles?(node)
+    expression(node)
+    true
   rescue RegexpError
-    nil
+    false
   end
 
   def irregular(table, _list, (one, many)) = many ? table.irregular(one, many) : table

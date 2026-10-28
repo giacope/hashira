@@ -8,3 +8,27 @@ AllCops:
     - "eval/tmp/**/*"
     - "eval/results/**/*"
     - "vendor/**/*"
+
+# The strict profile's cops, each switched on here once hashira passes it,
+# until .rubocop.yml inherits rubocop-kata's config/strict.yml whole.
+
+# A rescue that answers a default hides the error. Two conditions hashira
+# expects and reports, so the rescue that handles them hides no failure:
+# Errno::ENOENT is git not on PATH: GitLog reads no history and the run says
+# so (the churn notice: hotspots ranked by cost alone, change_coupling cannot
+# judge); JSON::ParserError is hashira's stdout, read by eval/, that is not
+# JSON: the outcome the Behaviour suite reports as unparsed.
+Kata/FailFast:
+  Enabled: true
+  inherit_mode:
+    merge:
+      - ExpectedErrors
+  ExpectedErrors:
+    - Errno::ENOENT
+    - JSON::ParserError
+
+Lint/SuppressedException:
+  Enabled: false
+
+Style/RescueModifier:
+  Enabled: false
