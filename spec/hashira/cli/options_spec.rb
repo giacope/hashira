@@ -298,7 +298,8 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
       files = ["strict: true\n", "checks: all\n", "checks: all\nstrict: false\n"]
       found = files.map { |yaml| configured(yaml) { strict } } + [configured("checks: all\n") { strict("--strict") }]
       on = [true, true]
-      expect(found + [strict, strict("--strict")]).to(eq([on, [false, false], [false, false], on, [false, false], on]))
+      bare = within({}) { [strict, strict("--strict")] }
+      expect(found + bare).to(eq([on, [false, false], [false, false], on, [false, false], on]))
     end
 
     it "reads another file with --config, and none with --no-config" do
