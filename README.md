@@ -560,6 +560,14 @@ Findings (1):
   (`WebPush::ConnectionsTest`) and the helpers it includes never join that
   domain's cycles, SDP, audience or wide-edge findings, and never add to a
   package's Ca.
+- **Top-level code belongs to what it names.** A reference outside every
+  class and module to a type the file defines is that type's own
+  (`AccountPolicy.prepend_mod`, or `ActiveSupport.run_load_hooks(:charge,
+  Pay::Charge)` below `module Pay … end`); any other counts for the types the
+  file writes at its own top level, and after a namespace
+  (`ActiveSupport.on_load(:active_record) { extend Shop::Taggable }` below
+  `module Shop … end`) for the namespace, the `(root)` package, never for the
+  first class the namespace holds.
 - **Folding.** A package that is part of another joins it, and every fold is
   listed: `base` (a lone class joins its superclass's package), `suffix`
   (`OrderPolicy` joins `Order`), `plural` (`Orders` joins `Order`), `mixin` (a

@@ -34,7 +34,7 @@ class Hashira::Coupling::Sightings
       path = @census.locate(segments, nesting || [])
       next unless path
       Sighting.new(
-        file:, from: @census.charge(file, home), path:, site: "#{source}:#{line}",
+        file:, from: @census.charge(file, home, path), path:, site: "#{source}:#{line}",
         label: segments.join("::"), holder: holder(nesting, source)
       )
     end

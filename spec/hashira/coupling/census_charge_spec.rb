@@ -71,6 +71,35 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     expect([graph.packages, edges(graph).grep(/Policy/)]).to(match([exclude("(root)"), be_empty]))
   end
 
+  def entry(inside)
+    "module Shop\n  class DuplicateError < StandardError; end\n#{hook if inside}end\n#{hook unless inside}"
+  end
+
+  def gem(inside)
+    {
+      "lib/shop.rb" => entry(inside), "lib/shop/engine.rb" => "module Shop\n  class Engine < Rails::Engine; end\nend\n",
+      "lib/shop/taggable.rb" => "module Shop\n  module Taggable\n    def tag(name) = Tag.new(name)\n  end\nend\n",
+      "lib/shop/tag.rb" => "module Shop\n  class Tag\n    def save = raise(DuplicateError)\n  end\nend\n"
+    }
+  end
+
+  def hook = "ActiveSupport.on_load(:active_record) do\n  extend Shop::Taggable\nend\n"
+
+  def hooked = "module Shop\n  class Tag\n    def save = 1\n  end\nend\nActiveSupport.run_load_hooks(:tag, Shop::Tag)\n"
+
+  it "charges top-level code after a namespace to the root, not to the first class the namespace holds" do
+    found = [false, true].map { edges(charted(gem(it), directories: ["lib"]).last).grep(/-> Taggable/) }
+    expect(found).to(eq([["(root) -> Taggable"]] * 2))
+  end
+
+  def label = "class Shop::Label\n  def text = 1\nend\nShop::Label.configure(Shop::Taggable)\n"
+
+  it "keeps a top-level statement that names a type the file defines that type's own, the rest the top-level class's" do
+    files = gem(false).merge("lib/shop/tag.rb" => hooked, "lib/shop/label.rb" => label)
+    _census, graph = charted(files, directories: ["lib"])
+    expect(edges(graph).grep(/-> Tag\z|Label/)).to(eq(["Label -> Taggable", "Taggable -> Tag"]))
+  end
+
   describe "top-level statements that write a namespaced constant" do
     def payments(source)
       files = Fixtures::RAILS_FILES.merge(

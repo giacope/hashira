@@ -734,6 +734,17 @@ From the third field test (thirty MIT-licensed codebases):
     clone said to alias one or call it from the others. Aliased, a missing
     `render` says it must implement `file_name`; called, it stops failing at
     all. Code around a stub is still compared.
+  - Under namespace packaging, a reference outside every class and module
+    counts for the type it names when the file defines it, else for the
+    types the file writes at its own top level, and after a namespace for
+    that namespace's `(root)` package: acts-as-taggable-on's entry file runs
+    `ActiveSupport.on_load(:active_record) { extend
+    ActsAsTaggableOn::Taggable; include ActsAsTaggableOn::Tagger }` below
+    `module ActsAsTaggableOn … end`, and those edges were charged to the
+    first class the module holds, an empty `DuplicateTagError`, inventing a
+    five-member cycle through it and a cut that removes nothing real. pay's
+    `ActiveSupport.run_load_hooks(:pay_charge, Pay::Charge)` below its
+    module and `AccountPolicy.prepend_mod` stay their class's own.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread
