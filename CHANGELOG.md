@@ -703,6 +703,15 @@ From the third field test (thirty MIT-licensed codebases):
     :suppressed_turbo_broadcasts` on every model and whose methods test it,
     went unreported under strict. One in the module's own body (ahoy's and
     counter_culture's configuration) stays the module's.
+  - Strict `nil_check` types an instance variable by what its object's
+    classes and mixins build into it before its name: excon's `SOCKS5`
+    module tests `@socket.read_nonblock(n, exception: false)` for nil, and
+    `@socket` was read as an `Excon::Socket` for its name, though every
+    class that mixes `SOCKS5` in builds it from core `::Socket.new` (through
+    a local in `Excon::Socket#connect`), whose nil at EOF is the library's
+    contract. A field nothing builds is still typed by its name, and one an
+    owned class is built into (`@pipe = Socket.new`) is now typed as that
+    class.
   - `low_cohesion` reads a hook the class leaves abstract (its body only
     raises `NotImplementedError` or `NoMethodError`) as calling what its
     subclasses' overrides call: bullet's `Notification::Base` stubs `title`

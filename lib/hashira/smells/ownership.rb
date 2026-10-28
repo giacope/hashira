@@ -33,6 +33,8 @@ class Hashira::Smells::Ownership
 
   def nulls = @_nulls ||= Hashira::Smells::Nulls.new(@trees)
 
+  def fillings = @_fillings ||= Hashira::Smells::Fillings.new(walked, self)
+
   def origin(segments, owner) = exports.origin(segments, owner)
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
@@ -41,13 +43,13 @@ class Hashira::Smells::Ownership
 
   def keys(segments) = tables.fetch(segments.join("::"), [])
 
-  private
-
-  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
-
   def placed(node, owner)
     place(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
   end
+
+  private
+
+  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
 
   def held
     @_held ||=

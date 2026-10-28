@@ -72,10 +72,15 @@ class Hashira::Smells::Provenance
 
   def holder(receiver)
     case receiver
-    when Prism::InstanceVariableReadNode then named(receiver.name.to_s.delete_prefix("@"))
+    when Prism::InstanceVariableReadNode then field(receiver.name)
     when Prism::LocalVariableReadNode then sole(kinds(receiver.name))
     when Prism::CallNode then built(receiver)
     end
+  end
+
+  def field(name)
+    written = @subject.ownership.fillings.types(name, @subject.owner)
+    written.empty? ? named(name.to_s.delete_prefix("@")) : sole(written - [@subject.owner])
   end
 
   def named(name) = sole(Hashira::Smells::Naming.new(name).types.filter_map { place(it) }.first(1) - [@subject.owner])

@@ -931,6 +931,48 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     )
   end
 
+  it "types a field by what its object's classes and mixins build into it, and by its name only when nothing does" do
+    files = {
+      "lib/app/shop/socket.rb" => <<~RUBY
+        module Shop
+          class Socket
+            def initialize(data) = @data = data
+
+            def connect
+              socket = ::Socket.new(:INET, :STREAM)
+              @socket = socket
+            end
+
+            def read_nonblock(size) = @data.empty? ? nil : @data.slice!(0, size)
+          end
+
+          class Proxy < Socket
+            include Relay
+          end
+
+          module Relay
+            def relay(size) = @socket.read_nonblock(size).nil? ? 0 : size
+          end
+
+          class Wired
+            def initialize(data) = @socket = data.fetch(:wire)
+
+            def drain(size) = @socket.read_nonblock(size).nil? ? 0 : size
+          end
+
+          class Piped
+            def initialize(data) = @pipe = Socket.new(data)
+
+            def drain(size) = @pipe.read_nonblock(size).nil? ? 0 : size
+          end
+        end
+      RUBY
+    }
+    expect(strictly(files, "nil_check").to_h { [it.package, it.detail[:sources].keys] }).to(
+      eq("Shop::Wired#drain" => ["Shop::Socket#read_nonblock"], "Shop::Piped#drain" => ["Shop::Socket#read_nonblock"])
+    )
+  end
+
   it "types a local built from a ::-rooted constant at the root, not as the owned class of the same name" do
     files = {
       "lib/app/shop/catalog.rb" =>

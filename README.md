@@ -880,7 +880,9 @@ Findings (3):
   `last`, `[]`, `dig`, `min_by`, `&.`, a literal `nil`, an `if` or `case`
   without `else`, or it returns early with nothing), reached through an
   instance variable or local named for that class or an object built on the
-  spot (`Finder.new(rows).parent(id)`).
+  spot (`Finder.new(rows).parent(id)`). An instance variable is typed by what
+  its object's classes and mixins build into it first (`@socket = ::Socket.new`,
+  also through a local), and by its name only when none of them builds it.
   A public method's argument, a payload read from outside and a library's
   answer (a node's absent receiver, a URI's missing scheme, Ruby's answer to a
   core value an owned constant holds: `PATTERN.match(path)` with `PATTERN =
