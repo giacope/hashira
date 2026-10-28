@@ -57,14 +57,18 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     joined.map { |piece| [piece.names.select { names.include?(it) }, piece.fields.select { kept.include?(it) }] }
   end
 
-  def pieces = (methods + mixed).map { piece(it.node.name, it.node, []) } + setup.map { piece(nil, it, inputs) }
+  def pieces = (methods + mixed).map { piece(it.node.name, hooked(it), []) } + setup.map { piece(nil, [it], inputs) }
+
+  def hooked(method) = abstract?(method) ? [method.node, *family.overrides(label, method.node.name)] : [method.node]
+
+  def abstract?(method) = Hashira::Smells::Refusal.new(method.node).unimplemented?
 
   def mixed = @_mixed ||= family.mixed(subject.subject)
 
   def known = @_known ||= names | mixed.to_set { it.node.name }
 
-  def piece(name, node, given)
-    found = Hashira::Analysis::NodeWalk.new(node).collect
+  def piece(name, nodes, given)
+    found = nodes.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
     shared = found.grep(Prism::LocalVariableReadNode).map(&:name) & given
     Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
   end

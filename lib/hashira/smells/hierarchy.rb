@@ -29,6 +29,12 @@ class Hashira::Smells::Hierarchy
 
   def children(name) = table.filter_map { |child, kin| child if kin.parent == name }
 
+  def overrides(name, selector)
+    found = [name]
+    found.each { found.concat(children(it) - found) }
+    found.drop(1).flat_map { definitions(it) }.filter_map { it.node if it.node.name == selector }
+  end
+
   def framed?(name) = [name, *ancestors(name)].any? { table.fetch(it, NONE).foreign }
 
   def root(name)

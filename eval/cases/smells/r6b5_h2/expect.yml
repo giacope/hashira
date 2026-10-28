@@ -1,0 +1,12 @@
+# R6B5-H2. bullet's Notification::Base stubs `title` and `body` (they raise
+# NoMethodError) and builds its notification text from them, while
+# `klazz_associations_str`/`associations_str` read @base_class and
+# @associations; every heir implements `body` with those two. The abstract
+# hook joins the groups in every concrete notification, so splitting the
+# base along that seam would leave the text apart from the data it prints.
+# Plain's heir implements the hook without them: still reported.
+present:
+  - {kind: low_cohesion, package: "Shop::Plain"}
+absent:
+  - {kind: low_cohesion, package: "Shop::Notice"}
+evidence: [low_cohesion]

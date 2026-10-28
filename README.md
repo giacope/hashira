@@ -980,7 +980,10 @@ project's own, so a framework's base classes stay out of all of them.
   `attr_writer`/`attr_accessor`, and so touches their fields. A method that reads fields by computed name
   (`instance_variables`, `instance_variable_get(ivar)`), in the class or in a
   module it includes, may touch any of them and joins every group (caxlsx's
-  `SerializedAttributes` writing one XML element's attributes). The
+  `SerializedAttributes` writing one XML element's attributes). A hook the
+  class leaves abstract (its body only raises `NotImplementedError` or
+  `NoMethodError`) calls what its subclasses' overrides call, since that is
+  the method every concrete instance runs (bullet's notification `body`). The
   constructor joins what it ties together statement by statement: a field it
   derives from another group's method (`@rules = load_rules`) or from the same
   argument as another field. Left alone: a field only written (handed to a

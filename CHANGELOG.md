@@ -703,6 +703,12 @@ From the third field test (thirty MIT-licensed codebases):
     :suppressed_turbo_broadcasts` on every model and whose methods test it,
     went unreported under strict. One in the module's own body (ahoy's and
     counter_culture's configuration) stays the module's.
+  - `low_cohesion` reads a hook the class leaves abstract (its body only
+    raises `NotImplementedError` or `NoMethodError`) as calling what its
+    subclasses' overrides call: bullet's `Notification::Base` stubs `title`
+    and `body`, which build the notification text, and every heir's `body`
+    calls `klazz_associations_str` and `associations_str`, so the two groups
+    it was told to split along meet in every notification bullet builds.
   - `repeated_call` ends a run where Ruby does: at a `raise` (also one whose
     message holds the first read, `raise E, "... #{attrs[:name]}"`), and
     inside a block at `next` and `break`, whether the exit holds the first

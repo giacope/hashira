@@ -128,6 +128,19 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
 
   def mixed(body, head = "") = "#{head}#{account("#{body}\n  def audit = [bridge, held, ping]")}"
 
+  it "joins the groups through an abstract hook whose heirs' overrides call into the other group" do
+    stub = 'def summary = raise(NotImplementedError, "summary")'
+    heir = ->(body) { "\nclass Savings < Account\nend\nclass Checking < Account\n  def summary = #{body}\nend\n" }
+    found = [
+      split(account("#{stub}\n  def report = notify(summary)") + heir.call("balance.to_s")),
+      split(account("#{stub}\n  def report = notify(summary)") + heir.call('"closed"')),
+      split(account("def summary = 1\n  def report = notify(summary)") + heir.call("balance.to_s")),
+      split(account("#{stub}\n  def report = notify(summary)") + heir.call('"closed"\n  def extra = balance.to_s'))
+    ]
+    groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, summary, report (@mailer)"]
+    expect([found[0], *found[1..].map { it.first.evidence }]).to(eq([[], groups, groups, groups]))
+  end
+
   it "joins methods through a project module the class includes, whose methods call back into the class" do
     bridge = "module Bridge\n  def bridge = [balance, ping]\nend\nmodule Held\n  def held = @balance\nend\n"
     groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, audit (@mailer)"]
