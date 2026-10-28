@@ -781,7 +781,8 @@ Findings (3):
   @scanner.scan(…)`), a reading measured by distance or order against a
   stored copy of its own earlier result (`started = clock.now; ...; clock.now -
   started`, a deadline loop, also one that names each reading as it compares
-  it, `while (now = clock.now) < deadline`), and a plain read of self, a local or an instance
+  it, `while (now = clock.now) < deadline`) and any call that holds such a
+  reading (`[deadline - clock.now, 0].max`), and a plain read of self, a local or an instance
   variable — no arguments, or literal keys — made at most twice in any one run,
   which is style; a reader the class declares (`attr_reader :options`) reads
   its instance variable, so `options[:routing]` twice is `@options[:routing]`

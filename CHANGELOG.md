@@ -716,6 +716,12 @@ From the third field test (thirty MIT-licensed codebases):
     all on some paths) and ten other evidence lines across the corpus were
     reads no run makes twice. A loop that does not rebind the read, and a
     raise a `rescue` catches, still let a run reach both.
+  - `repeated_call` takes any call that holds a reading measured against a
+    stored earlier one for a new value each time, as the reading is: excon's
+    `SOCKS5#socks5_read_exactly` measures `deadline - Time.now` before its
+    first wait and again for the second (`[deadline - Time.now, 0].max`),
+    and naming the first makes the second wait overshoot the deadline. A
+    clock read with nothing measured against it is still reported.
   - `dead_code` reads a module mixed in bare inside a library's load hook
     (`ActiveSupport.on_load(:active_record) { include M }`, and `extend`,
     `prepend`, `self.include`, `send(:include, M)`) as handed to the

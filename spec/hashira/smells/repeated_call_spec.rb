@@ -172,6 +172,31 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.map { it.package.split("#").last }).to(eq(%w[boxed]))
   end
 
+  it "takes a call that holds a measured reading for a new value each time, as the reading is, not an unmeasured one" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def read_exactly(clock, size)
+              deadline = clock.now(:ms) + @timeout
+              while @data.size < size
+                remaining = deadline - clock.now(:ms)
+                @socket.wait(remaining)
+                @socket.wait([deadline - clock.now(:ms), 0].max) if @socket.blocked?
+              end
+            end
+
+            def stamped(clock)
+              deadline = clock.now(:ms) + @timeout
+              [deadline, clock.now(:ms).to_s, clock.now(:ms).to_s]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["clock.now(:ms) × 3 (lines 14, 15)"]))
+  end
+
   it "parts two calls when the receiver is handed on between them, as an argument, a keyword or a stored result" do
     findings = repeated(<<~RUBY)
       module App
