@@ -474,9 +474,11 @@ Findings (1):
 **change_coupling**, opt-in, reads the git history behind the hotspots: two files in
 different packages that changed together in at least `commits:` 5 commits, and
 in at least `degree:` 50% of their changes (shared commits over the mean of
-the two files' commits, Tornhill's degree of coupling). Commits touching more
-than `files:` 30 analyzed files (a rename, a style sweep) are not counted. The
-finding says whether one file refers to the other: a pair with no reference
+the two files' commits, Tornhill's degree of coupling). A commit touching
+more than a quarter of the analyzed files (a rename, a style sweep, an initial
+import) is not counted, though one of up to 8 files always is, and neither is
+one touching more than `files:` 30 however large the project: in 52 files, a
+commit of 14 is a sweep. The finding says whether one file refers to the other: a pair with no reference
 between them is coupled where the code does not show it.
 
 It needs the history: a CI checkout of one commit (`actions/checkout`'s

@@ -1,0 +1,27 @@
+# R6B6-H5. state_machines (52 lib files) reported 11 change_coupling pairs,
+# 8 of them "hidden", whose shared commits were the project's sweeps: the
+# initial import, a frozen-string-literal pragma, cosmetic linting, a Ruby
+# version drop, each touching 16 to 27 files, all under the absolute
+# `files: 30` cut-off. A commit worth counting now touches at most a quarter
+# of the analysed files (at least 8, never more than `files:`): here 12
+# files, an import and four sweeps touching all of them, which pair every
+# alpha file with every beta file, count for nothing. Two files that change
+# together on their own five times still pair.
+history:
+  - [lib/app/alpha/part2.rb, lib/app/alpha/part4.rb, lib/app/alpha/part6.rb, lib/app/alpha/part8.rb, lib/app/alpha/part10.rb, lib/app/alpha/part12.rb, lib/app/beta/part1.rb, lib/app/beta/part3.rb, lib/app/beta/part5.rb, lib/app/beta/part7.rb, lib/app/beta/part9.rb, lib/app/beta/part11.rb]
+  - [lib/app/alpha/part2.rb, lib/app/alpha/part4.rb, lib/app/alpha/part6.rb, lib/app/alpha/part8.rb, lib/app/alpha/part10.rb, lib/app/alpha/part12.rb, lib/app/beta/part1.rb, lib/app/beta/part3.rb, lib/app/beta/part5.rb, lib/app/beta/part7.rb, lib/app/beta/part9.rb, lib/app/beta/part11.rb]
+  - [lib/app/alpha/part2.rb, lib/app/alpha/part4.rb, lib/app/alpha/part6.rb, lib/app/alpha/part8.rb, lib/app/alpha/part10.rb, lib/app/alpha/part12.rb, lib/app/beta/part1.rb, lib/app/beta/part3.rb, lib/app/beta/part5.rb, lib/app/beta/part7.rb, lib/app/beta/part9.rb, lib/app/beta/part11.rb]
+  - [lib/app/alpha/part2.rb, lib/app/alpha/part4.rb, lib/app/alpha/part6.rb, lib/app/alpha/part8.rb, lib/app/alpha/part10.rb, lib/app/alpha/part12.rb, lib/app/beta/part1.rb, lib/app/beta/part3.rb, lib/app/beta/part5.rb, lib/app/beta/part7.rb, lib/app/beta/part9.rb, lib/app/beta/part11.rb]
+  - [lib/app/alpha/part2.rb, lib/app/alpha/part4.rb, lib/app/alpha/part6.rb, lib/app/alpha/part8.rb, lib/app/alpha/part10.rb, lib/app/alpha/part12.rb, lib/app/beta/part1.rb, lib/app/beta/part3.rb, lib/app/beta/part5.rb, lib/app/beta/part7.rb, lib/app/beta/part9.rb, lib/app/beta/part11.rb]
+  - [lib/app/alpha/part2.rb, lib/app/beta/part1.rb]
+  - [lib/app/alpha/part2.rb, lib/app/beta/part1.rb]
+  - [lib/app/alpha/part2.rb, lib/app/beta/part1.rb]
+  - [lib/app/alpha/part2.rb, lib/app/beta/part1.rb]
+  - [lib/app/alpha/part2.rb, lib/app/beta/part1.rb]
+present:
+  - {kind: change_coupling, package: alpha/part2.rb}
+messages:
+  - {kind: change_coupling, package: alpha/part2.rb, includes: "alpha/part2.rb (alpha) and beta/part1.rb (beta) changed together in 5 commits, 100% of their changes"}
+absent:
+  - {kind: change_coupling, package: alpha/part4.rb}
+  - {kind: change_coupling, package: beta/part3.rb}

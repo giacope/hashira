@@ -745,6 +745,16 @@ From the third field test (thirty MIT-licensed codebases):
     five-member cycle through it and a cut that removes nothing real. pay's
     `ActiveSupport.run_load_hooks(:pay_charge, Pay::Charge)` below its
     module and `AccountPolicy.prepend_mod` stay their class's own.
+  - `change_coupling` (opt-in) scales the size of a commit worth counting to
+    the project: at most a quarter of the analyzed files, at least 8, never
+    more than `files:` (30). state_machines' 52 lib files gave 11 pairs, 8
+    of them "hidden coupling", whose shared commits were its initial import,
+    a frozen-string-literal pragma, cosmetic linting and a Ruby version drop
+    (16 to 27 files each), all under the absolute 30; told to "name what
+    they share", two files that share nothing would gain a dependency. The
+    same sweeps no longer pair mustermann's, rack-mini-profiler's,
+    short-url-manager's or manuals-publisher's files. A project of 120
+    files or more keeps the absolute cut-off.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread
