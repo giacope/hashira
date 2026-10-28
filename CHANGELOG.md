@@ -705,6 +705,14 @@ From the third field test (thirty MIT-licensed codebases):
     class's own reader was taken before (48 evidence lines in the corpus). A
     helper method's result read twice, a chain, or three reads in one run
     are still reported.
+  - `repeated_call` parts two reads around a bang or a change sent by name
+    (`object.send("#{event}!")`, `public_send(:launch!)`, `__send__(:<<,
+    item)`), as it does around the call spelled out: state_machines'
+    `assert_sm_sync_execution` reads the state, fires the event with
+    `object.send("#{event}!")` and reads it again, and naming the first read,
+    as advised, made the assertion fail on every correct transition. A name
+    the code computes with no literal tail (`send(event)`) is still read as
+    a query.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread

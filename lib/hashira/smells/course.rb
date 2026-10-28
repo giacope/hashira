@@ -3,6 +3,7 @@
 require "prism"
 require_relative "bindings"
 require_relative "endings"
+require_relative "message"
 require_relative "scope"
 
 class Hashira::Smells::Course
@@ -72,7 +73,9 @@ class Hashira::Smells::Course
       disturbs?(stretch, @calls) { |call| errands.own?(call) && errands.of(call.name).any? { stretch.shifts?(it) } }
   end
 
-  def moves = @_moves ||= commands + @calls.select { CHANGES.include?(it.name) || BANG.match?(it.name) }
+  def moves = @_moves ||= commands + @calls.select { changes?(Hashira::Smells::Message.new(it).name) }
+
+  def changes?(name) = CHANGES.include?(name.to_sym) || BANG.match?(name)
 
   def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
 

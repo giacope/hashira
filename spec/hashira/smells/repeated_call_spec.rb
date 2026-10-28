@@ -1617,6 +1617,30 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     )
   end
 
+  it "parts two reads around a bang or a change sent by name, literal or with a literal tail" do
+    reads = ->(between) { "[object.state(:now), #{between}, object.state(:now)]" }
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Probe
+            def computed(object, event) = #{reads['object.send("#{event}!")']}
+            def literal(object) = #{reads["object.send(:launch!)"]}
+            def worded(object) = #{reads['object.send("launch!")']}
+            def sent(object, event) = #{reads['object.public_send(:"#{event}!")']}
+            def raw(object, item) = #{reads["object.__send__(:<<, item)"]}
+            def variable(object, name) = #{reads["object.send(name)"]}
+            def asked(object, event) = #{reads['object.send("#{event}?")']}
+            def plain(object) = #{reads["object.send(:launch)"]}
+            def handle(object) = #{reads["object.method(:launch!)"]}
+            def bare(object) = #{reads["object.send"]}
+            def other(object, peer) = #{reads["peer.send(:launch!)"]}
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[variable asked plain handle bare other].map { "App::Zone::Probe##{it}" }))
+  end
+
   it "parts reads of an instance variable around a call on self whose method moves it, however deep" do
     reads = ->(between) { "[@scanner.pos, #{between}, @scanner.pos, #{between}, @scanner.pos]" }
     findings = repeated(<<~RUBY)

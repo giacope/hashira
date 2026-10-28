@@ -776,7 +776,8 @@ Findings (3):
   guard the run passes), a read after a
   command on the receiver or a call that consumes or changes it, whatever
   becomes of its answer (`step = path.shift`, `done = job.finalize!`,
-  `items << item`), or after a call on self whose method (or one it
+  `items << item`), also sent by name (`job.send("#{event}!")`,
+  `public_send(:finalize!)`), or after a call on self whose method (or one it
   calls on self) sends the instance variable read a message as a command or
   as its own answer, but a predicate or that same reader, or reassigns it
   (`start = @scanner.pos; token; @scanner.pos` with `def token =

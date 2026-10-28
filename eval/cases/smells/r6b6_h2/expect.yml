@@ -1,0 +1,15 @@
+# R6B6-H2. state_machines' assert_sm_sync_execution reads the state, fires
+# the event with `object.send("#{event}!")`, and reads the state again: the
+# bang sent by name changes the object, so the reads are the state before
+# and after, and naming the first makes the assertion fail on every correct
+# transition. A bang or a change sent by name (a symbol, a string, or an
+# interpolation with a literal tail) parts the reads as the call spelled
+# out does. A computed name with no literal tail cannot be read: Opaque is
+# still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Probe#opaque"}
+absent:
+  - {kind: repeated_call, package: "Shop::Probe#computed"}
+  - {kind: repeated_call, package: "Shop::Probe#literal"}
+  - {kind: repeated_call, package: "Shop::Probe#public_computed"}
+evidence: [repeated_call]
