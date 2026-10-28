@@ -20,8 +20,13 @@ class Hashira::Smells::Rivals
 
   def links
     @_links ||=
-      (sites + doubles + subsets).flat_map { it.uniq.combination(2).to_a }.flat_map { [it, it.reverse] }
+      meetings.flat_map { it.uniq.combination(2).to_a }.flat_map { [it, it.reverse] }
         .group_by(&:first).transform_values { it.to_set(&:last) }
+  end
+
+  def meetings
+    seats = Hashira::Smells::Seats.new(@types, @lineage)
+    sites + doubles + subsets + seats.slots + seats.wraps
   end
 
   def sites

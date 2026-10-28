@@ -703,6 +703,17 @@ From the third field test (thirty MIT-licensed codebases):
     :suppressed_turbo_broadcasts` on every model and whose methods test it,
     went unreported under strict. One in the module's own body (ahoy's and
     counter_culture's configuration) stays the module's.
+  - `utility_function` finds kin where two more kinds of place meet:
+    a class attribute's default and the classes assigned to it
+    (`class_attribute :debouncer_class, default: Turbo::Debouncer` beside
+    `ThreadDebouncer.debouncer_class = Turbo::ImmediateDebouncer`), and a
+    class that hands itself to a decorator or seeds a chain of them
+    (excon's `middlewares.inject(self) { |stack, m| m.new(stack) }`) with the
+    decorators that forward what they define to the object they wrap.
+    excon's `Connection#response_call`, the innermost answer of the
+    middleware chain, and turbo-rails' `ImmediateDebouncer#debounce` were
+    told to go private or move; either breaks every response or every test
+    run.
   - Strict `nil_check` types an instance variable by what its object's
     classes and mixins build into it before its name: excon's `SOCKS5`
     module tests `@socket.read_nonblock(n, exception: false)` for nil, and

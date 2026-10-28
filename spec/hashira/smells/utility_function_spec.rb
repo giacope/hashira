@@ -268,6 +268,132 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
   end
 
+  it "takes a class attribute's default and the classes assigned to it for peers that share a protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        class Debouncer
+          def initialize(delay:) = @delay = delay
+          def debounce(&) = @task = Task.run(@delay, &)
+        end
+
+        class ImmediateDebouncer
+          def initialize(delay:) = nil
+          def debounce(&block) = block.call
+          def pause(&block) = block.call
+        end
+
+        class Threaded
+          class_attribute :debouncer_class, instance_writer: false, default: Debouncer
+
+          def initialize(delay) = @debouncer = debouncer_class.new(delay:)
+        end
+
+        module Setup
+          def self.testing! = Threaded.debouncer_class = ImmediateDebouncer
+        end
+
+        class Lone
+          def debounce(&block) = block.call
+        end
+
+        module Picker
+          def self.pick(config) = config.fetch(:debouncer_class, default: Lone)
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::ImmediateDebouncer#pause App::Lone#debounce]))
+  end
+
+  it "takes a class that hands itself to a decorator, or seeds a chain of them, for the peer of what wraps it" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def request_call(datum) = @stack.request_call(datum)
+          def response_call(datum) = @stack.response_call(datum)
+        end
+
+        class Connection
+          def initialize(layers) = @layers = layers
+          def request(datum) = @layers.inject(self) { |inner, layer| layer.new(inner) }.request_call(datum)
+          def request_call(datum) = datum.merge(sent: true)
+          def response_call(datum) = datum.merge(read: true)
+          def label(datum) = datum.fetch(:name)
+        end
+
+        class Probe
+          def initialize(layers) = @layers = layers
+          def wrapped = Layer.new(self)
+          def response_call(datum) = datum.merge(probed: true)
+        end
+
+        class Spawn
+          def initialize(kind) = @kind = kind
+          def child = @kind.new(self)
+          def response_call(datum) = datum.merge(spawned: true)
+          def scheduled?(job) = job.next_time.nil?
+          def format(datum) = datum.to_s
+        end
+
+        class Formatter
+          def format(datum) = datum.merge(formatted: true)
+        end
+
+        class Copier
+          def initialize(source) = @copy = source.dup
+          def format(datum) = @copy.format(normal(datum))
+
+          private
+
+          def normal(datum) = datum.compact
+        end
+
+        class Loose
+          def initialize(rows) = @rows = rows
+          def total = @rows.reduce(self) { |sum, row| sum.add(row) }
+          def response_call(datum) = datum.merge(loose: true)
+        end
+
+        class Job
+          def initialize(scheduler, at) = (@scheduler = scheduler; @at = at)
+          def scheduled? = @scheduler.scheduled?(self)
+        end
+
+        class Scheduler
+          def initialize(kind) = @kind = kind
+          def schedule(at) = @kind.new(self, at)
+          def scheduled?(job) = job.next_time.nil?
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(
+        %w[
+          App::Connection#label App::Spawn#scheduled? App::Spawn#format App::Formatter#format App::Loose#response_call
+          App::Scheduler#scheduled?
+        ]
+      )
+    )
+  end
+
+  it "reads a fold seeded with self that builds what it folds, in its block or its receiver, as a decorator chain" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def request_call(datum) = @stack.request_call(datum)
+        end
+
+        class Chain
+          def initialize(layers) = @layers = layers
+          def stack = @layers.map { |layer| ->(inner) { layer.new(inner) } }.inject(self) { |inner, wrap| wrap.call(inner) }
+          def request_call(datum) = datum.merge(chained: true)
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "takes the classes one table holds, as classes or as the objects it builds, for peers that share a protocol" do
     findings = utility(<<~RUBY)
       module App

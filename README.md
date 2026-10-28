@@ -838,7 +838,13 @@ Findings (3):
   `Dummy`, `*Double`; the classes one array literal builds side by side,
   `[HelpSection.new(user), FeedexSection.new(user)]`, or one hash literal
   holds as its values, built or as a table of classes to pick from,
-  `FORMATS = { plain: Plain, json: Json }`) is exempt. So is what
+  `FORMATS = { plain: Plain, json: Json }`; a class attribute's default and
+  the classes assigned to it, `class_attribute :debouncer, default: Debouncer`
+  beside `Host.debouncer = ImmediateDebouncer`; a class that hands itself to
+  a decorator, `Layer.new(self)`, or seeds a chain of them,
+  `layers.inject(self) { |stack, layer| layer.new(stack) }`, and the
+  decorators that forward what they define to the object they wrap) is
+  exempt. So is what
   Ruby asks of every object, at the arity it asks it (`==`, `eql?`, `equal?`,
   `<=>`, `===`, `coerce` taking one argument; `hash`, `inspect`, `to_s` taking
   none): a null object's `eql?` answers without state, and Hash, `sort` and
