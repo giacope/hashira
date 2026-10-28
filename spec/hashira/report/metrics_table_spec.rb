@@ -70,7 +70,8 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
     pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
     view = Hashira::Report::View.new(
       project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
-      hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR
+      hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR,
+      unjudged: Fixtures::JUDGED
     )
     capture { Hashira::Report::Text.new(view).print }
   end

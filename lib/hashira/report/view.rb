@@ -6,7 +6,7 @@ module Hashira
       Data.define(
         :project, :graph, :complexity, :duplication, :hotspots, :findings, :top, :compact, :screened, :unjudged
       ) do
-        def initialize(top: nil, compact: nil, unjudged: Unjudged::NONE, **) = super
+        def initialize(top: nil, compact: nil, **) = super
 
         def suppressed = screened.suppressed
 

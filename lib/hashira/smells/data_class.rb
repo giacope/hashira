@@ -3,8 +3,6 @@
 require "prism"
 
 class Hashira::Smells::DataClass < Hashira::Smells::Check
-  MARKERS = Hashira::Analysis::TypeWalk::MARKERS
-
   CONSTRUCTOR = :initialize
 
   MINIMUM = 2
@@ -21,7 +19,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
 
   def plain?(node)
     case node
-    when Prism::CallNode then !node.receiver && (Hashira::Smells::Attributes::EVERY + MARKERS).include?(node.name)
+    when Prism::CallNode then Hashira::Smells::Attributes.new([node]).macros.any? || Hashira::Analysis::TypeWalk.new(node).marker?
     when Prism::DefNode then !node.receiver && (node.name == CONSTRUCTOR ? stores?(node) : access?(node))
     else false
     end

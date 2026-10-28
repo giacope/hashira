@@ -5,7 +5,7 @@ class Evaluation::Behaviour
 
   SAID = { true => :said, false => :unsaid }.freeze
 
-  def self.build(tool) = new(tool, YAML.safe_load_file(File.join(Evaluation::CASES, "cli.yml")))
+  def self.build(tool, cases = Evaluation::Home.new.cases("cli.yml")) = new(tool, YAML.safe_load_file(cases))
 
   def initialize(tool, cases)
     @tool = tool

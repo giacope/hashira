@@ -7,7 +7,7 @@ class Hashira::Churn
 
   Depth = Data.define(:commits, :shallow, :deep)
 
-  DEEP = Depth.new(commits: Hashira::GitLog::ENOUGH, shallow: false, deep: true)
+  DEEP = Depth.new(commits: 2, shallow: false, deep: true)
 
   def self.build(project)
     history = project.history

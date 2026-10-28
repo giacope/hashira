@@ -10,7 +10,7 @@ module Evaluation
       def agreed = pairs.count { |human, rater| human == rater }
 
       def kappa
-        chance = Labels::VERDICTS.sum { |verdict| share(0, verdict) * share(1, verdict) }
+        chance = %w[tp fp].sum { |verdict| share(0, verdict) * share(1, verdict) }
         chance == 1 ? "—" : ((agreed.fdiv(size) - chance) / (1 - chance)).round(2)
       end
 
@@ -21,7 +21,7 @@ module Evaluation
 end
 
 class Evaluation::Agreement
-  RATERS = [Evaluation::Labels::BLIND, Evaluation::Labels::SECOND].freeze
+  RATERS = Evaluation::Shelves.new.raters
 
   def self.build(human, raters)
     new(Evaluation::Labels.new(human, pending: true), (raters || RATERS).map { Evaluation::Labels.new(it) })

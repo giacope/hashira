@@ -1,12 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Handover
-  FOREIGN = :foreign
-
-  def initialize(handed, census, told)
+  def initialize(handed, census, told, foreign)
     @handed = handed
     @census = census
     @told = told
+    @foreign = foreign
   end
 
   def hosts(path) = gifts.fetch(path, [])
@@ -18,7 +17,7 @@ class Hashira::Coupling::Handover
   def gifts
     @_gifts ||=
       @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, hosting, given, nesting), found|
-        found[exact(given, nesting)] << (exact(host, hosting) || FOREIGN)
+        found[exact(given, nesting)] << (exact(host, hosting) || @foreign)
       end
   end
 

@@ -1,17 +1,9 @@
 # frozen_string_literal: true
 
 class Evaluation::Labels
-  ROOT = File.join(Evaluation::ROOT, "results", "labels")
-
-  BLIND = File.join(Evaluation::ROOT, "results", "blind")
-
-  SECOND = File.join(Evaluation::ROOT, "results", "blind2")
-
-  DEV = [ROOT, BLIND, SECOND].freeze
-
-  DRAWN = File.join(Evaluation::ROOT, "results", "{holdout,human}", "*")
-
   VERDICTS = %w[tp fp].freeze
+
+  private_constant :VERDICTS
 
   def initialize(root, pending: false)
     @root = root

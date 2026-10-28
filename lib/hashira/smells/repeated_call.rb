@@ -9,18 +9,12 @@ require_relative "refs"
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   MINTS = %i[new dup clone allocate rand srand generate].freeze
 
-  DRAWS = Hashira::Smells::Course::DRAWS
-
   SOURCES = %w[SecureRandom Random].freeze
 
   LITERALS = [
     Prism::StringNode, Prism::SymbolNode, Prism::ArrayNode, Prism::HashNode,
     Prism::IntegerNode, Prism::FloatNode, Prism::RegularExpressionNode
   ].freeze
-
-  FENCES = (Hashira::Smells::Scope::FENCES + [Prism::DefinedNode]).freeze
-
-  SCOPES = Hashira::Smells::Refs::SCOPES
 
   MATCHES = [Prism::NumberedReferenceReadNode, Prism::BackReferenceReadNode].freeze
 
@@ -44,7 +38,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def defaults = [subject.node.parameters].compact.flat_map { beneath(it) }
 
-  def every = @_every ||= Hashira::Smells::Scope.new(subject.node).below(FENCES).grep(Prism::CallNode)
+  def every = @_every ||= Hashira::Smells::Scope.new(subject.node).inside(Prism::DefinedNode).grep(Prism::CallNode)
 
   def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) || raises?(it) }
 
@@ -60,9 +54,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def beneath(node) = [node] + Hashira::Smells::Scope.new(node).inside
 
-  def minted?(node) = mints?(node.name) || spawns?(node.receiver)
-
-  def mints?(name) = MINTS.include?(name) || DRAWS.include?(name)
+  def minted?(node) = MINTS.include?(node.name) || Hashira::Smells::Message.new(node).draws? || spawns?(node.receiver)
 
   def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
 
@@ -142,7 +134,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def enclosure(node) = blocks.reverse.find { Hashira::Smells::Scope.new(it).covers?(node) }&.location&.start_offset
 
-  def blocks = @_blocks ||= Hashira::Smells::Scope.new(subject.node).inside.select { SCOPES.include?(it.class) }
+  def blocks = @_blocks ||= Hashira::Smells::Scope.new(subject.node).inside.select { closure?(it) }
+
+  def closure?(node) = Hashira::Smells::Scope.new(node).closure?
 
   def handle(node) = index?(node) ? indexed(node) : "#{title(node)}#{signature(node)}"
 

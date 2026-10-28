@@ -5,9 +5,13 @@ require "prism"
 class Hashira::Smells::Origin
   SELVES = [NilClass, Prism::SelfNode].freeze
 
+  private_constant :SELVES
+
   def initialize(node)
     @node = node
   end
+
+  def self? = SELVES.include?(@node.class)
 
   def of(method)
     return @node.name.to_s if @node.is_a?(Prism::InstanceVariableReadNode)
@@ -22,5 +26,5 @@ class Hashira::Smells::Origin
     owner unless owner == method.owner
   end
 
-  def own? = @node.is_a?(Prism::CallNode) && !@node.arguments && SELVES.include?(@node.receiver.class)
+  def own? = @node.is_a?(Prism::CallNode) && !@node.arguments && Hashira::Smells::Origin.new(@node.receiver).self?
 end

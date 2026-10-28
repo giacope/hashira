@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::Memo
+  WRITES = [Prism::LocalVariableWriteNode, Prism::InstanceVariableWriteNode].freeze
+
   def initialize(branch, check)
     @branch = branch
     @check = check
@@ -48,5 +50,5 @@ class Hashira::Smells::Memo
 
   def answers?(found, names) = found.one? && names.include?(found.first.slice)
 
-  def writes?(node, names) = Hashira::Smells::Course::WRITES.include?(node.class) && names.include?(node.name.to_s)
+  def writes?(node, names) = WRITES.include?(node.class) && names.include?(node.name.to_s)
 end

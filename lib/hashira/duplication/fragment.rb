@@ -26,7 +26,7 @@ class Hashira::Duplication::Fragment
 
   HEREDOCS = [Prism::StringNode, Prism::InterpolatedStringNode, Prism::XStringNode, Prism::InterpolatedXStringNode].freeze
 
-  def initialize(file, roots, walks, setting = Hashira::Duplication::Setting::CODE)
+  def initialize(file, roots, walks, setting)
     @file = file
     @roots = roots
     @walks = walks

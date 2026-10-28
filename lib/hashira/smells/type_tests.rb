@@ -6,8 +6,6 @@ require_relative "reads"
 class Hashira::Smells::TypeTests
   include Hashira::Smells::Reads
 
-  CHECKS = %i[is_a? kind_of? instance_of?].freeze
-
   LOOKUPS = %i[[] fetch].freeze
 
   CASES = [Prism::CaseNode, Prism::CaseMatchNode].freeze
@@ -28,7 +26,9 @@ class Hashira::Smells::TypeTests
 
   def calls = @_calls ||= @body.grep(Prism::CallNode)
 
-  def probes(&) = calls.select { CHECKS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
+  def probes(&) = calls.select { tests?(it) && local?(it.receiver, &) }.filter_map { key(it) }
+
+  def tests?(call) = Hashira::Analysis::Syntax.new(call).type_test?
 
   def arms(&)
     switches = @body.select { CASES.include?(it.class) && local?(it.predicate, &) }

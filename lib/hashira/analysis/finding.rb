@@ -18,6 +18,8 @@ module Hashira
 
         def signature = "#{kind}:#{identity}"
 
+        def clones? = kind == CLONES
+
         def heading = "#{kind}/#{package}"
 
         def magnitude = detail.to_h[MAGNITUDES[kind]]

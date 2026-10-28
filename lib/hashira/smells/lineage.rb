@@ -7,9 +7,10 @@ class Hashira::Smells::Lineage
 
   EXTENSIONS = %i[extend].freeze
 
-  def initialize(types, foreign = Set.new)
+  def initialize(types, foreign = Set.new, messages = Hashira::Runtime::Messages.new)
     @types = types
     @foreign = foreign
+    @messages = messages
   end
 
   def assigned(context) = learned.fetch(context.name) { learned[context.name] = ancestral(context) }
@@ -58,7 +59,7 @@ class Hashira::Smells::Lineage
   end
 
   def addressee(type, receiver)
-    return type.name if Hashira::Smells::Origin::SELVES.include?(receiver.class)
+    return type.name if Hashira::Smells::Origin.new(receiver).self?
     built = receiver.is_a?(Prism::CallNode) && receiver.name == :new
     segments = Hashira::Analysis::Syntax.new(built ? receiver.receiver : receiver).segments
     candidates(type.name, segments).find { index.key?(it) } || segments if segments.any?
@@ -112,7 +113,7 @@ class Hashira::Smells::Lineage
 
   def veiled?(type) = type.kind == :class && macros(type).map(&:name).any? { !native?(it) && !vocabulary.include?(it) }
 
-  def native?(name) = Hashira::Analysis::MACROS.include?(name)
+  def native?(name) = @messages.macro?(name)
 
   def macros(type) = Hashira::Analysis::Syntax.new(type.node).statements.grep(Prism::CallNode).reject(&:receiver)
 

@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Territory
-  def initialize(definitions)
+  def initialize(definitions, builtins = Hashira::Runtime::Builtins.new)
     @definitions = definitions
+    @builtins = builtins
   end
 
   def owned?(path) = owned.include?(path)
@@ -15,7 +16,7 @@ class Hashira::Coupling::Territory
 
   def claimed?(definition)
     scope = definition.scope.last
-    return false if definition.core?
+    return false if definition.core?(@builtins)
     definition.created? || dependencies.own?(scope) || !(foreign?(scope.first) || claims?(scope))
   end
 
@@ -27,7 +28,7 @@ class Hashira::Coupling::Territory
 
   def verdicts = @_verdicts ||= {}
 
-  def builtin?(root) = Hashira::Analysis::CORE.include?(root) || Hashira::Analysis::LIBRARIES.include?(root.downcase)
+  def builtin?(root) = @builtins.core?(root) || @builtins.library?(root)
 
   def abroad?(root) = builtin?(root) || !opened.include?(root) || (shipped?(root) && !twin?(root))
 

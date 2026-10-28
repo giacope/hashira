@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 class Evaluation::Tool
-  PEAK = File.join(Evaluation::ROOT, "probe", "peak.rb")
+  HOME = Evaluation::Home.new
 
-  EVERY = File.join(Evaluation::ROOT, "probe", "every.yml")
+  PEAK = HOME.join("probe", "peak.rb")
+
+  EVERY = HOME.join("probe", "every.yml")
 
   QUIET = %w[BUNDLE_GEMFILE BUNDLE_BIN_PATH RUBYOPT RUBYLIB].to_h { [it, nil] }.freeze
 

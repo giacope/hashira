@@ -82,7 +82,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def read?(name) = exposed.include?(name) || reads(nodes).include?(name)
 
-  def reads(found) = Hashira::Smells::Attributes.new(found).ivars(READS)
+  def reads(found) = Hashira::Smells::Fields.new(found).named(READS)
 
   def exposed = @_exposed ||= exposing.grep(Prism::SymbolNode).map { field(it) }
 
@@ -108,7 +108,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def bodies = subject.nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }
 
-  def hook?(call) = !call.receiver && !Hashira::Analysis::TypeWalk::MARKERS.include?(call.name)
+  def hook?(call) = !call.receiver && !Hashira::Analysis::TypeWalk.new(call).marker?
 
   def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
 

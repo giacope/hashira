@@ -1,19 +1,18 @@
 # frozen_string_literal: true
 
+require_relative "../checks"
 require_relative "choice"
 require_relative "fail_on"
 require_relative "flag"
-require_relative "format"
 require_relative "kinds"
 require_relative "only"
-require_relative "package_by"
 require_relative "skip"
 require_relative "top"
 
 module Hashira::CLI
   FLAGS = [
     Flag.new(
-      name: "--format", arg: "FORMAT", parse: Choice.new("--format", Format::CHOICES), mode: :parsed,
+      name: "--format", arg: "FORMAT", parse: Choice.new("--format", %i[text json dot mermaid]), mode: :parsed,
       text: ["text (default), json, dot, or mermaid"]
     ),
     Flag.new(name: "--json", mode: :json, text: ["shorthand for --format json"]),
@@ -23,7 +22,7 @@ module Hashira::CLI
     ),
     Flag.new(
       name: "--fail-on", arg: "KINDS", field: :fail_on, mode: :fail_on,
-      parse: Kinds.new("--fail-on", FailOn::KINDS.merge(FailOn::EVERY => FailOn::EVERY)),
+      parse: Kinds.new("--fail-on", FailOn.new.names),
       text: [
         "exit 1 if findings exist; comma-separated",
         "kinds: cycles, sdp, mixed_audience, wide_edge,",
@@ -47,7 +46,7 @@ module Hashira::CLI
       ]
     ),
     Flag.new(
-      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind", FailOn::KINDS),
+      name: "--kind", arg: "KINDS", field: :kinds, parse: Kinds.new("--kind", Hashira::Checks.new.names),
       text: [
         "keep only the findings of these kinds, named",
         "as for --fail-on; comma-separated. The tables",
@@ -74,7 +73,7 @@ module Hashira::CLI
     ),
     Flag.new(
       name: "--package-by", arg: "WHAT", field: :packaging,
-      parse: Choice.new("--package-by", PackageBy::CHOICES, :auto),
+      parse: Choice.new("--package-by", %i[auto folder namespace], :auto),
       text: [
         "group coupling by: auto, folder, or namespace",
         "(top-level constant). Default auto: namespace for",
@@ -105,7 +104,21 @@ module Hashira::CLI
       ]
     ),
     Flag.new(name: "--no-config", text: ["ignore .hashira.yml"]),
-    Flag.new(name: "-h, --help", mode: :help, text: ["print this help"]),
-    Flag.new(name: "--version", mode: :version, text: ["print the version"])
+    Flag.new(name: "-h, --help", mode: :help, page: true, text: ["print this help"]),
+    Flag.new(name: "--version", mode: :version, page: true, text: ["print the version"])
   ].freeze
+
+  private_constant :FLAGS
+
+  class Flags
+    include Enumerable
+
+    def initialize(table = FLAGS)
+      @table = table
+    end
+
+    def each(&) = @table.each(&)
+
+    def page?(mode) = @table.any? { it.page && it.mode == mode }
+  end
 end

@@ -20,7 +20,7 @@ require "rubygems"
 require "bundled_gems"
 require "yaml"
 
-target = File.expand_path("../lib/hashira/analysis/inventory.yml", __dir__)
+target = File.expand_path("../lib/hashira/runtime/inventory.yml", __dir__)
 already_listed = File.file?(target) ? YAML.load_file(target).fetch("libraries", []) : []
 extension = ".#{RbConfig::CONFIG["DLEXT"]}"
 in_library = Dir.children(RbConfig::CONFIG["rubylibdir"]).map { it.delete_suffix(".rb") }

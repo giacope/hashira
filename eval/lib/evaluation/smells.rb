@@ -3,7 +3,7 @@
 class Evaluation::Smells
   SUITE = "smells"
 
-  def self.build(tool) = new(tool, File.join(Evaluation::CASES, "smells"))
+  def self.build(tool) = new(tool, Evaluation::Home.new.cases("smells"))
 
   def initialize(tool, root)
     @tool = tool

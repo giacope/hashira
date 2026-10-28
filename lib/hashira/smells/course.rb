@@ -9,15 +9,6 @@ require_relative "scope"
 class Hashira::Smells::Course
   WRITES = [Prism::LocalVariableWriteNode, Prism::InstanceVariableWriteNode].freeze
 
-  DRAWS = %i[
-    gets getc getbyte getch readline readchar readbyte readpartial read_nonblock sysread
-    recv recvfrom recv_nonblock recvmsg accept_nonblock pop shift deq
-  ].freeze
-
-  BANG = /\w!\z/
-
-  CHANGES = (DRAWS + %i[<< push append unshift prepend insert concat delete delete_at delete_if clear replace]).freeze
-
   Stretch =
     Data.define(:first, :last, :held) do
       def ends = [first, last]
@@ -73,9 +64,7 @@ class Hashira::Smells::Course
       disturbs?(stretch, @calls) { |call| errands.own?(call) && errands.of(call.name).any? { stretch.shifts?(it) } }
   end
 
-  def moves = @_moves ||= commands + @calls.select { changes?(Hashira::Smells::Message.new(it).name) }
-
-  def changes?(name) = CHANGES.include?(name.to_sym) || BANG.match?(name)
+  def moves = @_moves ||= commands + @calls.select { Hashira::Smells::Message.new(it).changes? }
 
   def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
 

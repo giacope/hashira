@@ -9,7 +9,7 @@ class Hashira::Project
 
   TESTS = %w[test spec].freeze
 
-  def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules::NONE)
+  def initialize(requested, boundaries: [], home: ".", rules: Hashira::Config::Rules.new({}))
     @requested = requested
     @boundaries = boundaries
     @home = home

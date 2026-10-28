@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Engine
-  PARENTS = Hashira::Coupling::Definition::ENGINES
+  PARENTS = %w[Rails::Engine ::Rails::Engine].freeze
 
   MARK = /<\s*(?:::)?Rails::Engine\b|^\s*isolate_namespace\b/
 

@@ -3,7 +3,8 @@
 RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
     Hashira::Report::View.new(
-      project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:, screened: Fixtures::CLEAR
+      project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:, screened: Fixtures::CLEAR,
+      unjudged: Fixtures::JUDGED
     )
   end
 
@@ -176,8 +177,8 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
     it "treats every structural kind and complexity as measured, and every smell and history guess as a pattern" do
       rate = ->(kind) { described_class.new(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])).of }
       guesses = %w[change_coupling dead_code]
-      expect([*(Hashira::Pipeline::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
-      expect([*Hashira::Pipeline::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))
+      expect([*(Fixtures::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
+      expect([*Fixtures::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))
     end
   end
 end

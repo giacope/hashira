@@ -41,7 +41,7 @@ class Hashira::Smells::Conditions
     node.is_a?(Prism::OrNode)
   end
 
-  def fence?(node) = Hashira::Smells::Scope::FENCES.include?(node.class)
+  def fence?(node) = Hashira::Smells::Scope.new(node).fence?
 
   def couples?(node) = node.is_a?(Prism::AndNode) || node.is_a?(Prism::OrNode)
 

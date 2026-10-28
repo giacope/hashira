@@ -9,6 +9,4 @@ module Evaluation
 
       def row = { "name" => name, "passed" => passed? }.merge("expected" => expected, "actual" => actual)
     end
-
-  SEEN = { true => :present, false => :absent }.freeze
 end

@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Run
-  def initialize(pipeline, options)
+  def initialize(pipeline, options, checks = Hashira::Checks.new)
     @pipeline = pipeline
     @options = options
+    @checks = checks
   end
 
   MODES = { update: :update, ratchet: :check, fail_on: :guard }
@@ -53,14 +54,14 @@ class Hashira::CLI::Run
   def ratchet = @_ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
 
   def baseline
-    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: Hashira::Pipeline::KINDS)
+    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: @checks.to_a)
   end
 
   def targets = @pipeline.targets(@options.home)
 
   def gate = Hashira::CI::Gate.new(findings, gated)
 
-  def gated = @options.fail_on.include?(Hashira::CLI::FailOn::EVERY) ? checked : @options.fail_on
+  def gated = Hashira::CLI::FailOn.new(@options.fail_on).every? ? checked : @options.fail_on
 
   def checked = asked { @pipeline.checks?(it) }
 
@@ -69,9 +70,9 @@ class Hashira::CLI::Run
     Hashira::Report::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
   end
 
-  def asked(&) = Hashira::Pipeline::KINDS.select { yield(it) && owned?(it) && sieve.keeps?(it) }
+  def asked(&) = @checks.select { yield(it) && owned?(it) && sieve.keeps?(it) }
 
-  def owned?(kind) = @pipeline.enabled?(Hashira::CLI::FailOn::OWNERS.fetch(kind))
+  def owned?(kind) = @pipeline.enabled?(@checks.owner(kind))
 
   def source = Hashira::Diagram::Source.new(graph, @options.mode)
 

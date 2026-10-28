@@ -12,7 +12,7 @@ class Hashira::Coupling::Scope
     owner(found) if found && !@placement.skip?(found)
   end
 
-  def owner(path) = qualify(@registry.exact(path))
+  def owner(path) = @registry.owner(path)
 
   def locate(segments, nesting) = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
 
@@ -64,6 +64,4 @@ class Hashira::Coupling::Scope
   def climb(path) = parents(path).flat_map { [it, *lineage(it)] }.uniq
 
   def parents(path) = @catalog.parents(path).filter_map { bind(it, it.reach) }
-
-  def qualify(found) = (found unless found == Hashira::Coupling::ConstantRegistry::AMBIGUOUS)
 end

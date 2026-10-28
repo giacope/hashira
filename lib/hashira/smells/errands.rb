@@ -3,13 +3,13 @@
 require "prism"
 
 class Hashira::Smells::Errands
-  FLOW = Hashira::Smells::Tails.new(Hashira::Smells::Tails::FLOW)
+  FLOW = Hashira::Smells::Tails.new
 
   def initialize(home)
     @home = home
   end
 
-  def own?(call) = Hashira::Smells::Origin::SELVES.include?(call.receiver.class) && definitions.key?(call.name)
+  def own?(call) = Hashira::Smells::Origin.new(call.receiver).self? && definitions.key?(call.name)
 
   def reached(call) = own?(call) ? [definitions.fetch(call.name)] : []
 

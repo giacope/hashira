@@ -1,21 +1,14 @@
 # frozen_string_literal: true
 
 require "prism"
-require_relative "coupling/report"
-require_relative "smells/report"
+require_relative "checks"
 
 class Hashira::Pipeline
-  ANALYZERS = %i[coupling complexity duplication smells].freeze
+  HISTORIC = "change_coupling"
 
-  STRUCTURAL = Hashira::Coupling::Report::RULES.map { it::KIND }.freeze
+  private_constant :HISTORIC
 
-  SMELLS = (
-    Hashira::Smells::Report::CHECKS.map { Hashira::Smells::Kind.new(it).to_s } + [Hashira::Smells::BoundarySprawl::KIND]
-  ).sort.freeze
-
-  KINDS = (STRUCTURAL + %w[complexity duplication fragmentation indirection] + SMELLS).sort.freeze
-
-  def initialize(project, enabled: ANALYZERS, packaging: :auto, only: [])
+  def initialize(project, enabled: Hashira::Checks.new.analyzers, packaging: :auto, only: [])
     @project = project
     @enabled = enabled
     @packaging = packaging
@@ -44,12 +37,12 @@ class Hashira::Pipeline
 
   def history(told)
     return if churn.history?
-    told.churn(@project.label, churn.depth, coupling: rules.enabled?(Hashira::Coupling::ChangeCoupling::KIND))
+    told.churn(@project.label, churn.depth, coupling: rules.enabled?(HISTORIC))
   end
 
   def targets(home) = @project.directories.map { home.relative(it) }
 
-  def checks?(kind) = rules.enabled?(kind) && (kind != Hashira::Coupling::ChangeCoupling::KIND || churn.history?)
+  def checks?(kind) = rules.enabled?(kind) && (kind != HISTORIC || churn.history?)
 
   def unjudged?(kind) = rules.enabled?(kind) && !checks?(kind)
 
@@ -99,7 +92,9 @@ class Hashira::Pipeline
 
   def boundaries = @_boundaries ||= Hashira::Boundaries.new(@project.boundaries, parsed.all, @project.home)
 
-  def suppressions = @_suppressions ||= Hashira::Suppression::Suppressions.new(@project, parsed, KINDS)
+  def suppressions = @_suppressions ||= Hashira::Suppression::Suppressions.new(@project, parsed, kinds)
+
+  def kinds(checks = Hashira::Checks.new) = checks.to_a
 
   def coupling
     @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging), rules: rules)

@@ -4,8 +4,9 @@ class Hashira::CLI::Session
   MISUSE = 2
   BROKEN = 70
 
-  def initialize(argv)
+  def initialize(argv, usage = Hashira::CLI::Usage.new)
     @argv = argv
+    @usage = usage
   end
 
   def status
@@ -19,10 +20,8 @@ class Hashira::CLI::Session
   private
 
   def dispatch(options)
-    usage?(options) ? Hashira::CLI::Usage.new.public_send(options.mode) : timed(options)
+    @usage.page?(options.mode) ? @usage.public_send(options.mode) : timed(options)
   end
-
-  def usage?(options) = Hashira::CLI::Usage::PAGES.include?(options.mode)
 
   def timed(options, clock: Process)
     started = clock.clock_gettime(Process::CLOCK_MONOTONIC)

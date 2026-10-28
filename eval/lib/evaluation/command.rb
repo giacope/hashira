@@ -5,9 +5,11 @@ class Evaluation::Command
     Evaluation::Conformance, Evaluation::Graphs, Evaluation::Clones, Evaluation::Smells, Evaluation::Behaviour
   ].freeze
 
-  RESULTS = File.join(Evaluation::ROOT, "results")
+  HOME = Evaluation::Home.new
 
-  CORPUS = File.join(Evaluation::ROOT, "tmp", "corpus")
+  RESULTS = HOME.join("results")
+
+  CORPUS = HOME.join("tmp", "corpus")
 
   def initialize(argv)
     @argv = argv
@@ -52,7 +54,7 @@ class Evaluation::Command
   def checks = SUITES.select { chosen.include?(it::SUITE) }.flat_map { it.build(tool).checks } + (corpus&.checks || [])
 
   def corpus
-    return unless chosen.include?(Evaluation::Corpus::SUITE)
+    return unless chosen.include?("corpus")
     @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw, sizes)
   end
 

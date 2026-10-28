@@ -3,6 +3,8 @@
 class Hashira::Coupling::ConstantRegistry
   AMBIGUOUS = Object.new.freeze
 
+  private_constant :AMBIGUOUS
+
   def initialize(claims)
     @claims = claims
   end
@@ -10,6 +12,8 @@ class Hashira::Coupling::ConstantRegistry
   def origins = @_origins ||= keyed.transform_values { settled(it) }
 
   def exact(path) = origins[path.join("::")]
+
+  def owner(path) = exact(path).then { it unless it.equal?(AMBIGUOUS) }
 
   def packages = (origins.values.uniq - [AMBIGUOUS])
 

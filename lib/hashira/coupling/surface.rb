@@ -18,10 +18,11 @@ class Hashira::Coupling::Surface
       def sign = name.delete_suffix(selector)[-1]
     end
 
-  def initialize(project, trees, census)
+  def initialize(project, trees, census, builtins = Hashira::Runtime::Builtins.new)
     @project = project
     @trees = trees
     @census = census
+    @builtins = builtins
   end
 
   def openings = @_openings ||= @trees.flat_map { |file, tree| opened(file, tree) }
@@ -135,5 +136,5 @@ class Hashira::Coupling::Surface
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 
-  def foreign?(node) = !Hashira::Analysis::CORE.include?(Hashira::Analysis::Syntax.new(node).origin)
+  def foreign?(node) = !@builtins.core?(Hashira::Analysis::Syntax.new(node).origin)
 end

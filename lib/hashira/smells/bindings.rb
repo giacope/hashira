@@ -20,15 +20,14 @@ class Hashira::Smells::Bindings
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
 
-  SCOPES = Hashira::Smells::Refs::SCOPES
-
-  LOOPS = (SCOPES + Hashira::Smells::Conditions::LOOPS + [Prism::ForNode]).freeze
-
   Frame =
     Data.define(:scopes, :loops, :moment) do
-      def enter(node) = with(scopes: nested(node, scopes, SCOPES), loops: nested(node, loops, LOOPS))
+      def enter(node)
+        scope = Hashira::Smells::Scope.new(node)
+        with(scopes: nested(node, scopes, scope.closure?), loops: nested(node, loops, scope.loop?))
+      end
 
-      def nested(node, stack, kinds) = kinds.include?(node.class) ? stack + [node] : stack
+      def nested(node, stack, opened) = opened ? stack + [node] : stack
 
       def sighting(node)
         implicit = node.is_a?(Prism::ItLocalVariableReadNode)
@@ -95,7 +94,7 @@ class Hashira::Smells::Bindings
 
   def walk(root, frame, ledger)
     root.compact_child_nodes.each do |child|
-      next if Hashira::Smells::Scope::FENCES.include?(child.class)
+      next if Hashira::Smells::Scope.new(child).fence?
       timed = asked?(root, child) ? frame.with(moment: root.location.start_offset) : frame
       ledger.note(child, timed)
       walk(child, timed.enter(child), ledger)

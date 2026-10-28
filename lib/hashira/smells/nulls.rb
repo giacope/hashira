@@ -8,7 +8,7 @@ class Hashira::Smells::Nulls
 
   OPEN = { Prism::IfNode => :subsequent, Prism::UnlessNode => :else_clause, Prism::CaseNode => :else_clause }.freeze
 
-  FLOW = Hashira::Smells::Tails.new(Hashira::Smells::Tails::FLOW)
+  FLOW = Hashira::Smells::Tails.new
 
   def initialize(trees)
     @trees = trees

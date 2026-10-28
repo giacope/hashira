@@ -9,6 +9,8 @@ module Hashira
 
       CLASS_LEVEL = :ClassMethods
 
+      private_constant :MARKERS, :CLASS_LEVEL
+
       def initialize(node, block: false, opens: nil)
         @node = node
         @block = block
@@ -24,6 +26,10 @@ module Hashira
       def apart? = @node.is_a?(Prism::CallNode) && Block.new(@node).apart?
 
       def type? = @block || @opens || @node.is_a?(Prism::ClassNode) || @node.is_a?(Prism::ModuleNode)
+
+      def marker? = Syntax.new(@node).command?(MARKERS)
+
+      def class_level? = @node.is_a?(Prism::ModuleNode) && @node.name == CLASS_LEVEL
 
       def walk(stack = [], roots: nil, &)
         return descend(@node, stack, roots, &) unless type?

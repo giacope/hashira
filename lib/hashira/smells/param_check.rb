@@ -6,8 +6,6 @@ require_relative "mapping"
 class Hashira::Smells::ParamCheck
   COMPARISONS = %i[== != =~].freeze
 
-  FIXED = Hashira::Smells::Mapping::FIXED
-
   def initialize(node, name)
     @node = node
     @name = name
@@ -54,7 +52,7 @@ class Hashira::Smells::ParamCheck
   def measured?(call)
     sides = [call.receiver, *call.arguments&.arguments]
     others = sides - reads(sides)
-    others.size < sides.size && others.any? { !FIXED.include?(it.class) }
+    others.size < sides.size && others.any? { !Hashira::Analysis::Syntax.new(it).fixed? }
   end
 
   def mapped? = tested.any? && !Hashira::Smells::Conditions.new(@node).couple? && branches.compact.all? { literal?(it) }

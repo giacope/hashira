@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Evaluation::Sniff
+  SUITE = "smells"
+
   def initialize(name, expect, findings)
     @name = name
     @expect = expect
@@ -12,11 +14,11 @@ class Evaluation::Sniff
   private
 
   def check(label, expected, actual)
-    Evaluation::Check.of(Evaluation::Smells::SUITE, "#{@name}: #{label}", expected, actual)
+    Evaluation::Check.of(SUITE, "#{@name}: #{label}", expected, actual)
   end
 
   def listed(state)
-    @expect.fetch(state.to_s, []).map { check(named(it), state, Evaluation::SEEN.fetch(matching(it).any?)) }
+    @expect.fetch(state.to_s, []).map { check(named(it), state, matching(it).any? ? :present : :absent) }
   end
 
   def named(want) = [want["kind"], want["package"]].compact.join(" ")

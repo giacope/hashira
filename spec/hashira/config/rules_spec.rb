@@ -13,7 +13,7 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
   end
 
   it "leaves measured kinds on and low-precision kinds off when nothing is said, and all of them on for all" do
-    defaults = Hashira::Config::Rules::NONE
+    defaults = described_class.new({})
     expect(%w[complexity duplication nil_check indirection dead_code change_coupling].map { defaults.enabled?(it) })
       .to(eq([true, true, true, false, true, false]))
     expect(defaults.threshold("complexity", 10)).to(eq(10))
@@ -23,15 +23,15 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
   end
 
   it "holds the strict kinds back, under all too, and tightening turns on exactly them, carried through every copy" do
-    plain = [Hashira::Config::Rules::NONE, Hashira::Config::Rules::ALL, parse("all" => true), parse({})]
-    moved = plain.map { |rules| Hashira::Pipeline::KINDS.reject { rules.enabled?(it) == rules.tightened.enabled?(it) } }
-    copies = plain.first.tightened.naming(["nil_check"]).layered(Hashira::Config::Layers::NONE).bounded([])
+    plain = [described_class.new({}), Hashira::Config::Rules::ALL, parse("all" => true), parse({})]
+    moved = plain.map { |rules| Fixtures::KINDS.reject { rules.enabled?(it) == rules.tightened.enabled?(it) } }
+    copies = plain.first.tightened.naming(["nil_check"]).layered(Hashira::Config::Layers.new([])).bounded([])
     strict = plain.map(&:strict?) + [copies.strict?, copies.narrowed(["nil_check"], ["nil_check"]).strict?]
-    expect([moved, strict]).to(eq([[Hashira::Config::Rules::STRICT] * 4, ([false] * 4) + [true, true]]))
+    expect([moved, strict]).to(eq([[%w[stateful_mixin]] * 4, ([false] * 4) + [true, true]]))
   end
 
   it "turns a strict kind on when checks: names it, but not when a flag names it" do
-    named = described_class.parse({ "stateful_mixin" => true }, Hashira::Pipeline::KINDS)
+    named = described_class.parse({ "stateful_mixin" => true }, Fixtures::KINDS)
     flagged = Hashira::Config::Rules::ALL.naming(["stateful_mixin"])
     expect([named, flagged].map { [it.enabled?("stateful_mixin"), it.strict?] }).to(eq([[true, false], [false, false]]))
   end

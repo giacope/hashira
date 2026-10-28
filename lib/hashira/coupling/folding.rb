@@ -9,10 +9,10 @@ class Hashira::Coupling::Folding
 
   KINDS = %w[base mixin suffix plural].freeze
 
-  def initialize(definitions, census, suffixes: [])
+  def initialize(definitions, census, rails:)
     @definitions = definitions
     @census = census
-    @suffixes = suffixes
+    @rails = rails
   end
 
   def map = @_map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
@@ -37,8 +37,10 @@ class Hashira::Coupling::Folding
 
   def pair(name, stem) = ([name, stem] if stem && @census.packages.include?(stem))
 
+  def suffixes = @rails ? SUFFIXES : []
+
   def crop(name)
-    suffix = @suffixes.find { trims?(name, it) }
+    suffix = suffixes.find { trims?(name, it) }
     suffix && name.delete_suffix(suffix)
   end
 

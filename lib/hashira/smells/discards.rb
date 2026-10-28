@@ -8,7 +8,7 @@ class Hashira::Smells::Discards
 
   YIELDED = [Slots[Prism::CallNode, %i[block]], Slots[Prism::BlockNode, %i[body]]].freeze
 
-  CARRIED = Hashira::Smells::Tails.new(Hashira::Smells::Tails::FLOW + YIELDED)
+  CARRIED = Hashira::Smells::Tails.new.widened(YIELDED)
 
   DROPPED = Hashira::Smells::Tails.new(
     [

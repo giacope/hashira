@@ -1,13 +1,13 @@
 # frozen_string_literal: true
 
 module Hashira::CLI
-  BASELINE = "hashira_baseline.json"
-
   Options =
     Data.define(
       :directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact, :strict, :home, :rules
     ) do
-      def initialize(home: Hashira::CLI::Home::HERE, rules: Hashira::Config::Rules::NONE, strict: nil, **) = super
+      def initialize(home: Hashira::CLI::Home.new([], "."), rules: Hashira::Config::Rules.new({}), strict: nil, **)
+        super
+      end
 
       def self.parse(argv) = Settings.new(argv).options
 
@@ -24,13 +24,13 @@ module Hashira::CLI
         Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:).verify
       end
 
-      def project
-        named = ruled.naming(kinds + fail_on).narrowed(kinds, Hashira::Pipeline::KINDS)
+      def project(checks = Hashira::Checks.new)
+        named = ruled.naming(kinds + fail_on).narrowed(kinds, checks)
         boundaries = decisions.boundaries + rules.boundaries
         Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
       end
 
-      def analyzers = Hashira::Pipeline::ANALYZERS - skip
+      def analyzers(checks = Hashira::Checks.new) = checks.analyzers - skip
       private
       def ruled = strict ? rules.tightened : rules
       def decisions

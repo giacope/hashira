@@ -2,7 +2,9 @@
 
 RSpec.describe(Hashira::Duplication::Variance, :aggregate_failures) do
   def fragment(source)
-    Hashira::Duplication::Fragment.new("f.rb", [Prism.parse(source).value.statements.body.first], Hashira::Duplication::Walks.new)
+    plain = Hashira::Duplication::Setting.new(declarative: false, recurring: [])
+    roots = [Prism.parse(source).value.statements.body.first]
+    Hashira::Duplication::Fragment.new("f.rb", roots, Hashira::Duplication::Walks.new, plain)
   end
 
   def variance(left, right) = described_class.new(fragment(left), fragment(right))

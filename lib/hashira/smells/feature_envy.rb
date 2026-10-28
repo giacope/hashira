@@ -42,5 +42,5 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def types = envied.map { type(it) }.uniq
 
-  def evidence = (envied + [Hashira::Smells::Refs::SELF]).map { tally(it.name, refs.lines(it).uniq) }
+  def evidence = envied.map { tally(it.name, refs.lines(it).uniq) } + [tally(:self, refs.ego_lines.uniq)]
 end

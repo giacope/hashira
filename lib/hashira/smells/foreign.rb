@@ -8,11 +8,7 @@ require_relative "type_tests"
 class Hashira::Smells::Foreign
   include Hashira::Smells::Reads
 
-  TYPE_TESTS = Hashira::Smells::TypeTests::CHECKS
-
   KEYED_READS = %i[[] fetch values_at dig key?].freeze
-
-  KEYS = [Prism::StringNode, Prism::SymbolNode].freeze
 
   LITERALS = [Prism::HashNode, Prism::KeywordHashNode, Prism::ArrayNode, Prism::StringNode].freeze
 
@@ -125,7 +121,7 @@ class Hashira::Smells::Foreign
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
 
-  def keyed?(call) = KEYED_READS.include?(call.name) && KEYS.include?(key(call).class)
+  def keyed?(call) = KEYED_READS.include?(call.name) && Hashira::Analysis::Syntax.new(key(call)).word?
 
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 

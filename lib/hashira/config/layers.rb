@@ -87,5 +87,3 @@ class Hashira::Config::Layers
 
   def repeated(words) = words.tally.find { |_, count| count > 1 }&.first
 end
-
-Hashira::Config::Layers::NONE = Hashira::Config::Layers.new([])

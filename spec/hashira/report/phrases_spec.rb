@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Report::Phrases, :aggregate_failures) do
   it "voices every finding kind the pipeline can emit, and no phantom kinds" do
-    kinds = Hashira::CLI::FailOn::KINDS.values.flatten.uniq.sort
+    kinds = Hashira::Checks.new.names.values.flatten.uniq.sort
     voices = described_class.private_instance_methods(false).grep(/\Aon_/).map { it.to_s.delete_prefix("on_") }.sort
     expect(voices).to(eq(kinds))
   end

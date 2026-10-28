@@ -31,7 +31,7 @@ RSpec.describe(Hashira::Config::Layers, :aggregate_failures) do
   end
 
   it "stands for no layers when none are declared" do
-    expect([described_class.parse(nil).any?, described_class::NONE.names]).to(eq([false, []]))
+    expect([described_class.parse(nil).any?, described_class.new([]).names]).to(eq([false, []]))
   end
 
   def refusal(raw)

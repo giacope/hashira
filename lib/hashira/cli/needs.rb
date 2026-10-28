@@ -5,13 +5,14 @@ require_relative "fail_on"
 class Hashira::CLI::Needs
   DIAGRAMS = %i[dot mermaid].freeze
 
-  def initialize(options)
+  def initialize(options, checks = Hashira::Checks.new)
     @options = options
+    @checks = checks
   end
 
   def check
     drawing
-    gate("--fail-on", @options.fail_on - [Hashira::CLI::FailOn::EVERY])
+    gate("--fail-on", named)
     gate("--kind", @options.kinds)
     shaping
   end
@@ -19,6 +20,8 @@ class Hashira::CLI::Needs
   private
 
   def mode = @options.mode
+
+  def named = Hashira::CLI::FailOn.new(@options.fail_on).named
 
   def shaping
     compacting if @options.compact
@@ -28,7 +31,7 @@ class Hashira::CLI::Needs
 
   def sorting
     focusing("--kind")
-    unheard = (@options.fail_on - [Hashira::CLI::FailOn::EVERY] - @options.kinds).first
+    unheard = (named - @options.kinds).first
     raise(Hashira::Error, "--fail-on #{unheard} can never fire, since --kind leaves it out") if unheard
   end
 
@@ -53,5 +56,5 @@ class Hashira::CLI::Needs
     raise(Hashira::Error, "#{flag} #{blind} needs the #{owner(blind)} analyzer, but --skip drops it")
   end
 
-  def owner(kind) = Hashira::CLI::FailOn::OWNERS.fetch(kind)
+  def owner(kind) = @checks.owner(kind)
 end

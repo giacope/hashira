@@ -40,5 +40,3 @@ class Hashira::CLI::Home
 
   def ancestors = Pathname(start).ascend.map(&:to_s)
 end
-
-Hashira::CLI::Home::HERE = Hashira::CLI::Home.new([], ".")

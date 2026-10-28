@@ -13,7 +13,7 @@ class Hashira::CI::Ratchet
   def update
     @baseline.write(edges, scored(@findings), packaging:)
     @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
-    Hashira::CI::Status::CLEAN
+    0
   end
 
   def check(focus)

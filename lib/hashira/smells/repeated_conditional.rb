@@ -12,11 +12,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   COMPARISONS = %i[== != ===].freeze
 
-  FIXED = Hashira::Smells::Mapping::FIXED
-
   LOCALS = [Prism::LocalVariableReadNode, Prism::ItLocalVariableReadNode].freeze
-
-  SCOPES = (Hashira::Smells::Scope::FENCES + [Prism::BlockNode, Prism::LambdaNode]).freeze
 
   JOINS = [Prism::AndNode, Prism::OrNode].freeze
 
@@ -42,7 +38,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
       def dispatch? = atom.is_a?(Prism::CallNode) && (TYPES.include?(atom.name) || fixed?)
 
-      def fixed? = COMPARISONS.include?(atom.name) && sides.any? { FIXED.include?(it.class) }
+      def fixed? = COMPARISONS.include?(atom.name) && sides.any? { Hashira::Analysis::Syntax.new(it).fixed? }
 
       def sides = [atom.receiver, *atom.arguments&.arguments]
 
@@ -67,7 +63,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def subjects = regions.flat_map { cases(it).filter_map(&:predicate) }
 
-  def cases(region) = Hashira::Smells::Scope.new(region).below(SCOPES).grep(Prism::CaseNode)
+  def cases(region) = Hashira::Smells::Scope.new(region).bare.grep(Prism::CaseNode)
 
   def found = regions.flat_map { |region| predicates(region).flat_map { |root| split(root, region) } }
 
@@ -88,10 +84,12 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
   def rechecks = @_rechecks ||= subject.sweep.grep(Prism::DefNode).map { Hashira::Smells::Recheck.new(it) }
 
   def regions
-    subject.nodes.flat_map { [it] + Hashira::Smells::Scope.new(it).sweep.select { SCOPES.include?(it.class) } }
+    subject.nodes.flat_map { [it] + Hashira::Smells::Scope.new(it).sweep.select { opens?(it) } }
   end
 
-  def predicates(region) = Hashira::Smells::Scope.new(region).below(SCOPES).filter_map { predicate(it) }
+  def opens?(node) = Hashira::Smells::Scope.new(node).then { it.fence? || it.closure? }
+
+  def predicates(region) = Hashira::Smells::Scope.new(region).bare.filter_map { predicate(it) }
 
   def predicate(node)
     node.predicate if node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode) || node.is_a?(Prism::CaseNode)

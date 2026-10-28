@@ -8,7 +8,7 @@ module Hashira
       Data.define(:node, :full, :path, :stack, :file) do
         def klass? = node.is_a?(Prism::ClassNode)
 
-        def class_level? = node.is_a?(Prism::ModuleNode) && full.last == Hashira::Analysis::TypeWalk::CLASS_LEVEL.to_s
+        def class_level? = Hashira::Analysis::TypeWalk.new(node).class_level?
 
         def owner = class_level? ? path[...-1] : path
 

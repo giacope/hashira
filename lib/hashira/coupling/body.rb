@@ -2,11 +2,18 @@
 
 require "prism"
 
-Hashira::Coupling::Body =
-  Data.define(:value) do
-    def built? = value.is_a?(Prism::CallNode) && Hashira::Coupling::Body::MAKERS.include?(maker)
+class Hashira::Coupling::Body
+  MAKERS = [[%w[Class], :new], [%w[Struct], :new], [%w[Data], :define]].freeze
 
-    def maker = [Hashira::Analysis::Syntax.new(value.receiver).segments, value.name]
+  private_constant :MAKERS
+
+  def initialize(value)
+    @value = value
   end
 
-Hashira::Coupling::Body::MAKERS = [[%w[Class], :new], [%w[Struct], :new], [%w[Data], :define]].freeze
+  def built? = @value.is_a?(Prism::CallNode) && MAKERS.include?(maker)
+
+  private
+
+  def maker = [Hashira::Analysis::Syntax.new(@value.receiver).segments, @value.name]
+end

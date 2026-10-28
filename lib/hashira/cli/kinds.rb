@@ -10,7 +10,7 @@ class Hashira::CLI::Kinds
     return [] if list.to_s.empty?
     kinds = list.split(",").flat_map { Array(kind(it.strip)) }.uniq
     raise(Hashira::Error, "#{@flag} needs at least one kind") if kinds.empty?
-    kinds.include?(Hashira::CLI::FailOn::EVERY) ? [Hashira::CLI::FailOn::EVERY] : kinds
+    Hashira::CLI::FailOn.new(kinds).to_a
   end
 
   private

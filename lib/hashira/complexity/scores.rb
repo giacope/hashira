@@ -3,7 +3,7 @@
 class Hashira::Complexity::Scores
   THRESHOLD = 10
 
-  KIND = Hashira::Complexity::MethodFinding::KIND
+  KIND = "complexity"
 
   def initialize(project, trees, rules, parsed)
     @project = project

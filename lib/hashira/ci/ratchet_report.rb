@@ -20,10 +20,10 @@ class Hashira::CI::RatchetReport
 
   def unchanged(tally)
     @io.puts("Ratchet OK: #{tally}, unchanged.")
-    Hashira::CI::Status::CLEAN
+    0
   end
 
-  def verdict(*diffs) = diffs.compact.any?(&:worse?) ? Hashira::CI::Status::WORSE : Hashira::CI::Status::BETTER
+  def verdict(*diffs) = diffs.compact.any?(&:worse?) ? 1 : 3
 
   def details(edges, findings)
     Hashira::CI::EdgeChanges.new(@graph, io: @io).print(edges)

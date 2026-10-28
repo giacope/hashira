@@ -23,7 +23,7 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
 
   def layered(declared, extra = {}, base = files)
     within(base.merge(extra)) do
-      rules = Hashira::Config::Rules::NONE.layered(Hashira::Config::Layers.parse(declared))
+      rules = Hashira::Config::Rules.new({}).layered(Hashira::Config::Layers.parse(declared))
       return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).screened.kept.select { it.kind == "layer_violation" }
     end
   end
@@ -95,7 +95,8 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
 
   def namespaced
     within(rails) do
-      rules = Hashira::Config::Rules::NONE.layered(Hashira::Config::Layers.parse([{ "domain" => "Invoice" }, "(web)"]))
+      layers = Hashira::Config::Layers.parse([{ "domain" => "Invoice" }, "(web)"])
+      rules = Hashira::Config::Rules.new({}).layered(layers)
       return Hashira::Pipeline.new(Hashira::Project.new(["app"], rules:)).findings.select { it.kind == "layer_violation" }
     end
   end

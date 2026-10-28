@@ -9,7 +9,7 @@ class Evaluation::Clones
 
   TOGETHER = { true => :together, false => :apart }.freeze
 
-  def self.build(tool) = new(tool, File.join(Evaluation::CASES, "duplication"))
+  def self.build(tool) = new(tool, Evaluation::Home.new.cases("duplication"))
 
   def initialize(tool, root)
     @tool = tool

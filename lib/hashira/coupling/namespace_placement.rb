@@ -24,7 +24,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def test?(package) = package == TEST
 
-  def folding(census) = Hashira::Coupling::Folding.new(domain, census, suffixes: suffixes)
+  def folding(census) = Hashira::Coupling::Folding.new(domain, census, rails: project.rails?)
 
   private
 
@@ -55,6 +55,4 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   def served?(file) = project.rails? && Hashira::Coupling::Stratum.new(file).presentation?
 
   def tested?(file) = project.rails? && project.test?(file)
-
-  def suffixes = project.rails? ? Hashira::Coupling::Folding::SUFFIXES : []
 end

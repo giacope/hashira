@@ -23,8 +23,6 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   INCLUDED = :included
 
-  SELVES = Hashira::Smells::Origin::SELVES
-
   private
 
   def smelly? = mixin? && (lent.any? || !lifted?) && !subject.singular? && uses.any? && subject.legible?
@@ -80,13 +78,13 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def shared?(call) = SHARED.include?(call.name) && (based?(call.receiver) || hosted?(call))
 
-  def hosted?(call) = SELVES.include?(call.receiver.class) && hosts.any? { it.covers?(call) }
+  def hosted?(call) = Hashira::Smells::Origin.new(call.receiver).self? && hosts.any? { it.covers?(call) }
 
   def hosts = @_hosts ||= hooks.map { Hashira::Smells::Scope.new(it) }
 
   def hooks = statements.grep(Prism::CallNode).select { it.name == INCLUDED }
 
-  def host?(receiver) = SELVES.include?(receiver.class) || based?(receiver)
+  def host?(receiver) = Hashira::Smells::Origin.new(receiver).self? || based?(receiver)
 
   def based?(receiver) = receiver.is_a?(Prism::LocalVariableReadNode) && bases.include?(receiver.name)
 

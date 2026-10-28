@@ -4,8 +4,8 @@ module Hashira::CLI
   BLANK = %i[arg field parse mode].to_h { [it, nil] }.freeze
 
   Flag =
-    Data.define(:name, :arg, :default, :field, :parse, :mode, :text) do
-      def initialize(**attributes) = super(**BLANK, default: "", **attributes)
+    Data.define(:name, :arg, :default, :field, :parse, :mode, :text, :page) do
+      def initialize(**attributes) = super(**BLANK, default: "", page: false, **attributes)
 
       def read(arguments) = arg ? take(arguments) : arguments.drop(name)
 
@@ -25,7 +25,5 @@ module Hashira::CLI
       def label = [name, arg].compact.join(" ")
 
       def names = name.split(", ")
-
-      def page? = Hashira::CLI::Usage::PAGES.include?(mode)
     end
 end

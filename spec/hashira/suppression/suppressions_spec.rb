@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
-  def screened(files, enabled: Hashira::Pipeline::ANALYZERS)
+  def screened(files, enabled: Hashira::Checks.new.analyzers)
     within(files) { return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL), enabled:).verify.screened }
   end
 

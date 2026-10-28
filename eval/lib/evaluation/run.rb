@@ -8,6 +8,8 @@ module Evaluation
 end
 
 class Evaluation::Run
+  SUITE = "corpus"
+
   def initialize(home, outcome)
     @home = home
     @outcome = outcome
@@ -23,7 +25,7 @@ class Evaluation::Run
 
   def checks(name)
     cycles = @outcome.kinds("cycle").filter_map { cut(name, it.fetch("detail")) }
-    [Evaluation::Check.of(Evaluation::Corpus::SUITE, "#{name}: hashira exits 0", 0, @outcome.status), *cycles]
+    [Evaluation::Check.of(SUITE, "#{name}: hashira exits 0", 0, @outcome.status), *cycles]
   end
 
   def sightings(name) = @outcome.findings.map { Evaluation::Sighting.new(corpus: name, finding: it, home: base) }
@@ -50,7 +52,7 @@ class Evaluation::Run
     members = detail.fetch("members")
     optimum = Evaluation::Arcs.new(inside(members)).minimum
     label = "#{name}: cut of #{members.size}-package knot is minimum"
-    Evaluation::Check.of(Evaluation::Corpus::SUITE, label, optimum, detail.fetch("cut").sum { it["weight"] }) if optimum
+    Evaluation::Check.of(SUITE, label, optimum, detail.fetch("cut").sum { it["weight"] }) if optimum
   end
 
   def inside(members)

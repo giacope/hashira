@@ -117,7 +117,7 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
   end
 
   it "computes nothing when data_class is off" do
-    rules = Hashira::Config::Rules.parse({ "all" => true, "data_class" => false }, Hashira::Pipeline::KINDS)
+    rules = Hashira::Config::Rules.parse({ "all" => true, "data_class" => false }, Fixtures::KINDS)
     files = {
       "lib/app/shop.rb" => shop,
       "lib/app/invoice.rb" => invoice("def label = @address.street + @address.city")

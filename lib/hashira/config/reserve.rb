@@ -1,12 +1,20 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Config
-    Reserve =
-      Data.define(:kinds, :strict) do
-        def held?(kind) = kinds.include?(kind) || (!strict && Rules::STRICT.include?(kind))
+class Hashira::Config::Reserve
+  STRICT = %w[stateful_mixin].freeze
 
-        def naming(named) = with(kinds: kinds - named)
-      end
+  private_constant :STRICT
+
+  def initialize(kinds, strict:)
+    @kinds = kinds
+    @strict = strict
   end
+
+  def held?(kind) = @kinds.include?(kind) || (!@strict && STRICT.include?(kind))
+
+  def strict? = @strict
+
+  def naming(named) = Hashira::Config::Reserve.new(@kinds - named, strict: @strict)
+
+  def tightened = Hashira::Config::Reserve.new(@kinds, strict: true)
 end

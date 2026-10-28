@@ -4,8 +4,6 @@ require "prism"
 require_relative "origin"
 
 class Hashira::Smells::Readers
-  SELVES = Hashira::Smells::Origin::SELVES
-
   def initialize(method)
     @method = method
   end
@@ -14,11 +12,10 @@ class Hashira::Smells::Readers
 
   private
 
-  def plain?(call) = !call.arguments && !call.block && SELVES.include?(call.receiver.class)
+  def plain?(call) = !call.arguments && !call.block && Hashira::Smells::Origin.new(call.receiver).self?
 
   def names
-    @_names ||= Hashira::Smells::Attributes.new(homes.flat_map { Hashira::Smells::Scope.new(it).sweep })
-      .declared(Hashira::Smells::Attributes::READERS).to_set
+    @_names ||= Hashira::Smells::Attributes.new(homes.flat_map { Hashira::Smells::Scope.new(it).sweep }).readers.to_set
   end
 
   def homes

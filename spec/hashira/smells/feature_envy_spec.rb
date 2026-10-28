@@ -724,6 +724,12 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
               order.label = 1
               order.left
             end
+
+            def name(order)
+              @seen = true
+              stamp
+              order.to_s && order.to_s(1) && order.to_s(2)
+            end
           end
         end
       end

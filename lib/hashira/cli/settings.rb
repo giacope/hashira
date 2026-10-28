@@ -1,13 +1,16 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Settings
-  def initialize(argv)
+  BASELINE = "hashira_baseline.json"
+
+  def initialize(argv, usage = Hashira::CLI::Usage.new)
     @argv = argv
+    @usage = usage
   end
 
   def options
     typed = parse(@argv)
-    Hashira::CLI::Usage::PAGES.include?(typed.mode) ? typed : layered(typed)
+    @usage.page?(typed.mode) ? typed : layered(typed)
   end
 
   private
@@ -23,7 +26,7 @@ class Hashira::CLI::Settings
   def settled(options, file)
     recorded = options.baseline
     home = file.home
-    options.with(home:, rules: file.rules, baseline: recorded.empty? ? home.join(Hashira::CLI::BASELINE) : recorded)
+    options.with(home:, rules: file.rules, baseline: recorded.empty? ? home.join(BASELINE) : recorded)
   end
 
   def widened(kept, flag)

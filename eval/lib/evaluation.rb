@@ -8,11 +8,10 @@ require "tmpdir"
 require "yaml"
 
 module Evaluation
-  ROOT = File.expand_path("..", __dir__)
-
-  CASES = File.join(ROOT, "cases")
 end
 
+require_relative "evaluation/home"
+require_relative "evaluation/shelves"
 require_relative "evaluation/outcome"
 require_relative "evaluation/tool"
 require_relative "evaluation/sandbox"

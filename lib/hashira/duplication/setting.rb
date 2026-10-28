@@ -13,7 +13,5 @@ module Hashira
           new(declarative: true, recurring: names.select { |_, count| count >= RECURRING }.keys)
         end
       end
-
-    Setting::CODE = Setting.new(declarative: false, recurring: [])
   end
 end

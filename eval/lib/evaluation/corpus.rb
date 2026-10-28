@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 class Evaluation::Corpus
-  SUITE = "corpus"
-
-  LIST = File.join(Evaluation::ROOT, "corpus.yml")
+  LIST = Evaluation::Home.new.join("corpus.yml")
 
   def self.build(tool, root, draw, sizes = nil)
     settings = YAML.safe_load_file(LIST)
@@ -29,12 +27,13 @@ class Evaluation::Corpus
 
   private
 
+  def configs(name, home = Evaluation::Home.new) = home.join("tmp", "configs", "#{name}.yml")
+
   def runs = @_runs ||= @settings.fetch("projects").to_h { [it["name"], run(it)] }
 
   def run(project)
     home = checkout(project)
-    path = File.join(Evaluation::ROOT, "tmp", "configs", "#{project["name"]}.yml")
-    settings = @tool.configured(project["config"], path)
+    settings = @tool.configured(project["config"], configs(project["name"]))
     Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + settings + ["--json"]))
   end
 

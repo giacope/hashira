@@ -34,14 +34,14 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
   end
 
   def found(raw, directories = ["lib/app"])
-    rules = Hashira::Config::Rules.parse({ "change_coupling" => raw }, Hashira::Pipeline::KINDS)
+    rules = Hashira::Config::Rules.parse({ "change_coupling" => raw }, Fixtures::KINDS)
     Hashira::Pipeline.new(Hashira::Project.new(directories, rules:)).findings.select { it.kind == "change_coupling" }
   end
 
   def cut
     history
     git("clone", "-q", "--depth", "20", "file://#{Dir.pwd}", "cut")
-    rules = Hashira::Config::Rules.parse({ "change_coupling" => true }, Hashira::Pipeline::KINDS)
+    rules = Hashira::Config::Rules.parse({ "change_coupling" => true }, Fixtures::KINDS)
     Dir.chdir("cut") do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:))
       [found(true), pipeline.checks?("change_coupling"), pipeline.checks?("dead_code")]

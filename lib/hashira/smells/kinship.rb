@@ -3,11 +3,10 @@
 require "prism"
 
 class Hashira::Smells::Kinship
-  READERS = Hashira::Smells::Attributes::READERS
-
-  def initialize(types, lineage)
+  def initialize(types, lineage, builtins = Hashira::Runtime::Builtins.new)
     @types = types
     @lineage = lineage
+    @builtins = builtins
   end
 
   def protocol(type)
@@ -73,7 +72,7 @@ class Hashira::Smells::Kinship
 
   def heritage(name)
     parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @lineage.abroad(it) }
-    parents.reduce(Set.new) { |all, parent| all | Hashira::Analysis::INHERITED.fetch(parent, Set.new) }
+    parents.reduce(Set.new) { |all, parent| all | @builtins.heritage(parent) }
   end
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
@@ -85,7 +84,7 @@ class Hashira::Smells::Kinship
   def declared(swept)
     attributes = Hashira::Smells::Attributes.new(swept)
     forwards = Hashira::Smells::Forwards.new(swept, Hashira::Smells::Bonds.new(swept), Set.new)
-    attributes.declared(READERS).map(&:to_sym) + attributes.writers + forwards.names.to_a
+    attributes.readers.map(&:to_sym) + attributes.writers + forwards.names.to_a
   end
 
   def carried(type) = [type, *@lineage.mixins(type).flat_map { index.fetch(it) }]

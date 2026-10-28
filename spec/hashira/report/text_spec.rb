@@ -2,7 +2,10 @@
 
 RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR)
+    Hashira::Report::View.new(
+      project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR,
+      unjudged: Fixtures::JUDGED
+    )
   end
 
   # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
@@ -154,7 +157,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
     end
 
     it "knows every structural kind the pipeline runs" do
-      expect(Hashira::Report::Spread::STRUCTURAL.sort).to(eq(Hashira::Pipeline::STRUCTURAL.sort))
+      expect(Hashira::Report::Spread::STRUCTURAL.sort).to(eq(Fixtures::STRUCTURAL.sort))
     end
 
     it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do

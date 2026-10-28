@@ -9,8 +9,6 @@ class Hashira::Smells::Refs
 
   LOCALS = [Prism::LocalVariableReadNode, Prism::LocalVariableWriteNode].freeze
 
-  SCOPES = [Prism::BlockNode, Prism::LambdaNode].freeze
-
   SELVES = [
     Prism::SelfNode, Prism::SuperNode, Prism::ForwardingSuperNode,
     Prism::InstanceVariableReadNode, Prism::InstanceVariableWriteNode,
@@ -18,12 +16,15 @@ class Hashira::Smells::Refs
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
-  def initialize(definition, vocabulary)
+  def initialize(definition, vocabulary, messages = Hashira::Runtime::Messages.new)
     @node = definition
     @vocabulary = vocabulary
+    @messages = messages
   end
 
   def ego = reads(SELF).size
+
+  def ego_lines = lines(SELF)
 
   def lines(holder) = reads(holder).map { it.location.start_line }
 
@@ -41,7 +42,7 @@ class Hashira::Smells::Refs
 
   def tallies = @_tallies ||= tally { @vocabulary.speaks?(it.name) }
 
-  def sent = @_sent ||= tally { !Hashira::Analysis::UNIVERSAL.include?(it.name) }
+  def sent = @_sent ||= tally { !@messages.universal?(it.name) }
 
   def tally
     kept = sightings.select { |holder, node| holder == SELF || yield(node) }
@@ -51,12 +52,12 @@ class Hashira::Smells::Refs
   def sightings = @_sightings ||= walk(@node, [@node])
 
   def walk(root, scopes)
-    root.compact_child_nodes.reject { Hashira::Smells::Scope::FENCES.include?(it.class) }.flat_map do |child|
+    root.compact_child_nodes.reject { Hashira::Smells::Scope.new(it).fence? }.flat_map do |child|
       [*sighting(child, scopes), *walk(child, nested(child, scopes))]
     end
   end
 
-  def nested(node, scopes) = SCOPES.include?(node.class) ? scopes + [node] : scopes
+  def nested(node, scopes) = Hashira::Smells::Scope.new(node).closure? ? scopes + [node] : scopes
 
   def sighting(node, scopes)
     return [[SELF, node]] if selfish?(node)

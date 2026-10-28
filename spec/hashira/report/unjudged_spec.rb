@@ -23,7 +23,7 @@ RSpec.describe(Hashira::Report::Unjudged, :aggregate_failures) do
 
   it "lists each unjudged kind with its reason, and none by default" do
     told = described_class.new(kinds: %w[change_coupling], depth: shallow, judged: false).to_a
-    expect([told, described_class::NONE.to_a])
+    expect([told, described_class.new(kinds: [], depth: nil, judged: true).to_a])
       .to(eq([[{ kind: "change_coupling", reason: "shallow git history (1 commit)" }], []]))
   end
 end

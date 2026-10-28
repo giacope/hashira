@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::MessageChain < Hashira::Smells::Check
+  MESSAGES = Hashira::Runtime::Messages.new
+
   private
 
   def smelly? = chains.any?
@@ -29,7 +31,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
   end
 
   def answers?(type, message)
-    !Hashira::Analysis::UNIVERSAL.include?(message) && repertoire.of([type]).include?(message.to_s.delete_suffix("="))
+    !MESSAGES.universal?(message) && repertoire.of([type]).include?(message.to_s.delete_suffix("="))
   end
 
   def type(node)

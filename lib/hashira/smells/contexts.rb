@@ -66,7 +66,7 @@ module Hashira
 
         def parent = (node.superclass if node.is_a?(Prism::ClassNode))
 
-        def owner = kind == :module && handed ? name.delete_suffix(Hashira::Smells::Concerns::LEVEL) : name
+        def owner = kind == :module && handed ? name.delete_suffix("::ClassMethods") : name
 
         def settle(protocol:, ownership:, **facts)
           TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), **facts)

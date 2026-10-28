@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "common"
 
 class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   Piece = Data.define(:names, :fields, :calls)
@@ -20,15 +21,15 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     Prism::InstanceVariableReadNode, Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
 
-  SENDS = Hashira::Analysis::Syntax::SENDS
-
   INTERPOLATED = [Prism::InterpolatedSymbolNode, Prism::InterpolatedStringNode].freeze
 
   LISTING = :instance_variables
 
-  STOCK = (Hashira::Smells::Readings::PERSISTENCE + Hashira::Analysis::UNIVERSAL.to_a).to_set.freeze
+  RECORD = /(?:\A|::)(?:ApplicationRecord|ActiveRecord::Base)\z/
 
-  KERNEL = Hashira::Analysis::KERNEL
+  STOCK = Hashira::Smells::Common.new
+
+  MESSAGES = Hashira::Runtime::Messages.new
 
   PRESENTATION = /(?:Controller|Mailer|Job|Channel|Mailbox)(?:::[A-Z]\w*)?\z/
 
@@ -102,7 +103,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def computed?(call) = call.arguments && !Hashira::Analysis::Syntax.new(call.arguments.arguments.first).word?
 
-  def touched(found) = Hashira::Smells::Attributes.new(found).ivars(FIELDS)
+  def touched(found) = Hashira::Smells::Fields.new(found).named(FIELDS)
 
   def attributed(found)
     selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] } + columned(Hashira::Smells::Columns.new(found).touched)
@@ -110,9 +111,11 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def columned(names) = record? ? names.reject { declared?(it) }.map { bonds.field(it) } : []
 
-  def declared?(name) = [known, STOCK, KERNEL, forwards.names].any? { it.include?(name) } || attributes.key?(name.to_s)
+  def declared?(name)
+    [known, STOCK, forwards.names].any? { it.include?(name) } || MESSAGES.kernel?(name) || attributes.key?(name.to_s)
+  end
 
-  def record? = Hashira::Smells::Records::RECORD.match?(root)
+  def record? = RECORD.match?(root)
 
   def columns = columned(Hashira::Smells::Columns.new(sweep).read).to_set
 
@@ -125,7 +128,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def sent(found)
-    selves(found).select { SENDS.include?(it.name) }.flat_map { aimed(Array(it.arguments&.arguments).first) }
+    selves(found).select { Hashira::Analysis::Syntax.new(it).dispatch? }.flat_map { aimed(Array(it.arguments&.arguments).first) }
   end
 
   def reached(found) = sent(found).filter_map { attributes[it.to_s.delete_suffix("=")] }

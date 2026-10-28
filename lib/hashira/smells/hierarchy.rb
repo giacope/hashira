@@ -13,8 +13,9 @@ class Hashira::Smells::Hierarchy
 
   NONE = Kin.new(parent: nil, foreign: false, openings: [])
 
-  def initialize(types)
+  def initialize(types, builtins = Hashira::Runtime::Builtins.new)
     @types = types
+    @builtins = builtins
   end
 
   def parent(name) = table.fetch(name, NONE).parent
@@ -71,7 +72,7 @@ class Hashira::Smells::Hierarchy
 
   def ancestor(name, node)
     found = lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments)
-    found unless Hashira::Analysis::CORE.include?(found)
+    found unless @builtins.core?(found)
   end
 
   def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)

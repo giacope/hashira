@@ -22,7 +22,7 @@ class Hashira::CLI::ConfigFile
 
   def rules = blamed { tightened(checked_rules.layered(layers).bounded(declared)) }
 
-  def checked_rules = settings.key?("checks") ? checks : Hashira::Config::Rules::NONE
+  def checked_rules = settings.key?("checks") ? checks : Hashira::Config::Rules.new({})
 
   def vet
     argv = directories + flags.flatten
@@ -48,7 +48,7 @@ class Hashira::CLI::ConfigFile
     File.exist?(found) ? found : ""
   end
 
-  def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Pipeline::KINDS)
+  def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Checks.new.to_a)
 
   def tightened(rules) = strict? ? rules.tightened : rules
 

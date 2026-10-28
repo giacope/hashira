@@ -5,7 +5,7 @@ class Evaluation::Graphs
 
   QUIET = %w[--json --skip complexity,duplication,smells].freeze
 
-  def self.build(tool) = new(tool, File.join(Evaluation::CASES, "coupling"))
+  def self.build(tool) = new(tool, Evaluation::Home.new.cases("coupling"))
 
   def initialize(tool, root)
     @tool = tool

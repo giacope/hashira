@@ -2,10 +2,10 @@
 
 class Hashira::Duplication::Maximal
   FRESH = 2
-  MARGIN = Hashira::Duplication::Clusters::BASE_MASS
 
-  def initialize(clusters)
+  def initialize(clusters, margin)
     @clusters = clusters
+    @margin = margin
   end
 
   def reduced
@@ -20,7 +20,7 @@ class Hashira::Duplication::Maximal
 
   def shadows(cluster, kept) = kept.select { covers?(it, cluster) }.flat_map(&:sites)
 
-  def covers?(bigger, cluster) = !bigger.convention? || cluster.mass < bigger.mass + MARGIN
+  def covers?(bigger, cluster) = !bigger.convention? || cluster.mass < bigger.mass + @margin
 
   def news?(sites, bigger) = !sites.all? { it.touches?(bigger) } && sites.count { !it.within?(bigger) } >= FRESH
 end

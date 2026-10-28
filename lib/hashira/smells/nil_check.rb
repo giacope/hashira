@@ -9,8 +9,6 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   HELD = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 
-  DEFAULTS = (Hashira::Smells::ParamCheck::FIXED - [Prism::NilNode] + [Prism::ArrayNode, Prism::HashNode]).freeze
-
   FLAGS = [Prism::TrueNode, Prism::FalseNode].freeze
 
   FINDERS = %i[find_by].freeze
@@ -61,7 +59,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
     call.safe_navigation? ? nullable?(receiver) : (call.name == :blank? && HELD.include?(receiver.class))
   end
 
-  def fallback?(node) = nullable?(node.left) && DEFAULTS.include?(node.right.class)
+  def fallback?(node) = nullable?(node.left) && Hashira::Analysis::Syntax.new(node.right).default?
 
   def nullable?(node)
     values = assignments(node).map(&:value)
@@ -134,7 +132,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def default?(branch)
     found = Array(branch.statements&.body)
-    found.one? && DEFAULTS.include?(returned(found.first).class)
+    found.one? && Hashira::Analysis::Syntax.new(returned(found.first)).default?
   end
 
   def returned(node) = node.is_a?(Prism::ReturnNode) ? Array(node.arguments&.arguments).first : node

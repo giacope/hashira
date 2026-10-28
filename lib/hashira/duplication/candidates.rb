@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Duplication::Candidates
+  TYPES = [Prism::ClassNode, Prism::ModuleNode, Prism::SingletonClassNode].freeze
+
   WHOLE = [Prism::DefNode, Prism::RescueNode].freeze
 
   def initialize(file, tree)
@@ -10,7 +12,7 @@ class Hashira::Duplication::Candidates
     @tree = tree
   end
 
-  def fragments = (windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], walks) }).reject(&:sink?)
+  def fragments = windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], walks, code) }.reject(&:sink?)
 
   private
 
@@ -20,22 +22,23 @@ class Hashira::Duplication::Candidates
 
   def windows
     reported = Hashira::Duplication::Recovery.of(nodes).map { it.clause.statements }
-    code = Hashira::Duplication::Setting::CODE
     (nodes.grep(Prism::StatementsNode) - reported).flat_map { sequence(it.body, bodies.fetch(it, code)).fragments }
   end
 
   def bodies
     @_bodies ||=
-      nodes.filter_map { it.body if Hashira::Duplication::Sequence::SCOPES.include?(it.class) }
+      nodes.filter_map { it.body if TYPES.include?(it.class) }
         .grep(Prism::StatementsNode).to_h { [it, Hashira::Duplication::Setting.of(it)] }
   end
 
   def wholes
-    arms = nodes.grep(Prism::CaseNode).flat_map { sequence(it.conditions).unlisted }
+    arms = nodes.grep(Prism::CaseNode).flat_map { sequence(it.conditions, code).unlisted }
     nodes.select { WHOLE.include?(it.class) } + arms
   end
 
-  def sequence(statements, setting = Hashira::Duplication::Setting::CODE)
+  def code = Hashira::Duplication::Setting.new(declarative: false, recurring: [])
+
+  def sequence(statements, setting)
     Hashira::Duplication::Sequence.new(@file, statements, walks, setting)
   end
 end

@@ -54,6 +54,12 @@ class Hashira::Smells::Report
 
   PROBES = (CHECKS - JUDGES).freeze
 
+  SPREAD = "manual_dispatch"
+
+  BAGS = "data_class"
+
+  SPRAWL = "boundary_sprawl"
+
   def initialize(project, trees, boundaries, rules)
     @project = project
     @trees = trees
@@ -78,7 +84,7 @@ class Hashira::Smells::Report
   def methods = types.flat_map(&:defs)
 
   def spread
-    return [] unless wants?(Hashira::Smells::SpreadSwitch::KIND)
+    return [] unless wants?(SPREAD)
     wholes.select { it.kind == :class }.filter_map { Hashira::Smells::SpreadSwitch.new(it).finding }
   end
 
@@ -87,12 +93,12 @@ class Hashira::Smells::Report
   def wants?(kind) = @rules.enabled?(kind)
 
   def bags
-    return [] unless @rules.strict? && wants?(Hashira::Smells::Bags::KIND)
+    return [] unless @rules.strict? && wants?(BAGS)
     Hashira::Smells::Bags.new(types, family, methods).findings
   end
 
   def sprawl
-    return [] unless wants?(Hashira::Smells::BoundarySprawl::KIND)
+    return [] unless wants?(SPRAWL)
     Hashira::Smells::BoundarySprawl.new(methods, census.ownership, @boundaries.interpreted, @rules).findings
   end
 

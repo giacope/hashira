@@ -76,7 +76,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def reader?(call) = !call.receiver && !call.arguments && readers.include?(call.name.to_s)
 
-  def readers = @_readers ||= Hashira::Smells::Attributes.new(sweep).declared(Hashira::Smells::Attributes::READERS)
+  def readers = @_readers ||= Hashira::Smells::Attributes.new(sweep).readers
 
   def passed(node)
     case node

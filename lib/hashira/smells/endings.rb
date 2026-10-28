@@ -5,8 +5,6 @@ require_relative "bindings"
 require_relative "scope"
 
 class Hashira::Smells::Endings
-  LOOPS = Hashira::Smells::Bindings::LOOPS
-
   JUMPS = [Prism::NextNode, Prism::BreakNode].freeze
 
   def initialize(definition)
@@ -53,7 +51,7 @@ class Hashira::Smells::Endings
 
   def raise?(node) = Hashira::Smells::Exits.new(node).raise?
 
-  def loops = @_loops ||= sorted.values_at(*LOOPS).compact.flatten
+  def loops = @_loops ||= nodes.select { Hashira::Smells::Scope.new(it).loop? }
 
   def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
 

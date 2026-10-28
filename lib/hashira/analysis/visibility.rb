@@ -32,7 +32,7 @@ class Hashira::Analysis::Visibility
         enclose(node) unless block.dsl? || block.opening
       end
 
-      def bare?(node) = Hashira::Analysis::TypeWalk::MARKERS.include?(node.name) && !node.receiver
+      def bare?(node) = Hashira::Analysis::TypeWalk.new(node).marker?
 
       def lift?(node) = LIFTS.include?(node.name) && !node.receiver && node.block.is_a?(Prism::BlockNode)
 
@@ -82,7 +82,7 @@ class Hashira::Analysis::Visibility
 
   def extended? = (@_extended ||= [statements(@node).any? { reflexive?(it) }]).first
 
-  def class_level? = @node.is_a?(Prism::ModuleNode) && @node.name == Hashira::Analysis::TypeWalk::CLASS_LEVEL
+  def class_level? = Hashira::Analysis::TypeWalk.new(@node).class_level?
 
   def reflexive?(node)
     node in Prism::CallNode[name: :extend, receiver: nil, arguments: Prism::ArgumentsNode[arguments: [Prism::SelfNode]]]

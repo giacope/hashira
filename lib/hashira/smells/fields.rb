@@ -13,10 +13,12 @@ class Hashira::Smells::Fields
   end
 
   def minted
-    @_minted ||= Hashira::Smells::Attributes.new(@nodes).declared(Hashira::Smells::Attributes::WRITERS).map { :"@#{it}" }
+    @_minted ||= Hashira::Smells::Attributes.new(@nodes).writers.map { :"@#{it.to_s.delete_suffix("=")}" }
   end
 
   def of(node) = WRITES.include?(node.class) ? node.name : setter(node)
+
+  def named(kinds) = @nodes.select { kinds.include?(it.class) }.map(&:name)
 
   private
 

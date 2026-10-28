@@ -16,7 +16,5 @@ module Hashira
 
         def named = kinds.join(", ")
       end
-
-    Unjudged::NONE = Unjudged.new(kinds: [], depth: nil, judged: true)
   end
 end

@@ -123,7 +123,7 @@ class Hashira::Smells::Provenance
   def settled?(statements)
     tail = statements.last
     value = tail.is_a?(Prism::InstanceVariableOrWriteNode) ? tail.value : tail
-    statements.one? && Hashira::Smells::NilCheck::DEFAULTS.include?(value.class)
+    statements.one? && Hashira::Analysis::Syntax.new(value).default?
   end
 
   def hosted?(name) = @subject.host == :module && @subject.ownership.vocabulary.speaks?(name)

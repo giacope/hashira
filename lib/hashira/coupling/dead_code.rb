@@ -6,6 +6,10 @@ require_relative "rule"
 class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   KIND = "dead_code"
 
+  MESSAGES = Hashira::Runtime::Messages.new
+
+  FOREIGN = :foreign
+
   include Hashira::Coupling::Contracts
 
   def list
@@ -85,9 +89,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     HOOKS.include?(name) || protocol?(name) || mentioned?(name) || outside.words.include?(bare) || dynamic?(name)
   end
 
-  def protocol?(name)
-    Hashira::Analysis::UNIVERSAL.include?(name.to_sym) || Hashira::Analysis::VALUES.include?(name.to_sym)
-  end
+  def protocol?(name) = MESSAGES.universal?(name.to_sym) || MESSAGES.value?(name.to_sym)
 
   def dynamic?(name) = mentions.prefixes.any? { name.start_with?(it) } || mentions.suffixes.any? { name.end_with?(it) }
 
@@ -108,11 +110,11 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def hosting?(path) = handover.told?(path) || hosts(path).any? { foreign?(it) || hosted?(it) || entered?(it) }
 
-  def foreign?(host) = host == Hashira::Coupling::Handover::FOREIGN
+  def foreign?(host) = host == FOREIGN
 
   def hosts(path) = surface.mixers(path) + handover.hosts(path)
 
-  def handover = @_handover ||= Hashira::Coupling::Handover.new(mentions.handed, graph.census, outside.handed)
+  def handover = @_handover ||= Hashira::Coupling::Handover.new(mentions.handed, graph.census, outside.handed, FOREIGN)
 
   def entered?(path) = surface.types.fetch(path, []).any? { entry?(it.file) }
 

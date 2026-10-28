@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Smells::Concerns
-  LEVEL = "::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}".freeze
+  LEVEL = "::ClassMethods"
 
   CONCERN = %w[ActiveSupport Concern].freeze
 

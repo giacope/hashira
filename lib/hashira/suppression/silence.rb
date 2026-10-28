@@ -23,7 +23,7 @@ class Hashira::Suppression::Silence
 
   def silenced = matched.map(&:first)
 
-  def partial? = kind == Hashira::Analysis::CLONES && rest.size >= 2
+  def partial? = @finding.clones? && rest.size >= 2
 
   def rest = @finding.evidence.reject { silenced.include?(it.sub(/-\d+\z/, "")) }
 

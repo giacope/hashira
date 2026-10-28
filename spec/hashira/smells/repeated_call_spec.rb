@@ -691,6 +691,8 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
 
             def pair(queue) = [queue.pop, queue.pop, queue.shift, queue.shift, queue.deq, queue.deq]
 
+            def drawn(queue) = [render(queue.pop), render(queue.pop)]
+
             def chunks = [@io.readpartial(512), @io.readpartial(512), @io.read_nonblock(9), @io.read_nonblock(9)]
 
             def bytes = [@io.getc, @io.getc, @io.getbyte, @io.getbyte, @io.readline, @io.readline]

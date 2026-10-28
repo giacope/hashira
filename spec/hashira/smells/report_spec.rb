@@ -3,7 +3,7 @@
 RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
   # The class of a pipeline's smells analyzer and the kinds it finds: every rule on, or with nil the defaults.
   def sniffing(options)
-    rules = options ? Hashira::Config::Rules::ALL : Hashira::Config::Rules::NONE
+    rules = options ? Hashira::Config::Rules::ALL : Hashira::Config::Rules.new({})
     pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:), **options.to_h)
     [pipeline.smells.class, pipeline.findings.map(&:kind)]
   end
@@ -21,7 +21,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
   end
 
   def narrowed(kinds)
-    rules = Hashira::Config::Rules::ALL.narrowed(kinds, Hashira::Pipeline::KINDS)
+    rules = Hashira::Config::Rules::ALL.narrowed(kinds, Fixtures::KINDS)
     files = { "lib/app/zone/thing.rb" => "module App\n  class Thing\n    def go(x) = x.to_s\n  end\nend\n" }
     within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.map(&:kind) }
   end

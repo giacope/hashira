@@ -3,10 +3,9 @@
 require "prism"
 
 class Hashira::Coupling::Mentions
-  SENDS = (
-    Hashira::Analysis::Syntax::SENDS +
-    %i[try try! public_method instance_method public_instance_method respond_to? define_method alias_method]
-  ).freeze
+  SENDS = %i[
+    try try! public_method instance_method public_instance_method respond_to? define_method alias_method
+  ].freeze
 
   MARKERS = %i[
     private public protected module_function private_class_method public_class_method private_constant public_constant
@@ -113,7 +112,9 @@ class Hashira::Coupling::Mentions
 
   def hand(call) = Hashira::Coupling::Hand.new(call)
 
-  def dynamic?(call) = SENDS.include?(call.name) && own?(call.receiver) && computed?(call)
+  def dynamic?(call) = sent?(call) && own?(call.receiver) && computed?(call)
+
+  def sent?(call) = Hashira::Analysis::Syntax.new(call).dispatch? || SENDS.include?(call.name)
 
   def computed?(call)
     first = call.arguments&.arguments&.first

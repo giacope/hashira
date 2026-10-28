@@ -3,11 +3,6 @@
 require "prism"
 
 class Hashira::Smells::Mapping
-  FIXED = [
-    Prism::SymbolNode, Prism::StringNode, Prism::IntegerNode, Prism::FloatNode, Prism::NilNode, Prism::TrueNode,
-    Prism::FalseNode, Prism::RegularExpressionNode, Prism::ConstantReadNode, Prism::ConstantPathNode
-  ].freeze
-
   TRANSLATIONS = %i[t translate].freeze
 
   def initialize(node)
@@ -38,9 +33,9 @@ class Hashira::Smells::Mapping
     end
   end
 
-  def value?(node) = FIXED.include?(node.class) || translated?(node)
+  def value?(node) = Hashira::Analysis::Syntax.new(node).fixed? || translated?(node)
 
   def translated?(node) = node.is_a?(Prism::CallNode) && TRANSLATIONS.include?(node.name) && keyed?(node)
 
-  def keyed?(call) = Hashira::Smells::Foreign::KEYS.include?(Array(call.arguments&.arguments).first.class)
+  def keyed?(call) = Hashira::Analysis::Syntax.new(Array(call.arguments&.arguments).first).word?
 end

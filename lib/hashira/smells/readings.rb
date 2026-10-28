@@ -3,11 +3,6 @@
 require "prism"
 
 class Hashira::Smells::Readings
-  PERSISTENCE = %i[
-    save save! update update! destroy destroy! delete reload persisted? new_record? destroyed? valid? invalid?
-    errors touch lock! changed? changes attributes id
-  ].freeze
-
   MINIMUM = 2
 
   Use =
@@ -17,8 +12,9 @@ class Hashira::Smells::Readings
       def to_s = "#{user.subject} reads #{fields.map { "'#{it}'" }.join(", ")} (#{spot})"
     end
 
-  def initialize(methods)
+  def initialize(methods, common = Hashira::Smells::Common.new)
     @methods = methods
+    @common = common
   end
 
   def of(bag)
@@ -37,7 +33,7 @@ class Hashira::Smells::Readings
   end
 
   def reader?(name, bag)
-    bag.fields ? bag.fields.include?(name) : !PERSISTENCE.include?(name) && !Hashira::Analysis::UNIVERSAL.include?(name)
+    bag.fields ? bag.fields.include?(name) : !@common.include?(name)
   end
 
   def held(method)

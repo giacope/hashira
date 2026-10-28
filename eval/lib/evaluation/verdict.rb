@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Evaluation::Verdict
+  SUITE = "coupling"
+
   BROKEN = { true => :acyclic, false => :cyclic }.freeze
 
   def initialize(name, expect, outcome)
@@ -17,7 +19,7 @@ class Evaluation::Verdict
   private
 
   def check(label, expected, actual)
-    Evaluation::Check.of(Evaluation::Graphs::SUITE, "#{@name}: #{label}", expected, actual)
+    Evaluation::Check.of(SUITE, "#{@name}: #{label}", expected, actual)
   end
 
   def broken = check("hashira exits cleanly", 0, @outcome.status)
@@ -30,7 +32,7 @@ class Evaluation::Verdict
   end
 
   def absent
-    @expect.fetch("absent", []).map { check("edge #{it}", :absent, Evaluation::SEEN.fetch(reported.include?(it))) }
+    @expect.fetch("absent", []).map { check("edge #{it}", :absent, reported.include?(it) ? :present : :absent) }
   end
 
   def knots = @outcome.kinds("cycle").map { it.dig("detail", "members").sort }.sort

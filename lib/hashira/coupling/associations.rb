@@ -46,5 +46,3 @@ class Hashira::Coupling::Associations
 
   def literal(node) = Hashira::Analysis::Syntax.new(node).literal
 end
-
-Hashira::Coupling::Associations::NONE = Hashira::Coupling::Associations.new(nil)

@@ -112,11 +112,19 @@ module Fixtures
     $stdout, $stderr = original
   end
 
-  NONE = Hashira::Config::Rules::NONE
+  NONE = Hashira::Config::Rules.new({})
+
+  KINDS = Hashira::Checks.new.to_a
+
+  SMELLS = Hashira::Checks.new.names.fetch("smells")
+
+  STRUCTURAL = Hashira::Checks.new.then { |checks| checks.select { checks.owner(it) == :coupling } }
 
   STRICT = Hashira::Config::Rules::ALL.tightened
 
   CLEAR = Hashira::Suppression::Suppressions::CLEAR
+
+  JUDGED = Hashira::Report::Unjudged.new(kinds: [], depth: nil, judged: true)
 
   CYCLIC_FILES = {
     "lib/app/alpha/one.rb" => <<~RUBY,

@@ -7,6 +7,17 @@ module Hashira
     class Syntax
       SENDS = %i[send public_send __send__ method].freeze
 
+      FIXED = [
+        Prism::SymbolNode, Prism::StringNode, Prism::IntegerNode, Prism::FloatNode, Prism::NilNode, Prism::TrueNode,
+        Prism::FalseNode, Prism::RegularExpressionNode, Prism::ConstantReadNode, Prism::ConstantPathNode
+      ].freeze
+
+      DEFAULTS = (FIXED - [Prism::NilNode] + [Prism::ArrayNode, Prism::HashNode]).freeze
+
+      TYPE_TESTS = %i[is_a? kind_of? instance_of?].freeze
+
+      private_constant :SENDS, :FIXED, :DEFAULTS, :TYPE_TESTS
+
       def initialize(node)
         @node = node
       end
@@ -54,6 +65,16 @@ module Hashira
       def text = @node.unescaped.scrub
 
       def word? = @node.is_a?(Prism::StringNode) || @node.is_a?(Prism::SymbolNode)
+
+      def command?(names) = @node.is_a?(Prism::CallNode) && !@node.receiver && names.include?(@node.name)
+
+      def dispatch? = @node.is_a?(Prism::CallNode) && SENDS.include?(@node.name)
+
+      def fixed? = FIXED.include?(@node.class)
+
+      def default? = DEFAULTS.include?(@node.class)
+
+      def type_test? = @node.is_a?(Prism::CallNode) && TYPE_TESTS.include?(@node.name)
 
       def symbol = text.to_sym
 

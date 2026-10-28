@@ -7,11 +7,15 @@ class Hashira::Smells::Grouping
 
   REPEATS = "repeated_call"
 
+  HEIRS = "concrete_inheritance"
+
+  BEQUESTS = "refused_bequest"
+
   OWNER = /[#.][^#.]+\z/
 
   LOCAL = %w[@ # .].freeze
 
-  GROUPED = [CHAIN, REPEATS, Hashira::Smells::Heirs::KIND, Hashira::Smells::Bequests::KIND].freeze
+  GROUPED = [CHAIN, REPEATS, HEIRS, BEQUESTS].freeze
 
   def initialize(findings)
     @findings = findings

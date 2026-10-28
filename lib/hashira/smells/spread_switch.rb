@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "comparisons"
+
 class Hashira::Smells::SpreadSwitch
   KIND = "manual_dispatch"
 
   SPREAD = 3
+
+  COMPARISONS = Hashira::Smells::Comparisons.new
 
   Sighting = Data.define(:definition, :arm)
 
@@ -30,7 +34,7 @@ class Hashira::Smells::SpreadSwitch
   def spread = @_spread ||= sightings.group_by { key(it) }.values.select { wide?(it) }.flatten(1)
 
   def sightings
-    @whole.owned.reject { Hashira::Smells::ManualDispatch::COMPARISONS.include?(it.node.name) }.flat_map do |definition|
+    @whole.owned.reject { COMPARISONS.include?(it.node.name) }.flat_map do |definition|
       Hashira::Smells::Switches.new(definition.node, definition.ownership, definition.owner).held.map { Sighting.new(definition, it) }
     end
   end

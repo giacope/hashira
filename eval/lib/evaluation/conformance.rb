@@ -7,7 +7,7 @@ class Evaluation::Conformance
 
   DEFINITION = /def (self\.)?([a-z_]\w*[?!]?)/
 
-  def self.build(tool) = new(tool, YAML.safe_load_file(File.join(Evaluation::CASES, "complexity.yml")))
+  def self.build(tool, cases = Evaluation::Home.new.cases("complexity.yml")) = new(tool, YAML.safe_load_file(cases))
 
   def initialize(tool, cases)
     @tool = tool

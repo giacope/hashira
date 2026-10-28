@@ -10,7 +10,7 @@ class Hashira::Coupling::References
 
   DECLARATIONS = %i[private_constant public_constant include extend prepend].freeze
 
-  def initialize(roots = nil, associations = Hashira::Coupling::Associations::NONE)
+  def initialize(roots = nil, associations = Hashira::Coupling::Associations.new(nil))
     @roots = roots
     @associations = associations
   end

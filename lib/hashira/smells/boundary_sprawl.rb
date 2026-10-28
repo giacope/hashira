@@ -9,6 +9,8 @@ class Hashira::Smells::BoundarySprawl
 
   SHOWN = 4
 
+  BUILTINS = Hashira::Runtime::Builtins.new
+
   def initialize(subjects, ownership, interpreted, rules)
     @subjects = subjects
     @ownership = ownership
@@ -30,7 +32,7 @@ class Hashira::Smells::BoundarySprawl
 
   def foreign = reaches.except(*@interpreted).reject { |root, _| builtin?(root) }
 
-  def builtin?(root) = Hashira::Analysis::CORE.include?(root)
+  def builtin?(root) = BUILTINS.core?(root)
 
   def finding(root, contexts)
     files = contexts.map(&:file).uniq

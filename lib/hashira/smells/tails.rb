@@ -25,9 +25,13 @@ class Hashira::Smells::Tails
     Slots[Prism::OrNode, %i[right]]
   ].freeze
 
-  def initialize(slots)
+  private_constant :FLOW
+
+  def initialize(slots = FLOW)
     @slots = slots
   end
+
+  def widened(slots) = Hashira::Smells::Tails.new(@slots + slots)
 
   def reach(seeds) = Set.new.compare_by_identity.merge(seeds.flat_map { spread(it) })
 
