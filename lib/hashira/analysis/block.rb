@@ -37,7 +37,7 @@ module Hashira
 
       def walker(stack)
         opened = opening
-        return TypeWalk.new(opened, opens: @call.receiver) if opened
+        return Reopen.new(opened, @call.receiver) if opened
         TypeWalk.new(@call.block, block: owner(stack.last)) if stack.any? && dsl?
       end
 

@@ -9,7 +9,7 @@ class Hashira::CLI::Home
 
   LAYOUT = %w[lib config/application.rb].freeze
 
-  def self.build(directories) = new(directories, Dir.pwd)
+  def self.build(directories, here = Dir.pwd) = new(directories, here)
 
   def initialize(directories, here)
     @directories = directories

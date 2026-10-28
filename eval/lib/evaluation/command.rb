@@ -58,7 +58,7 @@ class Evaluation::Command
     @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw, sizes)
   end
 
-  def sizes = option("--samples")&.split(",")&.to_h { it.split("=") }&.transform_values { Integer(it) }
+  def sizes = option("--samples").to_s.split(",").to_h { it.split("=") }.transform_values { Integer(it) }
 
   def queue
     return unless corpus

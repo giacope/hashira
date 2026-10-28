@@ -3,9 +3,9 @@
 class Evaluation::Corpus
   LIST = Evaluation::Home.new.join("corpus.yml")
 
-  def self.build(tool, root, draw, sizes = nil)
+  def self.build(tool, root, draw, sizes = {})
     settings = YAML.safe_load_file(LIST)
-    new(tool, root, sizes ? settings.merge("samples" => sizes) : settings, draw)
+    new(tool, root, sizes.empty? ? settings : settings.merge("samples" => sizes), draw)
   end
 
   def initialize(tool, root, settings, draw)

@@ -7,7 +7,7 @@ class Hashira::Smells::Ownership
     Prism::RangeNode, Prism::ArrayNode, Prism::HashNode
   ].freeze
 
-  def initialize(trees, catalog = nil)
+  def initialize(trees, catalog)
     @trees = trees
     @catalog = catalog
   end
@@ -104,7 +104,7 @@ class Hashira::Smells::Ownership
     segments unless segments.empty?
   end
 
-  def claimed?(full) = !@catalog || @catalog.claimed?(full)
+  def claimed?(full) = @catalog.claimed?(full)
 
   def suffixes(path)
     path.each_index.map { path.drop(it).join("::") }

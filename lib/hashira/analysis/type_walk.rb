@@ -11,10 +11,9 @@ module Hashira
 
       private_constant :MARKERS, :CLASS_LEVEL
 
-      def initialize(node, block: false, opens: nil)
+      def initialize(node, block: false)
         @node = node
         @block = block
-        @opens = opens
       end
 
       def sections = Visibility.new(@node).entries
@@ -25,7 +24,7 @@ module Hashira
 
       def apart? = @node.is_a?(Prism::CallNode) && Block.new(@node).apart?
 
-      def type? = @block || @opens || @node.is_a?(Prism::ClassNode) || @node.is_a?(Prism::ModuleNode)
+      def type? = @block || @node.is_a?(Prism::ClassNode) || @node.is_a?(Prism::ModuleNode)
 
       def marker? = Syntax.new(@node).command?(MARKERS)
 
@@ -34,28 +33,17 @@ module Hashira
       def walk(stack = [], roots: nil, &)
         return descend(@node, stack, roots, &) unless type?
         return adopt(stack, roots, &) if @block
-        return reopen(stack, roots, &) if @opens
         full = Syntax.new(@node.constant_path).place(stack, roots)
         yield(@node, full, stack, full)
         descend(@node.body, stack + [full], roots, &)
       end
 
+      def beneath(stack, roots, &) = descend(@node.body, stack, roots, &)
+
       private
 
       def walker(child, stack)
         (Block.new(child, @node).walker(stack) if child.is_a?(Prism::CallNode)) || TypeWalk.new(child)
-      end
-
-      def reopen(stack, roots, &)
-        full = resolve(Syntax.new(@opens), stack, roots)
-        yield(@node, full, stack, full)
-        descend(@node.body, stack, roots, &)
-      end
-
-      def resolve(read, stack, roots)
-        segments = read.segments
-        return segments if read.rooted? || !roots
-        (stack.reverse_each.find { roots.include?(it + segments.first(1)) } || []) + segments
       end
 
       def adopt(stack, roots, &)
