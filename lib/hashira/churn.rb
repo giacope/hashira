@@ -28,9 +28,9 @@ class Hashira::Churn
 
   def hot?(members) = members.map(&:file).uniq.count { often?(it) } >= FILES_THAT_DRIFT_APART
 
-  def often?(file) = hits(file) > typical
-
   private
+
+  def often?(file) = hits(file) > typical
 
   def typical = @_typical ||= @counts.values.sort.fetch((@counts.size - 1) / 2, 0)
 end
