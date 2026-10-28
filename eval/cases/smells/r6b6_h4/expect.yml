@@ -1,0 +1,12 @@
+# R6B6-H4. sshkit's Formatter::Abstract defines `colorize` with
+# `def_delegators :@color, :colorize`, Pretty's methods call it, and
+# SimpleText overrides it to print plain text: the hook its parent calls.
+# utility_function told SimpleText#colorize to move or go private, which
+# breaks the override or narrows an inherited public method. A method a
+# class defines by a delegation or attribute macro is a role its kin
+# define, as one it spells with def; a stateless method nothing in the
+# lineage defines (Shout) is still reported.
+present:
+  - {kind: utility_function, package: "Shop::Plain#shout"}
+absent:
+  - {kind: utility_function, package: "Shop::Plain#colorize"}

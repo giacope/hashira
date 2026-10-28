@@ -832,8 +832,10 @@ Findings (3):
   `::ActionController::TestCase.class_eval do … end`) is another class's.
 - **utility_function** — a public method of a class that touches no instance
   state. A module's methods (a mixin, a concern, a view helper) lend behavior
-  and stay quiet. A method that fills a role its kin define (`perform` on every job, a hook a
-  library calls, even one whose name the project sends a class as a macro,
+  and stay quiet. A method that fills a role its kin define (`perform` on every job, an
+  override of what a parent defines with `def`, a delegation macro
+  (`def_delegators :@color, :colorize`, `delegate … to:`) or an attribute
+  macro, a hook a library calls, even one whose name the project sends a class as a macro,
   `validate :paired` beside a validator's `validate(record)`, an override of a method a core ancestor defines such as an
   error's `message`, even where the project sends that message too, a fake's
   side of a protocol: `Fake`, `Mock`, `Stub`, `Null`,

@@ -186,6 +186,44 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
   end
 
+  it "reads an override of what a parent declares by a delegation or attribute macro as that role, not a utility" do
+    findings = utility(<<~RUBY)
+      require "forwardable"
+
+      module App
+        module Zone
+          class Base
+            extend Forwardable
+            def_delegators :@color, :colorize
+            def_delegator :@color, :paint, :tint
+            delegate :shade, to: :@color
+            delegate :hue, to: :@color, prefix: :base
+            attr_reader :label
+            attr_writer :mode
+            def initialize(color) = @color = color
+            def show(text) = "[\#{colorize(text, :green)}]"
+          end
+
+          class Plain < Base
+            def colorize(obj, _color) = obj.to_s
+            def tint(obj, _color) = obj.to_s
+            def shade(obj) = obj.to_s
+            def base_hue(obj) = obj.to_s
+            def label = "plain".upcase
+
+            def mode=(value)
+              value.to_s
+            end
+
+            def hue(obj) = obj.to_s
+            def tidy(obj) = obj.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Plain#hue App::Zone::Plain#tidy]))
+  end
+
   it "takes the subclasses of one class for kin however each spells its parent" do
     findings = utility(<<~RUBY)
       module App

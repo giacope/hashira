@@ -720,6 +720,13 @@ From the third field test (thirty MIT-licensed codebases):
     to settle the nil in two classes that make nothing. It is now one
     `Abstract#pwd_path` finding with the four checking methods. A subclass
     that overrides the method keeps its own.
+  - `utility_function` reads a method the class's kin define through a
+    delegation or attribute macro (`def_delegators`, `def_delegator`,
+    `delegate … to:`, `attr_reader`, `attr_writer`, `attr_accessor`) as part
+    of their protocol, as one they spell with `def`: sshkit's
+    `Formatter::SimpleText#colorize` overrides the `colorize` its parent
+    defines with `def_delegators :@color, :colorize` and calls, and was told
+    to move or go private, which breaks the override.
 - Found by the sixth field test's fifth batch (local-links-manager, bullet,
   excon, counter_culture, turbo-rails):
   - `stateful_mixin` takes ActiveSupport's module, class and thread
