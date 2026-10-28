@@ -29,7 +29,19 @@ class Hashira::Smells::Hierarchy
 
   def children(name) = table.filter_map { |child, kin| child if kin.parent == name }
 
+  def overrides(name, selector)
+    found = [name]
+    found.each { found.concat(children(it) - found) }
+    found.drop(1).flat_map { definitions(it) }.filter_map { it.node if it.node.name == selector }
+  end
+
   def framed?(name) = [name, *ancestors(name)].any? { table.fetch(it, NONE).foreign }
+
+  def root(name)
+    framed = [name, *ancestors(name)].find { table.fetch(it, NONE).foreign }
+    written = table.fetch(framed, NONE).openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
+    Hashira::Analysis::Syntax.new(written).segments.join("::")
+  end
 
   def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
 
@@ -44,7 +56,7 @@ class Hashira::Smells::Hierarchy
 
   def built(name) = births.fetch(name, [])
 
-  def home(name) = table.fetch(name).openings.first.site
+  def home(name) = Hashira::Smells::Whole.new(openings: table.fetch(name).openings).site
 
   private
 

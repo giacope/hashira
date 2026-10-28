@@ -186,6 +186,44 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
   end
 
+  it "reads an override of what a parent declares by a delegation or attribute macro as that role, not a utility" do
+    findings = utility(<<~RUBY)
+      require "forwardable"
+
+      module App
+        module Zone
+          class Base
+            extend Forwardable
+            def_delegators :@color, :colorize
+            def_delegator :@color, :paint, :tint
+            delegate :shade, to: :@color
+            delegate :hue, to: :@color, prefix: :base
+            attr_reader :label
+            attr_writer :mode
+            def initialize(color) = @color = color
+            def show(text) = "[\#{colorize(text, :green)}]"
+          end
+
+          class Plain < Base
+            def colorize(obj, _color) = obj.to_s
+            def tint(obj, _color) = obj.to_s
+            def shade(obj) = obj.to_s
+            def base_hue(obj) = obj.to_s
+            def label = "plain".upcase
+
+            def mode=(value)
+              value.to_s
+            end
+
+            def hue(obj) = obj.to_s
+            def tidy(obj) = obj.to_s
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Zone::Plain#hue App::Zone::Plain#tidy]))
+  end
+
   it "takes the subclasses of one class for kin however each spells its parent" do
     findings = utility(<<~RUBY)
       module App
@@ -239,7 +277,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
 
         class User
-          def go = @task.handle(1)
+          def go = @task.handle(1) && @job.perform(1)
         end
       end
     RUBY
@@ -268,6 +306,167 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
   end
 
+  it "takes a class attribute's default and the classes assigned to it for peers that share a protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        class Debouncer
+          def initialize(delay:) = @delay = delay
+          def debounce(&) = @task = Task.run(@delay, &)
+        end
+
+        class ImmediateDebouncer
+          def initialize(delay:) = nil
+          def debounce(&block) = block.call
+          def pause(&block) = block.call
+        end
+
+        class Threaded
+          class_attribute :debouncer_class, instance_writer: false, default: Debouncer
+
+          def initialize(delay) = @debouncer = debouncer_class.new(delay:)
+        end
+
+        module Setup
+          def self.testing! = Threaded.debouncer_class = ImmediateDebouncer
+        end
+
+        class Lone
+          def debounce(&block) = block.call
+        end
+
+        module Picker
+          def self.pick(config) = config.fetch(:debouncer_class, default: Lone)
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::ImmediateDebouncer#pause App::Lone#debounce]))
+  end
+
+  it "takes a class that hands itself to a decorator, or seeds a chain of them, for the peer of what wraps it" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def request_call(datum) = @stack.request_call(datum)
+          def response_call(datum) = @stack.response_call(datum)
+        end
+
+        class Connection
+          def initialize(layers) = @layers = layers
+          def request(datum) = @layers.inject(self) { |inner, layer| layer.new(inner) }.request_call(datum)
+          def request_call(datum) = datum.merge(sent: true)
+          def response_call(datum) = datum.merge(read: true)
+          def label(datum) = datum.fetch(:name)
+        end
+
+        class Probe
+          def initialize(layers) = @layers = layers
+          def wrapped = Layer.new(self)
+          def response_call(datum) = datum.merge(probed: true)
+        end
+
+        class Spawn
+          def initialize(kind) = @kind = kind
+          def child = @kind.new(self)
+          def response_call(datum) = datum.merge(spawned: true)
+          def scheduled?(job) = job.next_time.nil?
+          def format(datum) = datum.to_s
+        end
+
+        class Formatter
+          def format(datum) = datum.merge(formatted: true)
+        end
+
+        class Copier
+          def initialize(source) = @copy = source.dup
+          def format(datum) = @copy.format(normal(datum))
+
+          private
+
+          def normal(datum) = datum.compact
+        end
+
+        class Loose
+          def initialize(rows) = @rows = rows
+          def total = @rows.reduce(self) { |sum, row| sum.add(row) }
+          def response_call(datum) = datum.merge(loose: true)
+        end
+
+        class Job
+          def initialize(scheduler, at) = (@scheduler = scheduler; @at = at)
+          def scheduled? = @scheduler.scheduled?(self)
+        end
+
+        class Scheduler
+          def initialize(kind) = @kind = kind
+          def schedule(at) = @kind.new(self, at)
+          def scheduled?(job) = job.next_time.nil?
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(
+      eq(
+        %w[
+          App::Connection#label App::Spawn#scheduled? App::Spawn#format App::Formatter#format App::Loose#response_call
+          App::Scheduler#scheduled?
+        ]
+      )
+    )
+  end
+
+  it "reads a fold seeded with self that builds what it folds, in its block or its receiver, as a decorator chain" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def request_call(datum) = @stack.request_call(datum)
+        end
+
+        class Chain
+          def initialize(layers) = @layers = layers
+          def stack = @layers.map { |layer| ->(inner) { layer.new(inner) } }.inject(self) { |inner, wrap| wrap.call(inner) }
+          def request_call(datum) = datum.merge(chained: true)
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "takes the classes one table holds, as classes or as the objects it builds, for peers that share a protocol" do
+    findings = utility(<<~RUBY)
+      module App
+        class Plain
+          def initialize(color:) = @color = color
+          def sent(message) = @color.paint(message)
+          def shown(message) = @color.paint(message)
+        end
+
+        class Json
+          def initialize(color:) = @color = color
+          def sent(message) = JSON.generate(message)
+          def shown(message) = JSON.generate(message)
+          def received(message) = JSON.generate(message)
+        end
+
+        class Csv
+          def initialize(color:) = @color = color
+          def shown(message) = CSV.generate_line(message)
+        end
+
+        class Xml
+          def shown(message) = message.to_xml
+        end
+
+        class Log
+          FORMATS = { plain: Plain, json: Json }.freeze
+          def initialize(format) = @formatter = FORMATS.fetch(format).new(color: true)
+          def views = { plain: Plain.new(color: @formatter), csv: Csv.new(color: 1), xml: Xml.build, **FORMATS }
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Json#received App::Xml#shown]))
+  end
+
   it "keeps an override of a core ancestor's method a hook, though the project sends that message too" do
     findings = utility(<<~RUBY)
       module App
@@ -293,6 +492,30 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       end
     RUBY
     expect(findings.map(&:package)).to(eq(%w[App::AuthError#hint App::Tags#add]))
+  end
+
+  it "leaves the equality, ordering and printing Ruby asks of every object to it, at the arity Ruby calls them" do
+    findings = utility(<<~RUBY)
+      module App
+        class Nothing
+          def eql?(other) = other.is_a?(Nothing)
+          def hash = Nothing.name.hash
+          def <=>(other) = other.is_a?(Nothing) ? 0 : -1
+          def ===(other) = other.nil?
+          def inspect = "Nothing".dup.freeze
+          def to_s(*) = String.new("Nothing")
+          def coerce(number) = [Nothing.new, number.to_i]
+          def digest(password) = Digest::SHA256.hexdigest(password)
+          def display(page) = Printer.print(page)
+        end
+
+        class Vault
+          def hash(password) = Digest::SHA256.hexdigest(password)
+          def ==(*) = Vault.name.frozen?
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[App::Nothing#digest App::Nothing#display App::Vault#hash App::Vault#==]))
   end
 
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
@@ -332,6 +555,109 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     RUBY
     findings = sniffed({ "lib/app/plugin.rb" => plugin }, "utility_function")
     expect(findings.map(&:package)).to(eq(%w[App::Plugin#label App::Plugin#badge App::Plain#orphan]))
+  end
+
+  it "keeps a library hook a hook when the project only sends its name to a class, as a macro" do
+    validator = <<~RUBY
+      module App
+        class NewestOnly < ActiveModel::Validator
+          def validate(record) = record.errors.add(:base, "stale") unless record.newest?
+
+          def check(record) = record.errors.add(:base, "stale")
+        end
+
+        class Place < ActiveRecord::Base
+          validates_with NewestOnly
+          validate :paired
+          check :paired
+
+          def newest? = @newest
+        end
+
+        class Audit
+          def run(record) = NewestOnly.new.check(record)
+        end
+      end
+    RUBY
+    findings = sniffed({ "lib/app/place.rb" => validator }, "utility_function")
+    expect(findings.map(&:package)).to(eq(%w[App::NewestOnly#check App::Audit#run]))
+  end
+
+  def jobs(extra, head = "PublishJob") = <<~RUBY
+    module App
+      class BaseJob
+        def run(id) = id.to_s
+      end
+
+      module Retried
+        def again(id) = id.to_s
+      end
+
+      class #{head}
+        include Sidekiq::Job
+
+        def perform(id) = Tag.find(id).publish
+      end
+
+      class UrgentJob < PublishJob
+      end
+
+      class ListPublisher
+        def initialize(tag) = @tag = tag
+
+        def perform = @tag.publish
+
+        def run = perform
+      end
+
+      class Lists
+        def create = ListPublisher.new(@tag).perform
+        def other = Library::Runner.new.perform
+        def settle = { perform: true }.merge(@tag)
+        def pick = ListPublisher.perform(@tag)
+        #{extra}
+      end
+    end
+  RUBY
+
+  def performs?(source)
+    sniffed({ "lib/app/jobs.rb" => source }, "utility_function").map(&:package).include?("App::PublishJob#perform")
+  end
+
+  it "keeps a library hook a hook unless the project sends its name to an object of the class's own lineage" do
+    sent = [
+      "", "def again(id) = PublishJob.new.perform(id)", "def later(id) = UrgentJob.new.perform(id)",
+      "def any(job) = job.perform(1)", "def told(job) = job.send(:perform)", "def own = PublishJob.perform(1)",
+      "def found = Registry.find(1).perform"
+    ]
+    expect(sent.map { performs?(jobs(it)) }).to(eq([false, true, true, true, true, true, true]))
+  end
+
+  it "counts a bare call to a library hook as sent to the class only from its own lineage" do
+    lineage = [
+      jobs("", "PublishJob < BaseJob").sub("def run(id) = id.to_s", "def run(id) = perform(id)"),
+      jobs("", "PublishJob\n    include Retried").sub("def again(id) = id.to_s", "def again(id) = self.perform(id)")
+    ]
+    expect(lineage.map { performs?(it) }).to(eq([true, true]))
+  end
+
+  it "reads a hash key or a keyword argument as a label, not a message, so a validator keeps its hook" do
+    validator = <<~RUBY
+      module App
+        class SlugValidator < ActiveModel::Validator
+          def validate(record) = record.errors.add(:slug, "bad") unless record.slug
+        end
+
+        class Page < ActiveRecord::Base
+          validates_with SlugValidator
+          def import! = save!(validate: false)
+          def check(record) = validate(record)
+        end
+      end
+    RUBY
+    told = validator.sub("def check(record) = validate(record)", "def check(checker) = checker.validate(self)")
+    flagged = [validator, told].map { sniffed({ "lib/app/page.rb" => it }, "utility_function").map(&:package) }
+    expect(flagged.map { it.include?("App::SlugValidator#validate") }).to(eq([false, true]))
   end
 
   it "traces a finding by the code it names, so a rename still matches and a different method does not" do

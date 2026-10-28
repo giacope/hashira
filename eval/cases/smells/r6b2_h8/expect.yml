@@ -1,0 +1,10 @@
+# R6B2-H8. ferrum's proxy reads the upstream status line, then each header
+# line until the blank one, with the same `os.gets(WEBrick::LF)`. Every gets
+# consumes the socket: naming the result reuses the status line, and the
+# header loop never ends. A stream's or a queue's read draws the next item,
+# like a call that mints a value; a repeated query is still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Tunnel#route"}
+absent:
+  - {kind: repeated_call, package: "Shop::Tunnel#handshake"}
+  - {kind: repeated_call, package: "Shop::Tunnel#pair"}

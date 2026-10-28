@@ -5,9 +5,16 @@ require "prism"
 class Hashira::Smells::Provenance
   HIDDEN = %i[private protected].freeze
 
-  def initialize(subject, foreign)
+  OPTIONAL = [Prism::OptionalParameterNode, Prism::OptionalKeywordParameterNode].freeze
+
+  WRITES = [Prism::LocalVariableWriteNode, *OPTIONAL].freeze
+
+  REACHED = [Prism::InstanceVariableReadNode, Prism::CallNode].freeze
+
+  def initialize(subject, foreign, rules)
     @subject = subject
     @foreign = foreign
+    @rules = rules
   end
 
   def made?(node, seen = Set.new)
@@ -18,20 +25,89 @@ class Hashira::Smells::Provenance
     end
   end
 
+  def source(node) = (sourced(node) if strict?)
+
+  def writes = strict? ? WRITES : WRITES.first(1)
+
+  def options(nodes)
+    named = nodes.select { optional?(it) }.map { it.name.to_s }.uniq
+    named if named.any?
+  end
+
   private
+
+  def strict? = @rules.strict?
+
+  def sourced(node)
+    case node
+    when Prism::LocalVariableReadNode then sole(@foreign.writes(node.name).map { sourced(it.value) })
+    when Prism::CallNode then spring(node)
+    end
+  end
+
+  def optional?(node) = node.is_a?(Prism::LocalVariableReadNode) && defaulted.include?(node.name)
 
   def local?(name, seen) = argument?(name) ? handed?(name) : @foreign.writes(name).any? { made?(it.value, seen) }
 
   def argument?(name) = @subject.parameters.include?(name)
 
-  def handed?(_name) = HIDDEN.include?(@subject.section)
+  def handed?(name) = HIDDEN.include?(@subject.section) || defaulted.include?(name)
+
+  def defaulted = @_defaulted ||= strict? ? nils : []
+
+  def nils
+    Hashira::Smells::Parameters.new(@subject.node).parts.filter_map do
+      it.name if OPTIONAL.include?(it.class) && it.value.is_a?(Prism::NilNode)
+    end
+  end
+
+  def sole(found) = (found.first if found.any? && found.uniq.one?)
+
+  def spring(call) = ("#{holder(call.receiver)}##{call.name}" if sprung?(call))
+
+  def sprung?(call)
+    path = holder(call.receiver)
+    path && @subject.ownership.nulls.answer?(path, call.name)
+  end
+
+  def holder(receiver)
+    case receiver
+    when Prism::InstanceVariableReadNode then field(receiver.name)
+    when Prism::LocalVariableReadNode then sole(kinds(receiver.name))
+    when Prism::CallNode then built(receiver)
+    end
+  end
+
+  def field(name)
+    written = @subject.ownership.fillings.types(name, @subject.owner)
+    written.empty? ? named(name.to_s.delete_prefix("@")) : sole(written - [@subject.owner])
+  end
+
+  def named(name) = sole(Hashira::Smells::Naming.new(name).types.filter_map { place(it) }.first(1) - [@subject.owner])
+
+  def kinds(local) = @foreign.kinds(Hashira::Smells::Refs::Local.new(local, @subject.node)).map { it.join("::") }
+
+  def built(call) = (place(Hashira::Analysis::Syntax.new(call.receiver).segments) if call.name == :new)
+
+  def place(segments) = @subject.ownership.place(segments, @subject.owner)
 
   def answered?(call)
     receiver = call.receiver
     return own?(call.name) if receiver.nil? || receiver.is_a?(Prism::SelfNode)
     return @subject.ownership.answers?(receiver, @subject.owner) if constant?(receiver)
-    receiver.is_a?(Prism::LocalVariableReadNode) && (@foreign.built?(receiver.name) || typed?(receiver.name, call.name))
+    reached?(call)
   end
+
+  def reached?(call)
+    receiver = call.receiver
+    case receiver
+    when Prism::LocalVariableReadNode then @foreign.built?(receiver.name) || typed?(receiver.name, call.name)
+    when *REACHED then strict? && (sprung?(call) || spoken?(built(receiver), call.name))
+    else false
+    end
+  end
+
+  def spoken?(path, message) = path && @subject.ownership.repertoire.of(path.split("::")).include?(message.to_s)
 
   def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
 

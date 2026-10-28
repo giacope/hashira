@@ -41,13 +41,16 @@ class Hashira::Coupling::Census
 
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
 
-  def charge(file, nesting) = (homes[file] if nesting.empty?) || translate(placement.charge(file, nesting))
+  def charge(file, nesting, target)
+    return placed(file, nesting) unless nesting.empty?
+    (homes[file] if own?(file, target)) || tops[file] || placed(file, nesting)
+  end
 
   def aside?(package) = placement.aside?(package)
 
   def test?(package) = placement.test?(package)
 
-  def home(file) = charge(file, [])
+  def home(file) = homes[file] || placed(file, [])
 
   def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
 
@@ -79,7 +82,15 @@ class Hashira::Coupling::Census
 
   def type?(segments) = roster.type?(segments)
 
-  def homes = @_homes ||= placement.placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
+  def placed(file, nesting) = translate(placement.charge(file, nesting))
+
+  def own?(file, target) = !Array(target).empty? && files(target).include?(file)
+
+  def homes = @_homes ||= dominants(placement.placed)
+
+  def tops = @_tops ||= dominants(placement.placed.select { |definition, _| definition.scope.one? })
+
+  def dominants(placed) = placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
 
   def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).first
 

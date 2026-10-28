@@ -9,6 +9,8 @@ class Hashira::Smells::Grouping
 
   OWNER = /[#.][^#.]+\z/
 
+  LOCAL = %w[@ # .].freeze
+
   GROUPED = [CHAIN, REPEATS, Hashira::Smells::Heirs::KIND, Hashira::Smells::Bequests::KIND].freeze
 
   def initialize(findings)
@@ -39,8 +41,9 @@ class Hashira::Smells::Grouping
   end
 
   def named(finding)
+    owner = finding.package.sub(OWNER, "")
     finding.detail[:sources].map do |name, site|
-      [finding.package.sub(OWNER, "") + name, finding.with(detail: { **finding.detail, site: })]
+      [name.start_with?(*LOCAL) ? owner + name : name, finding.with(detail: { **finding.detail, site: })]
     end
   end
 

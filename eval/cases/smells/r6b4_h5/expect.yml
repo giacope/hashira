@@ -1,0 +1,16 @@
+# R6B4-H5. WebsiteOne's ActAsPage defines no method: its included hook
+# installs a presence validation on every page model (plus library macros).
+# The README reports a mixin that installs callbacks or validations on its
+# host whether or not it has methods of its own, so strict reports it.
+# Treed only calls library macros hashira does not know as fields or hooks,
+# and Sluggable's attr_writer is a refinement's, not its host's: both stay
+# quiet.
+config:
+  strict: true
+args: [app]
+present:
+  - {kind: stateful_mixin, package: "ActAsPage"}
+absent:
+  - {kind: stateful_mixin, package: "Treed"}
+  - {kind: stateful_mixin, package: "Sluggable"}
+evidence: [stateful_mixin]

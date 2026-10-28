@@ -1,0 +1,9 @@
+# R6B2-H6. friendly_id's Configuration#set is its mass assignment:
+# `values&.each { |name, value| send "#{name}=", value }` reaches every
+# writer, the attr_accessor/attr_writer ones and a hand-written one alike,
+# so it touches @model_class and @base and the class is one group, not two.
+# A computed send that spells no writer joins nothing: Ledger still splits.
+present:
+  - {kind: low_cohesion, package: "Shop::Ledger"}
+absent:
+  - {kind: low_cohesion, package: "Shop::Settings"}

@@ -18,6 +18,8 @@ class Hashira::Report::Phrases
   MODULE_INITIALIZE =
     "A mixin that carries constructor state is implementation inheritance; compose a collaborator instead."
 
+  STATEFUL_MIXIN = "Make it a decorator: wrap the host and reach it through its public methods."
+
   private
 
   def on_control_parameter(finding)
@@ -42,7 +44,9 @@ class Hashira::Report::Phrases
 
   def on_module_initialize(finding) = plain(finding, "defines initialize in a module", MODULE_INITIALIZE)
 
-  def plain(finding, said, advice) = "#{finding.package} #{said} (#{finding.detail[:site]}). #{advice}"
+  def on_stateful_mixin(finding) = plain(finding, "mixes behavior into its host's own state", STATEFUL_MIXIN)
+
+  def plain(finding, said, advice) = "#{finding.package} #{said} (#{finding.site}). #{advice}"
 
   def on_boundary_sprawl(finding)
     detail = finding.detail
@@ -85,7 +89,18 @@ class Hashira::Report::Phrases
       "(#{detail[:site]}). #{NIL_ADVICE} Settle it where the nil is made."
   end
 
-  def remedy(origin) = origin == :absence ? ABSENCE : NIL_ADVICE
+  def remedy(origin)
+    case origin
+    when :absence then ABSENCE
+    when Array then optional(origin)
+    else NIL_ADVICE
+    end
+  end
+
+  def optional(names)
+    "#{quoted(names)} default#{"s" if names.one?} to nil, so callers may pass nothing and the method is two in one: " \
+      "split it, or ask for a null object instead of nil."
+  end
 
   def on_repeated_conditional(finding)
     tally(finding, "branches on the same test %d times", "Replace the scattered checks with polymorphism.")

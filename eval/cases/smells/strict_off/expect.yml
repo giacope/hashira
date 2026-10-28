@@ -1,0 +1,9 @@
+# The strict set stays off under checks: all. The projects of mixins and
+# absences (both run under strict: true) report none of their strict
+# findings here: no stateful_mixin at all, and no nil_check on a
+# nil-defaulted parameter or named for an owned method that answers nil.
+absent:
+  - {kind: stateful_mixin}
+  - {kind: nil_check, package: "App::Price#discounted"}
+  - {kind: nil_check, package: "App::Catalog#find"}
+  - {kind: nil_check, package: "App::Finder#parent"}

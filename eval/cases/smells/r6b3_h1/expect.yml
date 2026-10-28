@@ -1,0 +1,14 @@
+# R6B3-H1. collections-publisher's Tag, under strict: `belongs_to :parent` is
+# backed by the parent_id column, so root? (`parent_id.blank?`) and nested?
+# (`parent.present?`) read one field, and Topic's list_items go through
+# lists, one association. Each class is one group. Account still splits: its
+# balance and its email share nothing, and owner_id joins only the owner.
+config:
+  strict: true
+args: [app]
+present:
+  - {kind: low_cohesion, package: "Account"}
+absent:
+  - {kind: low_cohesion, package: "Tag"}
+  - {kind: low_cohesion, package: "Topic"}
+evidence: [low_cohesion]

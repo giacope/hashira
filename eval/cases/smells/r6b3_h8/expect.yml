@@ -1,0 +1,16 @@
+# R6B3-H8. ancestry's Ancestry::ClassMethods is extended into models by the
+# has_ancestry macro, not handed to a host by a concern, and its `def self.`
+# methods belong to the module itself (`Ancestry::ClassMethods._check…`):
+# naming them `Ancestry.tree_view` and `Ancestry._check_ancestry_integrity!`
+# named methods Ancestry does not answer. A ClassMethods module's methods
+# are the concern's (`Tree::Searchable.search`) only when its namespace is a
+# concern that hands it to its host; otherwise they keep their own name, as
+# the complexity table already printed them.
+present:
+  - {kind: repeated_call, package: "Tree::ClassMethods"}
+  - {kind: repeated_call, package: "Tree::Searchable"}
+absent:
+  - {kind: repeated_call, package: "Tree"}
+messages:
+  - {kind: repeated_call, package: "Tree::ClassMethods", includes: "repeats 2 calls in 2 methods"}
+evidence: [repeated_call]

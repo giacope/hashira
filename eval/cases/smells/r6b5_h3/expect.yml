@@ -1,0 +1,12 @@
+# R6B5-H3. excon's SOCKS5#socks5_read_exactly measures the time left each
+# pass (`remaining = deadline - Time.now`), waits, reads, and waits again for
+# `[deadline - Time.now, 0].max`: each `Time.now` is a reading measured
+# against a stored earlier one, and so is every call that holds such a
+# reading; naming the first remaining time makes the second wait overshoot
+# the deadline. A clock read twice with nothing measured against it (Stamp)
+# is still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Stamp#label"}
+absent:
+  - {kind: repeated_call, package: "Shop::Reader#read_exactly"}
+evidence: [repeated_call]

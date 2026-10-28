@@ -2,18 +2,25 @@
 
 require "prism"
 require_relative "bindings"
+require_relative "endings"
+require_relative "message"
 require_relative "scope"
 
 class Hashira::Smells::Course
-  LOOPS = Hashira::Smells::Bindings::LOOPS
-
   WRITES = [Prism::LocalVariableWriteNode, Prism::InstanceVariableWriteNode].freeze
+
+  DRAWS = %i[
+    gets getc getbyte getch readline readchar readbyte readpartial read_nonblock sysread
+    recv recvfrom recv_nonblock recvmsg accept_nonblock pop shift deq
+  ].freeze
+
+  BANG = /\w!\z/
+
+  CHANGES = (DRAWS + %i[<< push append unshift prepend insert concat delete delete_at delete_if clear replace]).freeze
 
   Stretch =
     Data.define(:first, :last, :held) do
       def ends = [first, last]
-
-      def leaves?(exit) = covers?(exit, first) && !covers?(exit, last)
 
       def spans?(node) = first.location.end_offset <= node.location.end_offset && before?(node)
 
@@ -28,10 +35,20 @@ class Hashira::Smells::Course
       def handed(call) = Array(call.arguments&.arguments).flat_map { values(it) }.compact
 
       def values(argument) = argument.is_a?(Prism::KeywordHashNode) ? argument.elements.map(&:value) : [argument]
+
+      def shifts?(node)
+        case node
+        when Prism::CallNode then aims?(node) && node.receiver.slice.start_with?("@") && moves?(node.name)
+        when Prism::InstanceVariableWriteNode then held.include?(node.name.to_s)
+        else false
+        end
+      end
+
+      def moves?(name) = !name.end_with?("?") && name != first.name
     end
 
-  def initialize(definition, calls, discards, branches)
-    @definition = definition
+  def initialize(method, calls, discards, branches)
+    @method = method
     @calls = calls
     @discards = discards
     @branches = branches
@@ -39,46 +56,37 @@ class Hashira::Smells::Course
 
   def parted?(pair)
     first, last = pair
-    stretch = Stretch.new(first:, last:, held: receivers(first))
+    held = [first, *Hashira::Smells::Scope.new(first).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
+    stretch = Stretch.new(first:, last:, held:)
     left?(stretch) || disturbed?(stretch)
   end
 
   private
 
-  def receivers(call)
-    [call, *Hashira::Smells::Scope.new(call).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
-  end
-
   def left?(stretch)
-    last = stretch.last
-    !ensured?(last) && returns.any? { stretch.leaves?(it) && !looped?(it, last) }
+    @_endings ||= Hashira::Smells::Endings.new(@method.node)
+    @_endings.parts?(stretch.first, stretch.last)
   end
-
-  def looped?(exit, node) = sorted.values_at(*LOOPS).compact.flatten.any? { covers?(it, exit) && covers?(it, node) }
-
-  def ensured?(node) = sorted.fetch(Prism::EnsureNode, []).any? { covers?(it, node) }
-
-  def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
-
-  def nodes = @_nodes ||= Hashira::Smells::Scope.new(@definition).inside
-
-  def sorted = @_sorted ||= nodes.group_by(&:class)
-
-  def returns = sorted.fetch(Prism::ReturnNode, []) + sorted.fetch(Prism::AndNode, []).select { jump?(it.right) }
-
-  def jump?(node) = node.is_a?(Prism::ReturnNode) || Hashira::Smells::Exits.new(node).raise?
 
   def disturbed?(stretch)
-    disturbs?(stretch, commands) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) }
+    disturbs?(stretch, moves) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) } ||
+      disturbs?(stretch, @calls) { |call| errands.own?(call) && errands.of(call.name).any? { stretch.shifts?(it) } }
   end
+
+  def moves = @_moves ||= commands + @calls.select { changes?(Hashira::Smells::Message.new(it).name) }
+
+  def changes?(name) = CHANGES.include?(name.to_sym) || BANG.match?(name)
+
+  def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
 
   def disturbs?(stretch, calls) = calls.any? { stretch.spans?(it) && meets?(it, stretch) && yield(it) }
 
   def commands = @_commands ||= @calls.select { @discards.include?(it) }
 
   def steps
-    @_steps ||= commands + nodes.grep(Prism::StatementsNode).flat_map(&:body).select { WRITES.include?(it.class) }
-      .map(&:value).grep(Prism::CallNode)
+    return @_steps if @_steps
+    lists = Hashira::Smells::Scope.new(@method.node).inside.grep(Prism::StatementsNode)
+    @_steps = commands + lists.flat_map(&:body).select { WRITES.include?(it.class) }.map(&:value).grep(Prism::CallNode)
   end
 
   def meets?(call, stretch) = stretch.ends.all? { @branches.together?([call, it]) }

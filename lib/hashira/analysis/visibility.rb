@@ -64,7 +64,9 @@ class Hashira::Analysis::Visibility
     @node = type
   end
 
-  def entries
+  def entries = written.map { |node, section| [node, class_level? ? :singleton : section] }
+
+  def written
     scanned = Scan.new(found: [], overrides: {}, section: [:public], host: @node).tap { it.scan(statements(@node)) }
     scanned.found.map { |node, section| [node, lifted(scanned.overrides.fetch(node.name, section))] }
   end
@@ -76,10 +78,7 @@ class Hashira::Analysis::Visibility
     body.is_a?(Prism::StatementsNode) ? body.body : []
   end
 
-  def lifted(section)
-    return :singleton if class_level?
-    section == :public && extended? ? :module_function : section
-  end
+  def lifted(section) = section == :public && extended? ? :module_function : section
 
   def extended? = (@_extended ||= [statements(@node).any? { reflexive?(it) }]).first
 

@@ -1,0 +1,17 @@
+# R6B5-H9. turbo-rails' Turbo::Broadcastable installs a thread-level class
+# attribute on every model (`included do thread_mattr_accessor ... end`) and
+# its instance methods test it. ActiveSupport's mattr/cattr/thread_mattr
+# accessors are fields on the host as class_attribute is, so strict reports
+# the mixin. Settings keeps module-level configuration on itself, not on a
+# host (that global state is kata's), and Channeled installs nothing and only
+# calls the host's public methods: both quiet.
+config:
+  strict: true
+args: [app]
+present:
+  - {kind: stateful_mixin, package: "Broadcastable"}
+  - {kind: stateful_mixin, package: "Limited"}
+absent:
+  - {kind: stateful_mixin, package: "Settings"}
+  - {kind: stateful_mixin, package: "Channeled"}
+evidence: [stateful_mixin]

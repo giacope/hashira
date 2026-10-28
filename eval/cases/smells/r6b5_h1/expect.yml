@@ -1,0 +1,19 @@
+# R6B5-H1. `return` and `raise` end a run, and inside a block `next` and
+# `break` end the block's run: whether the exit holds the first read
+# (`orphaned << child[:slug] && next`, local-links-manager's
+# connect_parents; `raise E, "... #{attrs[:name]}"`) or follows it as a
+# statement (`if child.orphan?; skip(child.parent); next; end`), no run
+# reaches the read after it. A raise has no result to name (excon's
+# `socket.read(n) || raise(EOFError)` six times). Still reported: a read the
+# block brings round on its next pass because it does not depend on what the
+# block binds (Hoisted), and a raise a rescue catches (Rescued).
+present:
+  - {kind: repeated_call, package: "Shop::Hoisted#scan"}
+  - {kind: repeated_call, package: "Shop::Rescued#create"}
+absent:
+  - {kind: repeated_call, package: "Shop::Linker#connect"}
+  - {kind: repeated_call, package: "Shop::Linker#skipped"}
+  - {kind: repeated_call, package: "Shop::Linker#returned"}
+  - {kind: repeated_call, package: "Shop::Linker#create"}
+  - {kind: repeated_call, package: "Shop::Linker#read"}
+evidence: [repeated_call]

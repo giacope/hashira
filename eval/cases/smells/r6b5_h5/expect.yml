@@ -1,0 +1,14 @@
+# R6B5-H5. Strict nil_check typed an instance variable by its name alone:
+# excon's SOCKS5 module tests `@socket.read_nonblock(n, exception: false)`
+# for nil, and @socket was read as an Excon::Socket, whose read_nonblock can
+# answer nil. Every class that mixes SOCKS5 in builds @socket from core
+# `::Socket.new` (Excon::Socket#connect, through a local), whose nil at EOF is
+# the library's contract. A field is typed by what its object's classes and
+# mixins build into it first; by its name only when nothing does (Wired).
+config:
+  strict: true
+present:
+  - {kind: nil_check, package: "Shop::Socket#read_nonblock"}
+messages:
+  - {kind: nil_check, package: "Shop::Socket#read_nonblock", includes: "1 method checks for it (shop/wired.rb"}
+evidence: [nil_check]

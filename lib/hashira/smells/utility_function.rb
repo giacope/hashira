@@ -3,9 +3,15 @@
 require "prism"
 
 class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
+  PROTOCOL = { 0 => %i[hash inspect to_s], 1 => %i[== eql? equal? <=> === coerce] }.freeze
+
   private
 
-  def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && calls? && stateless?
+  def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && !protocol? && calls? && stateless?
+
+  def protocol? = PROTOCOL.fetch(arity, []).include?(subject.node.name)
+
+  def arity = Array(subject.node.parameters&.requireds).size
 
   def stateless? = refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
 

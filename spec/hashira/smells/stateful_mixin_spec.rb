@@ -1,0 +1,335 @@
+# frozen_string_literal: true
+
+RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
+  def mixed(source) = strictly({ "lib/app/zone/mixin.rb" => source }, "stateful_mixin")
+
+  it "is a strict kind: off by default and under checks: all" do
+    host = { "lib/app/zone/mixin.rb" => "module Loud\n  def shout = @text.upcase\nend\n" }
+    off = [Fixtures::NONE, Hashira::Config::Rules::ALL].map { sniffed(host, "stateful_mixin", rules: it) }
+    expect([off, strictly(host, "stateful_mixin").size]).to(eq([[[], []], 1]))
+  end
+
+  it "flags a mixin whose methods read state its host assigns, naming each field" do
+    findings = mixed(<<~RUBY)
+      module Loud
+        def shout = "\#{@text.upcase}!"
+
+        def whisper = @text.downcase + @mark.to_s
+      end
+
+      class Message
+        include Loud
+
+        def initialize(text) = @text = text
+      end
+    RUBY
+    evidence = ["reads @text (lines 2, 4)", "reads @mark (line 4)"]
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["Loud", evidence]]))
+    expect(message(findings.first)).to(
+      eq(
+        "Loud mixes behavior into its host's own state (zone/mixin.rb:1). " \
+          "Make it a decorator: wrap the host and reach it through its public methods."
+      )
+    )
+  end
+
+  it "flags a mixin that keeps its own state in its host, but not a memo cache" do
+    findings = mixed(<<~RUBY)
+      module Tracked
+        def track(event)
+          @events = [event]
+          @count += 1
+          @seen &&= true
+          @last, @first = event, event
+        end
+
+        def events = @events
+
+        def cache = @cache ||= {}
+
+        def hidden = @_hidden = 1
+      end
+    RUBY
+    expect(findings.first.evidence).to(
+      eq(
+        [
+          "keeps @events in its host (line 3)", "keeps @count in its host (line 4)",
+          "keeps @seen in its host (line 5)", "keeps @last in its host (line 6)", "keeps @first in its host (line 6)"
+        ]
+      )
+    )
+  end
+
+  it "flags a concern that installs callbacks, associations, validations or fields on its host" do
+    findings = mixed(<<~RUBY)
+      module Trackable
+        extend ActiveSupport::Concern
+
+        included do
+          after_save :track
+          has_many :events
+          validates :name, presence: true
+          self.class_attribute :tracker
+        end
+
+        def track = Analytics.event(id)
+      end
+
+      module Constrained
+        def self.included(base)
+          base.validate { |record| record.errors.add(record.error.attribute) }
+          base.before_action :check
+        end
+
+        attr_accessor :limit
+
+        def check = limit
+      end
+    RUBY
+    expect(findings.to_h { [it.package, it.evidence] }).to(
+      eq(
+        "Trackable" => [
+          "installs after_save (line 5)", "installs has_many (line 6)", "installs validates (line 7)",
+          "installs class_attribute (line 8)"
+        ],
+        "Constrained" => [
+          "installs validate (line 16)", "installs before_action (line 17)",
+          "installs attr_accessor (line 20)"
+        ]
+      )
+    )
+  end
+
+  it "takes ActiveSupport's module attribute macros for fields when sent to the host, not to the module itself" do
+    findings = mixed(<<~RUBY)
+      module Suppressed
+        extend ActiveSupport::Concern
+
+        included do
+          thread_mattr_accessor :quiet, instance_accessor: false
+          delegate :quiet?, to: "self.class"
+        end
+
+        def broadcast = quiet? || Channel.send(self)
+      end
+
+      module Shared
+        extend ActiveSupport::Concern
+
+        included do
+          mattr_accessor :limit
+          cattr_reader :mode
+          thread_cattr_writer :scope
+        end
+      end
+
+      module Scoped
+        def self.included(base) = base.cattr_accessor(:scope)
+      end
+
+      module Settings
+        mattr_accessor :batch_size
+        self.batch_size = 1000
+
+        def self.config = yield(self)
+      end
+
+      module Configured
+        extend ActiveSupport::Concern
+
+        mattr_reader :mode
+
+        included { has_paper_trail }
+      end
+    RUBY
+    expect(findings.to_h { [it.package, it.evidence] }).to(
+      eq(
+        "Suppressed" => ["installs thread_mattr_accessor (line 5)"],
+        "Shared" => [
+          "installs mattr_accessor (line 16)", "installs cattr_reader (line 17)",
+          "installs thread_cattr_writer (line 18)"
+        ],
+        "Scoped" => ["installs cattr_accessor (line 23)"]
+      )
+    )
+  end
+
+  it "flags a mixin that only installs hooks or fields on its host, with no method, but not a class-level one" do
+    findings = mixed(<<~RUBY)
+      module Pageish
+        def self.included(base)
+          base.acts_as_tree
+          base.has_paper_trail
+          base.validates :title, presence: true
+        end
+      end
+
+      module Audited
+        extend ActiveSupport::Concern
+
+        included do
+          after_save :track
+        end
+      end
+
+      module Named
+        attr_accessor :name
+      end
+
+      module Treed
+        def self.included(base) = base.acts_as_tree
+      end
+
+      module Shapes
+        Point = Struct.new(:x) do
+          attr_writer :y
+        end
+
+        Box = Class.new do
+          validates :size, presence: true
+        end
+      end
+
+      module Coerced
+        def self.included(base) = base.extend(ClassMethods)
+
+        module ClassMethods
+          attr_writer :coercions
+
+          def coerce(key) = @coercions.fetch(key)
+        end
+      end
+    RUBY
+    expect(findings.to_h { [it.package, it.evidence] }).to(
+      eq(
+        "Pageish" => ["installs validates (line 5)"], "Audited" => ["installs after_save (line 13)"],
+        "Named" => ["installs attr_accessor (line 18)"]
+      )
+    )
+  end
+
+  it "leaves alone a protocol mixin over its host's public methods, and a module that is not a mixin" do
+    findings = mixed(<<~RUBY)
+      module Ordered
+        include Comparable
+
+        def <=>(other) = key <=> other.key
+
+        def self.build = @built ||= new
+      end
+
+      module Shared
+        extend self
+
+        def config = @config
+      end
+
+      module Helpers
+        module_function
+
+        def config = @config
+      end
+
+      module Hooks
+        def self.included(base)
+          base.extend(ClassMethods)
+          other.after_save :x
+          base.scope :recent, -> { order(:id) }
+        end
+      end
+
+      class Holder
+        def read = @value
+      end
+
+      module Patches
+        refine ::String do
+          attr_writer :mark
+
+          def marked = @mark
+        end
+      end
+
+      module Opaque
+        def read = @value
+
+        def write(name) = instance_eval("@value = name")
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "counts state a mixin's own included modules assign as its own" do
+    findings = mixed(<<~RUBY)
+      module Base
+        def start = @started = true
+      end
+
+      module Child
+        include Base
+
+        def started? = @started
+      end
+    RUBY
+    expect(findings.map { [it.package, it.evidence] }).to(eq([["Base", ["keeps @started in its host (line 2)"]]]))
+  end
+
+  it "counts what a mixin assigns itself as its own when it extends or includes a module it cannot see" do
+    findings = mixed(<<~RUBY)
+      module Parser
+        extend Forwardable
+
+        def_delegator :header, :[], :[]
+
+        def fill(response) = @header = response.to_h
+
+        def header = @header
+
+        def size = @length
+      end
+
+      module Registry
+        include Enumerable
+
+        def entries = @entries ||= {}
+
+        def each(&) = @entries.each(&)
+
+        def mime = @type
+      end
+    RUBY
+    evidence = [["keeps @header in its host (line 6)", "reads @length (line 10)"], ["reads @type (line 20)"]]
+    expect(findings.map(&:evidence)).to(eq(evidence))
+  end
+
+  it "takes a bare extend for a call, not for extending the module itself" do
+    findings = mixed("module Odd\n  extend\n\n  def read = @value\nend\n")
+    expect(findings.map(&:evidence)).to(eq([["reads @value (line 4)"]]))
+  end
+
+  it "reads only the included hook and its parameter as the host, and leaves a module the project does not own alone" do
+    findings = mixed(<<~RUBY)
+      module Setup
+        def self.configure(base) = base.after_save(:x)
+
+        def self.included(base) = base.extend(Hooks)
+
+        included do
+          base.after_save :y
+        end
+
+        def go = 1
+      end
+
+      module Enumerable
+        def total = @sum
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "leaves a module that extends itself alone, though it keeps state: it is an object, not a mixin" do
+    job = "module Job\n  extend self\n\n  def run = start\n\n  private\n\n  def start = @client = 1\nend\n"
+    expect(mixed(job)).to(be_empty)
+  end
+end

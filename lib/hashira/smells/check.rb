@@ -23,6 +23,8 @@ class Hashira::Smells::Check
 
   def threshold(default) = @rules.threshold(kind, default)
 
+  def strict? = @rules.strict?
+
   def label = subject.subject
 
   def site = subject.site

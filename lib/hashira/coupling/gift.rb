@@ -3,13 +3,14 @@
 require "prism"
 
 class Hashira::Coupling::Gift
-  def initialize(call, nesting)
+  def initialize(call, nesting, host = call.receiver)
     @call = call
     @nesting = nesting
+    @host = host
   end
 
   def to_a
-    host = root(@call.receiver)
+    host = root(@host)
     Array(@call.arguments&.arguments).filter_map { offered(it) }.map { [*lexical(host), *it] }
   end
 

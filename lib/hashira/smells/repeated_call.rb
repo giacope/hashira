@@ -3,10 +3,13 @@
 require "prism"
 require_relative "course"
 require_relative "lookup"
+require_relative "readers"
 require_relative "refs"
 
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   MINTS = %i[new dup clone allocate rand srand generate].freeze
+
+  DRAWS = Hashira::Smells::Course::DRAWS
 
   SOURCES = %w[SecureRandom Random].freeze
 
@@ -31,7 +34,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def lesser?(nodes) = cheap?(nodes) || !reachable?(nodes.reject { preset?(it) })
 
-  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, subject.home).cheap?
+  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, readers).cheap?
+
+  def readers = @_readers ||= Hashira::Smells::Readers.new(subject)
 
   def preset?(node) = presets.include?(node)
 
@@ -41,7 +46,9 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def every = @_every ||= Hashira::Smells::Scope.new(subject.node).below(FENCES).grep(Prism::CallNode)
 
-  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) }
+  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) || raises?(it) }
+
+  def raises?(node) = Hashira::Smells::Exits.new(node).raise?
 
   def commanded?(node) = discards.include?(node)
 
@@ -55,7 +62,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def minted?(node) = mints?(node.name) || spawns?(node.receiver)
 
-  def mints?(name) = MINTS.include?(name)
+  def mints?(name) = MINTS.include?(name) || DRAWS.include?(name)
 
   def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
 
@@ -115,7 +122,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def retries = @_retries ||= Hashira::Smells::Retries.new(subject.node)
 
-  def course = @_course ||= Hashira::Smells::Course.new(subject.node, every, discards, branches)
+  def course = @_course ||= Hashira::Smells::Course.new(subject, every, discards, branches)
 
   def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
 
@@ -129,7 +136,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def split(text, nodes) = nodes.group_by { binding(it) }.map { |held, same| [[text, held], same] }
 
-  def binding(node) = [bindings.free(node), enclosure(node)]
+  def binding(node) = [bindings.free(node), enclosure(node), lines(beneath(node).grep(Prism::SourceLineNode))]
 
   def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
 

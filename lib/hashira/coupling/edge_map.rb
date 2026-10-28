@@ -39,7 +39,7 @@ class Hashira::Coupling::EdgeMap
   def sighted(source, file, sighting)
     segments, line, nesting, home, macro = sighting
     site = "#{source}:#{line}"
-    said = note(@census.charge(file, home), segments, nesting, site)
+    said = note(@census.charge(file, home, @census.locate(segments, nesting || [])), segments, nesting, site)
     return unless macro
     named = "#{site}: #{segments.join("::")}"
     declared[said] = named.sub(": ", ": #{macro} ")

@@ -136,6 +136,29 @@ things a baseline sees:
 
 ### Added
 
+- **`strict: true`** in `.hashira.yml`, or `--strict`, turns on the strict
+  set: the `stateful_mixin` kind and the stricter readings of `nil_check`,
+  `concrete_inheritance`, `low_cohesion` and `data_class` listed under
+  Changed. Without it every run reports what it reported before, under
+  `checks: all` too: the new rules report code that passed, and a codebase
+  gating on zero findings (rubocop-kata and kimera turn every kind on)
+  should not fail on an upgrade. `checks: { stateful_mixin: true }` turns
+  that kind on alone; `--kind` and `--fail-on` do not, since `--fail-on
+  smells` names every smell. On the three gems' own code the strict set
+  finds 0 in hashira, 3 in rubocop-kata and 12 in kimera.
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each):
+  - `stateful_mixin` (strict): a mixin whose behavior works on its
+    host's state, by reading instance variables the module never assigns,
+    keeping fields of its own in the host, or installing fields,
+    associations, callbacks or validations on it (`included do after_save
+    :track end`). Elegant Objects asks for a decorator that reaches the host
+    through its public methods. Protocol mixins over public methods, memo
+    caches, `extend self` and `module_function` modules and refinements are
+    left alone. 56 findings in the 30 round-6 projects, 55 of them judged
+    right (a refinement, now exempt, was the miss): state_machines' `Machine`
+    split into eight modules over its ivars, pay's billable concerns, Rails
+    helpers and controller concerns reading `@site`.
 - `manual_dispatch` reads a type switch spread over methods: the same type test
   on the object's own state in three or more methods of a class (planner's
   `@check_in_target.is_a?(Event)` in six actions) is one finding for the class,
@@ -343,6 +366,69 @@ things a baseline sees:
 
 ### Changed
 
+- Found by the round-6 conformance matrix (one Elegant Objects principle per
+  case, a violating and a compliant project each) and the gaps the sixth
+  field test listed (GH2–GH5):
+  - `middle_man` leaves a decorator alone: a class whose every public method
+    that does not forward wraps the same call on the same field
+    (`def subject = "URGENT: #{@origin.subject}"` beside `body`, `recipient`
+    and `to_s` passed straight through). It was told to "let
+    callers talk to the delegate directly", which undoes the decorator Elegant
+    Objects asks for, while the same class spelled with `def_delegators` was
+    left alone.
+  - Under `strict: true`, `nil_check` no longer exempts a parameter
+    defaulting to nil: a method that tests its own `coupon = nil` (or `label:
+    nil`) is an optional argument, two methods in one, and is told to split
+    it or ask for a null object, as Elegant Objects accepts no nil arguments.
+    By default it stays "the caller's option". Strict also follows a nil to
+    another owned class's method
+    that can answer nil (its body ends in `detect`, `find`, `first`, `[]`,
+    `dig`, `&.`, a literal `nil`, an `if` without `else`, or it returns early
+    with nothing): `item = @catalog.find(code); item.nil?` in `Cart` is one
+    finding named `Catalog#find`, with every method that checks it as
+    evidence, reached through an instance variable or local named for the
+    class or an object built on the spot (content-tagger's
+    `TaxonomyQuery.new.parent(id)`), where it was quiet. A field named
+    like its own class (`@contexts` inside `Contexts`) is not that class.
+  - `nil_check` leaves a shorthand guard that raises alone, as README says
+    of every raising guard: `fail exception unless @socket` (excon),
+    `raise InvalidEvent unless event` (state_machines) were reported because
+    the check was the `unless` itself rather than its condition.
+  - Under `strict: true`, `concrete_inheritance` no longer leaves every
+    hierarchy rooted outside the project alone (batch-1 GH2). Under a
+    framework root, a subclass that
+    overrides a working method of its concrete parent is reported, each
+    overriding method as evidence: pay's `Stripe::Charge#sync!` over
+    `Pay::Charge#sync!` and its three other STI families, collections-publisher's
+    `MainstreamBrowsePage#dependent_tags` over `Tag`. A subclass that only adds,
+    or gives itself a constructor, stays quiet. A class extending `Array`,
+    `Hash`, `String` or `Set` is reported on its own (V1 P26: `class LineItems
+    < Array`), told to hold one in a field. A parent named `Base…` reads as
+    abstract, like `…Base`. 24 new findings in the 30 round-6 projects, all
+    judged right on reading. The JSON detail of such a finding carries
+    `mode` (`overriding` or `core`); a parent the project builds itself, the
+    only kind without strict, carries none, as before.
+  - Under `strict: true`, `data_class` no longer exempts a value by
+    declaration (V1 P28): a bare `Struct` or `Data` value, or an ActiveRecord
+    model with no behavior of its own, is reported once another owned class
+    computes with two or more of its fields from one object (`Invoice#total`
+    over `@order.quantity`, `@order.unit_cents`, `@order.shipping_cents`),
+    each such method as evidence. No new findings in the 30 round-6 projects
+    (none of their 25 bare values is computed with elsewhere) or in the three
+    gems.
+  - `data_class`'s advice no longer offers "or declare it a Data value": a
+    `Data` value with nothing but its members is the same bag, which the
+    strict reading reports, so the advice only moved the finding out of
+    sight.
+  - Under `strict: true`, `low_cohesion` judges models (batch-1 GH4). Its
+    framework exemption, written for controllers and mailers, covers every
+    class under a framework base by default; strict narrows it to the
+    presentation stratum
+    (controllers, mailers, jobs, channels, mailboxes). A model's column
+    readers (a bare call to a name the class does not define) count as
+    fields, as hashira does not read the schema: transition's `Hit` splits
+    into its `http_status` predicates and its `path` URLs. 12 new findings in
+    the 30 round-6 projects.
 - **A def inside a DSL block has an owner of its own.** Its owner is the
   constant the call names by a CamelCase symbol or string
   (`Feature.define(:change_login, :ChangeLogin)` → `Rodauth::ChangeLogin`), or
@@ -607,6 +693,355 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by the sixth field test's sixth batch (service-manual-publisher,
+  state_machines, rubycritic, sshkit, acts-as-taggable-on):
+  - `repeated_call` reads a call to any reader the class, a parent or a mixin
+    declares as the instance variable it reads, plain or keyed, as README's
+    "plain read of self" promises: service-manual-publisher's
+    `GuidePresenter` reading `guide.slug` twice through `attr_reader :guide`,
+    and acts-as-taggable-on's tag queries reading `options[:on]` twice
+    through their parent `QueryBase`'s private `attr_reader :options`, are
+    style like `@guide.slug` twice. Only a literal-key read through the
+    class's own reader was taken before (48 evidence lines in the corpus). A
+    helper method's result read twice, a chain, or three reads in one run
+    are still reported.
+  - `repeated_call` parts two reads around a bang or a change sent by name
+    (`object.send("#{event}!")`, `public_send(:launch!)`, `__send__(:<<,
+    item)`), as it does around the call spelled out: state_machines'
+    `assert_sm_sync_execution` reads the state, fires the event with
+    `object.send("#{event}!")` and reads it again, and naming the first read,
+    as advised, made the assertion fail on every correct transition. A name
+    the code computes with no literal tail (`send(event)`) is still read as
+    a query.
+  - `nil_check` names a nil a method makes for the class or mixin that
+    defines the method: sshkit's `Backend::Abstract#pwd_path` answers nil,
+    and `Local` and `Netssh`, which inherit it, test `pwd_path.nil?`; that
+    was two findings named `Local#pwd_path` and `Netssh#pwd_path`, telling
+    to settle the nil in two classes that make nothing. It is now one
+    `Abstract#pwd_path` finding with the four checking methods. A subclass
+    that overrides the method keeps its own.
+  - `utility_function` reads a method the class's kin define through a
+    delegation or attribute macro (`def_delegators`, `def_delegator`,
+    `delegate … to:`, `attr_reader`, `attr_writer`, `attr_accessor`) as part
+    of their protocol, as one they spell with `def`: sshkit's
+    `Formatter::SimpleText#colorize` overrides the `colorize` its parent
+    defines with `def_delegators :@color, :colorize` and calls, and was told
+    to move or go private, which breaks the override.
+  - `duplication` weighs a method whose body only raises, an abstract hook,
+    as nothing: rubycritic's generator `Base` and `ViewHelpers` stub four
+    different hooks with the same `raise NotImplementedError, "The
+    #{self.class} class must implement the #{__method__} method."`, and the
+    clone said to alias one or call it from the others. Aliased, a missing
+    `render` says it must implement `file_name`; called, it stops failing at
+    all. Code around a stub is still compared.
+  - Under namespace packaging, a reference outside every class and module
+    counts for the type it names when the file defines it, else for the
+    types the file writes at its own top level, and after a namespace for
+    that namespace's `(root)` package: acts-as-taggable-on's entry file runs
+    `ActiveSupport.on_load(:active_record) { extend
+    ActsAsTaggableOn::Taggable; include ActsAsTaggableOn::Tagger }` below
+    `module ActsAsTaggableOn … end`, and those edges were charged to the
+    first class the module holds, an empty `DuplicateTagError`, inventing a
+    five-member cycle through it and a cut that removes nothing real. pay's
+    `ActiveSupport.run_load_hooks(:pay_charge, Pay::Charge)` below its
+    module and `AccountPolicy.prepend_mod` stay their class's own.
+  - `change_coupling` (opt-in) scales the size of a commit worth counting to
+    the project: at most a quarter of the analyzed files, at least 8, never
+    more than `files:` (30). state_machines' 52 lib files gave 11 pairs, 8
+    of them "hidden coupling", whose shared commits were its initial import,
+    a frozen-string-literal pragma, cosmetic linting and a Ruby version drop
+    (16 to 27 files each), all under the absolute 30; told to "name what
+    they share", two files that share nothing would gain a dependency. The
+    same sweeps no longer pair mustermann's, rack-mini-profiler's,
+    short-url-manager's or manuals-publisher's files. A project of 120
+    files or more keeps the absolute cut-off.
+- Found by the sixth field test's fifth batch (local-links-manager, bullet,
+  excon, counter_culture, turbo-rails):
+  - `stateful_mixin` takes ActiveSupport's module, class and thread
+    attribute macros (`mattr_accessor`, `cattr_reader`,
+    `thread_mattr_accessor`, ...) for fields a mixin installs on its host, as
+    it took `class_attribute`: turbo-rails' `Turbo::Broadcastable`, whose
+    `included` block installs `thread_mattr_accessor
+    :suppressed_turbo_broadcasts` on every model and whose methods test it,
+    went unreported under strict. One in the module's own body (ahoy's and
+    counter_culture's configuration) stays the module's.
+  - `utility_function` finds kin where two more kinds of place meet:
+    a class attribute's default and the classes assigned to it
+    (`class_attribute :debouncer_class, default: Turbo::Debouncer` beside
+    `ThreadDebouncer.debouncer_class = Turbo::ImmediateDebouncer`), and a
+    class that hands itself to a decorator or seeds a chain of them
+    (excon's `middlewares.inject(self) { |stack, m| m.new(stack) }`) with the
+    decorators that forward what they define to the object they wrap.
+    excon's `Connection#response_call`, the innermost answer of the
+    middleware chain, and turbo-rails' `ImmediateDebouncer#debounce` were
+    told to go private or move; either breaks every response or every test
+    run.
+  - Strict `nil_check` types an instance variable by what its object's
+    classes and mixins build into it before its name: excon's `SOCKS5`
+    module tests `@socket.read_nonblock(n, exception: false)` for nil, and
+    `@socket` was read as an `Excon::Socket` for its name, though every
+    class that mixes `SOCKS5` in builds it from core `::Socket.new` (through
+    a local in `Excon::Socket#connect`), whose nil at EOF is the library's
+    contract. A field nothing builds is still typed by its name, and one an
+    owned class is built into (`@pipe = Socket.new`) is now typed as that
+    class.
+  - `low_cohesion` reads a hook the class leaves abstract (its body only
+    raises `NotImplementedError` or `NoMethodError`) as calling what its
+    subclasses' overrides call: bullet's `Notification::Base` stubs `title`
+    and `body`, which build the notification text, and every heir's `body`
+    calls `klazz_associations_str` and `associations_str`, so the two groups
+    it was told to split along meet in every notification bullet builds.
+  - `repeated_call` ends a run where Ruby does: at a `raise` (also one whose
+    message holds the first read, `raise E, "... #{attrs[:name]}"`), and
+    inside a block at `next` and `break`, whether the exit holds the first
+    read (`orphaned << child[:slug] && next`) or follows it as a statement
+    (`if c; skip(x); next; end; keep(x)`); a block's next pass no longer
+    brings round a read of what the block binds afresh (its parameter), and
+    a raise has no result to name. local-links-manager's `connect_parents`
+    and `create_or_update_la`, excon's six `socket.read(n) ||
+    raise(EOFError)`, rack-mini-profiler's five `@app.call(env)` (one per
+    exit: naming it would not call the app twice, it would not call it at
+    all on some paths) and ten other evidence lines across the corpus were
+    reads no run makes twice. A loop that does not rebind the read, and a
+    raise a `rescue` catches, still let a run reach both.
+  - `repeated_call` takes any call that holds a reading measured against a
+    stored earlier one for a new value each time, as the reading is: excon's
+    `SOCKS5#socks5_read_exactly` measures `deadline - Time.now` before its
+    first wait and again for the second (`[deadline - Time.now, 0].max`),
+    and naming the first makes the second wait overshoot the deadline. A
+    clock read with nothing measured against it is still reported.
+  - `repeated_call` parts two reads around a call that consumes or changes
+    the receiver whatever becomes of its answer (a draw such as `shift` or
+    `pop`, a bang, `<<`, `push`, `delete`, `clear`, ...), as it parted them
+    around a command: counter_culture's `relation_reflect_and_model` tests
+    `relation.size > 0` before and after `cur_relation = relation.shift`,
+    and naming the first test runs the last link's lookup its comment says
+    it skips on purpose. `done = job.finalize!` between two reads of
+    `job.status` now parts them too.
+  - `dead_code` reads a module mixed in bare inside a library's load hook
+    (`ActiveSupport.on_load(:active_record) { include M }`, and `extend`,
+    `prepend`, `self.include`, `send(:include, M)`) as handed to the
+    framework class Rails runs the block on, as it read
+    `ActiveRecord::Base.include(M)`: turbo-rails' engine mixes
+    `Turbo::Broadcastable` into every model that way, and its documented
+    macros `broadcasts_refreshes_to` and `broadcasts_refreshes` were told to
+    be deleted. The hook counts in an analysed file and in one outside the
+    analysed directories (`config/initializers/`).
+  - A file is generated only when its leading comments carry a generator's
+    stamp: a line that opens by saying the file was generated ("This file
+    was generated by", "Code generated by", "Generated by", "Auto-generated
+    from"), opens with "do not edit", a `@generated` tag, or "DO NOT EDIT" in
+    capitals. "generated by" anywhere in the leading comments was taken for
+    one, so turbo-rails' hand-written `Turbo::StreamsChannel`, whose class
+    comment says "a `signed_stream_name` parameter generated by turning a
+    set of streamables …", was skipped from every kind: its `Streams` /
+    `StreamsChannel` cycle went unreported and `unstable_dependency`
+    counted its package as absent. Across the 52 projects of the sixth
+    field test (and the fifth's 50) every other file skipped before is
+    still skipped; the only others no longer skipped are Rails'
+    `new_framework_defaults` initializers, whose comments speak of "messages
+    generated by" a cipher.
+- Found by the sixth field test's fourth batch (transition, WebsiteOne,
+  unparser, strong_migrations, hashie):
+  - `low_cohesion` under strict reads a model's columns in every spelling the
+    model touches them, not only a bare read: transition's `MappingsBatch`
+    split its `finished?`, `succeeded?` and `failed?` (which read `state`) from
+    `with_state_tracking`, which writes `state` with `update_column(:state,
+    …)` three times, and joined the rest through `@raise`, the bare `raise`
+    in its `rescue`. A call on `self` (`self.state`, `self.state = …`,
+    `self.count += 1`) and the column a persistence call names
+    (`update_column`, `update_attribute`, `write_attribute`,
+    `read_attribute`, `self[:state]`, and the keys of `update`,
+    `update_columns` and `assign_attributes`) now touch the column; a Kernel
+    method called bare (`raise`, `binding`, `caller_locations`) is Kernel's,
+    and a reader `delegate`d to an association (`delegate :hostname, to:
+    :site`, with its `prefix:`) is the association's field, as a
+    `def_delegators` reader already was its target's. A column only written
+    still makes no group of its own.
+  - `nil_check` leaves a guard alone whose branch raises through a method of
+    the class that always raises, as it leaves an inline `raise`: hashie's
+    `Dash#_assert_property_set!` and `#_assert_property_required!` call
+    `_fail_property_required_error!`, which builds the message and raises,
+    and were told to prefer a default or a null object, which would drop
+    Dash's required-property assertion. A method always raises when its last
+    statement raises (itself, or through another such method) and it never
+    returns early; a helper that may return, logs, or belongs to another
+    object leaves the check reported.
+  - `module_initialize` leaves alone a module that extends itself:
+    WebsiteOne's `GithubCommitsJob` (`extend self`, never included, its `run`
+    calling `initialize` to set the module's own client) was said to carry
+    constructor state into its includers, which it has none of; renaming the
+    method made the finding vanish with the module-level state unchanged.
+    That state is kata's to report (`Kata/NoClassMethodLogic`,
+    `Kata/FrozenState`); `stateful_mixin` already read such a module as no
+    mixin.
+  - A `::`-rooted constant a value is tested against (`is_a?`, `case`),
+    built from (`::Catalog.new`) or rescued as types the value at the root,
+    not as the owned class of the same name: hashie's
+    `IndifferentAccess#_hash_lacking_indifference?` and
+    `#_hash_with_indifference?` test `other.is_a?(::Hash)`, Ruby's Hash, and
+    `manual_dispatch` read it as `Hashie::Hash` and reported their
+    `respond_to?` probes on a value of no owned class. The same root reaches
+    strict `nil_check`'s typing of a built local and `boundary_sprawl`'s
+    foreign roots (`::Ast::Node` beside an owned `App::Ast::Node`).
+  - `stateful_mixin` reports a mixin that only installs on its host, as its
+    README example says (`included do after_save :track end`): WebsiteOne's
+    `ActAsPage`, whose `self.included` installs a presence validation (and
+    library macros) on every page model, went unreported because it defines
+    no method, while transition's `NilifyBlanks`, the same shape plus one
+    method, was reported. A call inside a block that opens another object (a
+    refinement, `Struct.new`/`Class.new`/`Module.new`/`Data.define`)
+    installs nothing on the host, which the old method gate had covered for
+    refinement-only modules, and a `ClassMethods` module its namespace hands
+    to the host, whose methods are the host's class methods, stays out as
+    before.
+- Found by the sixth field test's third batch (collections-publisher,
+  travel-advice-publisher, mechanize, ancestry, ahoy):
+  - `low_cohesion` under strict reads an association and the columns that back
+    it as one field: collections-publisher's `Tag` split into a `parent_id`
+    group (`can_have_children?`) and a `parent` group (`has_parent?`), two
+    spellings of one fact, and `list_items`, which `has_many …, through:
+    :lists` reads through `lists`, into a group of their own. A
+    `belongs_to`'s key column (its `foreign_key:`, and its `_type` when
+    polymorphic) and a `through:` association are now the association's field.
+  - `stateful_mixin` counts what a module assigns itself as its own when it
+    extends or includes a module hashira cannot see: mechanize's `Parser`
+    (`extend Forwardable`) was said to read `@response`, `@uri` and
+    `@filename` from its host, though it assigns `@response` and `@filename`
+    and mints `uri` with `attr_accessor`, and a memo cache under the same
+    extend (`@entries ||= {}`, then `@entries.fetch`) was reported, though
+    memo caches are left alone. A field nothing in the module assigns is
+    still the host's.
+  - `concrete_inheritance` reads a parent method that only raises
+    `NoMethodError` as the parent saying it is abstract, as one that raises
+    `NotImplementedError` does: collections-publisher's `Tag` declares
+    `can_be_archived?` and two more as `raise NoMethodError` stubs its
+    subclasses fill, and strict reported it as a concrete class.
+    `refused_bequest` and the strict "working method" reading already took
+    any raise-only stub for unimplemented. A method that raises another error
+    (`ArgumentError`) is still a working method.
+  - A library's hook stays a hook unless the project sends its name to an
+    object of the class's own lineage: collections-publisher's
+    `DependentTagPublishJob#perform`, which Sidekiq calls, lost its exemption
+    because controllers call an unrelated `ListPublisher.new(@tag).perform`,
+    and `SlugValidator#validate`, which ActiveModel calls, because a model
+    writes `save!(validate: false)`; `utility_function` said to make each
+    private (NoMethodError). A message now counts for a class when it goes to
+    `self` inside its lineage (the class, an ancestor, a subclass, a mixin),
+    to an object built from a class of that lineage, or to a receiver hashira
+    cannot type; one sent to another class's objects or to a library's does
+    not, and a hash key or keyword is a label, not a message. warden's
+    `Config#serialize_into_session` and `#serialize_from_session` (forwarders
+    to `Warden::Manager`'s class methods, on a `Hash` subclass) go quiet the
+    same way.
+  - `nil_check` reads memoization in the rest of its spellings:
+    collections-publisher's boolean memo (`if @x.nil? then @x = lists.any?
+    else @x end`, since `||=` cannot keep `false`), a guard return before the
+    fill (`return @x unless @x.nil?`), and mechanize's `Page#labels_hash`
+    (`unless @x` around a fill whose last statement writes it, a cache the page
+    clears to nil). Only a fill that sets the value tested, and an `else` that
+    only answers it, count: an `else` that does more, a guard that returns
+    something else or is never followed by the fill, and a write on the
+    non-nil side are still reported. mechanize's `Form#set_fields` (`value =
+    val unless value`, the `||=` spelling on a local) goes quiet the same way.
+    A parameter is never memoized: under strict a nil-defaulted one the body
+    fills (`parser = self.parser unless parser`, mechanize's
+    `Page#encoding_error?`) stays an optional argument in either spelling,
+    `if parser.nil?` included, which the old one-statement reading let pass.
+  - `repeated_call` parts two reads of an instance variable around a call on
+    self whose method moves it: mechanize's `WWWAuthenticateParser#parse`
+    reads `@scanner.pos` around `auth_scheme`, `spaces` and `auth_param`,
+    private helpers that scan `@scanner` forward, and naming the read would
+    give every challenge the same raw text. A self call between the reads
+    disturbs them when the method it reaches (or one that method calls on
+    self) sends the instance variable a message as a command (its result
+    thrown away) or as its own answer, other than a predicate or the same
+    reader, or reassigns it, as a command on the receiver already did. Still
+    reported: a helper that only asks (`@scanner.eos?`), rereads, or reads
+    the field to compute something else (rack-mini-profiler's
+    `matches_action?` builds a pattern from `@config.profile_parameter`),
+    one that touches another field, a method the class does not define, a
+    call on another receiver, and a receiver that is not an instance
+    variable (a reader or a local).
+  - `repeated_call` reads `__LINE__` as the line it is written on: ancestry's
+    `InstanceMethodsBuilder.build` passes `__FILE__, __LINE__ + 1` with two
+    `class_eval` heredocs, on lines 40 and 462, and was told to name
+    `__LINE__.+(1)` in a local, which would give the second heredoc the
+    first's line numbers in every backtrace. The same text twice on one line
+    is still one value.
+  - The design smells name a `ClassMethods` module's methods for its
+    namespace (`Concern.method`) only when that namespace hands the module to
+    its host or extends it itself (`extend ActiveSupport::Concern`, an
+    `included` or `class_methods` block, `base.extend` in `self.included`, or
+    `extend ClassMethods`), and never a `def self.` inside it, which is the module's own: ancestry's
+    `nil_check` and `repeated_call` named `Ancestry.tree_view`,
+    `Ancestry.restore_ancestry_integrity!` and
+    `Ancestry._check_ancestry_integrity!`, methods `Ancestry` does not answer
+    (the macro `has_ancestry` extends `Ancestry::ClassMethods` into each
+    model, and the code calls `Ancestry::ClassMethods._check…`), while the
+    complexity table named them `Ancestry::ClassMethods#…`. Any other
+    `ClassMethods` module's methods now keep that name, `#` and their own
+    visibility. Baseline entries named the old way move until
+    `--update-baseline`.
+- Found by the sixth field test's second batch (manuals-publisher,
+  places-manager, ferrum, friendly_id, dry-monads):
+  - `utility_function` leaves to the object what Ruby asks of every object:
+    `==`, `eql?`, `equal?`, `<=>`, `===` and `coerce` with one argument,
+    `hash`, `inspect` and `to_s` with none. dry-monads' `None#eql?` and
+    `None#hash` answer without state because every None is equal; Hash keys,
+    `uniq` and `sort` call them, so "make it private" broke them and "move
+    it" meant nothing. A method of another name, or one that takes what Ruby
+    never passes (`def hash(password)`), is still reported.
+  - A library's hook stays a hook when the project only sends its name to a
+    class, as a macro in a class body: places-manager's
+    `CannotEditPlaceDetailsUnlessNewestInactiveDataset#validate` fills
+    `ActiveModel::Validator#validate`, which `validates_with` calls, but
+    `validate :has_both_lat_lng_overrides` in `Place` made it read as the
+    project's own message, and `utility_function` said to make it private
+    (every update would raise NoMethodError). A name the project sends an
+    instance still counts.
+  - The classes one hash literal holds as its values are kin, as the
+    classes one array literal builds are, whether it builds them or holds the
+    classes themselves for the code to pick one: ferrum's `Log::FORMATS = {
+    default: Default, json: Json, annotated: Annotated }`, read through
+    `FORMATS.fetch(format).new(color: @color)`, is a strategy table, so
+    `Json#sent` and `#received`, stateless because JSON is never colored,
+    are its protocol and not `utility_function`s. A class an array, a fork
+    or a table names without building is a peer the same way.
+  - `dead_code` leaves an override of a library hook to the library however
+    deep the subclass sits: dry-monads' `RegularConstructor <
+    ::SuperDiff::…::CustomObject` fills the flattener's private `open_token`
+    and `close_token` hooks and was left alone, but `TupleConstructor <
+    RegularConstructor` overriding the same two (and `CompareTuples`'s
+    `build_operation_tree`) were "never called", though deleting them turns
+    `Success[` into `Success(`. A private method no ancestor leaves to the
+    library is still judged.
+  - `repeated_call` leaves alone a deadline loop that names each reading as
+    it compares it: ferrum's `Output#wait_for` (`deadline =
+    monotonic_time + timeout; while (now = monotonic_time) < deadline`) read
+    as one value to name, and naming it freezes `now`, so the loop never
+    ends. The comparison's operand is read through its parentheses and the
+    local it writes, as README's "a deadline loop" says.
+  - `repeated_call` leaves alone a read that draws the next item from a
+    stream or a queue (`gets`, `getc`, `getbyte`, `readline`, `readpartial`,
+    `read_nonblock`, `recv`, `accept_nonblock`, `pop`, `shift`, `deq`, …):
+    ferrum's proxy reads the upstream status line and then each header line
+    with the same `os.gets(WEBrick::LF)`, and naming the result would reuse
+    the status line and never end the header loop. `read` and
+    `File.readlines(path)` read twice are still reported.
+  - `low_cohesion` reads a computed send that spells a writer (`send
+    "#{name}=", value`) as calling every writer, the ones `attr_writer` and
+    `attr_accessor` mint as well as hand-written ones, so it touches their
+    fields: friendly_id's `Configuration#set`, its mass assignment, reaches
+    `model_class=` and `base=`, and the class is no longer split into a
+    `@model_class` group and a `@base` group.
+  - A class-level finding sits at the class's own file, not at the
+    alphabetically first file that reopens it: dry-monads'
+    `concrete_inheritance: Dry::Monads::Task` named `maybe.rb:374`, where
+    Maybe's file adds `Task#to_maybe`, instead of `task.rb:12`. The site is
+    the opening in the file named for the class, else the one with the most
+    statements, as rubocop-kata's `Kata/Reopening` chooses; a subclass's
+    place in `concrete_inheritance` evidence reads the same way.
 - Found by a sixth field test (content-tagger, support, searchkick,
   statesman, pay):
   - A superclass computed by a call (searchkick's `< Searchkick.parent_job.constantize`,

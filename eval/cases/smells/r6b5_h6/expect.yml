@@ -1,0 +1,14 @@
+# R6B5-H6. counter_culture's relation_reflect_and_model tests
+# `relation.size > 0` before and after `cur_relation = relation.shift`: the
+# shift takes one element whatever happens to its answer, so the second test
+# is a new value, and naming the first runs the last link's lookup the code
+# skips on purpose. A call that consumes or changes the receiver (a draw, a
+# bang, `<<`, `delete`, ...) parts the reads whether its answer is kept or
+# thrown away. A read between them (`step = path.first`) does not: Asked is
+# still reported.
+present:
+  - {kind: repeated_call, package: "Shop::Tree#asked"}
+absent:
+  - {kind: repeated_call, package: "Shop::Tree#walk"}
+  - {kind: repeated_call, package: "Shop::Tree#finish"}
+evidence: [repeated_call]

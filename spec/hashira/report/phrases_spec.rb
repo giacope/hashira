@@ -58,8 +58,19 @@ RSpec.describe(Hashira::Report::Phrases, :aggregate_failures) do
     }
   end
 
+  def purity
+    {
+      smell("stateful_mixin") =>
+        "Cart#price mixes behavior into its host's own state (cart.rb:12). " \
+        "Make it a decorator: wrap the host and reach it through its public methods.",
+      smell("nil_check", origin: %w[coupon label]) =>
+        "Cart#price checks for nil (cart.rb:12). 'coupon', 'label' default to nil, so callers may pass nothing " \
+        "and the method is two in one: split it, or ask for a null object instead of nil."
+    }
+  end
+
   it "names the method a smell sits in, where it is, and what to do about it" do
-    smells.each { |finding, said| expect(message(finding)).to(eq(said)) }
+    smells.merge(purity).each { |finding, said| expect(message(finding)).to(eq(said)) }
   end
 
   def effort

@@ -11,6 +11,10 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   FILES = 30
 
+  FLOOR = 8
+
+  SWEEP = 4
+
   Pair =
     Data.define(:files, :shared, :revisions) do
       def degree = (200.0 * shared / revisions.sum).round
@@ -52,7 +56,9 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def present(changeset) = changeset.select { sources.key?(it) }
 
-  def fits?(changeset) = changeset.size.between?(1, limit("files", FILES))
+  def fits?(changeset) = changeset.size.between?(1, widest)
+
+  def widest = @_widest ||= [FLOOR, sources.size / SWEEP].max.clamp(..limit("files", FILES))
 
   def sources = @_sources ||= graph.trees.keys.to_h { [project.relative(it).b, it] }
 

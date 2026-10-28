@@ -16,6 +16,11 @@ class Hashira::Smells::Ownership
 
   def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
 
+  def anchored(segments, owner)
+    kept = -> { segments.join("::") }
+    segments.empty? ? segments : lexical(segments, owner).find(kept) { defined.include?(it) }.split("::")
+  end
+
   def owns?(node, owner = nil) = !placed(node, owner).nil?
 
   def answers?(node, owner) = owns?(node, owner) && !LITERALS.include?(held[placed(node, owner)].class)
@@ -26,6 +31,12 @@ class Hashira::Smells::Ownership
 
   def values = @_values ||= Hashira::Smells::Values.new(@trees)
 
+  def nulls = @_nulls ||= Hashira::Smells::Nulls.new(@trees)
+
+  def fillings = @_fillings ||= Hashira::Smells::Fillings.new(walked, self)
+
+  def ancestry = @_ancestry ||= Hashira::Smells::Ancestry.new(walked, self)
+
   def origin(segments, owner) = exports.origin(segments, owner)
 
   def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
@@ -34,13 +45,13 @@ class Hashira::Smells::Ownership
 
   def keys(segments) = tables.fetch(segments.join("::"), [])
 
-  private
-
-  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
-
   def placed(node, owner)
     place(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
   end
+
+  private
+
+  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
 
   def held
     @_held ||=

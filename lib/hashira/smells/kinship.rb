@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::Kinship
+  READERS = Hashira::Smells::Attributes::READERS
+
   def initialize(types, lineage)
     @types = types
     @lineage = lineage
@@ -10,13 +12,21 @@ class Hashira::Smells::Kinship
 
   def protocol(type)
     name = type.name
-    sent = @_sent ||= @types.flat_map { @lineage.messages(it) }.to_set
     spoken = words(name)
-    hooks = adopted?(name) ? spoken - (sent - heritage(name)) : Set.new
+    hooks = adopted?(name) ? spoken - (told(name) - heritage(name)) : Set.new
     (spoken & kindred(name)) | hooks
   end
 
   private
+
+  def told(name)
+    kin = [nil, name, *reach(name, ancestry), *reach(name, descent)]
+    kin.map { letters.fetch(it, Set.new) }.reduce(:|)
+  end
+
+  def letters
+    @_letters ||= @types.flat_map { @lineage.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
+  end
 
   def kindred(name)
     rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
@@ -68,7 +78,15 @@ class Hashira::Smells::Kinship
 
   def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
 
-  def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { @lineage.definitions(it) }.to_set(&:name)
+  def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { named(it) }.to_set
+
+  def named(type) = @lineage.definitions(type).map(&:name) + declared(@lineage.sweep(type))
+
+  def declared(swept)
+    attributes = Hashira::Smells::Attributes.new(swept)
+    forwards = Hashira::Smells::Forwards.new(swept, Hashira::Smells::Bonds.new(swept), Set.new)
+    attributes.declared(READERS).map(&:to_sym) + attributes.writers + forwards.names.to_a
+  end
 
   def carried(type) = [type, *@lineage.mixins(type).flat_map { index.fetch(it) }]
 end

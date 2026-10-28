@@ -5,6 +5,8 @@ require "prism"
 class Hashira::Smells::Refusal
   RAISES = %i[raise fail].freeze
 
+  UNIMPLEMENTED = /\b(?:NotImplementedError|NoMethodError)\b/
+
   def initialize(definition)
     @definition = definition
   end
@@ -15,7 +17,7 @@ class Hashira::Smells::Refusal
     :raise if statements.one? && raise?(statements.first)
   end
 
-  def unimplemented? = of == :raise && @definition.body.slice.include?("NotImplementedError")
+  def unimplemented? = of == :raise && UNIMPLEMENTED.match?(@definition.body.slice)
 
   private
 

@@ -17,7 +17,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
     subject.nodes.grep(Prism::ClassNode).none?(&:superclass) && subject.family.children(subject.subject).empty?
   end
 
-  def statements = @_statements ||= subject.nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
+  def statements = @_statements ||= subject.statements
 
   def plain?(node)
     case node

@@ -12,7 +12,7 @@ class Hashira::Smells::Census
 
   def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
 
-  def types = @_types ||= settled(sketches)
+  def types = @_types ||= settled(Hashira::Smells::Concerns.new(sketches).settled)
 
   def sketches
     found = @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }

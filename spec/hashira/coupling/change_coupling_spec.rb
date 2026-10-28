@@ -84,6 +84,26 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
     expect(limits).to(eq([[], ["a/x.rb <-> b/y.rb"], []]))
   end
 
+  def spread(count)
+    (1..count).to_h do |number|
+      side = number.odd? ? "A" : "B"
+      ["lib/app/#{side.downcase}/f#{number}.rb", "module App; module #{side}; class F#{number}; end; end; end\n"]
+    end
+  end
+
+  def swept(count, width)
+    within(spread(count)) do
+      git("init", "-q")
+      5.times { commit(spread(count).keys.first(width)) }
+      return found(true).any?
+    end
+  end
+
+  it "counts a commit of up to a quarter of the project's files, or 8 in a small one, and never past `files:`" do
+    sizes = [[6, 6], [12, 12], [12, 9], [12, 8], [40, 11], [40, 10], [160, 31], [160, 30]]
+    expect(sizes.map { swept(*it) }).to(eq([true, false, false, true, false, true, false, true]))
+  end
+
   def rails
     {
       "config/application.rb" => "module Shop\n  class Application < Rails::Application\n  end\nend\n",

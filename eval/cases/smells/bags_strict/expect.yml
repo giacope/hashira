@@ -1,0 +1,14 @@
+# Declared bags (V1 P28), under strict: Address, a bare Struct, and Order, a
+# record with nothing but an association, are data classes once Invoice
+# computes with their fields. Record is abstract and Invoice has behavior.
+config:
+  strict: true
+present:
+  - {kind: data_class, package: "App::Address"}
+  - {kind: data_class, package: "App::Order"}
+absent:
+  - {kind: data_class, package: "App::Record"}
+  - {kind: data_class, package: "App::Invoice"}
+messages:
+  - {kind: data_class, package: "App::Order", includes: "1 method elsewhere computes with them"}
+evidence: [data_class]

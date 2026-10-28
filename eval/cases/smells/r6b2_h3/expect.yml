@@ -1,0 +1,11 @@
+# R6B2-H3. places-manager's validator fills ActiveModel::Validator#validate,
+# which validates_with calls on it; Place also writes the class macro
+# `validate :coordinates_paired`, a different method sent to the class, and
+# that made the hook look like a name the project calls itself, so the
+# validator was told to make it private (NoMethodError on every update). A
+# name the project sends an instance (Audit calls `report`) is still its own.
+args: [app]
+present:
+  - {kind: utility_function, package: "NewestOnlyValidator#report"}
+absent:
+  - {kind: utility_function, package: "NewestOnlyValidator#validate"}

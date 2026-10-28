@@ -311,6 +311,35 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       .to(eq(%w[Order#stale_scope Hooked Pricing#quote Pricing.rate Rates#rate]))
   end
 
+  it "takes a module a load hook's block mixes in bare for one handed to the framework class it opens" do
+    loaded = rails.merge(
+      "lib/broadcastable.rb" => "module Broadcastable\n  def broadcast = 1\nend\n",
+      "lib/streamed.rb" => "module Streamed\n  def stream = 1\nend\n",
+      "lib/framed.rb" => "module Framed\n  def frame = 1\nend\n",
+      "lib/kept.rb" => "module Kept\n  def keep = 1\nend\n",
+      "lib/stray.rb" => "module Stray\n  def wander = 1\nend\n",
+      "lib/viewed.rb" => "module Viewed\n  def view = 1\nend\n",
+      "config/hooks.yml" => "ActiveSupport.on_load(:active_record) { include Viewed }\n",
+      "lib/wiring.rb" => <<~RUBY,
+        module Wiring
+          def self.load = ActiveSupport.on_load(:active_record) { include Broadcastable }
+        end
+      RUBY
+      "config/initializers/hooks.rb" => <<~RUBY
+        ActiveSupport.on_load(:active_record) do
+          self.extend(Streamed)
+          send(:prepend, Framed)
+        end
+        ActiveSupport.on_load(:action_view) { helper Kept }
+        ActiveSupport.on_load(:action_mailer) { extend }
+        on_load(:active_job) { include Stray }
+      RUBY
+    )
+    expect(dead(loaded, directories: %w[app lib])).to(
+      eq(%w[Order#stale_scope Kept#keep Pricing Pricing#quote Pricing.rate Stray#wander Viewed#view Wiring Wiring.load])
+    )
+  end
+
   it "leaves to the framework the constants a hosted class declares, the hooks it calls, and computed-scope reads" do
     framed = rails.merge(
       "app/dashboards/user_dashboard.rb" => <<~RUBY,
@@ -394,6 +423,47 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       "lib/app/tally.rb" => "module App\n  module Tally\n    private\n\n    def recount = 1\n  end\nend\n"
     }
     expect(dead(cache)).to(eq(%w[App::Tally#recount]))
+  end
+
+  it "frames a private override of a hook an owned ancestor leaves to the library, however deep the subclass sits" do
+    diff = {
+      "lib/app/flattener.rb" => <<~RUBY
+        module App
+          class Flattener < ::FancyDiff::Flattener
+            private
+
+            def open_token = "("
+            def close_token = ")"
+          end
+
+          class TupleFlattener < Flattener
+            private
+
+            def open_token = "["
+            def spare = 1
+          end
+
+          class SetFlattener < TupleFlattener
+            private
+
+            def open_token = "{"
+          end
+
+          class Ledger
+            private
+
+            def recount = 1
+          end
+
+          class Audit < Ledger
+            private
+
+            def recount = 2
+          end
+        end
+      RUBY
+    }
+    expect(dead(diff)).to(eq(%w[App::TupleFlattener#spare App::Ledger#recount App::Audit#recount]))
   end
 
   it "takes the constants of the namespaces an interpolated eval runs in for ones it may name, and reads a plain one" do

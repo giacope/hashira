@@ -1,0 +1,14 @@
+# R6B5-H4. Classes meet where their instances stand in for each other, and
+# the methods they share there are protocol, not utility functions. excon's
+# Connection seeds its middleware chain (`inject(self) { |stack, m|
+# m.new(stack) }`), and every middleware forwards `response_call` to the
+# stack it wraps: the innermost one is the Connection, so its stateless
+# `response_call` is the chain's answer. turbo-rails' ImmediateDebouncer is
+# the value tests assign to `class_attribute :debouncer_class, default:
+# Turbo::Debouncer`. A stateless method no peer shares (Connection#label)
+# is still reported.
+present:
+  - {kind: utility_function, package: "Shop::Connection#label"}
+absent:
+  - {kind: utility_function, package: "Shop::Connection#response_call"}
+  - {kind: utility_function, package: "Shop::ImmediateDebouncer#debounce"}

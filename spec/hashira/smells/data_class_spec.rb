@@ -29,7 +29,7 @@ RSpec.describe(Hashira::Smells::DataClass, :aggregate_failures) do
 
   it "says what the class holds and what to do" do
     said = "App::Point holds 'x', 'y' and does nothing else (point.rb:2). " \
-      "Move the code that works on these fields into the class, or declare it a Data value."
+      "Move the code that works on these fields into the class."
     expect(message(bags(point).first)).to(eq(said))
   end
 

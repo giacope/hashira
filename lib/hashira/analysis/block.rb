@@ -43,6 +43,8 @@ module Hashira
 
       def opening = (mixed if Syntax.new(@call.receiver).static?)
 
+      def apart? = @call.block.is_a?(Prism::BlockNode) && (built? || Syntax.new(@call).macro?([REFINE]))
+
       private
 
       def owner(enclosing)

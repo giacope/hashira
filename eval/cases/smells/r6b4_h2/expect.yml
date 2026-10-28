@@ -1,0 +1,9 @@
+# R6B4-H2. hashie's Dash asserts its required properties through a private
+# helper that builds the message and raises (`_fail_property_required_error!`
+# if the value is nil): the guard fails fast on the nil, as an inline `raise`
+# does, and stays quiet. A guard whose branch only logs is still reported.
+present:
+  - {kind: nil_check, package: "Shop::Dash#_assert_property_known!"}
+absent:
+  - {kind: nil_check, package: "Shop::Dash#_assert_property_required!"}
+evidence: [nil_check]

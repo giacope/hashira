@@ -1,0 +1,16 @@
+# R6B4-H1. transition's MappingsBatch, under strict: finished?, succeeded? and
+# failed? read the state column, and the tracking method reads it through
+# `self.state` and writes it with `update_column(:state, …)` and `self.state =`:
+# one state machine, one group. Entry's `delegate :hostname, to: :site` makes
+# hostname the site association's state, not a column of its own. Hit still
+# splits (http_status against path and hostname): the bare `raise` its
+# rescues re-raise is Kernel's, not a column joining the two.
+config:
+  strict: true
+args: [app]
+present:
+  - {kind: low_cohesion, package: "Hit"}
+absent:
+  - {kind: low_cohesion, package: "Batch"}
+  - {kind: low_cohesion, package: "Entry"}
+evidence: [low_cohesion]

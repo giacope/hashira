@@ -1,11 +1,14 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
-  def grouped(files, kind)
+  def grouped(files, kind, rules = Hashira::Config::Rules.parse({ kind => true }, Hashira::Pipeline::KINDS))
     within(files) do
-      rules = Hashira::Config::Rules.parse({ kind => true }, Hashira::Pipeline::KINDS)
       return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.select { it.kind == kind }
     end
+  end
+
+  def tightly(files, kind)
+    grouped(files, kind, Hashira::Config::Rules.parse({ kind => true }, Hashira::Pipeline::KINDS).tightened)
   end
 
   it "reports one concrete parent once, at its definition, every subclass as evidence" do
@@ -163,6 +166,50 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     expect([owner.evidence, message(owner)]).to(eq([sites, said]))
   end
 
+  def backends = <<~RUBY
+    module Shop
+      module Paths
+        def home_path = @home.empty? ? nil : @home
+      end
+
+      class Base
+        include Paths
+        def initialize(dir) = @dir = dir
+        def listed = dir_path.nil? ? [] : [dir_path]
+        private
+        def dir_path = @dir.empty? ? nil : @dir
+      end
+
+      class Local < Base
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+        def home = home_path.nil? ? "~" : home_path
+      end
+
+      class Remote < Base
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+      end
+
+      class Mirror < Base
+        def dir_path = nil
+        def upload(name) = dir_path.nil? ? name : dir_path + name
+      end
+    end
+  RUBY
+
+  it "names a nil an inherited or mixed-in method makes for the class that defines it, one finding for every heir" do
+    found = grouped({ "lib/app/backends.rb" => backends }, "nil_check").to_h { [it.package, it.evidence] }
+    expect(found).to(
+      eq(
+        "Shop::Base#dir_path" => [
+          "Shop::Base#listed (backends.rb:9)", "Shop::Local#upload (backends.rb:15)",
+          "Shop::Remote#upload (backends.rb:20)"
+        ],
+        "Shop::Paths#home_path" => ["Shop::Local#home (backends.rb:16)"],
+        "Shop::Mirror#dir_path" => ["Shop::Mirror#upload (backends.rb:25)"]
+      )
+    )
+  end
+
   def query = <<~RUBY
     module Shop
       class Query
@@ -189,6 +236,48 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
         "Shop::Query@json" => ["Shop::Query#response (query.rb:10)"]
       )
     )
+  end
+
+  def charges
+    "module App\n  class Charge < ActiveRecord::Base\n    def sync = 1\n  end\n\n  " \
+      "class Stripe < Charge\n    def sync = 2\n  end\n\n  class Gift < Charge\n    def sync = 3\n  end\nend\n"
+  end
+
+  def overriding(source)
+    message(tightly({ "lib/app/charge.rb" => source }, "concrete_inheritance").first)[/is a [^(]*/]
+  end
+
+  it "reports, under strict, subclasses overriding a framework-rooted parent's working methods, singular and plural" do
+    said = [charges, charges.sub(/  class Gift.*?end\n/m, "")].map { overriding(it) }
+    plural = "is a concrete class, and 2 subclasses override its working methods "
+    expect(said).to(eq([plural, "is a concrete class, and a subclass overrides its working methods "]))
+    expect(grouped({ "lib/app/charge.rb" => charges }, "concrete_inheritance")).to(be_empty)
+  end
+
+  it "names a strict finding's mode in its detail, where a parent built on its own names none" do
+    expect(tightly({ "lib/app/charge.rb" => charges }, "concrete_inheritance").map { it.detail.to_h[:mode] })
+      .to(eq([:overriding]))
+  end
+
+  def catalog = "module Shop\n  class Catalog\n    def find(code) = @items.detect { it == code }\n  end\nend\n"
+
+  def cart = <<~RUBY
+    module Shop
+      class Cart
+        def total(code) = @catalog.find(code).nil? ? 0 : 1
+        def label(code) = @catalog.find(code)&.name
+      end
+    end
+  RUBY
+
+  def stocked = { "lib/app/catalog.rb" => catalog, "lib/app/cart.rb" => cart }
+
+  it "names, under strict, a nil an owned method answers for that method, wherever the checks are" do
+    found = tightly(stocked, "nil_check")
+    sites = ["Shop::Cart#total (cart.rb:3)", "Shop::Cart#label (cart.rb:4)"]
+    told = [grouped(stocked, "nil_check"), found.map { [it.package, it.evidence] }]
+    expect(told).to(eq([[], [["Shop::Catalog#find", sites]]]))
+    expect(message(found.first)).to(start_with("Shop::Catalog#find may be nil, and 2 methods check for it (cart.rb:3)"))
   end
 
   def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }

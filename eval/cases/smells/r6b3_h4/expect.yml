@@ -1,0 +1,15 @@
+# R6B3-H4. collections-publisher's DependentTagPublishJob#perform is the hook
+# Sidekiq calls, but controllers call another class's `perform`
+# (`ListPublisher.new(@tag).perform`), and SlugValidator#validate is the hook
+# ActiveModel calls, but a model writes `save!(validate: false)`: each made
+# the hook read as the project's own message, and utility_function said to
+# make it private (NoMethodError). A name counts as sent to a class only
+# when it goes to an object of that class's lineage (itself, a subclass, an
+# ancestor or a mixin, `self`, or a receiver hashira cannot type); a hash key
+# is a label. ReportJob#perform is called on a ReportJob: still reported.
+args: [app]
+present:
+  - {kind: utility_function, package: "ReportJob#perform"}
+absent:
+  - {kind: utility_function, package: "PublishJob#perform"}
+  - {kind: utility_function, package: "NewestOnlyValidator#validate"}

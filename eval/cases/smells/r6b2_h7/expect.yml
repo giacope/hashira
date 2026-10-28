@@ -1,0 +1,11 @@
+# R6B2-H7. dry-monads defines Task in task.rb and reopens it in maybe.rb to
+# add `to_maybe`; concrete_inheritance named Task "at its definition" but
+# sited it at maybe.rb:374, the alphabetically first opening. A class-level
+# finding sits at the opening in the file named for the class (else the one
+# with the most statements), as rubocop-kata's Reopening chooses.
+present:
+  - {kind: state_sprawl, package: "Shop::Report"}
+  - {kind: concrete_inheritance, package: "Shop::Report"}
+messages:
+  - {kind: state_sprawl, package: "Shop::Report", includes: "(report.rb:4)"}
+  - {kind: concrete_inheritance, package: "Shop::Report", includes: "(report.rb:4)"}

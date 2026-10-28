@@ -5,7 +5,7 @@ require "prism"
 class Hashira::Smells::Rivals
   STAND_IN = /\A(?:Fake|Null|Stub|Dummy|Mock)(?:s?\z|[[:upper:]])|[[:lower:]](?:Stub|Fake|Double|Mock)s?\z/
 
-  PLACES = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode, Prism::ArrayNode].freeze
+  PLACES = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode, Prism::ArrayNode, Prism::HashNode].freeze
 
   def initialize(types, lineage)
     @types = types
@@ -20,8 +20,13 @@ class Hashira::Smells::Rivals
 
   def links
     @_links ||=
-      (sites + doubles + subsets).flat_map { it.uniq.combination(2).to_a }.flat_map { [it, it.reverse] }
+      meetings.flat_map { it.uniq.combination(2).to_a }.flat_map { [it, it.reverse] }
         .group_by(&:first).transform_values { it.to_set(&:last) }
+  end
+
+  def meetings
+    seats = Hashira::Smells::Seats.new(@types, @lineage)
+    sites + doubles + subsets + seats.slots + seats.wraps
   end
 
   def sites
@@ -36,15 +41,17 @@ class Hashira::Smells::Rivals
       case node
       when Prism::IfNode, Prism::UnlessNode then node.compact_child_nodes.drop(1)
       when Prism::OrNode then node.compact_child_nodes
-      when Prism::ArrayNode then node.elements
+      when Prism::ArrayNode, Prism::HashNode then entries(node)
       when Prism::ElseNode, Prism::ParenthesesNode, Prism::StatementsNode then node.compact_child_nodes.last(1)
       end
     choices&.flat_map { outcomes(it) } || [node]
   end
 
+  def entries(node) = node.elements.map { it.is_a?(Prism::AssocNode) ? it.value : it }
+
   def built(type, node)
-    return unless node.is_a?(Prism::CallNode) && node.name == :new
-    @lineage.resolve(type.name, Hashira::Analysis::Syntax.new(node.receiver).segments)
+    held = node.is_a?(Prism::CallNode) && node.name == :new ? node.receiver : node
+    @lineage.resolve(type.name, Hashira::Analysis::Syntax.new(held).segments)
   end
 
   def doubles

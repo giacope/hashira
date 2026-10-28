@@ -1,0 +1,14 @@
+# R6B3-H2. mechanize's Parser extends Forwardable, a module hashira cannot
+# see, and that made its lineage unknown: what the module assigns itself
+# (`@response = …`, `attr_accessor :uri`) was read as nothing, so its own
+# fields were listed as host state it reads. Registry, a memo cache under the
+# same extend (`@entries ||= {}`, then `@entries.fetch`), was reported though
+# the README leaves memo caches alone. Loud, under the same extend, still
+# reads its host's @text.
+config:
+  strict: true
+present:
+  - {kind: stateful_mixin, package: "Shop::Loud"}
+absent:
+  - {kind: stateful_mixin, package: "Shop::Registry"}
+evidence: [stateful_mixin]

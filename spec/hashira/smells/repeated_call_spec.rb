@@ -73,6 +73,54 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings.map(&:package)).to(eq(%w[helper thrice computed chained called].map { "App::Zone::Thing##{it}" }))
   end
 
+  it "reads a call to a reader the class or an ancestor declares as the instance variable it reads, plain or keyed" do
+    findings = sniffed(
+      {
+        "lib/app/base.rb" => <<~RUBY,
+          module App
+            class Base
+              def initialize(options) = @options = options
+
+              private
+
+              attr_reader :options
+            end
+          end
+        RUBY
+        "lib/app/titled.rb" => <<~RUBY,
+          module App
+            module Titled
+              attr_accessor :title
+            end
+          end
+        RUBY
+        "lib/app/page.rb" => <<~RUBY
+          module App
+            class Page < Base
+              include Titled
+              attr_reader :guide
+
+              def plain = [guide.slug, guide.slug]
+              def keyed = [options[:on], options[:on]]
+              def mixed = [title.size, title.size]
+              def selfish = [self.guide.slug, self.guide.slug]
+              def thrice = [guide.slug, guide.slug, guide.slug]
+              def helper = [found.slug, found.slug]
+              def chained = [guide.topic.path, guide.topic.path]
+              def called = [guide(1).slug, guide(1).slug]
+              def blocked = [guide { 1 }.slug, guide { 1 }.slug]
+              def shifted = [guide.state, guide.advance!, guide.state, guide.advance!, guide.state]
+              def other(peer) = [guide.state, peer.advance!, guide.state, peer.advance!, guide.state]
+              def found = Guide.find(@id)
+            end
+          end
+        RUBY
+      },
+      "repeated_call"
+    )
+    expect(findings.map(&:package)).to(eq(%w[thrice helper chained called blocked other].map { "App::Page##{it}" }))
+  end
+
   it "counts the plain reads one run makes, not every read across branches that never run together" do
     findings = repeated(<<~RUBY)
       module App
@@ -142,6 +190,59 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
       end
     RUBY
     expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
+  end
+
+  it "reads a reading the loop names as it measures it, in parentheses, for the deadline loop it is" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def named(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              while (now = clock.now(:ms)) < deadline
+                return true if @io.ready?(deadline - now)
+              end
+            end
+
+            def bare(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              @io.poll while (clock.now(:ms)) < deadline
+            end
+
+            def boxed(clock, timeout)
+              deadline = clock.now(:ms) + timeout
+              @io.poll while [clock.now(:ms)].max < deadline
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[boxed]))
+  end
+
+  it "takes a call that holds a measured reading for a new value each time, as the reading is, not an unmeasured one" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def read_exactly(clock, size)
+              deadline = clock.now(:ms) + @timeout
+              while @data.size < size
+                remaining = deadline - clock.now(:ms)
+                @socket.wait(remaining)
+                @socket.wait([deadline - clock.now(:ms), 0].max) if @socket.blocked?
+              end
+            end
+
+            def stamped(clock)
+              deadline = clock.now(:ms) + @timeout
+              [deadline, clock.now(:ms).to_s, clock.now(:ms).to_s]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(eq(["clock.now(:ms) × 3 (lines 14, 15)"]))
   end
 
   it "parts two calls when the receiver is handed on between them, as an argument, a keyword or a stored result" do
@@ -575,6 +676,35 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "excuses reads that draw the next item from a stream or a queue, which each call consumes" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def handshake
+              status = @socket.gets("\\n")
+              while (line = @socket.gets("\\n"))
+                break if line == "\\r\\n"
+              end
+              status
+            end
+
+            def pair(queue) = [queue.pop, queue.pop, queue.shift, queue.shift, queue.deq, queue.deq]
+
+            def chunks = [@io.readpartial(512), @io.readpartial(512), @io.read_nonblock(9), @io.read_nonblock(9)]
+
+            def bytes = [@io.getc, @io.getc, @io.getbyte, @io.getbyte, @io.readline, @io.readline]
+
+            def heads(items) = [items.first(2), items.first(2)]
+
+            def lines(path) = [File.readlines(path), File.readlines(path)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.map { it.package.split("#").last }).to(eq(%w[heads lines]))
+  end
+
   it "excuses repeats that no single run can reach twice" do
     findings = repeated(<<~RUBY)
       module App
@@ -621,6 +751,133 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
       end
     RUBY
     expect(findings).to(be_empty)
+  end
+
+  it "ends a run at a raise and a block's run at next or break, held or a statement after the first read" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def linked(children, orphaned)
+              children.each do |child|
+                orphaned << child.slug(1) && next if child.orphan?
+                orphaned << child.slug(1) && break if child.stale?
+                child.adopt
+              end
+            end
+
+            def skipped(children)
+              children.each do |child|
+                if child.orphan?
+                  @finder.skip(child.parent(2))
+                  next
+                end
+                @finder.keep(child.parent(2))
+              end
+            end
+
+            def returned(child)
+              if child.orphan?
+                @finder.skip(child.parent(3))
+                return
+              end
+              @finder.keep(child.parent(3))
+            end
+
+            def raised(attrs)
+              raise ArgumentError, "no gss for \#{@store.name(4)}" if attrs.blank?
+              @store.put(@store.name(4))
+            end
+
+            def read(size, sink)
+              while size > 0
+                chunk = @socket.read(size) || raise(EOFError)
+                size -= sink.write(chunk)
+                sink.write(@socket.read(2) || raise(EOFError))
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
+  it "still counts a read an exit does not end the run of: a loop brings it round, a rescue catches the raise" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def hoisted(children)
+              children.each do |child|
+                if child.orphan?
+                  @finder.skip(@config.limit(1))
+                  next
+                end
+                @finder.keep(@config.limit(1))
+              end
+            end
+
+            def inner(rows)
+              rows.each do |row|
+                while row.more?
+                  @log.write(row.peek(2))
+                  next
+                end
+                @log.write(row.peek(2))
+              end
+            end
+
+            def rescued(attrs)
+              begin
+                raise ArgumentError, "no gss for \#{@store.name(3)}" if attrs.blank?
+              rescue ArgumentError
+                nil
+              end
+              @store.put(@store.name(3))
+            end
+
+            def chained(ready)
+              @log.write(@store.name(4))
+              ready && return
+              @store.put(@store.name(4))
+            end
+
+            def modified(attrs)
+              (raise ArgumentError, @store.name(5) if attrs.blank?) rescue nil
+              @store.put(@store.name(5))
+            end
+
+            def caught(attrs)
+              begin
+                @store.name(6) and raise(ArgumentError)
+              rescue ArgumentError
+                nil
+              end
+              @store.put(@store.name(6))
+            end
+
+            def looping(rows)
+              rows.each do |row|
+                while row.more?
+                  @log.write(row.peek(7)) && next
+                end
+                @log.write(row.peek(7))
+              end
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "@config.limit(1) × 2 (lines 7, 10)", "row.peek(2) × 2 (lines 17, 20)", "@store.name(3) × 2 (lines 26, 30)",
+          "@store.name(4) × 2 (lines 34, 36)", "@store.name(5) × 2 (lines 40, 41)", "@store.name(6) × 2 (lines 46, 50)",
+          "@log.write(row.peek(7)) × 2 (lines 56, 58)"
+        ]
+      )
+    )
   end
 
   it "still counts repeats on separate conditions, which one run can reach both of" do
@@ -1259,12 +1516,6 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
               job.finalize!
             end
 
-            def kept(job)
-              before = job.status(:now)
-              done = job.finalize!
-              job.status(:now) == done
-            end
-
             def told(job)
               before = job.status(:now)
               log(job.id)
@@ -1307,10 +1558,167 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
           "job.status(:now) × 2 (lines 5, 7)", "job.status(:now) × 2 (lines 11, 13)",
           "job.status(:now) × 2 (lines 17, 19)", "job.status(:now) × 2 (lines 24, 28)",
           "job.status(:now) × 2 (lines 32, 33)", "job.status(:now) × 2 (lines 39, 41)",
-          "job.status(:now) × 2 (lines 45, 47)", "job.status(:now) × 2 (lines 51, 52)",
-          "job.with(job).status × 2 (line 56)", "job.status(:now) × 2 (line 58)", "job.status(:now) × 2 (lines 61, 63)",
-          "job.status(:now) × 2 (lines 67, 68)",
-          "job.status(:now) { job.reset!; 1 } × 2 (lines 73, 74)"
+          "job.status(:now) × 2 (lines 45, 46)", "job.with(job).status × 2 (line 50)",
+          "job.status(:now) × 2 (line 52)", "job.status(:now) × 2 (lines 55, 57)",
+          "job.status(:now) × 2 (lines 61, 62)", "job.status(:now) { job.reset!; 1 } × 2 (lines 67, 68)"
+        ]
+      )
+    )
+  end
+
+  it "counts two reads as two values when a call that consumes or changes the receiver runs between, kept or not" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def walk(path, node)
+              while path.size > 0
+                step = path.shift
+                node = node.child(step) if path.size > 0
+              end
+              node
+            end
+
+            def kept(job)
+              before = job.status(:now)
+              done = job.finalize!
+              job.status(:now) == done
+            end
+
+            def drained(queue)
+              [queue.size, queue.pop, queue.size]
+            end
+
+            def grown(items, item)
+              before = items.count(:open)
+              total = items << item
+              [before, total, items.count(:open)]
+            end
+
+            def asked(path, node)
+              while path.size > 0
+                step = path.first
+                node = node.child(step) if path.size > 0
+              end
+              node
+            end
+
+            def other(path, queue)
+              before = path.size.succ
+              queue.shift
+              [before, path.size.succ]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["path.size.>(0) × 2 (lines 29, 31)", "path.size.succ × 2 (lines 37, 39)"])
+    )
+  end
+
+  it "parts two reads around a bang or a change sent by name, literal or with a literal tail" do
+    reads = ->(between) { "[object.state(:now), #{between}, object.state(:now)]" }
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Probe
+            def computed(object, event) = #{reads['object.send("#{event}!")']}
+            def literal(object) = #{reads["object.send(:launch!)"]}
+            def worded(object) = #{reads['object.send("launch!")']}
+            def sent(object, event) = #{reads['object.public_send(:"#{event}!")']}
+            def raw(object, item) = #{reads["object.__send__(:<<, item)"]}
+            def variable(object, name) = #{reads["object.send(name)"]}
+            def asked(object, event) = #{reads['object.send("#{event}?")']}
+            def plain(object) = #{reads["object.send(:launch)"]}
+            def handle(object) = #{reads["object.method(:launch!)"]}
+            def bare(object) = #{reads["object.send"]}
+            def other(object, peer) = #{reads["peer.send(:launch!)"]}
+          end
+        end
+      end
+    RUBY
+    expect(findings.map(&:package)).to(eq(%w[variable asked plain handle bare other].map { "App::Zone::Probe##{it}" }))
+  end
+
+  it "parts reads of an instance variable around a call on self whose method moves it, however deep" do
+    reads = ->(between) { "[@scanner.pos, #{between}, @scanner.pos, #{between}, @scanner.pos]" }
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Lexer
+            attr_reader :scanner
+
+            def initialize(text) = @scanner = StringScanner.new(text)
+
+            def helped = #{reads["word"]}
+            def deep = #{reads["step"]}
+            def selfish = #{reads["self.word"]}
+            def reset = #{reads["restart"]}
+            def asked = #{reads["done?"]}
+            def same = #{reads["at"]}
+            def other = #{reads["note"]}
+            def cleared = #{reads["clear"]}
+            def foreign = #{reads["advance"]}
+            def elsewhere = #{reads["@peer.word"]}
+            def reader = [scanner.pos, skip, scanner.pos, skip, scanner.pos]
+            def peeked = #{reads["ahead"]}
+            def skipped = #{reads["blank"]}
+            def returned = #{reads["back"]}
+
+            private
+
+            def word = @scanner.scan(/\\w+/)
+            def step = word
+            def restart = @scanner = StringScanner.new("")
+            def done? = @scanner.eos?
+            def at = @scanner.pos
+            def note = @log.write(1)
+            def clear = @log = []
+            def skip = scanner.scan(/ /)
+            def ahead = "\#{@scanner.peek(1)}!"
+
+            def blank
+              @scanner.skip(/ +/)
+              true
+            end
+
+            def back
+              return @scanner.scan(/x/) if @flag
+
+              nil
+            end
+          end
+        end
+      end
+    RUBY
+    shown = findings.flat_map(&:evidence).map { it[/\A\S+/] }
+    expect(shown).to(eq((%w[@scanner.pos] * 6) + %w[scanner.pos @scanner.pos]))
+    expect(findings.flat_map(&:evidence).map { it[/lines? (\d+)/, 1] }).to(eq(%w[12 13 14 15 16 17 18 19]))
+  end
+
+  it "reads __LINE__ as the line it is written on, so the same text on two lines is two values" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Builder
+            def build
+              @mod.class_eval(@first, __FILE__, __LINE__ + 1)
+              @mod.class_eval(@second, __FILE__, __LINE__ + 1)
+            end
+
+            def twice = [__LINE__ + 1, __LINE__ + 1]
+
+            def named = [File.basename(__FILE__), File.basename(__FILE__)]
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(
+        [
+          "__LINE__.+(1) × 2 (line 9)",
+          "File.basename(__FILE__) × 2 (line 11)"
         ]
       )
     )

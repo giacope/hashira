@@ -1,0 +1,14 @@
+# R6B6-H6. acts-as-taggable-on's entry file closes `module ActsAsTaggableOn`
+# and then runs `ActiveSupport.on_load(:active_record) { extend
+# ActsAsTaggableOn::Taggable }` at the top level. That code was charged to
+# the file's dominant package, the first class the namespace holds (an empty
+# DuplicateTagError), which invented a cycle through it and a cut that
+# removes nothing real. Top-level code belongs to the types the file writes
+# at its own top level, here the namespace itself: the (root) package.
+args: [lib]
+edges:
+  - "(root) -> Taggable"
+  - "Taggable -> Tag"
+  - "Tag -> DuplicateError"
+absent: ["DuplicateError -> Taggable"]
+cycles: []

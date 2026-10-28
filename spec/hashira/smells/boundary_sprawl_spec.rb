@@ -63,6 +63,16 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
     expect([relayed, aliased].map { sniffed(it, "boundary_sprawl").map(&:package) }).to(eq([["Prism"], ["Parser"]]))
   end
 
+  it "resolves a ::-rooted type at the root, past an owned namesake or a copying namespace of the same name" do
+    owned = "module App\n  module Ast\n    class Node; end\n  end\nend\n"
+    files = [
+      spread(methods: 12, files: 3, tested: "::Ast::Node").merge("lib/app/ast.rb" => owned),
+      spread(methods: 12, files: 3, tested: "::Ast::CallNode").merge("lib/app/ast.rb" => copies),
+      spread(methods: 12, files: 3, tested: "Ast::CallNode").merge("lib/app/ast.rb" => copies)
+    ]
+    expect(files.map { sniffed(it, "boundary_sprawl").map(&:package) }).to(eq([["Ast"], ["Ast"], ["Prism"]]))
+  end
+
   it "takes no copy from a const_get of another name or none, another fetch, or another setter" do
     odd = <<~RUBY
       module App
