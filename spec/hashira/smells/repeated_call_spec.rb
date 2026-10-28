@@ -1468,12 +1468,6 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
               job.finalize!
             end
 
-            def kept(job)
-              before = job.status(:now)
-              done = job.finalize!
-              job.status(:now) == done
-            end
-
             def told(job)
               before = job.status(:now)
               log(job.id)
@@ -1516,12 +1510,62 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
           "job.status(:now) × 2 (lines 5, 7)", "job.status(:now) × 2 (lines 11, 13)",
           "job.status(:now) × 2 (lines 17, 19)", "job.status(:now) × 2 (lines 24, 28)",
           "job.status(:now) × 2 (lines 32, 33)", "job.status(:now) × 2 (lines 39, 41)",
-          "job.status(:now) × 2 (lines 45, 47)", "job.status(:now) × 2 (lines 51, 52)",
-          "job.with(job).status × 2 (line 56)", "job.status(:now) × 2 (line 58)", "job.status(:now) × 2 (lines 61, 63)",
-          "job.status(:now) × 2 (lines 67, 68)",
-          "job.status(:now) { job.reset!; 1 } × 2 (lines 73, 74)"
+          "job.status(:now) × 2 (lines 45, 46)", "job.with(job).status × 2 (line 50)",
+          "job.status(:now) × 2 (line 52)", "job.status(:now) × 2 (lines 55, 57)",
+          "job.status(:now) × 2 (lines 61, 62)", "job.status(:now) { job.reset!; 1 } × 2 (lines 67, 68)"
         ]
       )
+    )
+  end
+
+  it "counts two reads as two values when a call that consumes or changes the receiver runs between, kept or not" do
+    findings = repeated(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def walk(path, node)
+              while path.size > 0
+                step = path.shift
+                node = node.child(step) if path.size > 0
+              end
+              node
+            end
+
+            def kept(job)
+              before = job.status(:now)
+              done = job.finalize!
+              job.status(:now) == done
+            end
+
+            def drained(queue)
+              [queue.size, queue.pop, queue.size]
+            end
+
+            def grown(items, item)
+              before = items.count(:open)
+              total = items << item
+              [before, total, items.count(:open)]
+            end
+
+            def asked(path, node)
+              while path.size > 0
+                step = path.first
+                node = node.child(step) if path.size > 0
+              end
+              node
+            end
+
+            def other(path, queue)
+              before = path.size.succ
+              queue.shift
+              [before, path.size.succ]
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings.flat_map(&:evidence)).to(
+      eq(["path.size.>(0) × 2 (lines 29, 31)", "path.size.succ × 2 (lines 37, 39)"])
     )
   end
 

@@ -722,6 +722,14 @@ From the third field test (thirty MIT-licensed codebases):
     first wait and again for the second (`[deadline - Time.now, 0].max`),
     and naming the first makes the second wait overshoot the deadline. A
     clock read with nothing measured against it is still reported.
+  - `repeated_call` parts two reads around a call that consumes or changes
+    the receiver whatever becomes of its answer (a draw such as `shift` or
+    `pop`, a bang, `<<`, `push`, `delete`, `clear`, ...), as it parted them
+    around a command: counter_culture's `relation_reflect_and_model` tests
+    `relation.size > 0` before and after `cur_relation = relation.shift`,
+    and naming the first test runs the last link's lookup its comment says
+    it skips on purpose. `done = job.finalize!` between two reads of
+    `job.status` now parts them too.
   - `dead_code` reads a module mixed in bare inside a library's load hook
     (`ActiveSupport.on_load(:active_record) { include M }`, and `extend`,
     `prepend`, `self.include`, `send(:include, M)`) as handed to the

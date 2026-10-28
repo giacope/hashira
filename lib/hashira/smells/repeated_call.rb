@@ -8,10 +8,7 @@ require_relative "refs"
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   MINTS = %i[new dup clone allocate rand srand generate].freeze
 
-  DRAWS = %i[
-    gets getc getbyte getch readline readchar readbyte readpartial read_nonblock sysread
-    recv recvfrom recv_nonblock recvmsg accept_nonblock pop shift deq
-  ].freeze
+  DRAWS = Hashira::Smells::Course::DRAWS
 
   SOURCES = %w[SecureRandom Random].freeze
 
