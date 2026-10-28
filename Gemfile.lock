@@ -9,7 +9,7 @@ GIT
 
 GIT
   remote: https://github.com/giacope/rubocop-kata.git
-  revision: 811d09a68eaf0eaaf42f652eec37239b42b5e16f
+  revision: ad0e8b0a8cb15bd3b1ec158bee3bbda335465bb4
   branch: main
   specs:
     rubocop-kata (0.10.1)
