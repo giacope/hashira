@@ -21,16 +21,16 @@ class Hashira::Suppression::Directives
   def read(comment)
     line = comment.location.start_line
     parts = SHAPE.match(comment.slice) || refuse(line, "reads hashira:VERB KIND[,KIND] -- REASON")
-    kinds = vetted(line, parts)
-    target = __send__(VERBS.fetch(parts[:verb]), comment, line)
-    Hashira::Suppression::Directive.new(file: @file, line:, target:, kinds:, reason: parts[:reason])
+    verb, named, reason = parts.captures
+    kinds = vetted(line, verb, named, reason)
+    target = __send__(VERBS.fetch(verb), comment, line)
+    Hashira::Suppression::Directive.new("#{@file}:#{line}", "#{@file}:#{target}", kinds, reason)
   end
 
-  def vetted(line, parts)
-    verb = parts[:verb]
+  def vetted(line, verb, named, reason)
     refuse(line, "#{verb} is not a directive (use: #{VERBS.keys.join(", ")})") unless VERBS.key?(verb)
-    refuse(line, "needs a reason after --") if parts[:reason].to_s.empty?
-    kinds(line, parts[:kinds].split(/[\s,]+/))
+    refuse(line, "needs a reason after --") if reason.to_s.empty?
+    kinds(line, named.split(/[\s,]+/))
   end
 
   def kinds(line, named)

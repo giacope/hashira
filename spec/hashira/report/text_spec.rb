@@ -2,10 +2,9 @@
 
 RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
-    Hashira::Report::View.new(
-      project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR,
-      unjudged: Fixtures::JUDGED
-    )
+    analyses = Hashira::Report::View::Analyses.new(graph, complexity, duplication, hotspots)
+    verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
+    Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top))
   end
 
   # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
@@ -14,13 +13,13 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
       pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
       findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
       added = parts.to_h { [it, pipeline.public_send(it)] }
-      capture { described_class.new(view(pipeline.project, (pipeline.graph if graph), findings, **added)).print }
+      capture { view(pipeline.project, (pipeline.graph if graph), findings, **added).text.print }
     end
   end
 
   it "caps the findings list at --top and counts what it withheld" do
     with_pipeline do |project, graph, findings|
-      output = capture { described_class.new(view(project, graph, findings, top: 2)).print }
+      output = capture { view(project, graph, findings, top: 2).text.print }
       expect(output).to(include("Findings (5):"))
       expect(output).to(include("… and 3 more — raise the cap with --top, or read them all with --json"))
     end
@@ -28,7 +27,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
 
   it "prints the full report verbatim" do
     with_pipeline do |project, graph, findings|
-      output = capture { described_class.new(view(project, graph, findings)).print }
+      output = capture { view(project, graph, findings).text.print }
 
       expect(output).to(eq(<<~TEXT))
         Package (folder) metrics for lib/app  (3 packages, 3 files)

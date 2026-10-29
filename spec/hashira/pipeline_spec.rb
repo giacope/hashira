@@ -13,7 +13,7 @@ RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
 
   def told
     io = StringIO.new
-    described_class.new(Hashira::Project.new(["lib/app"])).notify(Hashira::Report::Notices.new(io:))
+    described_class.new(Hashira::Project.new(["lib/app"])).notify(Hashira::Report::Warnings.new(io:))
     io.string.lines.grep(/git history/)
   end
 

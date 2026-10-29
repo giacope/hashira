@@ -19,7 +19,7 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @_findings ||= accepted.screen(@sieve.narrow(screened.kept))
+  def findings = @_findings ||= accepted.screen(@sieve.narrow(screened.to_a.fetch(0)))
 
   def screened = @pipeline.screened
 
@@ -37,13 +37,14 @@ class Hashira::CLI::Run
 
   def diagram = shown(source)
 
-  def json = report(Hashira::Report::Json)
-
-  def text = report(Hashira::Report::Text)
-
-  def report(kind)
+  def json
     notices
-    shown(kind.new(view))
+    shown(view.json)
+  end
+
+  def text
+    notices
+    shown(view.text)
   end
 
   def shown(printer)
@@ -51,7 +52,7 @@ class Hashira::CLI::Run
     printer.status
   end
 
-  def notices = @pipeline.notify(Hashira::Report::Notices.new)
+  def notices = @pipeline.notify(Hashira::Report::Warnings.new)
 
   def ratchet = Hashira::CI::Ratchet.new(graph, findings.to_a, baseline)
 
@@ -67,7 +68,7 @@ class Hashira::CLI::Run
 
   def unjudged
     left = asked { @pipeline.unjudged?(it) }
-    Hashira::Report::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
+    Hashira::Report::View::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
   end
 
   def asked(&) = @checks.select { yield(it) && owned?(it) && @sieve.keeps?(it) }
@@ -77,10 +78,11 @@ class Hashira::CLI::Run
   def source = Hashira::Diagram::Source.new(graph, @options.mode)
 
   def view
-    Hashira::Report::View.new(
-      project: @pipeline.project, graph: (graph if @pipeline.enabled?(:coupling)),
-      complexity: @pipeline.complexity, duplication: @pipeline.duplication,
-      hotspots: @pipeline.hotspots, findings:, top: @options.top, compact: @options.compact, screened:, unjudged:
+    analyses = Hashira::Report::View::Analyses.new(
+      (graph if @pipeline.enabled?(:coupling)), @pipeline.complexity, @pipeline.duplication, @pipeline.hotspots
     )
+    verdicts = Hashira::Report::View::Verdicts.new(findings, screened, unjudged)
+    layout = Hashira::Report::View::Layout.new(@options.top, @options.compact)
+    Hashira::Report::View.new(@pipeline.project, analyses, verdicts, layout)
   end
 end

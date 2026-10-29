@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
   def layered(declared, extra = {}, base = files)
     within(base.merge(extra)) do
       rules = Hashira::Config::Rules.new({}).layered(Hashira::Config::Layers.parse(declared))
-      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).screened.kept.select { it.to_h[:kind] == "layer_violation" }
+      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).screened.to_a.fetch(0).select { it.to_h[:kind] == "layer_violation" }
     end
   end
 

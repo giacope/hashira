@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Report::Unjudged, :aggregate_failures) do
+RSpec.describe(Hashira::Report::View::Unjudged, :aggregate_failures) do
   def shallow = Hashira::Churn::Depth.new(commits: 1, shallow: true, deep: false)
 
   def verdicts

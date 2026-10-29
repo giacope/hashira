@@ -2,10 +2,9 @@
 
 RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
-    Hashira::Report::View.new(
-      project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:, screened: Fixtures::CLEAR,
-      unjudged: Fixtures::JUDGED
-    )
+    analyses = Hashira::Report::View::Analyses.new(graph, complexity, duplication, hotspots)
+    verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
+    Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top, compact))
   end
 
   def full(pipeline, top: nil)
@@ -22,7 +21,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
       .merge("hotspots" => report["hotspots"]).transform_values(&:size)
   end
 
-  def emit(view) = JSON.parse(capture { described_class.new(view).print })
+  def emit(view) = JSON.parse(capture { view.json.print })
 
   def cyclic_report = with_pipeline { |project, graph, findings| emit(view(project, graph, findings)) }
 
@@ -46,12 +45,12 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "says what produced it: schema version, packaging, targets, and file count" do
     expect(cyclic_report.values_at("version", "packaging", "targets", "files"))
-      .to(eq([Hashira::Report::Json::SCHEMA, "folder", ["lib/app"], 3]))
+      .to(eq([Hashira::Report::Json::About::SCHEMA, "folder", ["lib/app"], 3]))
   end
 
   it "emits one line under --compact, and the same data either way" do
     with_pipeline do |project, graph, findings|
-      dense = capture { described_class.new(view(project, graph, findings, compact: true)).print }
+      dense = capture { view(project, graph, findings, compact: true).json.print }
       expect(dense.lines.size).to(eq(1))
       expect(JSON.parse(dense)).to(eq(emit(view(project, graph, findings))))
     end
@@ -59,7 +58,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "indents across lines unless asked to be compact" do
     with_pipeline do |project, graph, findings|
-      printed = capture { described_class.new(view(project, graph, findings)).print }
+      printed = capture { view(project, graph, findings).json.print }
       expect(printed).to(eq("#{JSON.pretty_generate(JSON.parse(printed))}\n"))
     end
   end

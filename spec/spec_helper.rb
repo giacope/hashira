@@ -142,7 +142,7 @@ module Fixtures
 
   CLEAR = Hashira::Suppression::Suppressions::CLEAR
 
-  JUDGED = Hashira::Report::Unjudged.new(kinds: [], depth: nil, judged: true)
+  JUDGED = Hashira::Report::View::Unjudged.new(kinds: [], depth: nil, judged: true)
 
   CYCLIC_FILES = {
     "lib/app/alpha/one.rb" => <<~RUBY,
