@@ -15,10 +15,6 @@ class Hashira::CLI::ConfigFile
     @checks = checks
   end
 
-  def directories = setting("directories").split(",")
-
-  def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
-
   def rules
     blamed do
       raw = settings["checks"]
@@ -32,7 +28,19 @@ class Hashira::CLI::ConfigFile
     blamed { yield(argv) }
   end
 
+  def widened(argv, named)
+    base = named.empty? ? argv + directories : argv
+    flags.reduce(base) do |kept, flag|
+      tried = kept + flag
+      yield(tried) ? tried : kept
+    end
+  end
+
   private
+
+  def directories = setting("directories").split(",")
+
+  def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
 
   def path = @_path ||= chosen
 

@@ -1,37 +1,22 @@
 # frozen_string_literal: true
 
-module Hashira::CLI
-  Options =
-    Data.define(
-      :directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact, :strict, :home, :rules
-    ) do
-      def initialize(home: Hashira::CLI::Home.new([], "."), rules: Hashira::Config::Rules.new({}), strict: nil, **)
-        super
-      end
+class Hashira::CLI::Options
+  def self.parse(argv) = Hashira::CLI::Settings.new(argv).options
 
-      def self.parse(argv) = Settings.new(argv).options
+  def initialize(output, scope, judgement, record)
+    @output = output
+    @scope = scope
+    @judgement = judgement
+    @record = record
+  end
 
-      def self.build(mode)
-        new(
-          directories: [], baseline: "", fail_on: [], skip: [], only: [], kinds: [],
-          packaging: :auto, top: nil, compact: nil, mode:
-        )
-      end
-
-      def pipeline
-        chosen = project
-        Hashira::Report::Notices.new.scanning(chosen.files.size, chosen.label)
-        Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:).verify
-      end
-
-      def project(checks = Hashira::Checks.new)
-        named = ruled.naming(kinds + fail_on).narrowed(kinds, checks)
-        boundaries = Hashira::CI::Accepted.build(baseline).boundaries(rules.boundaries)
-        Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
-      end
-
-      def analyzers(checks = Hashira::Checks.new) = checks.analyzers - skip
-      private
-      def ruled = strict ? rules.tightened : rules
+  def status(_usage, notices, clock = Process)
+    started = clock.clock_gettime(Process::CLOCK_MONOTONIC)
+    pipeline = @scope.pipeline(@judgement, @record, notices)
+    Hashira::CLI::Run.new(pipeline, @output, @judgement, @record).status.tap do
+      notices.finished(pipeline.size, format("%.1f", clock.clock_gettime(Process::CLOCK_MONOTONIC) - started))
     end
+  end
+
+  def to_h = [@output, @scope, @judgement, @record].map(&:to_h).reduce(:merge)
 end

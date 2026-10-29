@@ -8,7 +8,7 @@ class Hashira::CLI::Session
   end
 
   def status
-    dispatch(Hashira::CLI::Options.parse(@argv))
+    Hashira::CLI::Options.parse(@argv).status(@usage, @notices)
   rescue Hashira::Error => error
     shown(Hashira::CLI::Failure.new(error))
   rescue StandardError => error
@@ -16,25 +16,6 @@ class Hashira::CLI::Session
   end
 
   private
-
-  def dispatch(options)
-    @usage.page?(options.mode) ? page(options.mode) : timed(options)
-  end
-
-  def page(mode)
-    @usage.public_send(mode)
-    @usage.status
-  end
-
-  def timed(options, clock: Process)
-    started = clock.clock_gettime(Process::CLOCK_MONOTONIC)
-    pipeline = options.pipeline
-    Hashira::CLI::Run.new(pipeline, options).status.tap do
-      @notices.finished(pipeline.size, elapsed(started, clock))
-    end
-  end
-
-  def elapsed(started, clock) = format("%.1f", clock.clock_gettime(Process::CLOCK_MONOTONIC) - started)
 
   def shown(outcome)
     outcome.print

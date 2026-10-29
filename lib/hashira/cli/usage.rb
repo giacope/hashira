@@ -48,18 +48,11 @@ class Hashira::CLI::Usage
 
   def version = emit("hashira #{Hashira::VERSION}")
 
-  def page?(mode) = @flags.page?(mode)
-
   def status = 0
 
   private
 
-  def options = @flags.map { rows(it) }.join
-
-  def rows(flag)
-    first, *rest = flag.text
-    ["  #{flag.label.ljust(21)}#{first}\n", *rest.map { "#{" " * 23}#{it}\n" }].join
-  end
+  def options = @flags.to_a.join
 
   def emit(output) = @io.puts(output)
 end

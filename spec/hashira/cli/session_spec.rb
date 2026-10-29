@@ -87,7 +87,8 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     help = [
       "Usage: hashira", "Options:\n  --format FORMAT      text (default), json, dot, or mermaid\n",
       "  --compact            emit JSON on one line, without the indentation\n                       " \
-        "meant for reading\n"
+        "meant for reading\n",
+      "  -h, --help           print this help\n  --version            print the version\n"
     ]
     expect(ran(["--help"])).to(match([0, include(*help)]))
     expect(ran(["--version"])).to(eq([0, "hashira #{Hashira::VERSION}\n"]))

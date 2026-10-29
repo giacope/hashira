@@ -5,53 +5,56 @@ require_relative "fail_on"
 class Hashira::CLI::Needs
   DIAGRAMS = %i[dot mermaid].freeze
 
-  def initialize(options, checks = Hashira::Checks.new)
-    @options = options
+  def initialize(parsed, mode, checks = Hashira::Checks.new)
+    @parsed = parsed
+    @mode = mode
     @checks = checks
   end
 
   def check
     drawing
     gate("--fail-on", named)
-    gate("--kind", @options.kinds)
+    gate("--kind", kinds)
     shaping
   end
 
   private
 
-  def mode = @options.mode
+  def kinds = @parsed.given("--kind")
 
-  def named = Hashira::CLI::FailOn.new(@options.fail_on).named
+  def skipped = @parsed.given("--skip")
+
+  def named = Hashira::CLI::FailOn.new(@parsed.given("--fail-on")).named
 
   def shaping
-    compacting if @options.compact
-    focusing("--only") unless @options.only.empty?
-    sorting unless @options.kinds.empty?
+    compacting if @parsed.given("--compact")
+    focusing("--only") unless @parsed.given("--only").empty?
+    sorting unless kinds.empty?
   end
 
   def sorting
     focusing("--kind")
-    unheard = (named - @options.kinds).first
+    unheard = (named - kinds).first
     raise(Hashira::Error, "--fail-on #{unheard} can never fire, since --kind leaves it out") if unheard
   end
 
   def focusing(flag)
-    raise(Hashira::Error, "#{flag} narrows the findings, but --update-baseline records them all") if mode == :update
-    return unless DIAGRAMS.include?(mode)
-    raise(Hashira::Error, "--format #{mode} draws the coupling graph, which #{flag} cannot narrow")
+    raise(Hashira::Error, "#{flag} narrows the findings, but --update-baseline records them all") if @mode == :update
+    return unless DIAGRAMS.include?(@mode)
+    raise(Hashira::Error, "--format #{@mode} draws the coupling graph, which #{flag} cannot narrow")
   end
 
   def compacting
-    raise(Hashira::Error, "--compact shapes JSON, but this run emits #{mode}") unless mode == :json
+    raise(Hashira::Error, "--compact shapes JSON, but this run emits #{@mode}") unless @mode == :json
   end
 
   def drawing
-    return unless DIAGRAMS.include?(mode) && @options.skip.include?(:coupling)
-    raise(Hashira::Error, "--format #{mode} draws the coupling graph, but --skip coupling drops it")
+    return unless DIAGRAMS.include?(@mode) && skipped.include?(:coupling)
+    raise(Hashira::Error, "--format #{@mode} draws the coupling graph, but --skip coupling drops it")
   end
 
   def gate(flag, kinds)
-    blind = kinds.find { @options.skip.include?(owner(it)) }
+    blind = kinds.find { skipped.include?(owner(it)) }
     return unless blind
     raise(Hashira::Error, "#{flag} #{blind} needs the #{owner(blind)} analyzer, but --skip drops it")
   end

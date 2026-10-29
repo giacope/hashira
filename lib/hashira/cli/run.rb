@@ -1,41 +1,36 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Run
-  def initialize(
-    pipeline, options, checks = Hashira::Checks.new, sieve = Hashira::CLI::Sieve.new(pipeline.focus, options.kinds)
-  )
+  def initialize(pipeline, output, judgement, record)
     @pipeline = pipeline
-    @options = options
-    @checks = checks
-    @sieve = sieve
+    @output = output
+    @judgement = judgement
+    @record = record
   end
 
-  MODES = { update: :update, ratchet: :check, fail_on: :guard }
-    .merge(json: :json, dot: :diagram, mermaid: :diagram).freeze
-
-  def status = __send__(MODES.fetch(@options.mode, :text))
+  def status = __send__(@output.action)
 
   private
 
   def graph = @pipeline.graph
 
-  def findings = @_findings ||= accepted.screen(@sieve.narrow(screened.to_a.fetch(0)))
+  def findings = @_findings ||= @record.accepted.screen(sieve.narrow(screened.to_a.fetch(0)))
 
   def screened = @pipeline.screened
 
-  def accepted = Hashira::CI::Accepted.build(@options.baseline)
+  def sieve = @judgement.sieve(@pipeline.focus)
 
-  def update = shown(ratchet.update(@options.baseline))
+  def update = shown(ratchet.update)
 
   def check
     judged = ratchet
     judged.vet
-    judged.check(@sieve)
+    judged.check(sieve)
   end
 
-  def guard = shown(Hashira::CI::Gate.new(findings, gated))
+  def guard = shown(Hashira::CI::Gate.new(findings, @judgement.gated(checked)))
 
-  def diagram = shown(source)
+  def diagram = shown(@output.drawing(graph))
 
   def json
     notices
@@ -54,15 +49,7 @@ class Hashira::CLI::Run
 
   def notices = @pipeline.notify(Hashira::Report::Warnings.new)
 
-  def ratchet = Hashira::CI::Ratchet.new(graph, findings.to_a, baseline)
-
-  def baseline
-    Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: @checks.to_a)
-  end
-
-  def targets = @pipeline.targets(@options.home)
-
-  def gated = Hashira::CLI::FailOn.new(@options.fail_on).every? ? checked : @options.fail_on
+  def ratchet = Hashira::CI::Ratchet.new(graph, findings.to_a, @record.baseline(@pipeline))
 
   def checked = asked { @pipeline.checks?(it) }
 
@@ -71,18 +58,16 @@ class Hashira::CLI::Run
     Hashira::Report::View::Unjudged.new(kinds: left, history: @pipeline.depth, judged: checked.any?)
   end
 
-  def asked(&) = @checks.select { yield(it) && owned?(it) && @sieve.keeps?(it) }
-
-  def owned?(kind) = @pipeline.enabled?(@checks.owner(kind))
-
-  def source = Hashira::Diagram::Source.new(graph, @options.mode)
+  def asked(checks = Hashira::Checks.new)
+    kept = sieve
+    checks.select { yield(it) && @pipeline.enabled?(checks.owner(it)) && kept.keeps?(it) }
+  end
 
   def view
     analyses = Hashira::Report::View::Analyses.new(
       (graph if @pipeline.enabled?(:coupling)), @pipeline.complexity, @pipeline.duplication, @pipeline.hotspots
     )
     verdicts = Hashira::Report::View::Verdicts.new(findings, screened, unjudged)
-    layout = Hashira::Report::View::Layout.new(@options.top, @options.compact)
-    Hashira::Report::View.new(@pipeline.project, analyses, verdicts, layout)
+    Hashira::Report::View.new(@pipeline.project, analyses, verdicts, @output.layout)
   end
 end

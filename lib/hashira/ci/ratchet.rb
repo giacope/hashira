@@ -26,7 +26,7 @@ class Hashira::CI::Ratchet
     report.status(edges, deltas)
   end
 
-  def update(path) = Hashira::CI::Update.new(self, path)
+  def update = Hashira::CI::Update.new(self, @baseline)
 
   def vet = @baseline.vet(packaging)
 
