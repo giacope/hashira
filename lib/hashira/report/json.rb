@@ -26,7 +26,7 @@ class Hashira::Report::Json
   end
 
   def base
-    kinds = Hashira::Report::Tally.new(@view.findings.all).to_h
+    kinds = Hashira::Report::Tally.new(@view.findings.to_a).to_h
     { findings: shown(:findings).map { rendered(it) }, kinds:, accepted: }.merge(suppressed)
   end
 
@@ -43,7 +43,7 @@ class Hashira::Report::Json
   end
 
   def lists
-    @_lists ||= { findings: Hashira::Report::Spread.new(@view.findings.all).to_a }
+    @_lists ||= { findings: Hashira::Report::Spread.new(@view.findings.to_a).to_a }
       .merge(Hash(@view.complexity&.lists))
       .merge(duplication: @view.duplication&.clusters, hotspots: @view.hotspots&.files).compact
   end
@@ -63,7 +63,7 @@ class Hashira::Report::Json
   end
 
   def accepted
-    @view.findings.accepted.map { |finding, reason| rendered(finding).merge(reason:) }
+    @view.findings.to_h.map { |finding, reason| rendered(finding).merge(reason:) }
   end
 
   def unjudged

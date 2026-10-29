@@ -144,7 +144,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "deals the findings across kinds in the order the text report shows them" do
     with_pipeline do |project, graph, findings|
-      expected = Hashira::Report::Spread.new(findings.all).to_a.map { it.to_h[:package] }
+      expected = Hashira::Report::Spread.new(findings.to_a).to_a.map { it.to_h[:package] }
       expect(emit(view(project, graph, findings))["findings"].map { it["package"] }).to(eq(expected))
     end
   end

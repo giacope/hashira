@@ -14,7 +14,7 @@ class Hashira::CI::Gate
 
   private
 
-  def offending = @_offending ||= @findings.all.select { it.of?(@kinds) }
+  def offending = @_offending ||= @findings.to_a.select { it.of?(@kinds) }
 
   def failure
     offending.each { Hashira::Report::FindingLines.new(it, io: @io).print }

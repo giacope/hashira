@@ -97,7 +97,7 @@ module Fixtures
 
   def packages_in(findings) = findings.map { it.to_h[:package] }
 
-  def mark_of(finding) = finding.scored.values.fetch(0)
+  def mark_of(finding) = finding.scored(->(_signature, magnitude, traces) { Fakes::Mark.new(magnitude, traces.first) })
 
   def handmade(kind, package, detail = Fakes::Detail.new({}), evidence: [], anchors: [], digests: [], **marks)
     shapes, ratings = marks.values_at(:shapes, :ratings).map { Array(it) }

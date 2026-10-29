@@ -26,17 +26,12 @@ module Hashira::CLI
 
       def project(checks = Hashira::Checks.new)
         named = ruled.naming(kinds + fail_on).narrowed(kinds, checks)
-        boundaries = decisions.boundaries + rules.boundaries
+        boundaries = Hashira::CI::Accepted.build(baseline).boundaries(rules.boundaries)
         Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
       end
 
       def analyzers(checks = Hashira::Checks.new) = checks.analyzers - skip
       private
       def ruled = strict ? rules.tightened : rules
-      def decisions
-        recorded = Hashira::CI::Baseline.new(baseline)
-        raise(Hashira::Error, recorded.trouble) if recorded.trouble
-        recorded
-      end
     end
 end

@@ -23,6 +23,9 @@ module Fakes
       def phrase(package) = "#{package} (#{fields[:site]})"
     end
 
+  # A finding's CI mark, as the finding scores itself: its magnitude and its trace.
+  Mark = Data.define(:magnitude, :trace)
+
   # A suppression directive that silences nothing and notes every anchor a finding asks it about.
   class Directive
     def initialize

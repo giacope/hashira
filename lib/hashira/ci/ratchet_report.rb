@@ -8,30 +8,30 @@ class Hashira::CI::RatchetReport
   end
 
   def print(edges, findings, tally)
-    return unchanged(tally) if quiet?(edges, findings)
+    return unchanged(tally) if quiet?(edges, *findings)
     details(edges, findings)
-    advice(edges, findings)
+    advice(edges, *findings)
   end
 
-  def status(edges, findings) = quiet?(edges, findings) ? 0 : verdict(edges, findings)
+  def status(edges, findings) = quiet?(edges, *findings) ? 0 : verdict(edges, *findings)
 
   private
 
-  def quiet?(*diffs) = diffs.compact.all?(&:empty?)
+  def quiet?(*diffs) = diffs.all?(&:empty?)
 
   def unchanged(tally)
     @io.puts("Ratchet OK: #{tally}, unchanged.")
   end
 
-  def verdict(*diffs) = diffs.compact.any?(&:worse?) ? 1 : 3
+  def verdict(*diffs) = diffs.any?(&:worse?) ? 1 : 3
 
   def details(edges, findings)
     Hashira::CI::EdgeChanges.new(@graph, io: @io).print(edges)
-    Hashira::CI::FindingChanges.new(@findings, io: @io).print(findings) if findings
+    findings.each { Hashira::CI::FindingChanges.new(@findings, io: @io).print(it) }
   end
 
   def advice(*diffs)
-    return unless diffs.compact.any?(&:worse?)
+    return unless diffs.any?(&:worse?)
     @io.puts("\nRatchet FAILED. Either fix what regressed, or — if it is deliberate —")
     @io.puts("record the decision: update the baseline, or accept it with a reason.")
   end

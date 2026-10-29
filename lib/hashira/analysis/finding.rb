@@ -20,9 +20,9 @@ class Hashira::Analysis::Finding
 
   def of?(kinds) = kinds.include?(@kind)
 
-  def scored
-    traces = @name.traced(@proof.trace(@kind, site))
-    { "#{@kind}:#{@name.identity}" => Hashira::Analysis::Mark.new(magnitude: magnitudes.first, trace: traces.first) }
+  def scored(medium)
+    trace = @proof.trace(@kind, site)
+    medium.call("#{@kind}:#{@name.identity}", magnitudes.first, @name.traced(trace))
   end
 
   def quotes = [@name.to_s, *sites, *@proof.to_a]

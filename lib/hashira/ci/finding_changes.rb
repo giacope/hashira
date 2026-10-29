@@ -6,10 +6,14 @@ class Hashira::CI::FindingChanges
     @io = io
   end
 
-  def print(diff)
-    introduced(diff.added).each { emit(it) }
-    aggravated(diff.worsened).each { |finding, before, after| regressed(finding, before, after) }
-    Hashira::CI::Improvement.new("Findings resolved", io: @io).print(diff.removed)
+  SIGNATURE = ->(signature, _magnitude, _traces) { signature }
+
+  def print(diff) = diff.told(self)
+
+  def list(added, worsened, removed)
+    introduced(added).each { emit(it) }
+    aggravated(worsened).each { |finding, before, after| regressed(finding, before, after) }
+    Hashira::CI::Improvement.new("Findings resolved", io: @io).print(removed)
   end
 
   private
@@ -22,7 +26,7 @@ class Hashira::CI::FindingChanges
 
   def signed(signature) = signatures.fetch(signature, []).first(1)
 
-  def signatures = @_signatures ||= @findings.group_by { it.scored.keys.fetch(0) }
+  def signatures = @_signatures ||= @findings.group_by { it.scored(SIGNATURE) }
 
   def regressed(finding, before, after)
     @io.puts("WORSE FINDING (was #{before}, now #{after}):")

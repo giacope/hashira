@@ -53,7 +53,7 @@ class Hashira::CLI::Run
 
   def notices = @pipeline.notify(Hashira::Report::Notices.new)
 
-  def ratchet = Hashira::CI::Ratchet.new(graph, findings.all, baseline)
+  def ratchet = Hashira::CI::Ratchet.new(graph, findings.to_a, baseline)
 
   def baseline
     Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: @checks.to_a)

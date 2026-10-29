@@ -61,7 +61,7 @@ class Hashira::Report::Text
   end
 
   def findings
-    all = @view.findings.all
+    all = @view.findings.to_a
     @io.puts("Findings (#{all.size}):")
     list(all)
     decided
@@ -78,5 +78,5 @@ class Hashira::Report::Text
     Hashira::Report::Silenced.new(@view.screened, io: @io).print
   end
 
-  def accepted = Hashira::Report::Listing.new(@io).waived("Accepted", @view.findings.accepted)
+  def accepted = Hashira::Report::Listing.new(@io).waived("Accepted", @view.findings.to_h)
 end
