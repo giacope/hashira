@@ -34,14 +34,14 @@ class Hashira::Coupling::Mentions
     Hashira::Coupling::Spoken.new(names, heard, Hashira::Coupling::Stems.new(prefixes, suffixes), referenced)
   end
 
-  def marks(census, openings)
-    reflection = Hashira::Coupling::Reflection.new(reflected, census, openings)
+  def marks(lookup, openings)
+    reflection = Hashira::Coupling::Reflection.new(reflected, lookup, openings)
     Hashira::Coupling::Marks.new(evaluated, senders.flat_map { openings.home(it) }.to_set, reflection)
   end
 
   def registry(heritage, routines, openings) = Hashira::Coupling::Registry.new(heritage, routines, registries, openings)
 
-  def handover(census, told) = Hashira::Coupling::Handover.new(handed, census, told)
+  def handover(lookup, told) = Hashira::Coupling::Handover.new(handed, lookup, told)
 
   private
 

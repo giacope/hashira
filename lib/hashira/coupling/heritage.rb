@@ -3,9 +3,9 @@
 class Hashira::Coupling::Heritage
   ALIASES = 3
 
-  def initialize(openings, census, aliases, builtins)
+  def initialize(openings, lookup, aliases, builtins)
     @openings = openings
-    @census = census
+    @lookup = lookup
     @aliases = aliases
     @builtins = builtins
   end
@@ -16,7 +16,7 @@ class Hashira::Coupling::Heritage
 
   def outside?(path) = outside[path]
 
-  def patched?(path) = !path.empty? && !builtin?(path.first) && !@census.owned?(path)
+  def patched?(path) = !path.empty? && !builtin?(path.first) && !@lookup.owned?(path)
 
   private
 
@@ -49,7 +49,7 @@ class Hashira::Coupling::Heritage
   def located(node, nesting, depth = ALIASES)
     return unless Hashira::Analysis::Syntax.new(node).static?
     segments = Hashira::Analysis::Syntax.new(node).segments
-    found = @census.locate(segments, Hashira::Analysis::Syntax.new(node).rooted? ? [] : nesting)
+    found = @lookup.locate(segments, Hashira::Analysis::Syntax.new(node).rooted? ? [] : nesting)
     aliased(found, depth) if found&.last == segments.last
   end
 

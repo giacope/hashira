@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
+  def edges(graph) = graph.edges.to_a.map(&:to_s)
+
   it "resolves a bare constant to the nested definition, not a top-level namesake" do
     files = {
       "app/models/user.rb" => "class User\n  include Authentication\n  def a = 1\nend\n",
@@ -8,7 +10,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/controllers/concerns/authentication.rb" => "module Authentication\n  def c = 1\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -19,7 +21,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/widgets/agent/settings.rb" => "module Agent\n  class Settings\n    def f = 2\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
+      expect(edges(graph)).to(eq(["controllers -> models"]))
     end
   end
 
@@ -30,11 +32,11 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/widgets/admin/settings.rb" => "module Admin\n  class Settings\n    def g = 2\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
-  def vias(census) = [census.vias(%w[Keys MUTEX]), census.vias(%w[Store])]
+  def vias(lookup) = [lookup.vias(%w[Keys MUTEX]), lookup.vias(%w[Store])]
 
   it "looks a qualified constant up through the ancestors of the type it names, as Ruby does" do
     files = {
@@ -42,7 +44,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "lib/app/store/store.rb" => "module App\n  module Store\n    include Keys\n  end\nend\n",
       "lib/app/keys/keys.rb" => "module App\n  module Keys\n    MUTEX = 1\n  end\nend\n"
     }
-    found = analyze(files) { |_project, census, graph| [graph.sightings.map(&:path), *vias(census)] }
+    found = analyze(files) { |*, graph| [graph.code.to_a.map(&:to_a), *vias(graph.lookup)] }
     expect(found).to(match([include(%w[Keys MUTEX]), eq([%w[Store]]), eq([])]))
   end
 
@@ -52,7 +54,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "lib/app/beta/helper.rb" => "module App\n  class Helper\n    def x = 1\n  end\nend\n"
     }
     analyze(files) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["alpha -> beta"]))
+      expect(edges(graph)).to(eq(["alpha -> beta"]))
     end
   end
 
@@ -63,7 +65,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/two/base.rb" => "class Base\n  def c = 1\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["one -> two"]))
+      expect(edges(graph)).to(eq(["one -> two"]))
     end
   end
 
@@ -75,7 +77,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
         "module Admin\n  class UsersController\n    def show = ::User.new\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
+      expect(edges(graph)).to(eq(["controllers -> models"]))
     end
   end
 
@@ -88,7 +90,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/widgets/format/text.rb" => "module Format\n  class Text\n    def t = 1\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["controllers -> models"]))
+      expect(edges(graph)).to(eq(["controllers -> models"]))
     end
   end
 
@@ -100,7 +102,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
     }
     analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
       expect(census.types["Foo"]).to(eq(2))
-      expect(graph.edges.map(&:to_s)).to(eq(["Foo -> Helper"]))
+      expect(edges(graph)).to(eq(["Foo -> Helper"]))
     end
   end
 
@@ -140,7 +142,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       RUBY
     }
     analyze(files) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -150,7 +152,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/nodes/sql/regexp.rb" => "module Sql\n  class Regexp\n    def r = 1\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -160,7 +162,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/note.rb" => "class Note\n  def s = [String, ::String, String::Unknown]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -169,7 +171,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/ext/#{name.downcase}.rb" => "class #{name}\n  def x = 1\nend\n",
       "app/models/note.rb" => "class Note\n  def s = #{name}\nend\n"
     }
-    analyze(files, directories: ["app"]) { |_project, _census, graph| return graph.edges.any? }
+    analyze(files, directories: ["app"]) { |_project, _census, graph| return graph.edges.to_a.any? }
   end
 
   it "leaves core and standard-library names to Ruby, loaded or not, and owns every other name it reopens" do
@@ -183,7 +185,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/note.rb" => "class Note\n  def s = File::Lock::Error\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["models -> ext"]))
+      expect(edges(graph)).to(eq(["models -> ext"]))
     end
   end
 
@@ -193,7 +195,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/visitors/sql/to_sql.rb" => "module Sql\n  class ToSql\n    def r = Regexp\n  end\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["visitors -> nodes"]))
+      expect(edges(graph)).to(eq(["visitors -> nodes"]))
     end
   end
 
@@ -205,7 +207,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
     }
     analyze(files, directories: ["app"]) do |_project, census, graph|
       expect(census.resolve(%w[Stripe RateLimitError])).to(be_nil)
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -227,7 +229,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "lib/app/core/util.rb" => "module App\n  class Util\n    def x = 1\n  end\nend\n"
     }
     analyze(files) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["alpha -> core"]))
+      expect(edges(graph)).to(eq(["alpha -> core"]))
     end
   end
 
@@ -237,7 +239,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/controllers/application_controller.rb" => "class ApplicationController\n  def t = I18n.t(:x)\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
       expect(census.resolve(%w[I18n], [%w[Crm]])).to(eq("lib"))
     end
   end
@@ -250,7 +252,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/grand/grand_child.rb" => "class GrandChild < Child\n  def h = Helper\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["grand -> helpers", "grand -> kids", "kids -> base", "kids -> helpers"]))
+      expect(edges(graph)).to(eq(["grand -> helpers", "grand -> kids", "kids -> base", "kids -> helpers"]))
     end
   end
 
@@ -270,7 +272,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       RUBY
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("outer", "base").to_a).to(eq(["outer/outer.rb:6: Parent", "outer/outer.rb:7: Helper"]))
+      expect(graph.edges["outer", "base"].evidence).to(eq(["outer/outer.rb:6: Parent", "outer/outer.rb:7: Helper"]))
     end
   end
 
@@ -283,7 +285,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/user.rb" => "class User\n  include Mixin\n  prepend Front\n  def t = [Tool, Gear]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["models -> gears", "models -> mixins", "models -> tools"]))
+      expect(edges(graph)).to(eq(["models -> gears", "models -> mixins", "models -> tools"]))
     end
   end
 
@@ -296,7 +298,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/user.rb" => "class User\n  include\n  extend Side\n  base.include Other\n  def t = [Knob, Lever]\nend"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["models -> mixins"]))
+      expect(edges(graph)).to(eq(["models -> mixins"]))
     end
   end
 
@@ -312,7 +314,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       RUBY
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["kids -> lookup"]))
+      expect(edges(graph)).to(eq(["kids -> lookup"]))
     end
   end
 
@@ -322,7 +324,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/lib/app_logger.rb" => "class AppLogger < ::Logger\n  def e = [ERROR, Levels]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("lib", "models").to_a).to(eq(["lib/app_logger.rb:2: Levels"]))
+      expect(graph.edges["lib", "models"].evidence).to(eq(["lib/app_logger.rb:2: Levels"]))
     end
   end
 
@@ -341,7 +343,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
         "class AgentRunner\n  def s = [Rufus::Scheduler.new, Rufus::Scheduler::Job, Rufus::Scheduler::TAG]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("runners", "lib").to_a).to(eq(["runners/agent_runner.rb:2: Rufus::Scheduler::TAG"]))
+      expect(graph.edges["runners", "lib"].evidence).to(eq(["runners/agent_runner.rb:2: Rufus::Scheduler::TAG"]))
     end
   end
 
@@ -352,7 +354,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/cable/cable.rb" => "class Cable\n  def c = [Rack, ::Rack::BodyProxy, Rack::Utils::OK, ActionDispatch]\nend"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("cable", "dispatch").to_a).to(eq(["cable/cable.rb:2: ActionDispatch"]))
+      expect(graph.edges["cable", "dispatch"].evidence).to(eq(["cable/cable.rb:2: ActionDispatch"]))
     end
   end
 
@@ -362,7 +364,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/controllers/renderer.rb" => "class Renderer\n  def r = Mime::Type\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["controllers -> http"]))
+      expect(edges(graph)).to(eq(["controllers -> http"]))
     end
   end
 
@@ -384,7 +386,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/note.rb" => "class Note\n  def n = [Logger::Tagged::Hook, Logger::Backend, Logger]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("models", "ext").to_a).to(eq(["models/note.rb:2: Logger::Tagged::Hook"]))
+      expect(graph.edges["models", "ext"].evidence).to(eq(["models/note.rb:2: Logger::Tagged::Hook"]))
     end
   end
 
@@ -394,7 +396,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/note.rb" => "class Note\n  def n = I18n::Backend\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["models -> ext"]))
+      expect(edges(graph)).to(eq(["models -> ext"]))
     end
   end
 
@@ -404,7 +406,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/models/note.rb" => "class Note\n  def n = [Time::DATE_FORMATS, Time::Zone, Time]\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.evidence("models", "ext").to_a).to(eq(["models/note.rb:2: Time::DATE_FORMATS"]))
+      expect(graph.edges["models", "ext"].evidence).to(eq(["models/note.rb:2: Time::DATE_FORMATS"]))
     end
   end
 
@@ -415,7 +417,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "app/jobs/sweep.rb" => "class Sweep\n  def s = User\nend\n"
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["jobs -> models"]))
+      expect(edges(graph)).to(eq(["jobs -> models"]))
     end
   end
 
@@ -435,7 +437,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       RUBY
     }
     analyze(files, directories: ["app"]) do |_project, _census, graph|
-      expect(graph.weight("kids", "shop")).to(eq(4))
+      expect(graph.edges["kids", "shop"].to_a).to(eq(["kids", "shop", 4]))
     end
   end
 
@@ -452,7 +454,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
     it "resolves a class_name string on every association macro as a reference" do
       %w[has_many has_one belongs_to has_and_belongs_to_many].each do |macro|
         associated("#{macro} :bills, class_name: \"Billing::Invoice\"") do |graph|
-          expect(graph.evidence("User", "Billing").to_a).to(eq(["models/user.rb:2: Billing::Invoice"]))
+          expect(graph.edges["User", "Billing"].evidence).to(eq(["models/user.rb:2: Billing::Invoice"]))
         end
       end
     end
@@ -471,7 +473,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
         RUBY
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-        expect(graph.evidence("Shop", "Invoice").to_a).to(eq(["models/shop/cart.rb:4: Invoice"]))
+        expect(graph.edges["Shop", "Invoice"].evidence).to(eq(["models/shop/cart.rb:4: Invoice"]))
       end
     end
 
@@ -482,7 +484,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
         "validates :bills, class_name: \"Billing::Invoice\"", "self.class.has_many :bills, class_name: \"Billing::Invoice\"",
         "has_many :bills, **options", "has_many"
       ].each do |body|
-        associated(body) { |graph| expect(graph.outgoing("User")).to(be_empty) }
+        associated(body) { |graph| expect(graph.edges.outgoing("User")).to(be_empty) }
       end
     end
   end
@@ -494,7 +496,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "lib/shop/shipping.rb" => "module Shop\n  module Shipping\n    def self.zones = 3\n  end\nend\n"
     }
     analyze(files, directories: ["lib/shop"]) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["billing -> shipping"]))
+      expect(edges(graph)).to(eq(["billing -> shipping"]))
     end
   end
 
@@ -515,7 +517,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
   end
 
   it "infers an association's class from its name, as Active Record does" do
-    edges = analyze(associations, directories: ["app"], packaging: :namespace) { |*, graph| graph.edges.map(&:to_s) }
+    edges = analyze(associations, directories: ["app"], packaging: :namespace) { |*, graph| edges(graph) }
     expect(edges).to(
       include("Author -> Post", "Author -> Profile", "Author -> Tag", "Post -> Author", "Post -> Category")
         .and(include("Remark -> Label", "Feed -> Remark", "Lab -> Cactus", "Lab -> Owner", "Lab -> Media"))

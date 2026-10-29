@@ -14,11 +14,15 @@ class Hashira::Coupling::Rule
 
   def paths = @_paths ||= project.paths
 
-  def framework = @_framework ||= project.framework
+  def code = @_code ||= graph.code
 
-  def listing = @_listing ||= project.listing
+  def packages = @_packages ||= graph.packages
 
-  def metrics = @_metrics ||= graph.metrics
+  def edges = @_edges ||= graph.edges
+
+  def lookup = @_lookup ||= graph.lookup
+
+  def metrics = @_metrics ||= packages.to_h
 
   def threshold(default) = @rules.limit(self.class::KIND, "threshold", default)
 

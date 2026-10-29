@@ -20,8 +20,8 @@ class Hashira::Coupling::Audiences
 
     def heavy?(sizes) = @constants.size >= MIN && @users.sum { sizes.fetch(it, FLOOR) } >= FLOOR
 
-    def sightings(package, graph)
-      @users.flat_map { |client| graph.evidence(client, package).to_a.select { mentions?(it) } }
+    def sightings(package, edges)
+      @users.flat_map { |client| edges[client, package].evidence.select { mentions?(it) } }
     end
 
     private

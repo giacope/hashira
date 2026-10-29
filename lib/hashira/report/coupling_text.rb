@@ -12,7 +12,7 @@ class Hashira::Report::CouplingText
     header
     @page.table(Hashira::Report::MetricsTable, @graph)
     @page.table(Hashira::Report::DependencyMap, @graph)
-    folded(@graph.folds)
+    folded(packages.folds)
   end
 
   private
@@ -25,9 +25,9 @@ class Hashira::Report::CouplingText
   end
 
   def header
-    packages = @graph.packages.size
-    @page.puts(banner(@graph.packaging, packages))
-    caveat if packages == 1
+    size = packages.to_a.size
+    @page.puts(banner(packages, size))
+    caveat if size == 1
   end
 
   def banner(grouping, packages)
@@ -36,6 +36,8 @@ class Hashira::Report::CouplingText
   end
 
   def count(number, noun) = Hashira::Prose::Count.new(number, noun).to_s
+
+  def packages = @_packages ||= @graph.packages
 
   def caveat
     @page.puts(

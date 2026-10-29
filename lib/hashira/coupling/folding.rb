@@ -9,10 +9,11 @@ class Hashira::Coupling::Folding
 
   KINDS = %w[base mixin suffix plural].freeze
 
-  def initialize(definitions, census, rails:)
+  def initialize(definitions, roster, scope, framework)
     @definitions = definitions
-    @census = census
-    @rails = rails
+    @roster = roster
+    @scope = scope
+    @framework = framework
   end
 
   def map = @_map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
@@ -29,9 +30,11 @@ class Hashira::Coupling::Folding
     @_parents ||= singles.select { |_name, kin| kin.parent.any? }.to_h { |name, kin| [name, target(kin)] }.compact
   end
 
-  def named = singles.keys.to_h { [it, crop(it)] }.select { |_name, stem| stem && @census.packages.include?(stem) }
+  def named = singles.keys.to_h { [it, crop(it)] }.select { |_name, stem| stem && packages.include?(stem) }
 
-  def suffixes = @rails ? SUFFIXES : []
+  def packages = @_packages ||= @roster.to_a
+
+  def suffixes = @framework.rails? ? SUFFIXES : []
 
   def crop(name)
     suffix = suffixes.find { trims?(name, it) }
@@ -40,11 +43,13 @@ class Hashira::Coupling::Folding
 
   def trims?(name, suffix) = name.end_with?(suffix) && name != suffix
 
-  def plurals = known.map { [@census.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
+  def plurals = known.map { [inflection.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
+
+  def inflection = @_inflection ||= @framework.inflection
 
   def plural?(many, one) = many != one && known.include?(many)
 
-  def known = @_known ||= @census.packages.to_set
+  def known = @_known ||= packages.to_set
 
   def mixins = badges.flat_map { |name, badge| adopted(badge).map { [name, it] } }.to_h
 
@@ -72,7 +77,7 @@ class Hashira::Coupling::Folding
 
   def target(kin) = pinpoint(kin.parent.first)
 
-  def pinpoint(node) = @census.pinpoint(Hashira::Analysis::Syntax.new(node).segments)
+  def pinpoint(node) = @scope.pinpoint(Hashira::Analysis::Syntax.new(node).segments)
 
   def settle(name, links)
     trail = [name]

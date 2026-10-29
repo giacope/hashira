@@ -5,8 +5,9 @@ class Hashira::Coupling::Roster
 
   private_constant :AMBIGUOUS
 
-  def initialize(placed)
-    @placed = placed
+  def initialize(placement, folding)
+    @placement = placement
+    @folding = folding
   end
 
   def to_a = to_h.keys | (origins.values.uniq - [AMBIGUOUS])
@@ -25,7 +26,11 @@ class Hashira::Coupling::Roster
 
   private
 
-  def admitted = @_admitted ||= @placed.select(&:last)
+  def admitted
+    @_admitted ||= @placement.placed.map { |definition, package| [definition, translate(package)] }.select(&:last)
+  end
+
+  def translate(package) = @folding.map.fetch(package, package)
 
   def typed = @_typed ||= admitted.map(&:first).select { it.form.type? }.to_set(&:to_a)
 

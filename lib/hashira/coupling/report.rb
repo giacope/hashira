@@ -17,14 +17,18 @@ class Hashira::Coupling::Report
 
   ANALYZER = :coupling
 
-  def initialize(project, trees, rules, plan)
-    @project = project
-    @trees = trees
-    @rules = rules
-    @plan = plan
+  def self.build(project, trees, rules, plan)
+    new(project, rules, plan, Hashira::Coupling::Lazy.new { Hashira::Coupling::Graph.build(project, trees) })
   end
 
-  def graph = @_graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
+  def initialize(project, rules, plan, graph)
+    @project = project
+    @rules = rules
+    @plan = plan
+    @graph = graph
+  end
+
+  def graph = @graph.call
 
   def findings
     return [] unless runs?
@@ -33,13 +37,9 @@ class Hashira::Coupling::Report
 
   def shown = runs? ? [graph] : []
 
-  def unlayered(files) = @plan.unlayered(files) { graph.census }
+  def unlayered(files) = @plan.unlayered(files) { graph.code }
 
   private
 
   def runs? = @plan.enabled?(ANALYZER)
-
-  def census = Hashira::Coupling::Census.new(@project, @trees, packaging: framework.packaging)
-
-  def framework = @_framework ||= @project.framework
 end

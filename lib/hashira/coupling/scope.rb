@@ -1,16 +1,16 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Scope
-  def initialize(roster, catalog, placement, lineage = Hashira::Coupling::Lineage.new(catalog))
+  def initialize(roster, catalog, layout, lineage = Hashira::Coupling::Lineage.new(catalog))
     @roster = roster
     @catalog = catalog
-    @placement = placement
+    @layout = layout
     @lineage = lineage
   end
 
   def resolve(segments, nesting)
     found = locate(segments, nesting)
-    owner(found) if found && !@placement.skip?(found)
+    owner(found) if found && !@layout.skip?(found)
   end
 
   def locate(segments, nesting) = bind(Hashira::Coupling::Ancestor.new(segments, nesting), 1)

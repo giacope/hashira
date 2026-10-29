@@ -40,6 +40,14 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
     )
   end
 
+  it "does not report a model whose associations lead back to itself" do
+    files = {
+      "config/application.rb" => "module Shop; class Application; end; end\n",
+      "app/models/user.rb" => "class User\n  has_many :users\n  belongs_to :user\nend\n"
+    }
+    expect(found(files, "bidirectional_association")).to(be_empty)
+  end
+
   it "reports a model once for every model it is navigated both ways with, naming each class, namespaced or not" do
     finding = found(crowd).first
     said = "User is navigated both ways by 3 models, Comment, Post, Trs::TrnRequest: each declares an association " \

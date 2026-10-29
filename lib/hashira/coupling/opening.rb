@@ -10,9 +10,9 @@ class Hashira::Coupling::Opening
     @file = file
   end
 
-  def declared(census)
-    [[@node, full, true], *written].map { |node, name, exposed| constant(census, node, name, exposed) }
-      .select { census.owned?(it.to_a) }
+  def declared(lookup)
+    [[@node, full, true], *written].map { |node, name, exposed| constant(lookup, node, name, exposed) }
+      .select { lookup.owned?(it.to_a) }
   end
 
   def defined
@@ -47,8 +47,8 @@ class Hashira::Coupling::Opening
     call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
   end
 
-  def constant(census, node, name, exposed)
+  def constant(lookup, node, name, exposed)
     label = Hashira::Coupling::Label.new(name.join("::"), @file, line(node))
-    Hashira::Coupling::Constant.new(label, census.strip(name), exposed)
+    Hashira::Coupling::Constant.new(label, lookup.strip(name), exposed)
   end
 end

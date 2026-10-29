@@ -19,7 +19,8 @@ class Hashira::Report::MetricsTable
   TEXT
 
   def print
-    Hashira::Report::Columns.new(HEADERS, kept.map { |package, metric| row(package, metric) }, io: @io).print
+    cycles = packages.cycles
+    Hashira::Report::Columns.new(HEADERS, kept.map { |package, metric| row(package, metric, cycles) }, io: @io).print
     note unless spared.empty?
     more unless over.zero?
     @io.puts(LEGEND)
@@ -27,17 +28,15 @@ class Hashira::Report::MetricsTable
 
   private
 
-  def ranked = @graph.metrics.sort_by { |_package, metric| metric.order }
+  def ranked = packages.to_h.sort_by { |_package, metric| metric }
 
-  def split = @_split ||= (ranked.size > @top ? ranked.partition { |_package, metric| !leaf?(metric) } : [ranked, []])
+  def split = @_split ||= (ranked.size > @top ? ranked.partition { |_package, metric| !metric.leaf? } : [ranked, []])
 
   def kept = split.first.first(@top)
 
   def spared = split.last
 
   def over = split.first.size - kept.size
-
-  def leaf?(metric) = metric.types <= 1 && metric.efferent.zero? && metric.afferent <= 1
 
   def note
     leaves = Hashira::Prose::Count.new(spared.size, "single-type leaf package")
@@ -46,5 +45,7 @@ class Hashira::Report::MetricsTable
 
   def more = @io.puts(Hashira::Report::Withheld.new(over).to_s)
 
-  def row(package, metric) = [package, *metric.cells, @graph.cycles.through?(package) ? "YES" : "-"]
+  def row(package, metric, cycles) = [package, *metric.to_a, cycles.path(package) ? "YES" : "-"]
+
+  def packages = @_packages ||= @graph.packages
 end

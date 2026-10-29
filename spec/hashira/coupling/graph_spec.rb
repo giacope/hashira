@@ -6,13 +6,16 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
     "module App; module #{name.capitalize}; class X; def c = [#{refs}]; end; end; end\n"
   end
 
+  # The metrics of the named packages, and the graph's SDP violations.
+  def judged(graph, *names) = [*graph.packages.to_h.values_at(*names), graph.packages.violations]
+
   def with_cycle(&)
     analyze(Fixtures::CYCLIC_FILES) { |_project, _census, graph| yield(graph) }
   end
 
   it "builds edges from constant references, skipping self-references" do
     with_cycle do |graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["alpha -> beta", "alpha -> core", "beta -> alpha"]))
+      expect(graph.edges.to_a.map(&:to_s)).to(eq(["alpha -> beta", "alpha -> core", "beta -> alpha"]))
     end
   end
 
@@ -22,7 +25,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       "lib/app/beta/one.rb" => "module App; module Beta; class One; def a = 1; end; end; end\n"
     }
     analyze(files) do |_project, _census, graph|
-      expect(graph.edges).to(be_empty)
+      expect(graph.edges.to_a).to(be_empty)
     end
   end
 
@@ -40,7 +43,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       RUBY
       "lib/app/alpha/two.rb" => "module App; module Alpha; class Two; def a = 1; end; end; end\n"
     }
-    found = analyze(files) { |_project, _census, graph| [graph.edges, graph.evidence("alpha", "alpha")] }
+    found = analyze(files) { |_project, _census, graph| [graph.edges.to_a, graph.edges["alpha", "alpha"].evidence] }
     expect(found).to(all(be_empty))
   end
 
@@ -50,15 +53,15 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       "lib/app/beta/child.rb" => "module App; module Beta; class Child < Alpha::Base; def b = 1; end; end; end\n"
     }
     analyze(files) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["beta -> alpha"]))
+      expect(graph.edges.to_a.map(&:to_s)).to(eq(["beta -> alpha"]))
     end
   end
 
   describe "#usage" do
     it "records which of a package's constants each client touches" do
       with_cycle do |graph|
-        expect(graph.usage("core")).to(eq("alpha" => Set["Core::Util"]))
-        expect(graph.usage("alpha")).to(eq("beta" => Set["Alpha::One"]))
+        expect(graph.edges.usage("core")).to(eq("alpha" => Set["Core::Util"]))
+        expect(graph.edges.usage("alpha")).to(eq("beta" => Set["Alpha::One"]))
       end
     end
 
@@ -72,7 +75,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         RUBY
       }
       analyze(files) do |_project, _census, graph|
-        expect(graph.usage("core")).to(eq("main" => Set["Core::Util"]))
+        expect(graph.edges.usage("core")).to(eq("main" => Set["Core::Util"]))
       end
     end
   end
@@ -80,7 +83,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#outgoing / #incoming" do
     it "returns sorted package lists" do
       with_cycle do |graph|
-        expect([graph.outgoing("alpha"), graph.incoming("alpha"), graph.incoming("core"), graph.outgoing("core")])
+        edges = graph.edges
+        expect([edges.outgoing("alpha"), edges.incoming("alpha"), edges.incoming("core"), edges.outgoing("core")])
           .to(eq([%w[beta core], %w[beta], %w[alpha], []]))
       end
     end
@@ -89,23 +93,23 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#metric" do
     it "computes Ca, Ce, instability, and type count" do
       with_cycle do |graph|
-        expect(graph.metric("alpha").to_h).to(eq(tc: 1, ca: 1, ce: 2, i: 2.0 / 3))
-        expect(graph.metric("core").to_h).to(eq(tc: 1, ca: 1, ce: 0, i: 0.0))
+        expect(graph.packages.to_h["alpha"].to_h).to(eq(tc: 1, ca: 1, ce: 2, i: 2.0 / 3))
+        expect(graph.packages.to_h["core"].to_h).to(eq(tc: 1, ca: 1, ce: 0, i: 0.0))
       end
     end
 
     it "leaves instability unset for an unconnected package, rather than calling it maximally stable" do
       files = { "lib/app/solo/x.rb" => "module App; module Solo; class X; def a = 1; end; end; end\n" }
-      solo = analyze(files) { |_project, _census, graph| graph.metric("solo") }
-      expect([solo.to_h, solo.isolated?, solo.cells]).to(eq([{ tc: 1, ca: 0, ce: 0, i: nil }, true, [1, 0, 0, "—"]]))
+      solo = analyze(files) { |_project, _census, graph| graph.packages.to_h["solo"] }
+      expect([solo.to_h, solo.to_a]).to(eq([{ tc: 1, ca: 0, ce: 0, i: nil }, [1, 0, 0, "—"]]))
     end
   end
 
   describe "#metrics" do
     it "maps every package to its metric" do
       with_cycle do |graph|
-        expect(graph.metrics.keys).to(contain_exactly("alpha", "beta", "core"))
-        expect(graph.metrics["beta"]).to(eq(graph.metric("beta")))
+        expect(graph.packages.to_h.keys).to(contain_exactly("alpha", "beta", "core"))
+        expect(graph.packages.to_h["beta"].to_h).to(eq(tc: 1, ca: 1, ce: 1, i: 0.5))
       end
     end
 
@@ -114,18 +118,16 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/solo/x.rb" => "module App; module Solo; class X; def a = 1; end; end; end\n"
       )
       analyze(files) do |_project, _census, graph|
-        ranked = graph.metrics.sort_by { |_package, metric| metric.order }.map(&:first)
+        ranked = graph.packages.to_h.sort_by(&:last).map(&:first)
         expect(ranked).to(eq(%w[core beta alpha solo]))
       end
     end
   end
 
-  describe "#cycles.through?" do
-    it "is true only for packages that can reach themselves" do
+  describe "#cycles.path, for each package" do
+    it "finds a way back only for packages that can reach themselves" do
       with_cycle do |graph|
-        expect(graph.cycles.through?("alpha")).to(be(true))
-        expect(graph.cycles.through?("beta")).to(be(true))
-        expect(graph.cycles.through?("core")).to(be(false))
+        expect(%w[alpha beta core].map { graph.packages.cycles.path(it).nil? }).to(eq([false, false, true]))
       end
     end
   end
@@ -133,9 +135,9 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#weight and #evidence" do
     it "counts distinct references backing an edge" do
       with_cycle do |graph|
-        expect([graph.weight("beta", "alpha"), graph.weight("alpha", "core")]).to(eq([2, 1]))
-        expect(graph.evidence("alpha", "core").to_a).to(eq(["alpha/one.rb:5: Core::Util"]))
-        expect(graph.evidence("beta", "alpha").to_a)
+        expect([graph.edges["beta", "alpha"].evidence.size, graph.edges["alpha", "core"].evidence.size]).to(eq([2, 1]))
+        expect(graph.edges["alpha", "core"].evidence).to(eq(["alpha/one.rb:5: Core::Util"]))
+        expect(graph.edges["beta", "alpha"].evidence)
           .to(contain_exactly("beta/two.rb:4: Alpha::One", "beta/two.rb:5: App::Alpha::One"))
       end
     end
@@ -144,8 +146,8 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#cycles.path" do
     it "returns the shortest path back to the package" do
       with_cycle do |graph|
-        expect(graph.cycles.path("alpha")).to(eq(%w[alpha beta alpha]))
-        expect(graph.cycles.path("core")).to(be_nil)
+        expect(graph.packages.cycles.path("alpha")).to(eq(%w[alpha beta alpha]))
+        expect(graph.packages.cycles.path("core")).to(be_nil)
       end
     end
 
@@ -156,7 +158,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/c/x.rb" => "module App; module C; class X; def c = B::X; end; end; end\n"
       }
       analyze(files) do |_project, _census, graph|
-        expect(graph.cycles.path("a")).to(eq(%w[a b a]))
+        expect(graph.packages.cycles.path("a")).to(eq(%w[a b a]))
       end
     end
 
@@ -167,7 +169,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/c/x.rb" => "module App; module C; class X; def c = A::X; end; end; end\n"
       }
       analyze(files) do |_project, _census, graph|
-        expect(graph.cycles.path("a")).to(eq(%w[a b c a]))
+        expect(graph.packages.cycles.path("a")).to(eq(%w[a b c a]))
       end
     end
   end
@@ -176,14 +178,14 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
     it "groups the packages that can reach one another, one knot each" do
       uses = { "a" => %w[b], "b" => %w[a c], "c" => %w[d], "d" => %w[c e], "e" => [] }
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        expect(graph.cycles.knots).to(eq([%w[a b], %w[c d]]))
+        expect(graph.packages.cycles.knots).to(eq([%w[a b], %w[c d]]))
       end
     end
 
     it "finds a ring as one knot, whichever member it starts from" do
       uses = { "a" => [], "b" => %w[d], "c" => %w[b], "d" => %w[c] }
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        expect(graph.cycles.knots).to(eq([%w[b c d]]))
+        expect(graph.packages.cycles.knots).to(eq([%w[b c d]]))
       end
     end
   end
@@ -191,14 +193,14 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
   describe "#cycles.cut" do
     def cut(uses)
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        members = graph.cycles.knots.first
-        yield(graph.cycles.cut(members).edges)
+        members = graph.packages.cycles.knots.first
+        yield(graph.packages.cycles.cut(members).edges)
       end
     end
 
     def knot_cut(uses)
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        graph.cycles.cut(graph.cycles.knots.first).then { [it.exact?, it.edges] }
+        graph.packages.cycles.cut(graph.packages.cycles.knots.first).then { [it.exact?, it.edges] }
       end
     end
 
@@ -247,7 +249,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/leaf/x.rb" => "module App; module Leaf; class X; def a = 1; end; end; end\n"
       }
       analyze(files) do |_project, _census, graph|
-        expect(graph.violations).to(be_empty)
+        expect(graph.packages.violations).to(be_empty)
       end
     end
 
@@ -257,7 +259,7 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/b/x.rb" => "module App; module B; class X; def c = A::X; end; end; end\n"
       }
       analyze(files) do |_project, _census, graph|
-        expect(graph.violations).to(be_empty)
+        expect(graph.packages.violations).to(be_empty)
       end
     end
 
@@ -265,14 +267,15 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
       uses = { "a" => %w[b x1 x2], "b" => %w[y1 y2 y3 y4 y5] }
       uses.merge!(%w[p1 p2 p3 p4 p5].to_h { [it, %w[a]] }, %w[q1 q2 q3 q4 q5 q6 q7].to_h { [it, %w[b]] })
       files = (uses.keys | uses.values.flatten).to_h { ["lib/app/#{it}/x.rb", source(it, uses.fetch(it, []))] }
-      a, b, violations = analyze(files) { |*, graph| [*graph.metrics.values_at("a", "b"), graph.violations] }
-      expect([a.instability < b.instability, a.shown, b.shown, violations]).to(eq([true, "0.38", "0.38", []]))
+      a, b, violations = analyze(files) { |*, graph| judged(graph, "a", "b") }
+      expect([a.instability < b.instability, a.to_a.last, b - a, violations]).to(eq([true, "0.38", 0.0, []]))
     end
 
     it "does not flag an edge whose ends share a cycle" do
       uses = { "a" => %w[b], "b" => %w[a p q], "c1" => %w[a], "c2" => %w[a], "p" => [], "q" => [] }
       analyze(uses.to_h { |name, list| ["lib/app/#{name}/x.rb", source(name, list)] }) do |_project, _census, graph|
-        expect([graph.metric("a").level, graph.metric("b").level, graph.violations]).to(eq([0.25, 0.75, []]))
+        a, b, violations = judged(graph, "a", "b")
+        expect([a.to_a.last, b.to_a.last, b - a, violations]).to(eq(["0.25", "0.75", 0.5, []]))
       end
     end
 
@@ -282,13 +285,13 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
         "lib/app/depot/x.rb" => "module App; module Depot; class X; def c = Stock::X; end; end; end\n"
       )
       analyze(files) do |_project, _census, graph|
-        expect(graph.violations).to(eq([%w[stock pricing]]))
+        expect(graph.packages.violations).to(eq([%w[stock pricing]]))
       end
     end
 
     it "reports the offending edges" do
       analyze(Fixtures::UNSTABLE_FILES) do |_project, _census, graph|
-        expect(graph.violations).to(eq([%w[stock pricing]]))
+        expect(graph.packages.violations).to(eq([%w[stock pricing]]))
       end
     end
   end

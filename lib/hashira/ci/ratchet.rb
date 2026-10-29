@@ -20,7 +20,7 @@ class Hashira::CI::Ratchet
     newer(history)
     compared = focus.narrowing? ? Hashira::CI::Slice.new : Hashira::CI::Sweep.new
     deltas = history.findings(compared, scored(history.judged(@findings)))
-    edges = compared.edges(history.drift(@graph.edges))
+    edges = compared.edges(history.drift(@graph.edges.to_a))
     report = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
     report.print(edges, deltas, tally(compared))
     report.status(edges, deltas)
@@ -32,7 +32,7 @@ class Hashira::CI::Ratchet
 
   private
 
-  def packaging = @graph.packaging.to_s
+  def packaging = @graph.packages.to_s
 
   def recorded = collapsed(@findings.size, scored(@findings).size)
 
@@ -43,9 +43,9 @@ class Hashira::CI::Ratchet
 
   def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
 
-  def edges = @graph.edges.map(&:to_s)
+  def edges = @graph.edges.to_a.map(&:to_s)
 
-  def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
+  def tally(compared) = compared.counts("#{@graph.edges.to_a.size} edges", "#{@findings.size} findings").join(", ")
 
   def scored(findings) = findings.reduce(Hashira::CI::Marks.new) { |marks, finding| finding.scored(marks) }
 end

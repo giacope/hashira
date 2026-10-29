@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Handover
-  def initialize(handed, census, told, foreign = :foreign)
+  def initialize(handed, lookup, told, foreign = :foreign)
     @handed = handed
-    @census = census
+    @lookup = lookup
     @told = told
     @foreign = foreign
   end
@@ -26,7 +26,7 @@ class Hashira::Coupling::Handover
   end
 
   def exact(segments, nesting)
-    found = @census.locate(segments, nesting)
+    found = @lookup.locate(segments, nesting)
     found && found.last == segments.last ? [found] : []
   end
 end

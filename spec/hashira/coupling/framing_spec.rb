@@ -5,12 +5,14 @@ RSpec.describe(Hashira::Coupling::Framing, :aggregate_failures) do
     within("lib/app/base.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       graph = outcome(Hashira::Pipeline.build(project)).graph
-      framed(Hashira::Coupling::Surface.new(project.paths, graph.trees, graph.census), graph)
+      trees = graph.code.to_h
+      roots = Hashira::Coupling::Autoload.new(project, trees).roots
+      framed(Hashira::Coupling::Surface.new(project.paths, trees, graph.lookup, roots), trees, graph.lookup)
     end
   end
 
-  def framed(surface, graph)
-    marks = Hashira::Coupling::Mentions.new(graph.trees).marks(graph.census, surface.openings)
+  def framed(surface, trees, lookup)
+    marks = Hashira::Coupling::Mentions.new(trees).marks(lookup, surface.openings)
     framing = described_class.new(surface.heritage, Fakes::Hosting.new([["Base"]]), surface.methods, marks)
     surface.methods.reject { framing.framed?(it) }.map(&:to_a)
   end

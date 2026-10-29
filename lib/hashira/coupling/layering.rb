@@ -5,15 +5,6 @@ require_relative "rule"
 class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   KIND = "layer_violation"
 
-  Crossing =
-    Data.define(:sighting, :source, :target, :to) do
-      def outward? = source > target
-
-      def ends = [sighting.holder, to]
-
-      def site = sighting.site
-    end
-
   class Breach
     def initialize(inner, outer, ties, leanings)
       @inner = inner
@@ -46,7 +37,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   end
 
   def list
-    outward.group_by { [it.source, it.target] }.sort.map { |(inner, outer), group| entry(inner, outer, group) }
+    outward.group_by(&:to_a).sort.map { |(inner, outer), group| entry(inner, outer, group) }
   end
 
   private
@@ -55,48 +46,47 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def outward = crossings.select(&:outward?)
 
-  def crossings = @_crossings ||= graph.sightings.flat_map { crossing(it) }
+  def crossings = @_crossings ||= code.to_a.flat_map { crossing(it) }
 
   def crossing(sighting)
-    source = @plan.layered { it.rank(sighting.file, sighting.from) }
+    source = @plan.layered { sighting.rank(it) }
     return [] unless source
-    placed(sighting).map { |target, to| Crossing.new(sighting:, source:, target:, to:) }
+    placed(sighting).map { |target, to| sighting.cross(source, target, to) }
   end
 
-  def placed(sighting) = (@_placed ||= {})[sighting.name] ||= place(sighting.path)
-
-  def census = graph.census
+  def placed(sighting)
+    path = sighting.to_a
+    (@_placed ||= {})[path] ||= place(path)
+  end
 
   def place(path)
-    ranks = census.files(path).filter_map { |file| @plan.layered { it.rank(file, census.home(file)) } }.uniq
-    ranks.one? ? [[ranks.fetch(0), census.holder(path)]] : []
+    ranks = code.files(path).filter_map { |file| @plan.layered { it.rank(file, code.home(file)) } }.uniq
+    ranks.one? ? [[ranks.fetch(0), code.holder(path)]] : []
   end
 
   def entry(inner, outer, group)
     inside, outside = names.values_at(inner, outer)
-    proof = Hashira::Analysis::Finding::Proof.new(sites(group), group.map(&:site).uniq)
-    breach = Breach.new(inside, outside, Hashira::Coupling::Ties.new(edges(group)), leanings)
+    proof = Hashira::Analysis::Finding::Proof.new(sites(group), group.map(&:to_s).uniq)
+    breach = Breach.new(inside, outside, Hashira::Coupling::Ties.new(weighed(group)), leanings)
     finding(between(inside, outside), breach, proof)
   end
 
-  def edges(group)
+  def weighed(group)
     weights = group.map(&:ends).tally
     weights.map { |(from, to), weight| [from, to, weight] }.sort_by { |from, to, weight| [weight, from, to] }
   end
 
-  def sites(group) = group.map { it.sighting.evidence }.uniq.sort
-
-  def cut
-    @_cut ||=
-      Hashira::Coupling::Cut.new(
-        names, crossings.map { [names[it.source], names[it.target]] }.tally.map { |ends, weight| [*ends, weight] },
-        names.each_with_index.to_h
-      )
-  end
+  def sites(group) = group.map(&:evidence).uniq.sort
 
   def leanings
-    against = cut.cost
-    order = cut.order
+    found = cut
+    against = found.cost
+    order = found.order
     against < outward.size && @plan.layered { it.allows?(order) } ? [[order, against]] : []
+  end
+
+  def cut
+    tallied = crossings.map { names.values_at(*it.to_a) }.tally.map { |ends, weight| [*ends, weight] }
+    Hashira::Coupling::Cut.new(names, tallied, names.each_with_index.to_h)
   end
 end

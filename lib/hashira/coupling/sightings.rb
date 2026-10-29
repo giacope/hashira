@@ -1,44 +1,42 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Sightings
-  Sighting =
-    Data.define(:file, :from, :path, :site, :label, :holder) do
-      def name = path.join("::")
-
-      def evidence = "#{site}: #{label}"
-    end
-
-  def initialize(project, trees, census)
-    @project = project
-    @trees = trees
-    @census = census
+  def initialize(reading, scope, ledger, catalog)
+    @reading = reading
+    @scope = scope
+    @ledger = ledger
+    @catalog = catalog
   end
 
-  def to_a = @_to_a ||= @trees.flat_map { |file, tree| seen(file, tree) }
+  def to_a = @_to_a ||= seen
+
+  def code = Hashira::Coupling::Code.new(self, @reading, @ledger)
+
+  def lookup = Hashira::Coupling::Lookup.new(@scope, @catalog)
 
   private
 
-  def paths = @_paths ||= @project.paths
+  def seen
+    found = []
+    @reading.each { |source, file, tree, references| found.concat(sighted(source, file, tree, references)) }
+    found
+  end
+
+  def sighted(source, file, tree, references)
+    references.sightings(tree).filter_map do |segments, line, nesting, home|
+      path = @scope.locate(segments, nesting || [])
+      next unless path
+      said = Hashira::Coupling::Said.new("#{source}:#{line}", segments.join("::"), holder(nesting, source))
+      Hashira::Coupling::Sighting.new(file, @ledger.charge(file, home, path), path, said)
+    end
+  end
 
   def holder(nesting, source)
     inner = Array(nesting).last
     if inner
-      @census.strip(inner).join("::").then { it.empty? ? inner.join("::") : it }
+      @catalog.strip(inner).join("::").then { it.empty? ? inner.join("::") : it }
     else
       source
-    end
-  end
-
-  def seen(file, tree)
-    source = paths.relative(file)
-    references = Hashira::Coupling::References.new(@census.roots, @census.associations)
-    references.sightings(tree).filter_map do |segments, line, nesting, home|
-      path = @census.locate(segments, nesting || [])
-      next unless path
-      Sighting.new(
-        file:, from: @census.charge(file, home, path), path:, site: "#{source}:#{line}",
-        label: segments.join("::"), holder: holder(nesting, source)
-      )
     end
   end
 end

@@ -5,7 +5,7 @@ class Hashira::Analyzers
     all = trees.all
     paths = project.paths
     new(
-      Hashira::Coupling::Report.new(project, all, rules, plan),
+      Hashira::Coupling::Report.build(project, all, rules, plan),
       [Hashira::Complexity::Scores.new(paths, all, rules, trees)].select { plan.enabled?(:complexity) },
       [Hashira::Duplication::Clones.new(paths, all)].select { plan.enabled?(:duplication) },
       [Hashira::Smells::Survey.new(Hashira::Smells::Census.new(project, all), project.boundaries(all), rules)]

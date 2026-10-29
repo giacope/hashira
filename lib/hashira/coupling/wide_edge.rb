@@ -23,16 +23,16 @@ class Hashira::Coupling::WideEdge < Hashira::Coupling::Rule
   end
 
   def list
-    graph.domain.select { wide?(it) }.map { entry(it) }
+    edges.to_a.reject(&:aside?).select { wide?(it) }.map { entry(it) }
   end
 
   private
 
-  def wide?(edge) = graph.constants(edge).size >= threshold(WIDTH)
+  def wide?(edge) = edge.constants.size >= threshold(WIDTH)
 
   def entry(edge)
-    from, to = edge.deconstruct
-    proof = Hashira::Analysis::Finding::Proof.new(graph.evidence(from, to).to_a.first(4))
-    finding(between(from, to), Span.new(from, to, graph.constants(edge)), proof)
+    from, to = edge.to_a
+    proof = Hashira::Analysis::Finding::Proof.new(edge.evidence.first(4))
+    finding(between(from, to), Span.new(from, to, edge.constants), proof)
   end
 end

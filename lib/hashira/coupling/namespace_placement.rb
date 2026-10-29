@@ -1,11 +1,30 @@
 # frozen_string_literal: true
 
+require_relative "layout"
 require_relative "placement"
 
 class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
   WEB = "(web)"
 
   TEST = "(test)"
+
+  class Layout < Hashira::Coupling::Layout
+    def initialize(framework, adapters, folders)
+      super(folders)
+      @framework = framework
+      @adapters = adapters
+    end
+
+    def to_s = "namespace"
+
+    def to_a = []
+
+    def aside?(package) = [WEB, TEST].include?(package)
+
+    def test?(package) = package == TEST
+
+    def skip?(segments) = @framework.rails? && @adapters.include?(segments.first)
+  end
 
   def self.build(project, catalog, _definitions) = new(project, catalog, Hashira::Coupling::Folders.new(project.paths))
 
@@ -14,24 +33,16 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
     @adapters = adapters
   end
 
-  def mode = :namespace
-
   def placed = catalog.flat_map { |definition| home(definition).map { [definition, it] } }
-
-  def baseline = []
 
   def charge(file, nesting)
     return TEST if tested?(file)
     served?(file) ? WEB : owner(nesting)
   end
 
-  def skip?(segments) = framework.rails? && @adapters.include?(segments.first)
+  def layout = Layout.new(framework, @adapters, folders)
 
-  def aside?(package) = [WEB, TEST].include?(package)
-
-  def test?(package) = package == TEST
-
-  def folding(census) = Hashira::Coupling::Folding.new(domain, census, rails: framework.rails?)
+  def folding(roster, scope) = Hashira::Coupling::Folding.new(domain, roster, scope, framework)
 
   private
 

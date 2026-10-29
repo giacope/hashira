@@ -9,7 +9,7 @@ class Hashira::Report::Json::About
     @listing = listing
   end
 
-  def to_h(_cap) = { version: SCHEMA, packaging: @graphs.map(&:packaging).first, targets: @paths.to_a, files: files }
+  def to_h(_cap) = { version: SCHEMA, packaging: @graphs.map { it.packages.to_s }.first, targets: @paths.to_a, files: }
 
   def lists = {}
 

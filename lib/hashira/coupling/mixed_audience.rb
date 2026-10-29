@@ -22,19 +22,19 @@ class Hashira::Coupling::MixedAudience < Hashira::Coupling::Rule
   end
 
   def list
-    graph.packages.sort.filter_map { verdict(it) }
+    packages.to_a.sort.filter_map { verdict(it) }
   end
 
   private
 
   def verdict(package)
-    audiences = Hashira::Coupling::Audiences.new(graph.usage(package), sizes)
+    audiences = Hashira::Coupling::Audiences.new(edges.usage(package), sizes)
     detail(package, audiences.parts) if audiences.split?
   end
 
-  def sizes = @_sizes ||= metrics.transform_values(&:types)
+  def sizes = @_sizes ||= metrics.transform_values { it.to_h[:tc] }
 
   def detail(package, parts)
-    sighted(package, Split.new(parts), parts.flat_map { it.sightings(package, graph).first(2) })
+    sighted(package, Split.new(parts), parts.flat_map { it.sightings(package, edges).first(2) })
   end
 end

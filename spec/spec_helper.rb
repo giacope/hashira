@@ -10,6 +10,7 @@ end
 require "hashira"
 require "tmpdir"
 require_relative "support/fakes"
+require_relative "support/census"
 
 module Fixtures
   def within(files, &)
@@ -37,10 +38,9 @@ module Fixtures
   end
 
   def pipeline(directories, packaging: :folder)
-    project = Hashira::Project.new(directories)
+    project = Hashira::Project.new(directories, packaging:)
     trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
-    census = Hashira::Coupling::Census.new(project, trees, packaging:)
-    [project, census, Hashira::Coupling::Graph.new(project, trees, census)]
+    [project, Fixtures::Census.new(project, trees), Hashira::Coupling::Graph.build(project, trees)]
   end
 
   # What a pipeline hands the run: its outcome, and its coverage of the checks; and the findings it kept.

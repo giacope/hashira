@@ -92,7 +92,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def registered?(files)
     manifests =
-      @_manifests ||= Hash.new { |found, file| found[file] = Hashira::Coupling::Manifest.new(file, graph.trees.fetch(sources.fetch(file))) }
+      @_manifests ||= Hash.new { |found, file| found[file] = Hashira::Coupling::Manifest.new(file, code.to_h.fetch(sources.fetch(file))) }
     [files, files.reverse].any? { |from, to| manifests[from].names?(to) }
   end
 
@@ -106,7 +106,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def widest = @_widest ||= [FLOOR, sources.size / SWEEP].max.clamp(..limit("files", FILES))
 
-  def sources = @_sources ||= graph.trees.keys.to_h { [paths.relative(it).b, it] }
+  def sources = @_sources ||= code.to_h.keys.to_h { [paths.relative(it).b, it] }
 
   def together
     changesets.each_with_object(Hash.new(0)) do |changeset, counts|
@@ -118,7 +118,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
     files.map { package(it) }.uniq.size == 2
   end
 
-  def package(file) = (@_packages ||= {})[file] ||= graph.home(sources.fetch(file))
+  def package(file) = (@_homes ||= {})[file] ||= code.home(sources.fetch(file))
 
   def described(files)
     [files.map { [shown(it), package(it)] }, explicit?(files.map { sources.fetch(it) }), anchors(files)]
@@ -130,14 +130,14 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def links
     @_links ||=
-      graph.sightings.each_with_object(Set.new) do |sighting, found|
-        graph.files(sighting.path).each { found << [sighting.file, it] }
+      code.to_a.each_with_object(Set.new) do |sighting, found|
+        sighting.couples(code).each { found << it }
       end
   end
 
   def anchors(files)
     files.map do |file|
-      first = graph.trees.fetch(sources.fetch(file)).statements.body.first
+      first = code.to_h.fetch(sources.fetch(file)).statements.body.first
       "#{shown(file)}:#{first ? first.location.start_line : 1}"
     end
   end

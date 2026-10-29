@@ -17,6 +17,6 @@ class Hashira::CI::EdgeChanges
 
   def emit(edge)
     @io.puts("NEW EDGE #{edge} — introduced by:")
-    @graph.evidence(edge.from, edge.to).to_a.sort.each { @io.puts("  · #{it}") }
+    edge.evidence.sort.each { @io.puts("  · #{it}") }
   end
 end

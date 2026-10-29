@@ -32,10 +32,10 @@ class Hashira::Coupling::Imbalance < Hashira::Coupling::Rule
 
   private
 
-  def ranked = graph.violations.sort_by { |from, to| instability(from) - instability(to) }
+  def ranked = packages.violations.sort_by { |from, to| instability(from) - instability(to) }
 
   def violation(from, to)
-    sighted(from, Gap.new(from, to, instability(from), instability(to)), graph.evidence(from, to).to_a.first(5))
+    sighted(from, Gap.new(from, to, instability(from), instability(to)), edges[from, to].evidence.first(5))
   end
 
   def instability(package) = metrics[package].instability

@@ -36,21 +36,23 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
     end
   end
 
-  def list = graph.knots.map { knot(it, graph.cycles) }
+  def list
+    cycles = packages.cycles
+    cycles.knots.map { knot(it, cycles) }
+  end
 
   private
 
   def knot(members, cycles)
     found = cycles.cut(members)
-    edges = found.edges
-    ring = Ring.new(members, folded(members), Hashira::Coupling::Ties.new(edges, pledges(edges)), found.exact?)
-    finding(
-      looped(members.first, cycles), ring,
-      Hashira::Analysis::Finding::Proof.new(edges.flat_map { |from, to, _weight| graph.evidence(from, to).to_a.sort })
-    )
+    ties = found.edges
+    ring = Ring.new(members, packages.folded(members), Hashira::Coupling::Ties.new(ties, pledges(ties)), found.exact?)
+    finding(looped(members.first, cycles), ring, proof(ties))
   end
 
-  def pledges(edges) = edges.to_h { |from, to, _weight| [[from, to], graph.guarantees(from, to).sort] }
+  def proof(ties)
+    Hashira::Analysis::Finding::Proof.new(ties.flat_map { |from, to, _weight| edges[from, to].evidence.sort })
+  end
 
-  def folded(members) = (members & graph.folds.map { it.to_h[:to] }).reject { graph.unfolded.cycles.through?(it) }
+  def pledges(ties) = ties.to_h { |from, to, _weight| [[from, to], edges[from, to].guarantees.sort] }
 end

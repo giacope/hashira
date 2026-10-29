@@ -12,7 +12,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     pipeline(directories, packaging:).drop(1)
   end
 
-  def edges(graph) = graph.edges.map(&:to_s)
+  def edges(graph) = graph.edges.to_a.map(&:to_s)
+
+  # The edges that join two domain packages, neither of them aside.
+  def domain(graph) = graph.edges.to_a.reject(&:aside?).map(&:to_s)
+
+  # A package's metric, as the fields it shows.
+  def metric(graph, package) = graph.packages.to_h[package].to_h
 
   it "groups types by top-level namespace across layer folders" do
     analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
@@ -23,14 +29,14 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
 
   it "draws edges between namespaces, not folders" do
     analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "User -> Billing"]))
+      expect(edges(graph)).to(eq(["Billing -> Ci", "User -> Billing"]))
     end
   end
 
   it "strips the gem wrapper namespace and skips the wrapper itself" do
     analyze(Fixtures::CYCLIC_FILES, packaging: :namespace) do |_project, census, graph|
       expect(census.packages).to(contain_exactly("Alpha", "Beta", "Core"))
-      expect(graph.edges.map(&:to_s)).to(eq(["Alpha -> Beta", "Alpha -> Core", "Beta -> Alpha"]))
+      expect(edges(graph)).to(eq(["Alpha -> Beta", "Alpha -> Core", "Beta -> Alpha"]))
     end
   end
 
@@ -57,8 +63,8 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
   it "charges top-level code to the root package" do
     files = Fixtures::RAILS_FILES.merge("app/models/boot.rb" => "Billing::Invoice.new\n")
     analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-      expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing"))
-      expect(graph.packages).to(include("(root)"))
+      expect(edges(graph)).to(include("(root) -> Billing"))
+      expect(graph.packages.to_a).to(include("(root)"))
     end
   end
 
@@ -68,7 +74,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     files = %w[Account Article Category Company Contact].to_h { ["app/policies/#{it.downcase}.rb", policy(it)] }
     base = { "app/policies/application_policy.rb" => "class ApplicationPolicy\n  def show? = true\nend\n" }
     _census, graph = charted(Fixtures::RAILS_FILES.merge(files, base))
-    expect([graph.packages, edges(graph).grep(/Policy/)]).to(match([exclude("(root)"), be_empty]))
+    expect([graph.packages.to_a, edges(graph).grep(/Policy/)]).to(match([exclude("(root)"), be_empty]))
   end
 
   def entry(inside)
@@ -111,23 +117,23 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
 
     it "charges a top-level constant write to the constant it writes, not to (root)" do
       payments("Payments::Rate = Data.define(:amount) do\n  def bill = Billing::Invoice\nend\n") do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("Payments -> Billing"))
-        expect(graph.edges.map(&:to_s)).not_to(include("(root) -> Payments", "(root) -> Billing"))
+        expect(edges(graph)).to(include("Payments -> Billing"))
+        expect(edges(graph)).not_to(include("(root) -> Payments", "(root) -> Billing"))
       end
     end
 
     it "charges what a constant write holds to that constant, even inside another namespace" do
       held = "module Billing\n  Payments::Rate = Data.define(:amount) do\n    def run = Ci::Runner\n  end\nend\n"
       payments(held) do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("Payments -> Ci"))
-        expect(graph.edges.map(&:to_s)).not_to(include("Billing -> Payments"))
+        expect(edges(graph)).to(include("Payments -> Ci"))
+        expect(edges(graph)).not_to(include("Billing -> Payments"))
       end
     end
 
     it "charges every compound write the same way" do
       ["||=", "&&=", "+="].each do |operator|
         payments("Payments::Rate #{operator} Billing::Invoice\n") do |graph|
-          expect(graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
+          expect(edges(graph)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
         end
       end
     end
@@ -135,20 +141,20 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     it "charges a declaration sent to a namespaced constant to that constant" do
       %w[private_constant public_constant include extend prepend].each do |declaration|
         payments("Payments::Ledger.#{declaration}(Billing::Invoice)\n") do |graph|
-          expect(graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
+          expect(edges(graph)).to(eq(["Billing -> Ci", "Payments -> Billing", "User -> Billing"]))
         end
       end
     end
 
     it "keeps an ordinary call on a constant charged to where it is made" do
       payments("Payments::Ledger.register(Billing::Invoice)\n") do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing", "(root) -> Payments"))
+        expect(edges(graph)).to(include("(root) -> Billing", "(root) -> Payments"))
       end
     end
 
     it "keeps a declaration sent to an expression charged to where it is made" do
       payments("ledger.include(Billing::Invoice)\n") do |graph|
-        expect(graph.edges.map(&:to_s)).to(include("(root) -> Billing"))
+        expect(edges(graph)).to(include("(root) -> Billing"))
       end
     end
 
@@ -169,7 +175,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/services/report.rb" => "class Report\n  def r = [Billing::Charge, Solo, ApplicationRecord]\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Billing", "Report -> Solo"))
+        expect(edges(graph).grep(/\AReport/)).to(contain_exactly("Report -> Billing", "Report -> Solo"))
       end
     end
 
@@ -182,7 +188,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/services/report.rb" => "class Report\n  def r = [Charge, ShopRecord, Leaf]\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Charge", "Report -> Plain"))
+        expect(edges(graph).grep(/\AReport/)).to(contain_exactly("Report -> Charge", "Report -> Plain"))
         expect(census.folds.map(&:to_h).map { it[:from] }).to(eq(%w[Leaf]))
       end
     end
@@ -226,7 +232,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/services/report.rb" => "class Report\n  def r = [Solo, Ledger, ApplicationRecord]\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
-        expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Solo"))
+        expect(edges(graph).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Solo"))
         expect(census.folds.map { it.to_h[:from] }).not_to(include("Ledger"))
       end
     end
@@ -240,7 +246,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/services/report.rb" => "class Report\n  def r = Record\nend\n"
       }
       analyze(Fixtures::RAILS_FILES.merge(files), directories: ["app"], packaging: :namespace) do |*, graph|
-        graph.edges.map(&:to_s).grep(/\AReport/)
+        edges(graph).grep(/\AReport/)
       end
     end
 
@@ -262,13 +268,13 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/services/report.rb" => "class Report\n  def render = ApplicationRecord.abstract\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :folder) do |_project, _census, graph|
-        expect(graph.edges.map(&:to_s)).to(include("services -> models"))
+        expect(edges(graph)).to(include("services -> models"))
       end
     end
 
     it "ignores references to Application* base classes in a Rails app" do
       analyze(Fixtures::RAILS_FILES, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-        expect(graph.edges.map(&:to_s)).not_to(include("User -> ApplicationRecord"))
+        expect(edges(graph)).not_to(include("User -> ApplicationRecord"))
       end
     end
 
@@ -282,7 +288,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
         expect(census.packages).to(include("ExecChannel"))
-        expect(graph.edges.map(&:to_s)).not_to(include("ExecChannel -> ApplicationCable"))
+        expect(edges(graph)).not_to(include("ExecChannel -> ApplicationCable"))
       end
     end
 
@@ -377,10 +383,10 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     it "counts presentation as one client: never in a cycle, never an SDP violation, never a wide edge" do
       _census, graph = shop(presentation)
       expect(edges(graph)).to(include("(web) -> Billing", "(web) -> Order", "Billing -> (web)"))
-      expect([graph.cycles.knots, graph.violations, graph.domain.map(&:to_s)]).to(
+      expect([graph.packages.cycles.knots, graph.packages.violations, domain(graph)]).to(
         eq([[%w[Billing Order]], [], ["Billing -> Order", "Order -> Billing"]])
       )
-      expect([graph.metric("Billing").to_h, graph.metric("(web)").to_h, graph.usage("Billing").keys]).to(
+      expect([metric(graph, "Billing"), metric(graph, "(web)"), graph.edges.usage("Billing").keys]).to(
         eq([{ tc: 2, ca: 2, ce: 1, i: 1.0 / 3 }, { tc: 3, ca: 0, ce: 2, i: 1.0 }, ["(web)", "Order"]])
       )
     end
@@ -409,10 +415,10 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     it "never counts the (test) package as a client, so a test never joins a domain's cycles" do
       _census, graph = charted(storefront.merge(tests), directories: %w[app test])
       expect(edges(graph)).to(include("(test) -> Billing", "(test) -> Current", "(test) -> Order"))
-      expect([graph.cycles.knots, graph.usage("Billing").keys, graph.domain.map(&:to_s)]).to(
+      expect([graph.packages.cycles.knots, graph.edges.usage("Billing").keys, domain(graph)]).to(
         eq([[], ["Order"], ["Order -> Billing"]])
       )
-      expect([graph.metric("Order").to_h, graph.metric("(test)").to_h])
+      expect([metric(graph, "Order"), metric(graph, "(test)")])
         .to(eq([{ tc: 1, ca: 0, ce: 1, i: 1.0 }, { tc: 5, ca: 0, ce: 0, i: nil }]))
     end
 
@@ -448,7 +454,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       alert = "module Billing\n  class Alert\n    def ping = GraceNotification\n  end\nend\n"
       files = Fixtures::RAILS_FILES.merge(Fixtures::NOTIFY_FILES, "app/models/billing/alert.rb" => alert)
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, _census, graph|
-        expect(graph.edges.map(&:to_s)).to(include("Notification -> Billing", "Billing -> Notification"))
+        expect(edges(graph)).to(include("Notification -> Billing", "Billing -> Notification"))
       end
     end
 
@@ -550,7 +556,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       census, graph = charted(files)
       expect([census.folds.map(&:to_h), census.types["Order"]])
         .to(match([include({ from: "Orders", to: "Order", via: "plural" }), eq(2)]))
-      expect([edges(graph), graph.cycles.knots]).to(match([include("Shop -> Order"), be_empty]))
+      expect([edges(graph), graph.packages.cycles.knots]).to(match([include("Shop -> Order"), be_empty]))
     end
 
     def plural(name) = "module #{name}\n  class Item\n    def i = 1\n  end\nend\n"
@@ -588,7 +594,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
           { from: "OrderPaid", to: "Notifier", via: "mixin" }, { from: "OrderShipped", to: "Notifier", via: "mixin" }
         )
       )
-      expect([edges(graph), graph.metric("Notifier").to_h]).to(match([include("User -> Notifier"), include(ca: 1)]))
+      expect([edges(graph), metric(graph, "Notifier")]).to(match([include("User -> Notifier"), include(ca: 1)]))
     end
 
     it "keeps a module that does more than adopt another, or adopts nothing the project defines" do
@@ -637,14 +643,14 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     it "defaults the pipeline to namespace packaging for Rails apps" do
       within(Fixtures::RAILS_FILES) do
         pipeline = outcome(Hashira::Pipeline.build(Hashira::Project.new(["app"])))
-        expect(pipeline.graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "User -> Billing"]))
+        expect(edges(pipeline.graph)).to(eq(["Billing -> Ci", "User -> Billing"]))
       end
     end
 
     it "honors an explicit folder packaging override" do
       within(Fixtures::RAILS_FILES) do
         pipeline = outcome(Hashira::Pipeline.build(Hashira::Project.new(["app"], packaging: :folder)))
-        expect(pipeline.graph.edges.map(&:to_s)).to(eq(["models -> jobs"]))
+        expect(edges(pipeline.graph)).to(eq(["models -> jobs"]))
       end
     end
   end

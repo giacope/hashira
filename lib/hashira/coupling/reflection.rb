@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Reflection
-  def initialize(reflected, census, openings)
+  def initialize(reflected, lookup, openings)
     @reflected = reflected
-    @census = census
+    @lookup = lookup
     @openings = openings
   end
 
@@ -14,7 +14,7 @@ class Hashira::Coupling::Reflection
   def roots
     @_roots ||=
       @reflected.filter_map do |owner, segments|
-        segments ? @census.locate(segments, @openings.nest(owner)) : @openings.home(owner).first
+        segments ? @lookup.locate(segments, @openings.nest(owner)) : @openings.home(owner).first
       end
   end
 end
