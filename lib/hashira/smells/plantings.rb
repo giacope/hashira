@@ -27,27 +27,28 @@ class Hashira::Smells::Plantings
     inside = Hashira::Smells::Scope.new(definition).inside
     made = made(type, definition, inside)
     calls = inside.grep(Prism::CallNode)
-    held = calls.filter_map { |set| made[local(set)]&.then { [it, ivar(set)] } }
+    held = calls.flat_map { |set| made.fetch(local(set), []).map { [it, ivar(set)] } }
     held + calls.flat_map { tapped(type, definition, it) }
   end
 
   def made(type, definition, inside)
-    inside.grep(Prism::LocalVariableWriteNode).to_h { [it.name, built(type, definition, it.value)] }.compact
+    inside.grep(Prism::LocalVariableWriteNode).to_h { [it.name, built(type, definition, it.value)] }
   end
 
   def tapped(type, definition, call)
     block = call.block
-    target = built(type, definition, call.receiver) if call.name == TAP && block.is_a?(Prism::BlockNode)
-    held = parameter(block.parameters) if target
-    return [] unless held
-    Hashira::Analysis::NodeWalk.new(block).collect.grep(Prism::CallNode).filter_map { [target, ivar(it)] if local(it) == held }
+    return [] unless call.name == TAP && block.is_a?(Prism::BlockNode)
+    built(type, definition, call.receiver).product(parameter(block.parameters)).flat_map do |target, held|
+      Hashira::Analysis::NodeWalk.new(block).collect.grep(Prism::CallNode).filter_map { [target, ivar(it)] if local(it) == held }
+    end
   end
 
   def parameter(parameters)
     case parameters
-    when Prism::BlockParametersNode then Hashira::Smells::Parameters.new(parameters).names.first
-    when Prism::ItParametersNode then :it
-    when Prism::NumberedParametersNode then :_1
+    when Prism::BlockParametersNode then Hashira::Smells::Parameters.new(parameters).names.first(1)
+    when Prism::ItParametersNode then [:it]
+    when Prism::NumberedParametersNode then [:_1]
+    else []
     end
   end
 
@@ -63,9 +64,14 @@ class Hashira::Smells::Plantings
   def ivar(call) = Hashira::Analysis::Syntax::Word.new(call.arguments.arguments.first).to_s.to_sym
 
   def built(type, definition, value)
-    return unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)
+    return [] unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)
     maker = value.receiver
-    return type.name if [nil, Prism::SelfNode].include?(maker&.class) && definition.receiver.is_a?(Prism::SelfNode)
-    @lineage.candidates(type.name, Hashira::Analysis::Syntax.new(maker).segments).find { @lineage.known?(it) }
+    return [type.name] if [nil, Prism::SelfNode].include?(maker&.class) && definition.receiver.is_a?(Prism::SelfNode)
+    known(type, maker)
+  end
+
+  def known(type, maker)
+    candidates = @lineage.candidates(type.name, Hashira::Analysis::Syntax.new(maker).segments)
+    candidates.lazy.select { @lineage.known?(it) }.first(1)
   end
 end
