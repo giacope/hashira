@@ -13,17 +13,24 @@ class Evaluation::Corpus
     @draw = draw
   end
 
-  def metrics = runs.to_h { |name, run| [name, run.metrics] }
-
   def checks = runs.flat_map { |name, run| run.checks(name) }
 
-  def precision
-    Evaluation::Precision.new(sightings, @settings.fetch("samples"), @draw)
+  def measured = { "corpus" => metrics, "precision" => precision.summary }
+
+  def park
+    FileUtils.mkdir_p(@draw.pending)
+    precision.pending.group_by(&:kind).each { |kind, list| shelve(kind, list) }
   end
+
+  private
+
+  def metrics = runs.to_h { |name, run| [name, run.metrics] }
+
+  def precision = Evaluation::Precision.new(sightings, @settings.fetch("samples"), @draw)
 
   def sightings = runs.flat_map { |name, run| run.sightings(name) }
 
-  private
+  def shelve(kind, list) = File.write(File.join(@draw.pending, "#{kind}.yml"), YAML.dump(list.map(&:entry)))
 
   def configs(name, home = Evaluation::Home.new) = home.join("tmp", "configs", "#{name}.yml")
 
@@ -31,8 +38,14 @@ class Evaluation::Corpus
 
   def run(project)
     home = checkout(project)
-    settings = @tool.configured(project["config"], configs(project["name"]))
-    Evaluation::Run.new(home, @tool.call(home, project.fetch("args") + settings + ["--json"]))
+    Evaluation::Run.new(home, outcome(home, project))
+  end
+
+  def outcome(home, project)
+    settings = project["config"]
+    path = configs(project["name"])
+    @tool.configure(settings, path)
+    @tool.call(home, project.fetch("args") + @tool.arguments(settings, path) + ["--json"])
   end
 
   def checkout(project)

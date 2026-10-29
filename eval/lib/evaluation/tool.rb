@@ -20,18 +20,19 @@ class Evaluation::Tool
     @scratch.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
   end
 
-  def every = @_every ||= opting? ? ["--config", EVERY] : []
-
-  def configured(settings, path)
-    return every unless settings
+  def configure(settings, path)
+    return unless settings
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, YAML.dump({ "checks" => "all" }.merge(settings)))
-    ["--config", path]
   end
+
+  def arguments(settings, path) = settings ? ["--config", path] : every
 
   def commit = Open3.capture2e("git", "-C", @root, "rev-parse", "--short", "HEAD").first.strip
 
   private
+
+  def every = @_every ||= opting? ? ["--config", EVERY] : []
 
   def run(directory, arguments, report)
     output, error, status = Open3.capture3(

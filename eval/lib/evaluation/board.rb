@@ -9,19 +9,20 @@ class Evaluation::Board
   end
 
   def to_h
-    { "label" => @label, "commit" => @tool.commit, "ruby" => RUBY_VERSION }.merge("suites" => suites, **measured)
+    @_to_h ||= { "label" => @label, "commit" => @tool.commit, "ruby" => RUBY_VERSION }
+      .merge("suites" => suites, **@corpus.measured)
   end
 
   def write(directory)
-    payload = to_h
-    File.write(File.join(directory, "#{@label}.json"), "#{JSON.pretty_generate(payload)}\n")
-    File.write(File.join(directory, "#{@label}.md"), Evaluation::Comparison.new([payload]).markdown)
-    payload
+    File.write(File.join(directory, "#{@label}.json"), "#{JSON.pretty_generate(to_h)}\n")
+    File.write(File.join(directory, "#{@label}.md"), markdown)
   end
 
-  private
+  def markdown = Evaluation::Comparison.new([to_h]).markdown
 
-  def measured = @corpus ? { "corpus" => @corpus.metrics, "precision" => @corpus.precision.summary } : {}
+  def passed? = to_h["suites"].values.all? { it["passed"] == it["total"] }
+
+  private
 
   def suites = @checks.group_by(&:suite).transform_values { tally(it) }
 
