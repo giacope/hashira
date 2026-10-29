@@ -84,9 +84,11 @@ class Hashira::Smells::Repertoire
 
   def macro?(node) = node.is_a?(Prism::CallNode) && (!node.receiver || factory?(node))
 
-  def offered(call) = Array(call.arguments&.arguments).flat_map { symbol(it) || declared(it) }
+  def offered(call) = Array(call.arguments&.arguments).flat_map { symbol?(it) ? [text(it)] : declared(it) }
 
-  def symbol(node) = ([Hashira::Analysis::Syntax.new(node).text] if node.is_a?(Prism::SymbolNode))
+  def text(node) = Hashira::Analysis::Syntax.new(node).text
+
+  def symbol?(node) = node.is_a?(Prism::SymbolNode)
 
   def factory?(value) = Hashira::Smells::Factory.new(value).made?(FACTORIES)
 end

@@ -26,7 +26,7 @@ class Hashira::Smells::Readings
 
   def readings(method, bag)
     held(method).filter_map do |holder, calls|
-      next unless typed(holder, method) == bag.name
+      next unless typed(holder, method) == [bag.name]
       read = calls.map(&:name).uniq.select { reader?(it, bag) }
       Use.new(user: method, fields: read.map(&:to_s), line: calls.first.location.start_line) if read.size >= MINIMUM
     end
@@ -54,6 +54,6 @@ class Hashira::Smells::Readings
   end
 
   def typed(holder, method)
-    Hashira::Smells::Naming.new(holder).types.filter_map { method.ownership.place(it, method.owner) }.first
+    Hashira::Smells::Naming.new(holder).types.filter_map { method.ownership.place(it, method.owner) }.first(1)
   end
 end
