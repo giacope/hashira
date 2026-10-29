@@ -11,7 +11,7 @@ RSpec.describe(Hashira::Boundaries, :aggregate_failures) do
   def interpreted(records, files = sources)
     within(files) do
       project = Hashira::Project.new(["lib/app"])
-      trees = Hashira::Trees.new(project).all
+      trees = Hashira::Trees.new(project.listing).all
       yield(described_class.new(records, trees))
     end
   end
@@ -25,6 +25,10 @@ RSpec.describe(Hashira::Boundaries, :aggregate_failures) do
 
   it "recognizes a foreign model whose root API has one declared entrypoint" do
     interpreted([declaration]) { |boundaries| expect(boundaries.interpreted).to(eq(["Prism"])) }
+  end
+
+  it "answers the very list it checked the first time it is asked again" do
+    interpreted([declaration]) { |boundaries| expect(boundaries.interpreted).to(equal(boundaries.interpreted)) }
   end
 
   it "has no interpreted models without declarations" do

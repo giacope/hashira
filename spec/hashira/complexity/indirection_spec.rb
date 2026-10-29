@@ -4,8 +4,8 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
   def traced(source, rules = Fixtures::NONE)
     within("lib/app/walk.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
-      parsed = Hashira::Trees.new(project)
-      return Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed).findings.select { it.to_h[:kind] == "indirection" }
+      parsed = Hashira::Trees.new(project.listing)
+      return Hashira::Complexity::Scores.new(project.paths, parsed.all, rules, parsed).findings.select { it.to_h[:kind] == "indirection" }
     end
   end
 

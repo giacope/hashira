@@ -59,13 +59,15 @@ class Hashira::Coupling::Surface
 
   private
 
+  def paths = @_paths ||= @project.paths
+
   def selectors = @_selectors ||= methods.group_by { [it.owner, *it.mark] }
 
   def outside = @_outside ||= Hash.new { |found, path| found[path] = types.fetch(path, []).any? { hosted?(it) } }
 
   def opened(file, tree)
     found = []
-    shown = @project.relative(file)
+    shown = paths.relative(file)
     Hashira::Analysis::TypeWalk.new(tree).walk(roots: @census.roots) do |node, full, stack, lexical|
       found << Hashira::Coupling::Opening.new(node:, full:, path: @census.strip(lexical), stack:, file: shown)
     end

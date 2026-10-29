@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
+  def checks?(rules) = rules.enabled?("nil_check")
+
   def parse(raw)
     described_class.parse(raw, %w[complexity dead_code feature_envy fragmentation nil_check state_sprawl])
   end
@@ -8,7 +10,7 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
   it "turns kinds off and moves thresholds" do
     rules = parse("feature_envy" => false, "complexity" => { "threshold" => 4 }, "state_sprawl" => true)
     expect([rules.enabled?("feature_envy"), rules.enabled?("complexity")]).to(eq([false, true]))
-    expect([rules.threshold("complexity", 10), rules.threshold("state_sprawl", 4)]).to(eq([4, 4]))
+    expect([rules.limit("complexity", "threshold", 10), rules.limit("state_sprawl", "threshold", 4)]).to(eq([4, 4]))
     expect(parse("complexity" => { "enabled" => false }).enabled?("complexity")).to(be(false))
   end
 
@@ -16,23 +18,23 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
     defaults = described_class.new({})
     expect(%w[complexity duplication nil_check indirection dead_code change_coupling].map { defaults.enabled?(it) })
       .to(eq([true, true, true, false, true, false]))
-    expect(defaults.threshold("complexity", 10)).to(eq(10))
-    expect([parse("all"), parse("nil_check" => true), defaults.naming(%w[nil_check])].map { it.enabled?("nil_check") })
+    expect(defaults.limit("complexity", "threshold", 10)).to(eq(10))
+    expect([parse("all"), parse("nil_check" => true), defaults.chosen(named: %w[nil_check])].map { checks?(it) })
       .to(eq([true, true, true]))
     expect(parse("all").enabled?("indirection")).to(be(true))
   end
 
   it "holds the strict kinds back, under all too, and tightening turns on exactly them, carried through every copy" do
     plain = [described_class.new({}), Hashira::Config::Rules::ALL, parse("all" => true), parse({})]
-    moved = plain.map { |rules| Fixtures::KINDS.reject { rules.enabled?(it) == rules.tightened.enabled?(it) } }
-    copies = plain.first.tightened.naming(["nil_check"]).layered(Hashira::Config::Layers.new([])).bounded([])
-    strict = plain.map(&:strict?) + [copies.strict?, copies.narrowed(["nil_check"], ["nil_check"]).strict?]
+    moved = plain.map { |rules| Fixtures::KINDS.reject { rules.enabled?(it) == rules.chosen(strict: true).enabled?(it) } }
+    copies = plain.first.chosen(strict: true).chosen(named: ["nil_check"])
+    strict = plain.map(&:strict?) + [copies.strict?, copies.chosen(kinds: ["nil_check"], every: ["nil_check"]).strict?]
     expect([moved, strict]).to(eq([[%w[stateful_mixin]] * 4, ([false] * 4) + [true, true]]))
   end
 
   it "turns a strict kind on when checks: names it, but not when a flag names it" do
     named = described_class.parse({ "stateful_mixin" => true }, Fixtures::KINDS)
-    flagged = Hashira::Config::Rules::ALL.naming(["stateful_mixin"])
+    flagged = Hashira::Config::Rules::ALL.chosen(named: ["stateful_mixin"])
     expect([named, flagged].map { [it.enabled?("stateful_mixin"), it.strict?] }).to(eq([[true, false], [false, false]]))
   end
 
@@ -46,14 +48,14 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
     rules = parse("all" => true, "nil_check" => false, "complexity" => { "threshold" => 4 })
     switches = %w[feature_envy nil_check dead_code].map { rules.enabled?(it) }
     switches += [parse("all" => false), parse("complexity" => true)].map { it.enabled?("indirection") }
-    expect(switches + [rules.threshold("complexity", 10)]).to(eq([true, false, true, false, false, 4]))
+    expect(switches + [rules.limit("complexity", "threshold", 10)]).to(eq([true, false, true, false, false, 4]))
   end
 
-  it "reads a kind's named lists, and carries declared layers through naming" do
+  it "reads a kind's named lists, and a draft carries declared layers through naming" do
     rules = parse("dead_code" => { "roots" => ["App::Cli", "lib/app/cli"] })
     layers = Hashira::Config::Layers.parse(%w[web domain])
-    named = rules.layered(layers).naming(["dead_code"])
-    expect([rules.limit("dead_code", "roots", []), named.layers.names, named.enabled?("dead_code")]).to(
+    named = Hashira::CLI::Draft.new(rules, layers, []).chosen(named: ["dead_code"]).to_h
+    expect([rules.limit("dead_code", "roots", []), named[:layers].names, named[:rules].enabled?("dead_code")]).to(
       eq([["App::Cli", "lib/app/cli"], %w[web domain], true])
     )
   end
@@ -61,9 +63,10 @@ RSpec.describe(Hashira::Config::Rules, :aggregate_failures) do
   it "narrows to the kinds asked for, keeping their settings, and changes nothing when none is asked for" do
     rules = parse({ "complexity" => { "threshold" => 9 }, "nil_check" => false })
     every = %w[complexity dead_code nil_check]
-    narrowed = rules.narrowed(%w[complexity nil_check], every)
-    expect([rules.narrowed([], every), every.map { narrowed.enabled?(it) }, narrowed.threshold("complexity", 15)])
-      .to(eq([rules, [true, false, false], 9]))
+    narrowed = rules.chosen(kinds: %w[complexity nil_check], every: every)
+    switches = [rules.chosen(kinds: [], every:), narrowed].map { |chosen| every.map { chosen.enabled?(it) } }
+    expect([*switches, narrowed.limit("complexity", "threshold", 15)])
+      .to(eq([[true, true, false], [true, false, false], 9]))
   end
 
   it "refuses what it cannot apply" do

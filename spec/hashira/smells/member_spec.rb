@@ -3,12 +3,12 @@
 RSpec.describe(Hashira::Smells::Member, :aggregate_failures) do
   def grouped(files, kind, rules = Hashira::Config::Rules.parse({ kind => true }, Fixtures::KINDS))
     within(files) do
-      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.select { it.to_h[:kind] == kind }
+      return kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), rules)).select { it.to_h[:kind] == kind }
     end
   end
 
   def tightly(files, kind)
-    grouped(files, kind, Hashira::Config::Rules.parse({ kind => true }, Fixtures::KINDS).tightened)
+    grouped(files, kind, Hashira::Config::Rules.parse({ kind => true }, Fixtures::KINDS).chosen(strict: true))
   end
 
   it "reports one concrete parent once, at its definition, every subclass as evidence" do

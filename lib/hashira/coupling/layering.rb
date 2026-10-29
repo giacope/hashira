@@ -51,16 +51,14 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   private
 
-  def layers = project.layers
-
-  def names = layers.names
+  def names = @plan.layered(&:names)
 
   def outward = crossings.select(&:outward?)
 
   def crossings = @_crossings ||= graph.sightings.flat_map { crossing(it) }
 
   def crossing(sighting)
-    source = layers.rank(sighting.file, sighting.from)
+    source = @plan.layered { it.rank(sighting.file, sighting.from) }
     return [] unless source
     placed(sighting).map { |target, to| Crossing.new(sighting:, source:, target:, to:) }
   end
@@ -70,7 +68,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   def census = graph.census
 
   def place(path)
-    ranks = census.files(path).filter_map { layers.rank(it, census.home(it)) }.uniq
+    ranks = census.files(path).filter_map { |file| @plan.layered { it.rank(file, census.home(file)) } }.uniq
     ranks.one? ? [[ranks.fetch(0), census.holder(path)]] : []
   end
 
@@ -99,6 +97,6 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
   def leanings
     against = cut.cost
     order = cut.order
-    against < outward.size && layers.allows?(order) ? [[order, against]] : []
+    against < outward.size && @plan.layered { it.allows?(order) } ? [[order, against]] : []
   end
 end

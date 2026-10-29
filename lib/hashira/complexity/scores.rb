@@ -5,8 +5,8 @@ class Hashira::Complexity::Scores
 
   KIND = "complexity"
 
-  def initialize(project, trees, rules, parsed)
-    @project = project
+  def initialize(paths, trees, rules, parsed)
+    @paths = paths
     @trees = trees
     @rules = rules
     @parsed = parsed
@@ -28,14 +28,14 @@ class Hashira::Complexity::Scores
 
   def notes
     comments = @parsed.comments
-    @trees.keys.to_h { [@project.relative(it), Hashira::Complexity::Notes.new(@parsed, it, comments.fetch(it))] }
+    @trees.keys.to_h { [@paths.relative(it), Hashira::Complexity::Notes.new(@parsed, it, comments.fetch(it))] }
   end
 
-  def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
+  def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@paths.relative(path), tree) }
 
   def scores = @_scores ||= scored(Hashira::Complexity::Recursion.new(sites))
 
-  def flagged = ranked.select { it.cognitive >= @rules.threshold(KIND, THRESHOLD) }
+  def flagged = ranked.select { it.cognitive >= @rules.limit(KIND, "threshold", THRESHOLD) }
 
   def harvest(relative, tree)
     Hashira::Complexity::Sites.new(tree).to_enum(:each).map { |owner, node| [relative, owner, node] }

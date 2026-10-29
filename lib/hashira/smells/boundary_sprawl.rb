@@ -55,5 +55,5 @@ class Hashira::Smells::BoundarySprawl
     Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(root), reach, proof)
   end
 
-  def wide?(methods, files) = methods >= @rules.threshold(KIND, METHOD_FLOOR) && files >= FILE_FLOOR
+  def wide?(methods, files) = methods >= @rules.limit(KIND, "threshold", METHOD_FLOOR) && files >= FILE_FLOOR
 end

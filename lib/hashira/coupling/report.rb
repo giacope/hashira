@@ -15,18 +15,31 @@ require_relative "wide_edge"
 class Hashira::Coupling::Report
   RULES = Hashira::Coupling::Rule.subclasses.sort_by(&:name).freeze
 
-  def initialize(project, trees, packaging:, rules:)
+  ANALYZER = :coupling
+
+  def initialize(project, trees, rules, plan)
     @project = project
     @trees = trees
-    @packaging = packaging
     @rules = rules
+    @plan = plan
   end
 
   def graph = @_graph ||= Hashira::Coupling::Graph.new(@project, @trees, census)
 
-  def findings = RULES.select { @rules.enabled?(it::KIND) }.flat_map { it.new(@project, graph, @rules).list }
+  def findings
+    return [] unless runs?
+    RULES.select { @rules.enabled?(it::KIND) }.flat_map { it.new(@project, graph, @rules, @plan).list }
+  end
+
+  def shown = runs? ? [graph] : []
+
+  def unlayered(files) = @plan.unlayered(files) { graph.census }
 
   private
 
-  def census = Hashira::Coupling::Census.new(@project, @trees, packaging: @packaging)
+  def runs? = @plan.enabled?(ANALYZER)
+
+  def census = Hashira::Coupling::Census.new(@project, @trees, packaging: framework.packaging)
+
+  def framework = @_framework ||= @project.framework
 end

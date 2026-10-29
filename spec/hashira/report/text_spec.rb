@@ -1,19 +1,19 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
-    analyses = Hashira::Report::View::Analyses.new(graph, complexity, duplication, hotspots)
+  def view(project, graph, findings, complexity: [], duplication: [], hotspots: [], top: nil)
+    analyses = Hashira::Report::View::Analyses.new([graph].compact, complexity, duplication, hotspots)
     verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
     Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top))
   end
 
   # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
-  def printed(files, graph: true, parts: [], accepted: [])
+  def printed(files, graph: true, shown: [], accepted: [])
     within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
-      added = parts.to_h { [it, pipeline.public_send(it)] }
-      capture { view(pipeline.project, (pipeline.graph if graph), findings, **added).text.print }
+      project = Hashira::Project.new(["lib/app"])
+      pipeline = Hashira::Pipeline.build(project)
+      findings = Hashira::CI::Accepted.new(accepted).screen(kept(pipeline))
+      capture { view(project, (outcome(pipeline).graph if graph), findings, **parts(project, shown)).text.print }
     end
   end
 
@@ -82,7 +82,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   it "adds the complexity section and its findings when complexity is present" do
-    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity])).to(
+    expect(printed(Fixtures::COMPLEX_FILES, shown: %i[complexity])).to(
       include(
         "Package (folder) metrics", "Cognitive complexity — worst methods",
         "Per-class rollup", "complexity: App::Knot::Tangle#tangled"
@@ -91,19 +91,19 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   it "renders complexity alone when coupling is skipped (no graph)" do
-    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])).to(
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity])).to(
       include("Cognitive complexity — worst methods").and(exclude("package  TC"))
     )
   end
 
   it "ranks the hotspots between the complexity tables and the findings" do
-    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity hotspots]))
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity hotspots]))
       .to(match(%r{Per-class rollup.*Hotspots — cost alone.*knot/tangle\.rb\s+12.*Findings \(}m))
   end
 
   it "lists accepted findings with their recorded reason" do
     entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
-    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity], accepted: [entry]))
+    expect(printed(Fixtures::COMPLEX_FILES, shown: %i[complexity], accepted: [entry]))
       .to(include("Accepted (1):", "~ complexity/App::Knot::Tangle#tangled — legacy tangle"))
   end
 

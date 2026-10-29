@@ -18,6 +18,8 @@ class Hashira::Coupling::Sightings
 
   private
 
+  def paths = @_paths ||= @project.paths
+
   def holder(nesting, source)
     inner = Array(nesting).last
     if inner
@@ -28,7 +30,7 @@ class Hashira::Coupling::Sightings
   end
 
   def seen(file, tree)
-    source = @project.relative(file)
+    source = paths.relative(file)
     references = Hashira::Coupling::References.new(@census.roots, @census.associations)
     references.sightings(tree).filter_map do |segments, line, nesting, home|
       path = @census.locate(segments, nesting || [])

@@ -74,7 +74,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
   end
 
   def list
-    return [] unless project.history.deep?
+    return [] unless @plan.traced(&:deep?)
     pairs.sort.map { |pair| pair.finding(KIND) { |files| described(files) } }
   end
 
@@ -98,7 +98,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def limit(name, default) = @rules.limit(KIND, name, default)
 
-  def changesets = @_changesets ||= project.history.changesets.map { present(it) }.select { fits?(it) }
+  def changesets = @_changesets ||= @plan.traced(&:changesets).map { present(it) }.select { fits?(it) }
 
   def present(changeset) = changeset.select { sources.key?(it) }
 
@@ -106,7 +106,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def widest = @_widest ||= [FLOOR, sources.size / SWEEP].max.clamp(..limit("files", FILES))
 
-  def sources = @_sources ||= graph.trees.keys.to_h { [project.relative(it).b, it] }
+  def sources = @_sources ||= graph.trees.keys.to_h { [paths.relative(it).b, it] }
 
   def together
     changesets.each_with_object(Hash.new(0)) do |changeset, counts|

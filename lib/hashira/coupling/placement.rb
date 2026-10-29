@@ -8,12 +8,19 @@ class Hashira::Coupling::Placement
     }.fetch(packaging).new(project, catalog)
   end
 
-  def initialize(project, catalog)
+  def initialize(project, catalog, folders = Hashira::Coupling::Folders.new(project.paths))
     @project = project
     @catalog = catalog
+    @folders = folders
   end
 
   private
 
-  attr_reader :project, :catalog
+  attr_reader :project, :catalog, :folders
+
+  def paths = @_paths ||= project.paths
+
+  def framework = @_framework ||= project.framework
+
+  def listing = @_listing ||= project.listing
 end

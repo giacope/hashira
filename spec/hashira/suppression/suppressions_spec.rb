@@ -2,7 +2,12 @@
 
 RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
   def screened(files, enabled: Hashira::Checks.new.analyzers)
-    within(files) { return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL), enabled:).verify.screened }
+    within(files) do
+      selection = Hashira::Selection.new(enabled)
+      project = Hashira::Project.new(["lib/app"])
+      pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules::ALL, Fixtures::FLAT, selection)
+      return outcome(pipeline.verify).screened
+    end
   end
 
   def nested(name)

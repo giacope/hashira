@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::Dependencies
+class Hashira::Coupling::Dependencies
   LOCKED = /^ {4}([^\s(]+) \(/
 
   SECTION = /^(?=[A-Z])/

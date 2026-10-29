@@ -1,18 +1,16 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
-    analyses = Hashira::Report::View::Analyses.new(graph, complexity, duplication, hotspots)
+  def view(project, graph, findings, complexity: [], duplication: [], hotspots: [], compact: nil, top: nil)
+    analyses = Hashira::Report::View::Analyses.new([graph].compact, complexity, duplication, hotspots)
     verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
     Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top, compact))
   end
 
-  def full(pipeline, top: nil)
-    findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-    view(
-      pipeline.project, pipeline.graph, findings,
-      complexity: pipeline.complexity, duplication: pipeline.duplication, hotspots: pipeline.hotspots, top:
-    )
+  def full(project, top: nil)
+    pipeline = Hashira::Pipeline.build(project)
+    findings = Hashira::CI::Accepted.new([]).screen(kept(pipeline))
+    view(project, outcome(pipeline).graph, findings, **parts(project, %i[complexity duplication hotspots]), top:)
   end
 
   def lengths(report)
@@ -26,16 +24,17 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   def cyclic_report = with_pipeline { |project, graph, findings| emit(view(project, graph, findings)) }
 
   # The JSON report of a pipeline run over the files: with its graph or without, and with the parts named.
-  def reported(files, graph: true, parts: [], directories: ["lib/app"], accepted: [], **)
+  def reported(files, graph: true, shown: [], directories: ["lib/app"], accepted: [], enabled: Hashira::Checks.new.analyzers)
     within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(directories), **)
-      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
-      emit(view(pipeline.project, (pipeline.graph if graph), findings, **parts.to_h { [it, pipeline.public_send(it)] }))
+      project = Hashira::Project.new(directories)
+      pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules.new({}), Fixtures::FLAT, Hashira::Selection.new(enabled))
+      findings = Hashira::CI::Accepted.new(accepted).screen(kept(pipeline))
+      emit(view(project, (outcome(pipeline).graph if graph), findings, **parts(project, shown)))
     end
   end
 
   def capped_at(files, top)
-    within(files) { emit(full(Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])), top:)) }
+    within(files) { emit(full(Hashira::Project.new(["lib/app"]), top:)) }
   end
 
   def legacy = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
@@ -102,7 +101,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "omits coupling keys when no graph is present" do
-    report = reported(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])
+    report = reported(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity])
     expect(report).not_to(have_key("packages"))
     expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
     expect(report["complexity"]["classes"])
@@ -110,7 +109,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "includes duplication clusters when supplied" do
-    report = reported(Fixtures::DUPLICATION_FILES, parts: %i[duplication])
+    report = reported(Fixtures::DUPLICATION_FILES, shown: %i[duplication])
     expect(report["duplication"].first).to(include("sites" => 2, "kind" => "literal"))
   end
 

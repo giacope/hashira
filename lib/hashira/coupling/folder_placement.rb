@@ -9,7 +9,7 @@ class Hashira::Coupling::FolderPlacement < Hashira::Coupling::Placement
 
   def baseline = catalog.folders
 
-  def charge(file, _nesting) = project.package(file)
+  def charge(file, _nesting) = folders.package(file)
 
   def skip?(_segments) = false
 

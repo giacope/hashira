@@ -8,7 +8,7 @@ RSpec.describe(Hashira::Hotspots::Rollup, :aggregate_failures) do
   def duplication(coverage) = Fakes::Duplication.new(coverage)
 
   def rollup(scores: [], coverage: {}, churn: {})
-    described_class.new(complexity(scores), duplication(coverage), Hashira::Churn.new(churn))
+    described_class.new([complexity(scores)], [duplication(coverage)], Hashira::Churn.new(churn))
   end
   it "sums cognitive complexity per file across a file's methods" do
     files = rollup(scores: [score("a.rb", 3), score("a.rb", 4), score("b.rb", 2)], churn: { "a.rb" => 1, "b.rb" => 1 })
@@ -40,7 +40,7 @@ RSpec.describe(Hashira::Hotspots::Rollup, :aggregate_failures) do
 
   it "says whether churn weighs the rank" do
     unweighed = Hashira::Churn.new({}, Hashira::Churn::Depth.new(commits: 1, shallow: true, deep: false))
-    expect([rollup.weighed?, described_class.new(nil, nil, unweighed).weighed?]).to(eq([true, false]))
+    expect([rollup.weighed?, described_class.new([], [], unweighed).weighed?]).to(eq([true, false]))
   end
 
   it "leaves out files that cost nothing" do
@@ -48,9 +48,9 @@ RSpec.describe(Hashira::Hotspots::Rollup, :aggregate_failures) do
   end
 
   it "zeroes the column of a skipped analyzer rather than breaking" do
-    dupes = described_class.new(nil, duplication("a.rb" => 9), Hashira::Churn.new({}))
+    dupes = described_class.new([], [duplication("a.rb" => 9)], Hashira::Churn.new({}))
     expect(dupes.files.map { it.to_h.values_at(:file, :cognitive, :duplication) }).to(eq([["a.rb", 0, 9]]))
-    costs = described_class.new(complexity([score("b.rb", 4)]), nil, Hashira::Churn.new({}))
+    costs = described_class.new([complexity([score("b.rb", 4)])], [], Hashira::Churn.new({}))
     expect(costs.files.map { it.to_h.values_at(:file, :cognitive, :duplication) }).to(eq([["b.rb", 4, 0]]))
   end
 end

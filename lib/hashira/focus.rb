@@ -3,12 +3,12 @@
 class Hashira::Focus
   SITE = /\A(?<path>[^\s:]+\.rb):/
 
-  def initialize(project, paths)
-    @project = project
+  def initialize(paths, only)
     @paths = paths
+    @only = only
   end
 
-  def narrowing? = !@paths.empty?
+  def narrowing? = !@only.empty?
 
   def narrow(findings)
     return findings unless narrowing?
@@ -17,9 +17,9 @@ class Hashira::Focus
 
   private
 
-  def wanted = @_wanted ||= @paths.select { covered?(it) }.map { @project.relative(it) }
+  def wanted = @_wanted ||= @only.select { covered?(it) }.map { @paths.relative(it) }
 
-  def covered?(path) = @project.directories.any? { path.start_with?("#{it}/") }
+  def covered?(path) = @paths.to_a.any? { path.start_with?("#{it}/") }
 
   def named?(finding) = sites(finding).any? { wanted.include?(it) }
 

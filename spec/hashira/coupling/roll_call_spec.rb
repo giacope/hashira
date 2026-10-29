@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
   it "is handed only the files that hold a word list" do
     lists = %w[a b c].to_h { ["lib/app/#{it}/#{it}.rb", "STATES = %i[draft sent paid].freeze\n"] }
     files = lists.merge("lib/app/d/d.rb" => "X = 1\n")
-    handed = observed(described_class) { within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])).findings } }
+    handed = observed(described_class) { within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]))) } }
     expect(handed.map(&:keys)).to(eq([%w[a/a.rb b/b.rb c/c.rb]]))
   end
 

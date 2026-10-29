@@ -18,20 +18,20 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
     served?(file) ? WEB : owner(nesting)
   end
 
-  def skip?(segments) = project.rails? && adapters.include?(segments.first)
+  def skip?(segments) = framework.rails? && adapters.include?(segments.first)
 
   def aside?(package) = [WEB, TEST].include?(package)
 
   def test?(package) = package == TEST
 
-  def folding(census) = Hashira::Coupling::Folding.new(domain, census, rails: project.rails?)
+  def folding(census) = Hashira::Coupling::Folding.new(domain, census, rails: framework.rails?)
 
   private
 
   def adapters = @_adapters ||= Hashira::Coupling::Adapters.new(catalog)
 
   def owner(nesting)
-    nesting.reverse_each.filter_map { catalog.strip(it).first }.find { names.include?(it) } || project.root
+    nesting.reverse_each.filter_map { catalog.strip(it).first }.find { names.include?(it) } || folders.root
   end
 
   def home(definition)
@@ -41,7 +41,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
     [tested?(file) ? TEST : WEB]
   end
 
-  def package(name) = held.include?(name) ? project.root : name
+  def package(name) = held.include?(name) ? folders.root : name
 
   def held = @_held ||= catalog.reject(&:nested?).select { it.value? || it.engine? }.to_set(&:name)
 
@@ -53,7 +53,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def apart?(file) = served?(file) || tested?(file)
 
-  def served?(file) = project.rails? && Hashira::Coupling::Stratum.new(file).presentation?
+  def served?(file) = framework.rails? && Hashira::Coupling::Stratum.new(file).presentation?
 
-  def tested?(file) = project.rails? && project.test?(file)
+  def tested?(file) = framework.rails? && listing.test?(file)
 end

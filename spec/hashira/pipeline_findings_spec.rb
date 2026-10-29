@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
+RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
   def ring(size, extra)
     (1..size).to_h do |n|
       uses = "[C#{(n % size) + 1}::X, #{extra}]"
@@ -13,7 +13,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   def padded(files) = files.merge(%w[main/E main/F one/E].to_h { ["lib/app/#{it.downcase}.rb", stub(*it.split("/"))] })
 
   def verdicts(files, directories: ["lib/app"])
-    within(files) { Hashira::Pipeline.new(Hashira::Project.new(directories, rules: Hashira::Config::Rules::ALL)).findings }
+    within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(directories), Hashira::Config::Rules::ALL)) }
   end
 
   def found(files, kind, **) = verdicts(files, **).select { it.to_h[:kind] == kind }

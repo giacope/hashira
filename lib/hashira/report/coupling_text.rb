@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::Report::CouplingText
-  def initialize(graph, project, page)
+  def initialize(graph, paths, listing, page)
     @graph = graph
-    @project = project
+    @paths = paths
+    @listing = listing
     @page = page
   end
 
@@ -30,8 +31,8 @@ class Hashira::Report::CouplingText
   end
 
   def banner(grouping, packages)
-    "Package (#{grouping}) metrics for #{@project.label}  " \
-      "(#{count(packages, "package")}, #{count(@project.files.size, "file")})\n\n"
+    "Package (#{grouping}) metrics for #{@paths}  " \
+      "(#{count(packages, "package")}, #{count(@listing.to_a.size, "file")})\n\n"
   end
 
   def count(number, noun) = Hashira::Prose::Count.new(number, noun).to_s

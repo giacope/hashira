@@ -11,13 +11,13 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
 
   private
 
-  def framework?(roll) = project.rails? && roll.within?(REST_ACTIONS)
+  def framework?(roll) = framework.rails? && roll.within?(REST_ACTIONS)
 
   def sightings
     @_sightings ||=
       graph.trees.filter_map do |file, tree|
         words = Hashira::Coupling::Words.new(tree).lists
-        [project.relative(file), graph.home(file), words] unless words.empty?
+        [paths.relative(file), graph.home(file), words] unless words.empty?
       end
   end
 

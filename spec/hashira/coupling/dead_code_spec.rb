@@ -65,8 +65,8 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
   def dead(tree = files, roots: nil, directories: ["lib/app"])
     within(tree) do
       raw = { "dead_code" => roots ? { "roots" => roots } : true }
-      project = Hashira::Project.new(directories, rules: Hashira::Config::Rules.parse(raw, Fixtures::KINDS))
-      return Hashira::Pipeline.new(project).findings.select { it.to_h[:kind] == "dead_code" }.map { it.to_h[:package] }
+      pipeline = Hashira::Pipeline.build(Hashira::Project.new(directories), Hashira::Config::Rules.parse(raw, Fixtures::KINDS))
+      return kept(pipeline).select { it.to_h[:kind] == "dead_code" }.map { it.to_h[:package] }
     end
   end
 
@@ -102,7 +102,7 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
   def finding(name)
     within(files) do
       rules = Hashira::Config::Rules.parse({ "dead_code" => { "roots" => ["App::User"] } }, Fixtures::KINDS)
-      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.find { it.to_h[:package] == name }
+      return kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), rules)).find { it.to_h[:package] == name }
     end
   end
 

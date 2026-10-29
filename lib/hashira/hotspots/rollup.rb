@@ -19,9 +19,9 @@ class Hashira::Hotspots::Rollup
     Hashira::Hotspots::FileCost.new(file, cognitive[file], duplicated[file], @churn.hits(file))
   end
 
-  def scores = @complexity ? @complexity.ranked : []
+  def scores = @complexity.flat_map(&:ranked)
 
-  def coverage = @duplication ? @duplication.coverage : {}
+  def coverage = @duplication.flat_map { it.coverage.to_a }.to_h
 
   def cognitive = @_cognitive ||= bucketed(scores.map(&:charge))
 

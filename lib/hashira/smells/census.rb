@@ -20,7 +20,8 @@ class Hashira::Smells::Census
   attr_reader :ownership, :catalog
 
   def sketches
-    found = @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
+    paths = @project.paths
+    found = @trees.flat_map { |path, tree| harvest(paths, path, tree) }
     opened, defined = found.partition { it.node.is_a?(Prism::BlockNode) }
     kinds = defined.to_h { [it.name, it.kind] }
     defined + opened.map { it.with(kind: kinds.fetch(it.name, it.kind)) }
@@ -34,7 +35,8 @@ class Hashira::Smells::Census
 
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
 
-  def harvest(file, tree)
+  def harvest(paths, path, tree)
+    file = paths.relative(path)
     found = []
     Hashira::Analysis::TypeWalk.new(tree).walk(roots:) do |node, full, _stack, lexical|
       kind = node.is_a?(Prism::ClassNode) ? :class : :module

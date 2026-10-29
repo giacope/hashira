@@ -11,8 +11,8 @@ class Hashira::GitLog
 
   ENOUGH = 2
 
-  def initialize(project)
-    @project = project
+  def initialize(paths)
+    @paths = paths
   end
 
   def counts = changesets.flatten.tally
@@ -35,18 +35,18 @@ class Hashira::GitLog
   def prefixes
     @_prefixes ||=
       roots.map do |directory, root|
-        [root == top ? "" : "#{root.delete_prefix("#{top}/")}/", @project.shown(directory).b]
+        [root == top ? "" : "#{root.delete_prefix("#{top}/")}/", @paths.relative("#{directory}/").b]
       end
   end
 
-  def roots = @_roots ||= @project.directories.to_h { [it, File.realpath(it).b] }.select { |_, root| inside?(root) }
+  def roots = @_roots ||= @paths.to_a.to_h { [it, File.realpath(it).b] }.select { |_, root| inside?(root) }
 
   def inside?(root) = root == top || root.start_with?("#{top}/")
 
   def top = @_top ||= git(*TOP).strip
 
   def git(*arguments)
-    IO.popen([*GIT, "-C", @project.directories.first, *arguments], err: File::NULL, binmode: true, &:read)
+    IO.popen([*GIT, "-C", @paths.to_a.first, *arguments], err: File::NULL, binmode: true, &:read)
   rescue Errno::ENOENT
     ""
   end

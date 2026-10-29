@@ -4,8 +4,8 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
   def split(files, rules = Fixtures::NONE)
     within(files) do
       project = Hashira::Project.new(["lib/app"])
-      parsed = Hashira::Trees.new(project)
-      return fragments(Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed))
+      parsed = Hashira::Trees.new(project.listing)
+      return fragments(Hashira::Complexity::Scores.new(project.paths, parsed.all, rules, parsed))
     end
   end
 

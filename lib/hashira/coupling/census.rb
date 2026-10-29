@@ -62,15 +62,15 @@ class Hashira::Coupling::Census
 
   def plural(word) = inflection.plural(word)
 
-  def inflection
-    @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
-  end
+  def inflection = @_inflection ||= framework.inflection
 
   def associations = @_associations ||= Hashira::Coupling::Associations.new(inflection)
 
   private
 
   def territory = catalog.territory
+
+  def framework = @_framework ||= @project.framework
 
   def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
 

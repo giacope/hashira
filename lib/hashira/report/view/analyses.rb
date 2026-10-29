@@ -8,22 +8,22 @@ class Hashira::Report::View::Analyses
     @hotspots = hotspots
   end
 
-  def texts(project, page)
+  def texts(paths, listing, page)
     [
-      *[@graph].compact.map { Hashira::Report::CouplingText.new(it, project, page) },
-      *[@complexity].compact.map { Hashira::Report::Tabled.new(Hashira::Report::ComplexityTable, it, page) },
-      *[@hotspots].compact.map { Hashira::Report::Tabled.new(Hashira::Report::HotspotTable, it, page) }
+      *@graph.map { Hashira::Report::CouplingText.new(it, paths, listing, page) },
+      *@complexity.map { Hashira::Report::Tabled.new(Hashira::Report::ComplexityTable, it, page) },
+      *@hotspots.map { Hashira::Report::Tabled.new(Hashira::Report::HotspotTable, it, page) }
     ]
   end
 
-  def about(project) = Hashira::Report::Json::About.new(@graph, project)
+  def about(paths, listing) = Hashira::Report::Json::About.new(@graph, paths, listing)
 
   def pieces
     [
-      *[@graph].compact.map { Hashira::Report::Json::Coupling.new(it) },
-      *[@complexity].compact.map { Hashira::Report::Json::Complexity.new(it) },
-      *[@duplication].compact.map { Hashira::Report::Json::Duplication.new(it) },
-      *[@hotspots].compact.map { Hashira::Report::Json::Hotspots.new(it) }
+      *@graph.map { Hashira::Report::Json::Coupling.new(it) },
+      *@complexity.map { Hashira::Report::Json::Complexity.new(it) },
+      *@duplication.map { Hashira::Report::Json::Duplication.new(it) },
+      *@hotspots.map { Hashira::Report::Json::Hotspots.new(it) }
     ]
   end
 end

@@ -284,7 +284,7 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
 
     it "reads declared layers, outermost first, with paths from the project's root" do
       configured("layers:\n  - web: app/controllers\n  - domain\n") do
-        layers = parsed([]).fetch(:rules).layers
+        layers = parsed([]).fetch(:layers)
         expect(
           [
             layers.names, layers.rank("app/controllers/a.rb", "x"),

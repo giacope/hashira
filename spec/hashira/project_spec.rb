@@ -1,13 +1,24 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Project, :aggregate_failures) do
+  def files_of(directories) = described_class.new(directories).listing.to_a
+
+  def framed(project) = project.framework.then { [it.rails?, it.engine.first] }
+
+  def named(project, file)
+    paths = project.paths
+    [file, Hashira::Coupling::Folders.new(paths).package(file), paths.relative(file)]
+  end
+
+  def skipped_of(project) = project.listing.skipped(Class.new { def skipped(_count, _label, left) = left }.new)
+
   it "raises for a missing directory" do
-    expect { described_class.new(["nope"]).directories }.to(raise_error(Hashira::Error, "no such directory: nope"))
+    expect { described_class.new(["nope"]).paths.to_a }.to(raise_error(Hashira::Error, "no such directory: nope"))
   end
 
   describe "when handed a file" do
     def refusal(requested)
-      described_class.new(requested).directories
+      described_class.new(requested).paths.to_a
     rescue Hashira::Error => error
       error.message
     end
@@ -37,27 +48,27 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
 
   it "counts a directory named twice, or by two spellings, only once" do
     within("lib/app/a/x.rb" => "") do
-      expect(described_class.new(%w[lib/app lib/app]).directories).to(eq(["lib/app"]))
-      expect(described_class.new(["lib/app", "./lib/app"]).directories).to(eq(["lib/app"]))
-      expect(described_class.new(%w[lib/app lib/app]).files).to(eq(["lib/app/a/x.rb"]))
+      expect(described_class.new(%w[lib/app lib/app]).paths.to_a).to(eq(["lib/app"]))
+      expect(described_class.new(["lib/app", "./lib/app"]).paths.to_a).to(eq(["lib/app"]))
+      expect(described_class.new(%w[lib/app lib/app]).listing.to_a).to(eq(["lib/app/a/x.rb"]))
     end
   end
 
   it "drops a directory already covered by another argument" do
     within("lib/app/a/x.rb" => "") do
-      expect(described_class.new(%w[lib/app lib/app/a]).directories).to(eq(["lib/app"]))
+      expect(described_class.new(%w[lib/app lib/app/a]).paths.to_a).to(eq(["lib/app"]))
     end
   end
 
   it "raises for a directory holding no Ruby files" do
     within("lib/app/README.md" => "") do
-      expect { described_class.new(["lib/app"]).files }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
+      expect { described_class.new(["lib/app"]).listing }.to(raise_error(Hashira::Error, "no Ruby files under lib/app"))
     end
   end
 
   it "strips trailing slashes from directories" do
     within("lib/app/a/x.rb" => "") do
-      expect(described_class.new(["lib/app/"]).directories).to(eq(["lib/app"]))
+      expect(described_class.new(["lib/app/"]).paths.to_a).to(eq(["lib/app"]))
     end
   end
 
@@ -65,7 +76,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
     files = { "lib/app/b/y.rb" => "", "lib/app/a/x.rb" => "", "extra/c/z.rb" => "" }
     within(files) do
       project = described_class.new(["lib/app", "extra"])
-      expect(project.files).to(eq(["extra/c/z.rb", "lib/app/a/x.rb", "lib/app/b/y.rb"]))
+      expect(project.listing.to_a).to(eq(["extra/c/z.rb", "lib/app/a/x.rb", "lib/app/b/y.rb"]))
     end
   end
 
@@ -76,7 +87,8 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
       "lib/templates/rails/scaffold_controller/controller.rb" => "<% if x %>\n", "lib/app/b/templates/kept.rb" => ""
     }
     within(files) do
-      expect(described_class.new(["lib"]).files).to(eq(%w[lib/app/a.rb lib/app/b/c.rb lib/app/b/templates/kept.rb]))
+      expect(described_class.new(["lib"]).listing.to_a)
+        .to(eq(%w[lib/app/a.rb lib/app/b/c.rb lib/app/b/templates/kept.rb]))
     end
   end
 
@@ -89,7 +101,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
     }
     within(files) do
       project = described_class.new(%w[lib app])
-      expect([project.files, project.skipped, described_class.new(["lib/site/site_template"]).files]).to(
+      expect([project.listing.to_a, skipped_of(project), files_of(["lib/site/site_template"])]).to(
         eq(
           [
             %w[app/models/site_template/page.rb lib/site/core.rb lib/yard/templates/engine.rb],
@@ -132,7 +144,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
 
   def generated(headers)
     files = headers.each_with_index.to_h { |source, index| ["lib/app/f#{index}.rb", source] }
-    within(files) { return files.keys & described_class.new(["lib/app"]).skipped.fetch(:generated, []) }
+    within(files) { return files.keys & skipped_of(described_class.new(["lib/app"])).fetch(:generated, []) }
   end
 
   it "takes a file for generated when a leading comment line stamps it so, never for prose or a later comment" do
@@ -152,8 +164,8 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
   it "leaves vendored and generated sources out, says which, and keeps any the run names outright" do
     within(mixed_sources) do
       project = described_class.new(["lib/app"])
-      kept = Hashira::Trees.new(project, ["lib/app/g.rb", "lib/app/a.rb"]).all.keys
-      expect([project.files, project.skipped, described_class.new(["lib/app/vendor"]).files, kept]).to(
+      kept = Hashira::Trees.new(project.listing, ["lib/app/g.rb", "lib/app/a.rb"]).all.keys
+      expect([project.listing.to_a, skipped_of(project), files_of(["lib/app/vendor"]), kept]).to(
         eq(
           [
             %w[lib/app/a.rb lib/app/e.rb lib/app/f.rb lib/app/h.rb],
@@ -174,7 +186,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
 
   def engine_of(files)
     directory = files.key?("engines/shop/lib/shop/engine.rb") ? "engines/shop" : "app"
-    within(files) { described_class.new([directory]).engine }
+    within(files) { described_class.new([directory]).framework.engine.first }
   end
 
   it "takes a lib file holding a Rails engine or an isolated namespace for one, whatever its name" do
@@ -197,71 +209,28 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
       { "app/models/post.rb" => "", "lib/engine.rb" => "class Engine < Rails::Railtie; end\n" },
       { "app/models/post.rb" => "", "lib/cms/engine.rb" => engine, "config/application.rb" => "" }
     ]
-    found = projects.map { |files| within(files) { described_class.new(%w[app lib]).then { [it.rails?, it.engine] } } }
+    found = projects.map { |files| within(files) { framed(described_class.new(%w[app lib])) } }
     expect(found).to(eq([[true, "Cms"], [false, nil], [false, nil], [true, nil]]))
-  end
-
-  describe "#package" do
-    it "uses the first folder under the target directory" do
-      within("lib/app/alpha/deep/x.rb" => "", "lib/app/beta/y.rb" => "") do
-        expect(described_class.new(["lib/app"]).package("lib/app/alpha/deep/x.rb")).to(eq("alpha"))
-      end
-    end
-
-    it "folds a root-level file into its sibling folder package" do
-      within("lib/app/alpha.rb" => "", "lib/app/alpha/x.rb" => "") do
-        expect(described_class.new(["lib/app"]).package("lib/app/alpha.rb")).to(eq("alpha"))
-      end
-    end
-
-    it "puts a plain root-level file in the (root) package" do
-      within("lib/app/loose.rb" => "") do
-        expect(described_class.new(["lib/app"]).package("lib/app/loose.rb")).to(eq("(root)"))
-      end
-    end
-
-    it "qualifies same-named folders from different directories with their root" do
-      files = { "app/models/x.rb" => "", "lib/models/y.rb" => "", "lib/views/z.rb" => "" }
-      within(files) do
-        project = described_class.new(%w[app lib])
-        expect(files.keys.map { project.package(it) }).to(eq(%w[app/models lib/models views]))
-      end
-    end
-
-    it "keeps each directory's loose files in a root package of its own when several are analyzed" do
-      within("app/loose.rb" => "", "lib/stray.rb" => "", "lib/tools/y.rb" => "") do
-        project = described_class.new(%w[app lib])
-        expect(%w[app/loose.rb lib/stray.rb lib/tools/y.rb].map { project.package(it) })
-          .to(eq(%w[app/(root) lib/(root) tools]))
-      end
-    end
-
-    it "raises for a path outside the analyzed directories" do
-      within("lib/app/a/x.rb" => "") do
-        expect { described_class.new(["lib/app"]).package("other/x.rb") }
-          .to(raise_error(Hashira::Error, "other/x.rb is outside the analyzed directories"))
-      end
-    end
   end
 
   describe "#relative" do
     it "strips the owning directory prefix when one directory is analyzed" do
       within("lib/app/a/x.rb" => "") do
-        expect(described_class.new(["lib/app"]).relative("lib/app/a/x.rb")).to(eq("a/x.rb"))
+        expect(described_class.new(["lib/app"]).paths.relative("lib/app/a/x.rb")).to(eq("a/x.rb"))
       end
     end
 
     it "names every file from the working directory when several are analyzed, so no two files share a name" do
       within("gem_a/lib/base.rb" => "", "gem_b/lib/base.rb" => "") do
         project = described_class.new(["gem_a/lib", "#{Dir.pwd}/gem_b/lib/"])
-        expect(project.directories).to(eq(%w[gem_a/lib gem_b/lib]))
-        expect(project.files.map { project.relative(it) }).to(eq(%w[gem_a/lib/base.rb gem_b/lib/base.rb]))
+        expect(project.paths.to_a).to(eq(%w[gem_a/lib gem_b/lib]))
+        expect(project.listing.to_a.map { project.paths.relative(it) }).to(eq(%w[gem_a/lib/base.rb gem_b/lib/base.rb]))
       end
     end
 
     it "raises for a path outside the analyzed directories" do
       within("a/x.rb" => "", "b/y.rb" => "") do
-        expect { described_class.new(%w[a b]).relative("c/z.rb") }
+        expect { described_class.new(%w[a b]).paths.relative("c/z.rb") }
           .to(raise_error(Hashira::Error, "c/z.rb is outside the analyzed directories"))
       end
     end
@@ -274,7 +243,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
       tests = %w[test/test_helper.rb test/models/order_test.rb spec/requests/orders_spec.rb]
       within(rails.merge((tests + ["lib/test/stub.rb"]).to_h { [it, "x = 1\n"] })) do
         project = described_class.new(%w[app lib test spec])
-        expect((tests + %w[app/models/order.rb lib/test/stub.rb]).map { project.test?(it) })
+        expect((tests + %w[app/models/order.rb lib/test/stub.rb]).map { project.listing.test?(it) })
           .to(eq([true, true, true, false, false]))
       end
     end
@@ -282,14 +251,14 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
     it "reads the path from the Rails root, so an app checked out under a test folder has no tests" do
       within(rails("test/shop/").merge("test/shop/test/order_test.rb" => "x = 1\n")) do
         project = described_class.new(["test/shop/app", "test/shop/test"])
-        expect(%w[test/shop/app/models/order.rb test/shop/test/order_test.rb].map { project.test?(it) })
+        expect(%w[test/shop/app/models/order.rb test/shop/test/order_test.rb].map { project.listing.test?(it) })
           .to(eq([false, true]))
       end
     end
 
     it "reads the path from the Rails root when that root is the directory analyzed" do
       within(rails.merge("test/order_test.rb" => "x = 1\n")) do
-        expect(%w[./app/models/order.rb ./test/order_test.rb].map { described_class.new(["."]).test?(it) })
+        expect(%w[./app/models/order.rb ./test/order_test.rb].map { described_class.new(["."]).listing.test?(it) })
           .to(eq([false, true]))
       end
     end
@@ -298,7 +267,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
   describe "#label" do
     it "joins the directories" do
       within("a/x.rb" => "", "b/y.rb" => "") do
-        expect(described_class.new(%w[a b]).label).to(eq("a, b"))
+        expect(described_class.new(%w[a b]).paths.to_s).to(eq("a, b"))
       end
     end
   end
@@ -306,21 +275,21 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
   describe "directory resolution" do
     it "uses explicit directories when given" do
       within("src/a/x.rb" => "") do
-        expect(described_class.new(["src"]).directories).to(eq(["src"]))
+        expect(described_class.new(["src"]).paths.to_a).to(eq(["src"]))
       end
     end
 
     it "auto-detects a single lib/<gem> directory" do
       within("lib/mygem/a/x.rb" => "") do
-        expect(described_class.new([]).directories).to(eq(["lib/mygem"]))
+        expect(described_class.new([]).paths.to_a).to(eq(["lib/mygem"]))
       end
     end
 
     it "descends a chain of single-folder wrappers to the package level" do
       files = { "lib/mygem/core/a/x.rb" => "", "lib/mygem/core/b/y.rb" => "", "lib/mygem/core.rb" => "" }
       within(files) do
-        expect(described_class.new([]).directories).to(eq(["lib/mygem/core"]))
-        expect(described_class.new(["lib"]).directories).to(eq(["lib/mygem/core"]))
+        expect(described_class.new([]).paths.to_a).to(eq(["lib/mygem/core"]))
+        expect(described_class.new(["lib"]).paths.to_a).to(eq(["lib/mygem/core"]))
       end
     end
 
@@ -330,14 +299,14 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
         "two/lib/other.rb" => ""
       }
       within(files) do
-        expect(described_class.new(%w[one/lib two/lib]).directories).to(eq(%w[one/lib two/lib]))
-        expect(described_class.new(%w[one/lib one/lib/one]).directories).to(eq(%w[one/lib/one]))
+        expect(described_class.new(%w[one/lib two/lib]).paths.to_a).to(eq(%w[one/lib two/lib]))
+        expect(described_class.new(%w[one/lib one/lib/one]).paths.to_a).to(eq(%w[one/lib/one]))
       end
     end
 
     it "auto-detects lib/<gem> beside lib/<gem>.rb, even when lib/ holds sibling folders" do
       within("lib/gem.rb" => "", "lib/gem/a/x.rb" => "", "lib/gem/b/y.rb" => "", "lib/generators/g.rb" => "") do
-        expect(described_class.new([]).directories).to(eq(["lib/gem"]))
+        expect(described_class.new([]).paths.to_a).to(eq(["lib/gem"]))
       end
     end
 
@@ -348,7 +317,7 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
       }
       within(files) do
         project = described_class.new([])
-        expect([project.directories, project.files.map { [it, project.package(it), project.relative(it)] }]).to(
+        expect([project.paths.to_a, project.listing.to_a.map { named(project, it) }]).to(
           eq(
             [
               %w[lib/ext lib/gem],
@@ -366,14 +335,13 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
     it "reads the entry file of a library it descends to, but not of one named outright" do
       files = { "lib/gem.rb" => "", "lib/gem/a/x.rb" => "", "lib/gem/b/y.rb" => "" }
       within(files) do
-        expect([[], ["lib"], ["lib/gem"]].map { described_class.new(it).files })
+        expect([[], ["lib"], ["lib/gem"]].map { described_class.new(it).listing.to_a })
           .to(eq(([%w[lib/gem.rb lib/gem/a/x.rb lib/gem/b/y.rb]] * 2) + [%w[lib/gem/a/x.rb lib/gem/b/y.rb]]))
-        expect(described_class.new([]).then { [it.relative("lib/gem.rb"), it.package("lib/gem.rb")] })
-          .to(eq(%w[lib/gem.rb (root)]))
+        expect(described_class.new([]).then { named(it, "lib/gem.rb").drop(1) }).to(eq(%w[(root) lib/gem.rb]))
       end
     end
 
-    def placed(project) = [project.relative("lib/gem.rb"), project.located("a/x.rb")]
+    def placed(project) = [project.paths.relative("lib/gem.rb"), project.listing.located("a/x.rb")]
 
     it "prints a narrowed library's entry file from the project's home, and finds each file by its printed path" do
       within("lib/gem.rb" => "", "lib/gem/a/x.rb" => "", "lib/gem/b/y.rb" => "") do
@@ -386,38 +354,38 @@ RSpec.describe(Hashira::Project, :aggregate_failures) do
       code = %w[one/lib/one.rb two/lib/two/x.rb three/lib/x.txt src/a.rb gen/g.rb].to_h { [it, ""] }
       said = ['Dir["*/lib"]', '["src"].freeze', "paths", '"gen"'].map { "Gem::Specification.new { it.require_paths = #{it} }" }
       specs = said.each_with_index.to_h { |text, index| ["#{index}.gemspec", text] }
-      within(code.merge(specs)) { expect(described_class.new([]).directories).to(eq(%w[one/lib two/lib src gen])) }
+      within(code.merge(specs)) { expect(described_class.new([]).paths.to_a).to(eq(%w[one/lib two/lib src gen])) }
     end
 
     def rails_root = { "config/application.rb" => "", "app/models/user.rb" => "" }
 
     it "reads app and lib in a Rails root, whichever exist" do
       roots = %w[lib/tools/x.rb app/models/post.rb].map { rails_root.merge(it => "") }
-      expect(roots.map { within(it) { described_class.new([]).directories } }).to(eq([%w[app lib], ["app"]]))
+      expect(roots.map { within(it) { described_class.new([]).paths.to_a } }).to(eq([%w[app lib], ["app"]]))
     end
 
     it "stops descending at loose code files beside the single folder" do
       files = { "src/app/a/x.rb" => "", "src/app/b/y.rb" => "", "src/loose.rb" => "" }
       within(files) do
-        expect(described_class.new(["src"]).directories).to(eq(["src"]))
+        expect(described_class.new(["src"]).paths.to_a).to(eq(["src"]))
       end
     end
 
     it "falls back to lib when it has several subdirectories" do
       within("lib/one/x.rb" => "", "lib/two/y.rb" => "") do
-        expect(described_class.new([]).directories).to(eq(["lib"]))
+        expect(described_class.new([]).paths.to_a).to(eq(["lib"]))
       end
     end
 
     it "raises without a lib directory" do
       within({}) do
-        expect { described_class.new([]).directories }.to(raise_error(Hashira::Error, %r{no lib/ directory here}))
+        expect { described_class.new([]).paths.to_a }.to(raise_error(Hashira::Error, %r{no lib/ directory here}))
       end
     end
 
     it "accepts a lib holding only loose files, as every gem does on day one" do
       within("lib/solo.rb" => "class Solo; def a = 1; end\n") do
-        expect(described_class.new([]).directories).to(eq(["lib"]))
+        expect(described_class.new([]).paths.to_a).to(eq(["lib"]))
       end
     end
   end

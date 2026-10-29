@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
   it "reports one finding per cluster, with each site as evidence and a refactoring" do
-    findings = duplication(Fixtures::DUPLICATION_FILES, &:findings)
+    findings = duplication(Fixtures::DUPLICATION_FILES) { it.findings(Hashira::Churn.new({})) }
     expect(findings.map { [it.to_h[:kind], message(it)] }).to(match([["duplication", include("2 similar fragments")]]))
     expect(findings.first.to_h[:evidence]).to(
       include(a_string_matching(%r{orders/checkout\.rb:4-8}), a_string_matching(%r{billing/refund\.rb:4-8}))
@@ -32,7 +32,7 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
 
   it "finds no duplication in code that has none" do
     files = { "lib/app/solo/x.rb" => "module App\n module Solo\n class X\n def a = 1\n end\n end\n end\n" }
-    duplication(files) { |clones| expect(clones.findings).to(be_empty) }
+    duplication(files) { |clones| expect(clones.findings(Hashira::Churn.new({}))).to(be_empty) }
   end
 
   it "warns, via churn, when both sites of a clone change more often than the typical file" do
@@ -43,7 +43,7 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
     end
   end
 
-  def digest_of(files) = duplication(files) { |clones| clones.findings.first.to_h[:digest] }
+  def digest_of(files) = duplication(files) { |clones| clones.findings(Hashira::Churn.new({})).first.to_h[:digest] }
 
   it "keys a clone by a digest that survives it moving down the file and changes when it changes" do
     original = digest_of(Fixtures::DUPLICATION_FILES)

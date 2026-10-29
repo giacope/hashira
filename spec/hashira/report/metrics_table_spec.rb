@@ -67,11 +67,12 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
   end
 
   def coupling_report
-    pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
-    findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
+    project = Hashira::Project.new(["app"])
+    pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules.new({}), Fixtures::FLAT, Hashira::Selection.new(%i[coupling]))
+    findings = Hashira::CI::Accepted.new([]).screen(kept(pipeline))
     verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
-    analyses = Hashira::Report::View::Analyses.new(pipeline.graph, nil, nil, nil)
-    view = Hashira::Report::View.new(pipeline.project, analyses, verdicts)
+    analyses = Hashira::Report::View::Analyses.new([outcome(pipeline).graph], [], [], [])
+    view = Hashira::Report::View.new(project, analyses, verdicts)
     capture { view.text.print }
   end
 

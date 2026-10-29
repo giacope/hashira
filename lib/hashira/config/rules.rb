@@ -31,43 +31,29 @@ class Hashira::Config::Rules
     )
   end
 
-  def initialize(table, reserve = HELD, layers = Hashira::Config::Layers.new([]), boundaries = [])
+  def initialize(table, reserve = HELD)
     @table = table
     @reserve = reserve
-    @layers = layers
-    @boundaries = boundaries
   end
-
-  attr_reader :layers, :boundaries
 
   def strict? = @reserve.strict?
 
   def enabled?(kind) = rule(kind).enabled?
 
-  def threshold(kind, default) = rule(kind).limit("threshold", default)
-
   def limit(kind, name, default) = rule(kind).limit(name, default)
 
-  def naming(kinds) = remade(reserve: @reserve.naming(kinds))
-
-  def narrowed(kinds, every)
-    return self if kinds.empty?
-    silenced = (every.to_a - kinds).to_h { [it, OFF] }
-    remade(table: silenced.merge(@table.slice(*kinds)))
+  def chosen(named: [], kinds: [], every: [], strict: false)
+    reserve = @reserve.naming(named)
+    Hashira::Config::Rules.new(narrowed(kinds, every), strict ? reserve.tightened : reserve)
   end
-
-  def layered(layers) = remade(layers:)
-
-  def bounded(boundaries) = remade(boundaries:)
-
-  def tightened = remade(reserve: @reserve.tightened)
 
   ALL = new({}, OPEN)
 
   private
 
-  def remade(table: @table, reserve: @reserve, layers: @layers, boundaries: @boundaries)
-    Hashira::Config::Rules.new(table, reserve, layers, boundaries)
+  def narrowed(kinds, every)
+    return @table if kinds.empty?
+    (every.to_a - kinds).to_h { [it, OFF] }.merge(@table.slice(*kinds))
   end
 
   def rule(kind) = @table.fetch(kind) { fallback(kind) }

@@ -109,7 +109,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
   # The sprawl findings left once Prism is declared an interpreted model.
   def interpreted
     project = Hashira::Project.new(["lib/app"])
-    trees = Hashira::Trees.new(project).all
+    trees = Hashira::Trees.new(project.listing).all
     record = {
       "root" => "Prism", "role" => "interpreted_model",
       "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"

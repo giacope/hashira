@@ -134,22 +134,22 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
   end
 
   def within?(file, root)
-    place = File.expand_path(root, project.home)
+    place = paths.expand(root)
     path = absolute(file)
     path == place || path.start_with?("#{place}/")
   end
 
-  def entry?(file) = project.rails? && Hashira::Coupling::Stratum.new(absolute(file)).within?(ENTRIES)
+  def entry?(file) = framework.rails? && Hashira::Coupling::Stratum.new(absolute(file)).within?(ENTRIES)
 
-  def absolute(file) = project.located(file)
+  def absolute(file) = listing.located(file)
 
   def api?(member) = (library? || engine_library?(member.file)) && member.exposed && owner_exposed?(member)
 
-  def library? = !project.rails? && roots.empty?
+  def library? = !framework.rails? && roots.empty?
 
-  def engine_library?(file) = !project.engine.nil? && roots.empty? && shipped?(file)
+  def engine_library?(file) = framework.engine.any? && roots.empty? && shipped?(file)
 
-  def shipped?(file) = absolute(file).delete_prefix("#{File.expand_path(project.home)}/").start_with?("lib/")
+  def shipped?(file) = absolute(file).delete_prefix("#{paths.expand(".")}/").start_with?("lib/")
 
   def owner_exposed?(member) = exposure.fetch(member.owner, true)
 

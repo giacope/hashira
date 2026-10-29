@@ -18,8 +18,9 @@ class Hashira::CLI::ConfigFile
   def rules
     blamed do
       raw = settings["checks"]
-      chosen = settings.key?("checks") ? Hashira::Config::Rules.parse(raw, @checks.to_a) : Hashira::Config::Rules.new({})
-      tightened(chosen.layered(layers).bounded(declared))
+      parsed = settings.key?("checks") ? Hashira::Config::Rules.parse(raw, @checks.to_a) : Hashira::Config::Rules.new({})
+      draft = Hashira::CLI::Draft.new(parsed, layers, declared)
+      strict? ? draft.chosen(strict: true) : draft
     end
   end
 
@@ -58,8 +59,6 @@ class Hashira::CLI::ConfigFile
     found = @home.join(DEFAULT)
     File.exist?(found) ? found : ""
   end
-
-  def tightened(rules) = strict? ? rules.tightened : rules
 
   def strict?
     chosen = settings.fetch("strict", false)

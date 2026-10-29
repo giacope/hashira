@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Coupling::Inflection, :aggregate_failures) do
-  def inflection(source = nil) = described_class.new(Hashira::Coupling::Inflections.of(source && tree(source)))
+  def inflection(source = nil)
+    described_class.new(Hashira::Coupling::Inflections.of([source].compact.map { tree(it) }))
+  end
 
   def tree(source) = Prism.parse(source).value
 

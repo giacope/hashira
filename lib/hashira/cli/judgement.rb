@@ -1,24 +1,18 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Judgement
-  def initialize(kinds, fail_on, strict, rules)
+  def initialize(kinds, fail_on, strict, draft)
     @kinds = kinds
     @fail_on = fail_on
     @strict = strict
-    @rules = rules
+    @draft = draft
   end
 
-  def project(directories, record, checks = Hashira::Checks.new)
-    record.project(directories, ruled.naming(@kinds + @fail_on).narrowed(@kinds, checks))
+  def pipeline(scope, record, notices, checks = Hashira::Checks.new)
+    @draft.chosen(named: @kinds + @fail_on, kinds: @kinds, every: checks, strict: @strict).call(scope, record, notices)
   end
 
-  def sieve(focus) = Hashira::CLI::Sieve.new(focus, @kinds)
+  def sieve(scope) = Hashira::CLI::Sieve.new(scope, @kinds, @fail_on)
 
-  def gated(checked) = Hashira::CLI::FailOn.new(@fail_on).every? ? checked : @fail_on
-
-  def to_h = { kinds: @kinds, fail_on: @fail_on, strict: @strict, rules: ruled }
-
-  private
-
-  def ruled = @strict ? @rules.tightened : @rules
+  def to_h = { kinds: @kinds, fail_on: @fail_on, strict: @strict, **@draft.chosen(strict: @strict).to_h }
 end

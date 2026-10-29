@@ -33,10 +33,7 @@ module Hashira
 
     Inflections =
       Data.define(:plurals, :singulars, :uncountables, :acronyms) do
-        def self.of(tree)
-          stock = STOCK.irregulars(IRREGULARS)
-          tree ? Declared.new(tree).onto(stock) : stock
-        end
+        def self.of(trees) = trees.reduce(STOCK.irregulars(IRREGULARS)) { |table, tree| Declared.new(tree).onto(table) }
 
         def irregulars(pairs) = pairs.reduce(self) { |table, (one, many)| table.irregular(one, many) }
 

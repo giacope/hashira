@@ -14,14 +14,13 @@ class Hashira::CLI::Record
 
   def accepted = Hashira::CI::Accepted.build(@path)
 
-  def baseline(pipeline, checks = Hashira::Checks.new)
-    analyzers = checks.analyzers.select { pipeline.enabled?(it) }
-    Hashira::CI::Baseline.new(@path, analyzers:, targets: pipeline.targets(@home), kinds: checks.to_a)
+  def baseline(coverage, checks = Hashira::Checks.new)
+    coverage.recorded(@home) { |analyzers, targets| Hashira::CI::Baseline.new(@path, analyzers:, targets:, kinds: checks.to_a) }
   end
 
-  def project(directories, rules)
-    boundaries = accepted.boundaries(rules.boundaries)
-    Hashira::Project.new(directories, boundaries:, home: @home.path, rules:)
+  def project(directories, packaging, declared)
+    boundaries = accepted.boundaries(declared)
+    Hashira::Project.new(directories, home: @home.path, packaging:, boundaries:)
   end
 
   def to_h = { baseline: @path, home: @home }

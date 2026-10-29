@@ -27,7 +27,7 @@ class Hashira::Complexity::Indirection
 
   private
 
-  def limit = @rules.threshold(KIND, THRESHOLD)
+  def limit = @rules.limit(KIND, "threshold", THRESHOLD)
 
   def helping = @_helping ||= Set.new.compare_by_identity.merge(families.keys.flat_map { helpers(it).values })
 

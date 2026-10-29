@@ -13,8 +13,8 @@ class Hashira::Suppression::Suppressions
 
   CLEAR = Screened.new([], [], [])
 
-  def initialize(project, trees, kinds)
-    @project = project
+  def initialize(paths, trees, kinds)
+    @paths = paths
     @trees = trees
     @kinds = kinds
   end
@@ -22,7 +22,7 @@ class Hashira::Suppression::Suppressions
   def directives = @_directives ||= @trees.comments.flat_map { |path, comments| read(path, comments) }
 
   def read(path, comments)
-    Hashira::Suppression::Directives.new(@project.relative(path), comments, @trees.lines(path), @kinds).to_a
+    Hashira::Suppression::Directives.new(@paths.relative(path), comments, @trees.lines(path), @kinds).to_a
   end
 
   def screen(findings)

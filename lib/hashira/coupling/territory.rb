@@ -46,7 +46,7 @@ class Hashira::Coupling::Territory
 
   def autoload?(statement) = statement.is_a?(Prism::CallNode) && statement.name == :autoload
 
-  def dependencies = @definitions.dependencies
+  def dependencies = @_dependencies ||= @definitions.dependencies
 
   def spellings = @definitions.spellings
 end

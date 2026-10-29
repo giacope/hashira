@@ -4,7 +4,7 @@ RSpec.describe(Hashira::Coupling::Autoload, :aggregate_failures) do
   def roots(files)
     within(files) do
       project = Hashira::Project.new(%w[app])
-      trees = project.files.to_h { [it, Hashira::Trees::Source.new(it).tree] }
+      trees = project.listing.to_a.to_h { [it, Hashira::Trees::Source.new(it).tree] }
       return described_class.new(project, trees).roots.to_a.sort
     end
   end

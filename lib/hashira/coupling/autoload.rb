@@ -10,7 +10,7 @@ class Hashira::Coupling::Autoload
 
   def roots = defined | namespaces
 
-  def namespaces = @_namespaces ||= @project.rails? ? @trees.keys.flat_map { implied(it) }.to_set : Set.new
+  def namespaces = @_namespaces ||= framework.rails? ? @trees.keys.flat_map { implied(it) }.to_set : Set.new
 
   private
 
@@ -30,7 +30,7 @@ class Hashira::Coupling::Autoload
     folders.each_index.map { |count| folders.first(count + 1).map { inflection.camelize(it) } }
   end
 
-  def inflection
-    @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
-  end
+  def inflection = @_inflection ||= framework.inflection
+
+  def framework = @_framework ||= @project.framework
 end

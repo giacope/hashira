@@ -30,7 +30,7 @@ class Hashira::Smells::Check
 
   def kind = Hashira::Smells::Kind.new(self.class).to_s
 
-  def threshold(default) = @rules.threshold(kind, default)
+  def threshold(default) = @rules.limit(kind, "threshold", default)
 
   def strict? = @rules.strict?
 

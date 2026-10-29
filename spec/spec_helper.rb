@@ -38,9 +38,26 @@ module Fixtures
 
   def pipeline(directories, packaging: :folder)
     project = Hashira::Project.new(directories)
-    trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+    trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
     census = Hashira::Coupling::Census.new(project, trees, packaging:)
     [project, census, Hashira::Coupling::Graph.new(project, trees, census)]
+  end
+
+  # What a pipeline hands the run: its outcome, and its coverage of the checks; and the findings it kept.
+  def outcome(pipeline) = pipeline.call(->(found, _coverage) { found })
+
+  def coverage(pipeline) = pipeline.call(->(_found, covered) { covered })
+
+  def kept(pipeline) = outcome(pipeline).screened.to_a.fetch(0)
+
+  # The parts of a report the analyzers measure, over a project's trees: complexity, duplication and hotspots.
+  def parts(project, names)
+    trees = Hashira::Trees.new(project.listing)
+    complexity = [Hashira::Complexity::Scores.new(project.paths, trees.all, NONE, trees)]
+    duplication = [Hashira::Duplication::Clones.new(project.paths, trees.all)]
+    churn = Hashira::Churn.build(Hashira::GitLog.new(project.paths))
+    hotspots = [Hashira::Hotspots::Rollup.new(complexity, duplication, churn)]
+    { complexity:, duplication:, hotspots: }.slice(*names)
   end
 
   def analyze(files, directories: ["lib/app"], packaging: :folder)
@@ -49,23 +66,24 @@ module Fixtures
 
   def with_pipeline(&)
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL))
-      yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
+      project = Hashira::Project.new(["lib/app"])
+      pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules::ALL)
+      yield(project, outcome(pipeline).graph, Hashira::CI::Accepted.new([]).screen(kept(pipeline)))
     end
   end
 
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      parsed = Hashira::Trees.new(project)
-      yield(Hashira::Complexity::Scores.new(project, parsed.all, NONE, parsed))
+      parsed = Hashira::Trees.new(project.listing)
+      yield(Hashira::Complexity::Scores.new(project.paths, parsed.all, NONE, parsed))
     end
   end
 
   def smells(files, directories: ["lib/app"], rules: NONE)
     within(files) do
       project = Hashira::Project.new(directories)
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
+      trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
       types = Hashira::Smells::Census.new(project, trees).types
       yield(Hashira::Smells::Report.new(types, Hashira::Boundaries.new([], trees), rules))
     end
@@ -93,7 +111,8 @@ module Fixtures
   def duplication(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Duplication::Clones.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
+      trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
+      yield(Hashira::Duplication::Clones.new(project.paths, trees))
     end
   end
 
@@ -144,9 +163,11 @@ module Fixtures
 
   STRUCTURAL = Hashira::Checks.new.then { |checks| checks.select { checks.owner(it) == :coupling } }
 
-  STRICT = Hashira::Config::Rules::ALL.tightened
+  STRICT = Hashira::Config::Rules::ALL.chosen(strict: true)
 
   CLEAR = Hashira::Suppression::Suppressions::CLEAR
+
+  FLAT = Hashira::Config::Layers.new([])
 
   JUDGED = Hashira::Report::View::Unjudged.new(kinds: [], history: nil, judged: true)
 

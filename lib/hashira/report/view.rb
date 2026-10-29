@@ -10,12 +10,13 @@ class Hashira::Report::View
 
   def text(io = $stdout)
     page = @layout.page(io)
-    Hashira::Report::Text.new([*@analyses.texts(@project, page), @verdicts.text(page)])
+    Hashira::Report::Text.new([*@analyses.texts(@project.paths, @project.listing, page), @verdicts.text(page)])
   end
 
   def json(io = $stdout)
     listed = [@verdicts.listed, *@analyses.pieces]
-    pieces = [@analyses.about(@project), *listed, Hashira::Report::Json::Withheld.new(listed), @verdicts.unjudged]
+    about = @analyses.about(@project.paths, @project.listing)
+    pieces = [about, *listed, Hashira::Report::Json::Withheld.new(listed), @verdicts.unjudged]
     @layout.json(pieces, io)
   end
 end

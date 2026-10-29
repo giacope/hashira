@@ -1,29 +1,24 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
-  # The class of a pipeline's smells analyzer and the kinds it finds: every rule on, or with nil the defaults.
-  def sniffing(options)
-    rules = options ? Hashira::Config::Rules::ALL : Hashira::Config::Rules.new({})
-    pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:), **options.to_h)
-    [pipeline.smells.class, pipeline.findings.map { it.to_h[:kind] }]
+  # The kinds a pipeline finds with the analyzers named: every rule on, or with nil every analyzer under the defaults.
+  def sniffing(enabled)
+    rules = enabled ? Hashira::Config::Rules::ALL : Hashira::Config::Rules.new({})
+    selection = Hashira::Selection.new(*[enabled].compact)
+    kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), rules, Fixtures::FLAT, selection)).map { it.to_h[:kind] }
   end
 
   it "runs inside the pipeline by default and steps aside when skipped" do
-    found = within(Fixtures::CYCLIC_FILES) { [{}, { enabled: %i[coupling] }, nil].map { sniffing(it) } }
+    found = within(Fixtures::CYCLIC_FILES) { [Hashira::Checks.new.analyzers, %i[coupling], nil].map { sniffing(it) } }
     expect(found).to(
-      match(
-        [
-          [described_class, include("utility_function")], [NilClass, exclude("utility_function")],
-          [anything, include("cycle", "utility_function")]
-        ]
-      )
+      match([include("utility_function"), exclude("utility_function"), include("cycle", "utility_function")])
     )
   end
 
   def narrowed(kinds)
-    rules = Hashira::Config::Rules::ALL.narrowed(kinds, Fixtures::KINDS)
+    rules = Hashira::Config::Rules::ALL.chosen(kinds: kinds, every: Fixtures::KINDS)
     files = { "lib/app/zone/thing.rb" => "module App\n  class Thing\n    def go(x) = x.to_s\n  end\nend\n" }
-    within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.map { it.to_h[:kind] } }
+    within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), rules)).map { it.to_h[:kind] } }
   end
 
   def spied = [Hashira::Smells::DataClump, Hashira::Smells::BoundarySprawl, Hashira::Smells::SpreadSwitch]

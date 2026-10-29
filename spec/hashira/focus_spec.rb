@@ -4,7 +4,7 @@ RSpec.describe(Hashira::Focus, :aggregate_failures) do
   def finding(package, site, evidence: []) = handmade("cycle", package, Fakes::Detail.new({ site: }), evidence:)
 
   def focused(paths, &)
-    within(Fixtures::CYCLIC_FILES) { yield(described_class.new(Hashira::Project.new(["lib/app"]), paths)) }
+    within(Fixtures::CYCLIC_FILES) { yield(described_class.new(Hashira::Project.new(["lib/app"]).paths, paths)) }
   end
 
   it "narrows nothing when no file was named" do

@@ -23,8 +23,8 @@ class Hashira::Trees
     end
   end
 
-  def initialize(project, kept = [])
-    @project = project
+  def initialize(listing, kept = [])
+    @listing = listing
     @kept = kept
   end
 
@@ -36,11 +36,9 @@ class Hashira::Trees
 
   def unparsed = results.select { |_path, result| result.failure? }.keys
 
-  def tree(path) = Hashira::Trees::Source.new(path).tree
-
   private
 
   def results = @_results ||= sources.to_h { [it, Hashira::Trees::Source.new(it).result] }
 
-  def sources = (@project.files | (@kept & @project.skipped.values.flatten)).sort
+  def sources = @listing.sources(@kept)
 end

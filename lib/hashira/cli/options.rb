@@ -12,9 +12,9 @@ class Hashira::CLI::Options
 
   def status(_usage, notices, clock = Process)
     started = clock.clock_gettime(Process::CLOCK_MONOTONIC)
-    pipeline = @scope.pipeline(@judgement, @record, notices)
-    Hashira::CLI::Run.new(pipeline, @output, @judgement, @record).status.tap do
-      notices.finished(pipeline.size, format("%.1f", clock.clock_gettime(Process::CLOCK_MONOTONIC) - started))
+    pipeline = @judgement.pipeline(@scope, @record, notices)
+    pipeline.call(Hashira::CLI::Run.new(@output, @judgement.sieve(@scope), @record)).tap do
+      pipeline.finished(notices, format("%.1f", clock.clock_gettime(Process::CLOCK_MONOTONIC) - started))
     end
   end
 

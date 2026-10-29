@@ -4,7 +4,7 @@ RSpec.describe(Hashira::Coupling::Surface, :aggregate_failures) do
   def forebears(source)
     within("lib/app/base.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
-      graph = Hashira::Pipeline.new(project).graph
+      graph = outcome(Hashira::Pipeline.build(project)).graph
       surface = described_class.new(project, graph.trees, graph.census)
       surface.methods.select { it.owner == ["Child"] }.to_h { [it.name, surface.forebears(it).map(&:name)] }
     end

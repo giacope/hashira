@@ -249,12 +249,12 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
     end
 
     it "detects a Rails app by the config/application.rb beside the analyzed directory" do
-      within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).rails?).to(be(true)) }
-      within(Fixtures::CYCLIC_FILES) { expect(Hashira::Project.new(["lib/app"]).rails?).to(be(false)) }
+      within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["app"]).framework.rails?).to(be(true)) }
+      within(Fixtures::CYCLIC_FILES) { expect(Hashira::Project.new(["lib/app"]).framework.rails?).to(be(false)) }
     end
 
     it "detects a Rails app when the analyzed directory is the Rails root itself" do
-      within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["."]).rails?).to(be(true)) }
+      within(Fixtures::RAILS_FILES) { expect(Hashira::Project.new(["."]).framework.rails?).to(be(true)) }
     end
 
     it "keeps Application* references under an explicit folder packaging" do
@@ -636,14 +636,14 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
 
     it "defaults the pipeline to namespace packaging for Rails apps" do
       within(Fixtures::RAILS_FILES) do
-        pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]))
+        pipeline = outcome(Hashira::Pipeline.build(Hashira::Project.new(["app"])))
         expect(pipeline.graph.edges.map(&:to_s)).to(eq(["Billing -> Ci", "User -> Billing"]))
       end
     end
 
     it "honors an explicit folder packaging override" do
       within(Fixtures::RAILS_FILES) do
-        pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), packaging: :folder)
+        pipeline = outcome(Hashira::Pipeline.build(Hashira::Project.new(["app"], packaging: :folder)))
         expect(pipeline.graph.edges.map(&:to_s)).to(eq(["models -> jobs"]))
       end
     end

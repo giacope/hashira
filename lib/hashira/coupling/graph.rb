@@ -58,7 +58,10 @@ class Hashira::Coupling::Graph
 
   def domain = edges.reject { aside?(it.from) || aside?(it.to) }
 
-  def usage(package) = clients(package).reject { it.end_with?(@project.root) }.to_h { [it, map.usage[[it, package]]] }
+  def usage(package)
+    root = Hashira::Coupling::Folders.new(paths).root
+    clients(package).reject { it.end_with?(root) }.to_h { [it, map.usage[[it, package]]] }
+  end
 
   def constants(edge)
     names = map.usage[edge.deconstruct]
@@ -83,10 +86,12 @@ class Hashira::Coupling::Graph
 
   private
 
+  def paths = @_paths ||= @project.paths
+
   def map
     @_map ||=
       Hashira::Coupling::EdgeMap.new(@census).tap do |edges|
-        @trees.each { |file, tree| edges.record(@project.relative(file), file, tree) }
+        @trees.each { |file, tree| edges.record(paths.relative(file), file, tree) }
       end
   end
 

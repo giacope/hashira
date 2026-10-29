@@ -26,7 +26,7 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     commit(message)
   end
 
-  def built(directories) = described_class.build(Hashira::GitLog.new(Hashira::Project.new(directories)))
+  def built(directories) = described_class.build(Hashira::GitLog.new(Hashira::Project.new(directories).paths))
 
   def hits(directories, *files)
     churn = built(directories)
@@ -81,7 +81,7 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
   end
 
   def depth
-    history = Hashira::GitLog.new(Hashira::Project.new(["lib/app"]))
+    history = Hashira::GitLog.new(Hashira::Project.new(["lib/app"]).paths)
     [described_class.build(history).history?, Hashira::Churn::Depth.build(history).to_s]
   end
 

@@ -12,7 +12,7 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
   def found(files, *kinds)
     within(files) do
       shown = kinds.empty? ? %w[cycle bidirectional_association] : kinds
-      Hashira::Pipeline.new(Hashira::Project.new(["app"])).findings.select { shown.include?(it.to_h[:kind]) }
+      kept(Hashira::Pipeline.build(Hashira::Project.new(["app"]))).select { shown.include?(it.to_h[:kind]) }
     end
   end
 
@@ -56,7 +56,7 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
       "app/models/cms/site.rb" => "module Cms\n  class Site\n    has_many :posts\n  end\nend\n",
       "app/models/cms/post.rb" => "module Cms\n  class Post\n    belongs_to :site\n  end\nend\n"
     }
-    found = within(files) { Hashira::Pipeline.new(Hashira::Project.new(%w[app lib])).findings }
+    found = within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(%w[app lib]))) }
     expect(found.select { it.to_h[:kind] == "bidirectional_association" }.map { it.to_h[:package] }).to(eq(%w[Site]))
   end
 
