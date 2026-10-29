@@ -1,30 +1,36 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Peak =
-    Data.define(:seconds, :kilobytes) do
-      def self.of(path)
-        seconds, kilobytes = File.exist?(path) ? File.read(path).split : [0, 0]
-        new(seconds: Float(seconds), kilobytes: Integer(kilobytes))
-      end
+class Evaluation::Outcome
+  def self.parse(output)
+    [JSON.parse(output)]
+  rescue JSON::ParserError
+    []
+  end
 
-      def megabytes = (kilobytes / 1024.0).round(1)
-    end
+  def initialize(text, status, peak, report)
+    @text = text
+    @status = status
+    @peak = peak
+    @report = report
+  end
 
-  Outcome =
-    Data.define(:status, :output, :error, :peak, :json) do
-      def self.parse(output)
-        JSON.parse(output)
-      rescue JSON::ParserError
-        nil
-      end
+  def to_a = [@text, @status, @peak]
 
-      def text = "#{output}#{error}"
+  def probe(path)
+    return [:unparsed] if @report.empty?
+    path.split(".").reduce(@report) { |found, key| found.flat_map { step(it, key) } }
+  end
 
-      def findings = json ? json.fetch("findings", []) : []
+  def findings = @report.flat_map { it.fetch("findings", []) }
 
-      def kinds(kind) = findings.select { it["kind"] == kind }
+  def kinds(kind) = findings.select { it["kind"] == kind }
 
-      def edges = json.fetch("edges").to_h { [[it["from"], it["to"]], it["weight"]] }
-    end
+  def edges = @report.fetch(0).fetch("edges").to_h { [[it["from"], it["to"]], it["weight"]] }
+
+  private
+
+  def step(value, key)
+    return [value.size] if key == "size" && value.respond_to?(:size)
+    value.is_a?(Array) ? value.values_at(Integer(key)).compact : [value.fetch(key, nil)].compact
+  end
 end

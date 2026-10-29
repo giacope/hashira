@@ -20,7 +20,7 @@ class Evaluation::Sandbox
     end
   end
 
-  def expectations = Dir["#{@source}/*/expect.yml"].map { File.dirname(it) }
+  def fixtures = Dir["#{@source}/*/expect.yml"].map { Evaluation::Fixture.new(File.dirname(it)) }
 
   private
 

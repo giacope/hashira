@@ -40,7 +40,7 @@ class Evaluation::Tool
       chdir: directory
     )
     peak = Evaluation::Peak.of(report)
-    Evaluation::Outcome.new(status: status.exitstatus, output:, error:, peak:, json: Evaluation::Outcome.parse(output))
+    Evaluation::Outcome.new("#{output}#{error}", status.exitstatus, peak, Evaluation::Outcome.parse(output))
   end
 
   def opting? = Open3.capture2e(*command, "--help").first.include?("checks: all")

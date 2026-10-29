@@ -12,13 +12,13 @@ class Evaluation::Graphs
     @root = root
   end
 
-  def checks = Evaluation::Sandbox.new(@root).expectations.flat_map { verdicts(it) }
+  def checks = Evaluation::Sandbox.new(@root).fixtures.flat_map { verdicts(it) }
 
   private
 
   def verdicts(fixture)
-    expect = YAML.safe_load_file(File.join(fixture, "expect.yml"))
-    outcome = Evaluation::Sandbox.new(File.join(fixture, "project")).copy { @tool.call(it, expect["args"] + QUIET) }
-    Evaluation::Verdict.new(File.basename(fixture), expect, outcome).checks
+    expect = fixture.expect
+    outcome = fixture.copy { @tool.call(it, expect["args"] + QUIET) }
+    Evaluation::Verdict.new(fixture.to_s, expect, outcome).checks
   end
 end

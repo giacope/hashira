@@ -1,12 +1,5 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Metrics =
-    Data.define(:status, :files, :thousands, :seconds, :megabytes, :kinds) do
-      def to_h = super.transform_keys(&:to_s).merge("kloc" => thousands).except("thousands")
-    end
-end
-
 class Evaluation::Run
   SUITE = "corpus"
 
@@ -15,26 +8,23 @@ class Evaluation::Run
     @outcome = outcome
   end
 
-  def metrics
-    peak = @outcome.peak
-    Evaluation::Metrics.new(
-      status: @outcome.status, files: json["files"], thousands:, seconds: peak.seconds.round(2),
-      megabytes: peak.megabytes, kinds:
-    ).to_h
+  def to_h
+    _, status, peak = @outcome.to_a
+    told = { "status" => status, "files" => @outcome.probe("files").first }.merge(peak.to_h)
+    told.merge("kinds" => kinds, "kloc" => thousands)
   end
 
   def checks(name)
+    _, status = @outcome.to_a
     cycles = @outcome.kinds("cycle").filter_map { cut(name, it.fetch("detail")) }
-    [Evaluation::Check.of(SUITE, "#{name}: hashira exits 0", 0, @outcome.status), *cycles]
+    [Evaluation::Check.of(SUITE, "#{name}: hashira exits 0", 0, status), *cycles]
   end
 
-  def sightings(name) = @outcome.findings.map { Evaluation::Sighting.new(corpus: name, finding: it, home: base) }
+  def sightings(name) = @outcome.findings.map { Evaluation::Sighting.new(name, it, base) }
 
   private
 
-  def json = @outcome.json
-
-  def targets = json.fetch("targets")
+  def targets = @outcome.probe("targets").fetch(0)
 
   def base = targets.one? ? File.join(@home, targets.first) : @home
 

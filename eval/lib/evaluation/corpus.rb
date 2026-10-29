@@ -24,7 +24,7 @@ class Evaluation::Corpus
 
   private
 
-  def metrics = runs.to_h { |name, run| [name, run.metrics] }
+  def metrics = runs.to_h { |name, run| [name, run.to_h] }
 
   def precision = Evaluation::Precision.new(sightings, @settings.fetch("samples"), @draw)
 

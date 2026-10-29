@@ -12,7 +12,7 @@ class Evaluation::Verdict
   end
 
   def checks
-    return [broken] unless @outcome.status.zero?
+    return [broken] unless status.zero?
     [*edges, *absent, *cycles, *pairs, *cuts]
   end
 
@@ -22,7 +22,9 @@ class Evaluation::Verdict
     Evaluation::Check.of(SUITE, "#{@name}: #{label}", expected, actual)
   end
 
-  def broken = check("hashira exits cleanly", 0, @outcome.status)
+  def broken = check("hashira exits cleanly", 0, status)
+
+  def status = @outcome.to_a.fetch(1)
 
   def reported = @_reported ||= @outcome.edges.keys.map { it.join(" -> ") }.sort
 

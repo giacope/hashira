@@ -12,9 +12,11 @@ end
 
 require_relative "evaluation/home"
 require_relative "evaluation/shelves"
+require_relative "evaluation/peak"
 require_relative "evaluation/outcome"
 require_relative "evaluation/tool"
 require_relative "evaluation/sandbox"
+require_relative "evaluation/fixture"
 require_relative "evaluation/check"
 require_relative "evaluation/arcs"
 require_relative "evaluation/conformance"

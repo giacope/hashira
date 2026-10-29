@@ -29,7 +29,7 @@ class Evaluation::Conformance
     "module Conformance\n  class Case#{index}\n#{@cases[index]["source"].lines.map { "    #{it}" }.join}  end\nend\n"
   end
 
-  def scores(outcome) = outcome.json.dig("complexity", "methods").to_h { [it["subject"], it["cognitive"]] }
+  def scores(outcome) = outcome.probe("complexity.methods").flatten(1).to_h { [it.fetch("subject"), it["cognitive"]] }
 
   def verdicts(item, index, scored)
     expected(item).map do |name, score|

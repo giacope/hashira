@@ -28,29 +28,23 @@ class Evaluation::Behaviour
 
   def check(item, label, expected, actual) = Evaluation::Check.of(SUITE, "#{item["name"]}: #{label}", expected, actual)
 
-  def status(item, outcome) = check(item, "exit status", item["status"], outcome.status)
+  def status(item, outcome)
+    _, status = outcome.to_a
+    check(item, "exit status", item["status"], status)
+  end
 
   def said(item, outcome, key, wanted)
-    item.fetch(key, []).map { check(item, it.inspect, wanted, SAID.fetch(outcome.text.include?(it))) }
+    text, = outcome.to_a
+    item.fetch(key, []).map { check(item, it.inspect, wanted, SAID.fetch(text.include?(it))) }
   end
 
   def probes(item, outcome)
-    item.fetch("json", {}).map { |path, wanted| check(item, "json #{path}", wanted, dig(outcome, path)) }
+    item.fetch("json", {}).map { |path, wanted| check(item, "json #{path}", wanted, outcome.probe(path).first) }
   end
 
   def written(item, root)
     item.fetch("writes", {}).map do |path, wanted|
       check(item, "writes #{path}", wanted, File.exist?(File.join(root, path)))
     end
-  end
-
-  def dig(outcome, path)
-    return :unparsed unless outcome.json
-    path.split(".").reduce(outcome.json) { |value, key| step(value, key) }
-  end
-
-  def step(value, key)
-    return value.size if key == "size" && value.respond_to?(:size)
-    value.is_a?(Array) ? value[Integer(key)] : value&.fetch(key, nil)
   end
 end
