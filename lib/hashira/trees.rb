@@ -3,9 +3,25 @@
 require "prism"
 
 class Hashira::Trees
-  REPLACED = { invalid: :replace, undef: :replace }.freeze
+  class Source
+    REPLACED = { invalid: :replace, undef: :replace }.freeze
 
-  def self.parse(path) = new(nil).tree(path)
+    def initialize(path)
+      @path = path
+    end
+
+    def result = Prism.parse(read(@path).source.source.encode(Encoding::UTF_8, **REPLACED), encoding: false)
+
+    def tree = result.value
+
+    private
+
+    def read(path)
+      Prism.parse_file(path)
+    rescue SystemCallError => error
+      raise(Hashira::Error, "cannot read #{path} (#{error.message})")
+    end
+  end
 
   def initialize(project, kept = [])
     @project = project
@@ -20,19 +36,11 @@ class Hashira::Trees
 
   def unparsed = results.select { |_path, result| result.failure? }.keys
 
-  def tree(path) = legible(parse(path)).value
+  def tree(path) = Hashira::Trees::Source.new(path).tree
 
   private
 
-  def results = @_results ||= sources.to_h { [it, legible(parse(it))] }
+  def results = @_results ||= sources.to_h { [it, Hashira::Trees::Source.new(it).result] }
 
   def sources = (@project.files | (@kept & @project.skipped.values.flatten)).sort
-
-  def parse(path)
-    Prism.parse_file(path)
-  rescue SystemCallError => error
-    raise(Hashira::Error, "cannot read #{path} (#{error.message})")
-  end
-
-  def legible(result) = Prism.parse(result.source.source.encode(Encoding::UTF_8, **REPLACED), encoding: false)
 end

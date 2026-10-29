@@ -15,15 +15,17 @@ class Hashira::CLI::ConfigFile
     @checks = checks
   end
 
-  attr_reader :home
-
   def directories = setting("directories").split(",")
 
   def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
 
-  def rules = blamed { tightened(checked_rules.layered(layers).bounded(declared)) }
-
-  def checked_rules = settings.key?("checks") ? checks : Hashira::Config::Rules.new({})
+  def rules
+    blamed do
+      raw = settings["checks"]
+      chosen = settings.key?("checks") ? Hashira::Config::Rules.parse(raw, @checks.to_a) : Hashira::Config::Rules.new({})
+      tightened(chosen.layered(layers).bounded(declared))
+    end
+  end
 
   def vet
     argv = directories + flags.flatten
@@ -48,8 +50,6 @@ class Hashira::CLI::ConfigFile
     found = @home.join(DEFAULT)
     File.exist?(found) ? found : ""
   end
-
-  def checks = Hashira::Config::Rules.parse(settings["checks"], @checks.to_a)
 
   def tightened(rules) = strict? ? rules.tightened : rules
 

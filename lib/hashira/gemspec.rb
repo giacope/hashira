@@ -6,7 +6,7 @@ class Hashira::Gemspec
   end
 
   def paths
-    nodes(Hashira::Trees.parse(@path)).grep(Prism::CallNode).select { it.name == :require_paths= }
+    nodes(Hashira::Trees::Source.new(@path).tree).grep(Prism::CallNode).select { it.name == :require_paths= }
       .flat_map { strings(it.arguments.arguments.first) }.flat_map { Dir[it] }.select { Dir["#{it}/**/*.rb"].any? }
   end
 

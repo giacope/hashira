@@ -22,7 +22,8 @@ class Hashira::Engine
 
   def namespace(file)
     found = []
-    Hashira::Analysis::TypeWalk.new(Hashira::Trees.parse(file)).walk do |node, full|
+    tree = Hashira::Trees::Source.new(file).tree
+    Hashira::Analysis::TypeWalk.new(tree).walk do |node, full|
       found.concat(isolated(node))
       found << full[0...-1] if engine?(node)
     end

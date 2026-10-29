@@ -37,7 +37,7 @@ class Hashira::Pipeline
 
   def history(told)
     return if churn.history?
-    told.churn(@project.label, churn.depth, coupling: rules.enabled?(HISTORIC))
+    told.churn(@project.label, depth, coupling: rules.enabled?(HISTORIC))
   end
 
   def targets(home) = @project.directories.map { home.relative(it) }
@@ -46,13 +46,13 @@ class Hashira::Pipeline
 
   def unjudged?(kind) = rules.enabled?(kind) && !checks?(kind)
 
-  def depth = churn.depth
+  def depth = @_depth ||= Hashira::Churn::Depth.build(@project.history)
 
   def size = @project.files.size
 
   def unlayered
     layers = @project.layers
-    layers.any? && enabled?(:coupling) ? graph.census.unlayered(layers, @project.files) : []
+    layers.names.any? && enabled?(:coupling) ? graph.census.unlayered(layers, @project.files) : []
   end
 
   def graph = coupling.graph
@@ -67,7 +67,7 @@ class Hashira::Pipeline
     @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
   end
 
-  def churn = @_churn ||= Hashira::Churn.build(@project)
+  def churn = @_churn ||= Hashira::Churn.build(@project.history)
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
 

@@ -2,15 +2,21 @@
 
 module Hashira
   module Config
-    Rule =
-      Data.define(:enabled, :threshold, :limits) do
-        def initialize(limits: {}, **) = super
-
-        def self.parse(kind, setting, kinds)
-          raise(Error, "checks: unknown kind #{kind.inspect} (use: #{kinds.join(", ")})") unless kinds.include?(kind)
-          [kind, Setting.new(kind, setting.is_a?(Hash) ? setting : Switch.new(kind, setting).to_h).rule]
-        end
+    class Rule
+      def self.parse(kind, setting, kinds)
+        raise(Error, "checks: unknown kind #{kind.inspect} (use: #{kinds.join(", ")})") unless kinds.include?(kind)
+        [kind, Setting.new(kind, setting.is_a?(Hash) ? setting : Switch.new(kind, setting).to_h).rule]
       end
+
+      def initialize(enabled:, limits: {})
+        @enabled = enabled
+        @limits = limits
+      end
+
+      def enabled? = @enabled
+
+      def limit(name, default) = @limits.fetch(name, default)
+    end
 
     class Switch
       def initialize(kind, setting)

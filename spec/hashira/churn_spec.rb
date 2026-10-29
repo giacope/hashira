@@ -26,8 +26,10 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     commit(message)
   end
 
+  def built(directories) = described_class.build(Hashira::GitLog.new(Hashira::Project.new(directories)))
+
   def hits(directories, *files)
-    churn = described_class.build(Hashira::Project.new(directories))
+    churn = built(directories)
     files.map { churn.hits(it) }
   end
 
@@ -78,7 +80,10 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     end
   end
 
-  def depth = described_class.build(Hashira::Project.new(["lib/app"])).then { [it.history?, it.depth.to_h] }
+  def depth
+    history = Hashira::GitLog.new(Hashira::Project.new(["lib/app"]))
+    [described_class.build(history).history?, Hashira::Churn::Depth.build(history).to_s]
+  end
 
   def depths
     thin = depth
@@ -92,8 +97,8 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     expect(found).to(
       eq(
         [
-          [false, { commits: 1, shallow: false, deep: false }], [true, { commits: 2, shallow: false, deep: true }],
-          [[false, { commits: 1, shallow: true, deep: false }], [0]]
+          [false, "too little git history (1 commit)"], [true, "too little git history (2 commits)"],
+          [[false, "shallow git history (1 commit)"], [0]]
         ]
       )
     )
@@ -103,7 +108,7 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     within("repo/a.rb" => "class A\nend\n") do
       git("-C", "repo", "init", "-q")
       commit("x", "-C", "repo")
-      expect([hits(["repo"], "a.rb"), described_class.build(Hashira::Project.new(["."])).history?]).to(eq([[1], false]))
+      expect([hits(["repo"], "a.rb"), built(["."]).history?]).to(eq([[1], false]))
     end
   end
 
@@ -134,7 +139,7 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
 
   it "reports no history rather than crashing when git is not on PATH" do
     within("a.rb" => "class A\nend\n") do
-      expect(without_git { described_class.build(Hashira::Project.new(["."])).history? }).to(be(false))
+      expect(without_git { built(["."]).history? }).to(be(false))
     end
   end
 

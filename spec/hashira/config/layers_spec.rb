@@ -31,7 +31,7 @@ RSpec.describe(Hashira::Config::Layers, :aggregate_failures) do
   end
 
   it "stands for no layers when none are declared" do
-    expect([described_class.parse(nil).any?, described_class.new([]).names]).to(eq([false, []]))
+    expect([described_class.parse(nil).names, described_class.new([]).names]).to(eq([[], []]))
   end
 
   def refusal(raw)
@@ -54,7 +54,7 @@ RSpec.describe(Hashira::Config::Layers, :aggregate_failures) do
   end
 
   it "keeps the rails preset's extra folders to the preset" do
-    plain = described_class.new([described_class::Layer.new(name: "app", parts: [], home: "/srv")])
+    plain = described_class.new([described_class::Layer.new("app", [], "/srv")])
     expect(
       [
         rank(%w[web jobs domain], "/srv/lib/mailers/previews/a.rb", "A"),

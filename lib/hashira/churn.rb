@@ -5,24 +5,33 @@ require_relative "git_log"
 class Hashira::Churn
   FILES_THAT_DRIFT_APART = 2
 
-  Depth = Data.define(:commits, :shallow, :deep)
+  class Depth
+    def initialize(commits:, shallow:, deep:)
+      @commits = commits
+      @shallow = shallow
+      @deep = deep
+    end
+
+    def self.build(history) = new(commits: history.changesets.size, shallow: history.shallow?, deep: history.deep?)
+
+    def deep? = @deep
+
+    def to_s
+      return "no git history" unless @shallow || @commits.positive?
+      "#{@shallow ? "shallow" : "too little"} git history (#{Hashira::Prose::Count.new(@commits, "commit")})"
+    end
+  end
 
   DEEP = Depth.new(commits: 2, shallow: false, deep: true)
 
-  def self.build(project)
-    history = project.history
-    depth = Depth.new(commits: history.changesets.size, shallow: history.shallow?, deep: history.deep?)
-    new(depth.shallow ? {} : history.counts, depth)
-  end
+  def self.build(history) = new(history.shallow? ? {} : history.counts, Depth.build(history))
 
   def initialize(counts, depth = DEEP)
     @counts = counts
     @depth = depth
   end
 
-  attr_reader :depth
-
-  def history? = @depth.deep
+  def history? = @depth.deep?
 
   def hits(file) = @counts.fetch(file.b, 0)
 

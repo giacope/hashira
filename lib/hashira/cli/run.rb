@@ -68,7 +68,7 @@ class Hashira::CLI::Run
 
   def unjudged
     left = asked { @pipeline.unjudged?(it) }
-    Hashira::Report::View::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
+    Hashira::Report::View::Unjudged.new(kinds: left, history: @pipeline.depth, judged: checked.any?)
   end
 
   def asked(&) = @checks.select { yield(it) && owned?(it) && @sieve.keeps?(it) }

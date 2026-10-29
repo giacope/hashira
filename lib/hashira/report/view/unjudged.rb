@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 class Hashira::Report::View::Unjudged
-  def initialize(kinds:, depth:, judged:)
+  def initialize(kinds:, history:, judged:)
     @kinds = kinds
-    @depth = depth
+    @history = history
     @judged = judged
   end
 
@@ -17,7 +17,7 @@ class Hashira::Report::View::Unjudged
 
   private
 
-  def reason = Hashira::Report::History.new(@depth).to_s
+  def reason = @history.to_s
 
   def named = @kinds.join(", ")
 end

@@ -13,9 +13,8 @@ class Hashira::Report::Warnings
     @io = io
   end
 
-  def churn(label, depth, coupling: false)
+  def churn(label, history, coupling: false)
     unjudged = "; change_coupling cannot judge" if coupling
-    history = Hashira::Report::History.new(depth)
     @io.puts("hashira: #{history} for #{label} — hotspots are ranked by cost alone#{unjudged}")
   end
 

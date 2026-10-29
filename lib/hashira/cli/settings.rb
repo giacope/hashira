@@ -17,15 +17,15 @@ class Hashira::CLI::Settings
 
   def layered(typed)
     named = typed.directories
-    file = Hashira::CLI::ConfigFile.new(@argv, Hashira::CLI::Home.build(named))
+    home = Hashira::CLI::Home.build(named)
+    file = Hashira::CLI::ConfigFile.new(@argv, home)
     file.vet { parse(it) }
     base = named.empty? ? @argv + file.directories : @argv
-    settled(parse(file.flags.reduce(base) { |kept, flag| widened(kept, flag) }), file)
+    settled(parse(file.flags.reduce(base) { |kept, flag| widened(kept, flag) }), file, home)
   end
 
-  def settled(options, file)
+  def settled(options, file, home)
     recorded = options.baseline
-    home = file.home
     options.with(home:, rules: file.rules, baseline: recorded.empty? ? home.join(BASELINE) : recorded)
   end
 

@@ -11,9 +11,9 @@ class Hashira::Config::Rules
 
   OPEN = Hashira::Config::Reserve.new([], strict: false)
 
-  ON = Hashira::Config::Rule.new(enabled: true, threshold: nil)
+  ON = Hashira::Config::Rule.new(enabled: true)
 
-  OFF = Hashira::Config::Rule.new(enabled: false, threshold: nil)
+  OFF = Hashira::Config::Rule.new(enabled: false)
 
   EVERY = "all"
 
@@ -42,11 +42,11 @@ class Hashira::Config::Rules
 
   def strict? = @reserve.strict?
 
-  def enabled?(kind) = rule(kind).enabled
+  def enabled?(kind) = rule(kind).enabled?
 
-  def threshold(kind, default) = rule(kind).threshold || default
+  def threshold(kind, default) = rule(kind).limit("threshold", default)
 
-  def limit(kind, name, default) = rule(kind).limits.fetch(name, default)
+  def limit(kind, name, default) = rule(kind).limit(name, default)
 
   def naming(kinds) = remade(reserve: @reserve.naming(kinds))
 

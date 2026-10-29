@@ -55,7 +55,8 @@ class Hashira::Project
 
   def inflections
     found = directories.flat_map { |directory| INFLECTIONS.map { File.expand_path(it, directory) } }
-    Hashira::Trees.parse(found.find { File.file?(it) } || return)
+    path = found.find { File.file?(it) } || return
+    Hashira::Trees::Source.new(path).tree
   end
 
   def root = ROOT_PACKAGE

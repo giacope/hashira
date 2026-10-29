@@ -3,19 +3,34 @@
 require "prism"
 
 class Hashira::Boundaries
-  ROLE = "interpreted_model"
+  class Declaration
+    FIELDS = %w[root role entrypoint reason].freeze
 
-  Declaration =
-    Data.define(:root, :role, :entrypoint, :reason) do
-      def verify
-        missing = members.find { !present?(public_send(it)) }
-        root, role, _entrypoint, _reason = deconstruct
-        raise(Hashira::Error, "boundary #{root || "(unknown)"} #{missing} is missing") if missing
-        raise(Hashira::Error, "boundary #{root} has unknown role #{role.inspect}") unless role == Hashira::Boundaries::ROLE
-      end
-      private
-      def present?(value) = value.is_a?(String) && !value.empty?
+    ROLE = "interpreted_model"
+
+    private_constant :FIELDS, :ROLE
+
+    def self.parse(record) = new(*FIELDS.map { record[it] })
+
+    def initialize(root, role, entrypoint, reason)
+      @root = root
+      @role = role
+      @entrypoint = entrypoint
+      @reason = reason
     end
+
+    def verify
+      missing = FIELDS.zip(to_a).find { |_field, value| !present?(value) }
+      raise(Hashira::Error, "boundary #{@root || "(unknown)"} #{missing.first} is missing") if missing
+      raise(Hashira::Error, "boundary #{@root} has unknown role #{@role.inspect}") unless @role == ROLE
+    end
+
+    def to_a = [@root, @role, @entrypoint, @reason]
+
+    private
+
+    def present?(value) = value.is_a?(String) && !value.empty?
+  end
 
   def initialize(records, trees, home = ".")
     @records = records
@@ -26,7 +41,7 @@ class Hashira::Boundaries
   def interpreted
     return @_interpreted if @_interpreted
     verify
-    @_interpreted = entries.map(&:root)
+    @_interpreted = entries.map { it.to_a.fetch(0) }
   end
 
   private
@@ -35,7 +50,7 @@ class Hashira::Boundaries
 
   def declaration(record)
     raise(Hashira::Error, "boundary declaration is not an object") unless record.is_a?(Hash)
-    Declaration.new(*%w[root role entrypoint reason].map { record[it] })
+    Hashira::Boundaries::Declaration.parse(record)
   end
 
   def verify
@@ -46,7 +61,7 @@ class Hashira::Boundaries
   end
 
   def route(entry)
-    root, _role, entrypoint, _reason = entry.deconstruct
+    root, _role, entrypoint, _reason = entry.to_a
     files = calls(root)
     raise(Hashira::Error, "boundary #{root} has no root calls") if files.empty?
     bypasses = files.reject { same?(it, entrypoint) }

@@ -3,7 +3,7 @@
 RSpec.describe(Hashira::Coupling::Definitions, :aggregate_failures) do
   def paths
     project = Hashira::Project.new(["lib/app"])
-    described_class.new(project, project.files.to_h { [it, Hashira::Trees.parse(it)] }).map { |_node, path| path }
+    described_class.new(project, project.files.to_h { [it, Hashira::Trees::Source.new(it).tree] }).map { |_node, path| path }
   end
 
   it "counts no constant for the owner a DSL block gives its defs" do
