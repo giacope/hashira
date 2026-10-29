@@ -7,18 +7,17 @@ class Hashira::Duplication::Candidates
 
   WHOLE = [Prism::DefNode, Prism::RescueNode].freeze
 
-  def initialize(file, tree)
+  def initialize(file, tree, walks = Hashira::Duplication::Walks.new)
     @file = file
     @tree = tree
+    @walks = walks
   end
 
-  def fragments = windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], walks, code) }.reject(&:sink?)
+  def fragments = windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], @walks, code) }.reject(&:sink?)
 
   private
 
   def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.new(@tree).collect
-
-  def walks = @_walks ||= Hashira::Duplication::Walks.new
 
   def windows
     reported = Hashira::Duplication::Recovery.of(nodes).map { it.clause.statements }
@@ -39,6 +38,6 @@ class Hashira::Duplication::Candidates
   def code = Hashira::Duplication::Setting.new(declarative: false, recurring: [])
 
   def sequence(statements, setting)
-    Hashira::Duplication::Sequence.new(@file, statements, walks, setting)
+    Hashira::Duplication::Sequence.new(@file, statements, @walks, setting)
   end
 end

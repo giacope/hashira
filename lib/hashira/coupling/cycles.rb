@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Cycles
-  def initialize(dependencies, graph)
+  def initialize(dependencies, graph, forward = Hashira::Coupling::Reach.new(dependencies))
     @dependencies = dependencies
     @graph = graph
+    @forward = forward
   end
 
   def through?(package) = !!path(package)
@@ -18,9 +19,7 @@ class Hashira::Coupling::Cycles
 
   private
 
-  def component(package) = (forward.from(package) & Hashira::Coupling::Reach.new(backward).from(package)).sort
-
-  def forward = @_forward ||= Hashira::Coupling::Reach.new(@dependencies)
+  def component(package) = (@forward.from(package) & Hashira::Coupling::Reach.new(backward).from(package)).sort
 
   def backward = @_backward ||= Hashira::Coupling::Reach.new(@dependencies).inverted
 

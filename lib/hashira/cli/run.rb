@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Run
-  def initialize(pipeline, options, checks = Hashira::Checks.new)
+  def initialize(
+    pipeline, options, checks = Hashira::Checks.new, sieve = Hashira::CLI::Sieve.new(pipeline.focus, options.kinds)
+  )
     @pipeline = pipeline
     @options = options
     @checks = checks
+    @sieve = sieve
   end
 
   MODES = { update: :update, ratchet: :check, fail_on: :guard }
@@ -16,19 +19,18 @@ class Hashira::CLI::Run
 
   def graph = @pipeline.graph
 
-  def findings = @_findings ||= accepted.screen(sieve.narrow(screened.kept))
+  def findings = @_findings ||= accepted.screen(@sieve.narrow(screened.kept))
 
   def screened = @pipeline.screened
-
-  def sieve = @_sieve ||= Hashira::CLI::Sieve.new(@pipeline.focus, @options.kinds)
 
   def accepted = Hashira::CI::Accepted.build(@options.baseline)
 
   def update = shown(ratchet.update(@options.baseline))
 
   def check
-    ratchet.vet
-    ratchet.check(sieve)
+    judged = ratchet
+    judged.vet
+    judged.check(@sieve)
   end
 
   def guard = shown(Hashira::CI::Gate.new(findings, gated))
@@ -51,7 +53,7 @@ class Hashira::CLI::Run
 
   def notices = @pipeline.notify(Hashira::Report::Notices.new)
 
-  def ratchet = @_ratchet ||= Hashira::CI::Ratchet.new(graph, findings.all, baseline)
+  def ratchet = Hashira::CI::Ratchet.new(graph, findings.all, baseline)
 
   def baseline
     Hashira::CI::Baseline.new(@options.baseline, analyzers: @options.analyzers, targets:, kinds: @checks.to_a)
@@ -68,7 +70,7 @@ class Hashira::CLI::Run
     Hashira::Report::Unjudged.new(kinds: left, depth: @pipeline.depth, judged: checked.any?)
   end
 
-  def asked(&) = @checks.select { yield(it) && owned?(it) && sieve.keeps?(it) }
+  def asked(&) = @checks.select { yield(it) && owned?(it) && @sieve.keeps?(it) }
 
   def owned?(kind) = @pipeline.enabled?(@checks.owner(kind))
 

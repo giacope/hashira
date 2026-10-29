@@ -13,9 +13,10 @@ class Hashira::Smells::Hierarchy
 
   NONE = Kin.new(parent: nil, foreign: false, openings: [])
 
-  def initialize(types, builtins = Hashira::Runtime::Builtins.new)
+  def initialize(types, builtins = Hashira::Runtime::Builtins.new, lineage = Hashira::Smells::Lineage.new(types))
     @types = types
     @builtins = builtins
+    @lineage = lineage
   end
 
   def parent(name) = table.fetch(name, NONE).parent
@@ -46,7 +47,7 @@ class Hashira::Smells::Hierarchy
 
   def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
 
-  def mixed(name) = table.fetch(name, NONE).openings.flat_map { lineage.mixins(it) }.flat_map { definitions(it) }
+  def mixed(name) = table.fetch(name, NONE).openings.flat_map { @lineage.mixins(it) }.flat_map { definitions(it) }
 
   def abstract?(name)
     return true if ABSTRACT.match?(name.split("::").last)
@@ -71,11 +72,9 @@ class Hashira::Smells::Hierarchy
   end
 
   def ancestor(name, node)
-    found = lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments)
+    found = @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments)
     found unless @builtins.core?(found)
   end
-
-  def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
 
   def claimed = @_claimed ||= @types.select(&:claimed).to_set(&:name)
 
@@ -115,6 +114,6 @@ class Hashira::Smells::Hierarchy
 
   def born(type, call)
     return type.name unless call.receiver
-    lineage.candidates(type.name, Hashira::Analysis::Syntax.new(call.receiver).segments).find { table.key?(it) }
+    @lineage.candidates(type.name, Hashira::Analysis::Syntax.new(call.receiver).segments).find { table.key?(it) }
   end
 end

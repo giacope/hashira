@@ -3,9 +3,12 @@
 require "prism"
 
 class Hashira::Smells::Kinship
-  def initialize(types, lineage, builtins = Hashira::Runtime::Builtins.new)
+  def initialize(
+    types, lineage, builtins = Hashira::Runtime::Builtins.new, rivals = Hashira::Smells::Rivals.new(types, lineage)
+  )
     @types = types
     @lineage = lineage
+    @rivals = rivals
     @builtins = builtins
   end
 
@@ -28,8 +31,7 @@ class Hashira::Smells::Kinship
   end
 
   def kindred(name)
-    rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
-    kin = reach(name, ancestry) + reach(name, descent) + rivals.of(name) + rivals.sides(name)
+    kin = reach(name, ancestry) + reach(name, descent) + @rivals.of(name) + @rivals.sides(name)
     kin.map { words(it) }.reduce(Set.new, :|) + peers(name)
   end
 

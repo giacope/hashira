@@ -7,8 +7,9 @@ require_relative "scope"
 class Hashira::Smells::Endings
   JUMPS = [Prism::NextNode, Prism::BreakNode].freeze
 
-  def initialize(definition)
+  def initialize(definition, bindings = Hashira::Smells::Bindings.new(definition))
     @definition = definition
+    @bindings = bindings
   end
 
   def parts?(first, last)
@@ -33,8 +34,7 @@ class Hashira::Smells::Endings
   def within?(jump, node) = !JUMPS.include?(jump.class) || loops.none? { covers?(it, jump) && !covers?(it, node) }
 
   def looped?(exit, first, last)
-    @_bindings ||= Hashira::Smells::Bindings.new(@definition)
-    passes = @_bindings.free(first).flat_map { it.values_at(0, 2) }
+    passes = @bindings.free(first).flat_map { it.values_at(0, 2) }
     loops.any? { covers?(it, exit) && covers?(it, last) && !passes.include?(it.location.start_offset) }
   end
 
