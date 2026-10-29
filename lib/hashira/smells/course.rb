@@ -15,8 +15,6 @@ class Hashira::Smells::Course
       @last = last
     end
 
-    def parted?(endings) = endings.parts?(@first, @last)
-
     def disturbs?(calls, branches) = calls.any? { spans?(it) && met?(it, branches) && yield(it) }
 
     private
@@ -57,38 +55,30 @@ class Hashira::Smells::Course
     def moves?(name) = !name.end_with?("?") && name != @name
   end
 
-  def initialize(method, calls, discards, branches)
+  def initialize(method, calls, discards, errands = Hashira::Smells::Errands.new(method.home))
     @method = method
     @calls = calls
     @discards = discards
-    @branches = branches
+    @errands = errands
   end
 
-  def parted?(pair)
+  def disturbed?(pair, branches)
     first, last = pair
     held = [first, *Hashira::Smells::Scope.new(first).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
-    stretch = Stretch.new(first, last)
-    left?(stretch) || disturbed?(stretch, Holdings.new(held, first.name))
+    stretched(Stretch.new(first, last), Holdings.new(held, first.name), branches)
   end
 
   private
 
-  def left?(stretch)
-    @_endings ||= Hashira::Smells::Endings.new(@method.node)
-    stretch.parted?(@_endings)
-  end
-
-  def disturbed?(stretch, holdings)
-    stretch.disturbs?(moves, @branches) { holdings.aims?(it) } ||
-      stretch.disturbs?(steps, @branches) { holdings.hands?(it) } ||
-      stretch.disturbs?(@calls, @branches) { |call| shifted?(call, holdings) }
+  def stretched(stretch, holdings, branches)
+    stretch.disturbs?(moves, branches) { holdings.aims?(it) } ||
+      stretch.disturbs?(steps, branches) { holdings.hands?(it) } ||
+      stretch.disturbs?(@calls, branches) { |call| shifted?(call, holdings) }
   end
 
   def moves = @_moves ||= commands + @calls.select { Hashira::Smells::Message.new(it).changes? }
 
-  def shifted?(call, holdings) = errands.own?(call) && errands.of(call.name).any? { holdings.shifts?(it) }
-
-  def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
+  def shifted?(call, holdings) = @errands.own?(call) && @errands.of(call.name).any? { holdings.shifts?(it) }
 
   def commands = @_commands ||= @calls.select { @discards.include?(it) }
 

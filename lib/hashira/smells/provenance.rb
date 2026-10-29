@@ -25,14 +25,11 @@ class Hashira::Smells::Provenance
     end
   end
 
-  def source(node) = (sourced(node) if strict?)
+  def source(node) = strict? ? sourced(node) : []
 
   def writes = strict? ? WRITES : WRITES.first(1)
 
-  def options(nodes)
-    named = nodes.select { optional?(it) }.map { it.name.to_s }.uniq
-    named if named.any?
-  end
+  def options(nodes) = nodes.select { optional?(it) }.map { it.name.to_s }.uniq
 
   private
 
@@ -40,10 +37,13 @@ class Hashira::Smells::Provenance
 
   def sourced(node)
     case node
-    when Prism::LocalVariableReadNode then sole(@foreign.writes(node.name).map { sourced(it.value) })
+    when Prism::LocalVariableReadNode then agreed(@foreign.writes(node.name).map { sourced(it.value) })
     when Prism::CallNode then spring(node)
+    else []
     end
   end
+
+  def agreed(found) = found.all?(&:one?) ? sole(found.flatten) : []
 
   def optional?(node) = node.is_a?(Prism::LocalVariableReadNode) && defaulted.include?(node.name)
 
@@ -61,20 +61,18 @@ class Hashira::Smells::Provenance
     end
   end
 
-  def sole(found) = (found.first if found.any? && found.uniq.one?)
+  def sole(found) = found.any? && found.uniq.one? ? found.first(1) : []
 
-  def spring(call) = ("#{holder(call.receiver)}##{call.name}" if sprung?(call))
+  def spring(call) = sprung(call).map { "#{it}##{call.name}" }
 
-  def sprung?(call)
-    path = holder(call.receiver)
-    path && @subject.ownership.nulls.answer?(path, call.name)
-  end
+  def sprung(call) = holder(call.receiver).select { @subject.ownership.nulls.answer?(it, call.name) }
 
   def holder(receiver)
     case receiver
     when Prism::InstanceVariableReadNode then field(receiver.name)
     when Prism::LocalVariableReadNode then sole(kinds(receiver.name))
     when Prism::CallNode then built(receiver)
+    else []
     end
   end
 
@@ -87,7 +85,7 @@ class Hashira::Smells::Provenance
 
   def kinds(local) = @foreign.kinds(Hashira::Smells::Refs::Local.new(local, @subject.node)).map { it.join("::") }
 
-  def built(call) = (place(Hashira::Analysis::Syntax.new(call.receiver).segments) if call.name == :new)
+  def built(call) = call.name == :new ? Array(place(Hashira::Analysis::Syntax.new(call.receiver).segments)) : []
 
   def place(segments) = @subject.ownership.place(segments, @subject.owner)
 
@@ -102,12 +100,12 @@ class Hashira::Smells::Provenance
     receiver = call.receiver
     case receiver
     when Prism::LocalVariableReadNode then @foreign.built?(receiver.name) || typed?(receiver.name, call.name)
-    when *REACHED then strict? && (sprung?(call) || spoken?(built(receiver), call.name))
+    when *REACHED then strict? && (sprung(call).any? || spoken?(built(receiver), call.name))
     else false
     end
   end
 
-  def spoken?(path, message) = path && @subject.ownership.repertoire.of(path.split("::")).include?(message.to_s)
+  def spoken?(paths, message) = paths.any? { @subject.ownership.repertoire.of(it.split("::")).include?(message.to_s) }
 
   def constant?(node) = node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
 

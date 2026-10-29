@@ -58,7 +58,7 @@ RSpec.describe(Hashira::Analysis::Finding, :aggregate_failures) do
 
   def nils
     {
-      smell("nil_check", doubt(nil)) =>
+      smell("nil_check", doubt([])) =>
         "Cart#price checks for nil (cart.rb:12). Prefer a default, a null object, or polymorphism.",
       smell("nil_check", doubt(:absence)) =>
         "Cart#price checks for nil (cart.rb:12). " \
@@ -79,7 +79,7 @@ RSpec.describe(Hashira::Analysis::Finding, :aggregate_failures) do
       smell("nil_check", doubt(%w[coupon label])) =>
         "Cart#price checks for nil (cart.rb:12). 'coupon', 'label' default to nil, so callers may pass nothing " \
         "and the method is two in one: split it, or ask for a null object instead of nil.",
-      smell("nil_check", Hashira::Smells::Doubt::Suspect.new(site, 2, nil)) =>
+      smell("nil_check", Hashira::Smells::Doubt::Suspect.new(site, 2, {})) =>
         "Cart#price may be nil, and 2 methods check for it (cart.rb:12). " \
         "Prefer a default, a null object, or polymorphism. Settle it where the nil is made."
     }

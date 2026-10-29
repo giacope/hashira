@@ -34,17 +34,30 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
     def phrase(names) = "#{@count}#{" each" unless names.one?} to #{@ego}"
   end
 
+  def initialize(
+    subject, rules, refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary),
+    foreign = Hashira::Smells::Foreign.new(subject, subject.ownership)
+  )
+    super(subject, rules)
+    @refs = refs
+    @foreign = foreign
+  end
+
   private
+
+  attr_reader :refs, :foreign
 
   def smelly?
     !subject.singleton? && !subject.mixin? && !subject.polymorphic? && refs.ego.positive? && envied.any?
   end
 
-  def refs = @_refs ||= Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
+  def envied
+    return @_envied if @_envied
+    transit = Hashira::Smells::Transit.new(subject.node, refs)
+    @_envied = refs.envious.select { served(it).any? }.reject { excused?(it, transit) }
+  end
 
-  def envied = @_envied ||= refs.envious.select { served(it).any? }.reject { excused?(it) }
-
-  def excused?(holder) = foreign.dismiss?(holder) || paired?(holder) || transit.passing?(holder)
+  def excused?(holder, transit) = foreign.dismiss?(holder) || paired?(holder) || transit.passing?(holder)
 
   def served(holder) = foreign.kinds(holder).select { serves?(it, holder) }
 
@@ -57,13 +70,9 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def repertoire = subject.ownership.repertoire
 
-  def transit = @_transit ||= Hashira::Smells::Transit.new(subject.node, refs)
-
   def paired?(holder) = partners(holder.scope) > 1
 
   def partners(scope) = scope.is_a?(Prism::BlockNode) ? refs.envious.count { it.scope == scope } : 0
-
-  def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
   def detail = Envy.new(site, envied.map(&:name).uniq, types, Balance.new(count, refs.ego))
 

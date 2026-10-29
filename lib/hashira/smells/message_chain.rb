@@ -56,7 +56,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     hop = call.receiver
     return false unless hop.is_a?(Prism::CallNode) && !inward?(hop.receiver) && !hop.block
     far = type(hop)
-    far && answers?(far, call.name) && !values.include?(far)
+    far.any? && answers?(far.first, call.name) && !values.include?(far.first)
   end
 
   def answers?(type, message)
@@ -66,7 +66,8 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
   def type(node)
     case node
     when Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode then named(node.name)
-    when Prism::CallNode then step(node) unless node.arguments
+    when Prism::CallNode then node.arguments ? [] : step(node)
+    else []
     end
   end
 
@@ -75,16 +76,17 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     return named(message) if inward?(call.receiver)
     near = type(call.receiver)
     far = named(message)
-    far if near && near != far && answers?(near, message)
+    near.any? && near != far && answers?(near.first, message) ? far : []
   end
 
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def named(name)
-    Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first).find { ownership.owned?([it], subject.owner) }
+    types = Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first)
+    types.lazy.select { ownership.owned?([it], subject.owner) }.first(1)
   end
 
   def path(node)
-    node.is_a?(Prism::CallNode) && !inward?(node.receiver) ? path(node.receiver) + [type(node)] : [type(node)]
+    node.is_a?(Prism::CallNode) && !inward?(node.receiver) ? path(node.receiver) + type(node) : type(node)
   end
 end

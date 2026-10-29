@@ -14,7 +14,7 @@ class Hashira::Smells::Rivals
 
   def of(name) = links.fetch(name, Set.new)
 
-  def sides(name) = (@_sides ||= Hashira::Smells::Sides.new(surface)).of(name)
+  def sides(name) = Hashira::Smells::Sides.new(surface).of(name)
 
   private
 

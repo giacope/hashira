@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Check
+  def self.build(subject, rules) = new(subject, rules)
+
   def initialize(subject, rules)
     @subject = subject
     @rules = rules

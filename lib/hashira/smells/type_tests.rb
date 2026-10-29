@@ -26,7 +26,7 @@ class Hashira::Smells::TypeTests
 
   def calls = @_calls ||= @body.grep(Prism::CallNode)
 
-  def probes(&) = calls.select { tests?(it) && local?(it.receiver, &) }.filter_map { key(it) }
+  def probes(&) = calls.select { tests?(it) && local?(it.receiver, &) }.flat_map { keys(it) }
 
   def tests?(call) = Hashira::Analysis::Syntax::Message.new(call).type_test?
 
@@ -40,7 +40,7 @@ class Hashira::Smells::TypeTests
   end
 
   def lookups(&)
-    calls.select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }
+    calls.select { |call| LOOKUPS.include?(call.name) && keys(call).any? { sorts?(it, &) } }
       .flat_map { @ownership.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
   end
 

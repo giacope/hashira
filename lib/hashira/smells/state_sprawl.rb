@@ -45,7 +45,15 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   GIVEN = " (given to the constructor)"
 
+  def initialize(subject, rules, nodes = subject.sweep, fields = Hashira::Smells::Fields.new(nodes))
+    super(subject, rules)
+    @nodes = nodes
+    @fields = fields
+  end
+
   private
+
+  attr_reader :nodes, :fields
 
   def smelly? = subject.kind == :class && weight > limit && !cohesive?
 
@@ -64,14 +72,11 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def handed(found) = found.any? && found.all? { handed?(it) }
 
-  def handed?(write) = setup.include?(write) && argument?(fed(write))
+  def handed?(write) = setup.include?(write) && fed(write).any? { argument?(it) }
 
   def fed(write)
-    case write
-    when Prism::InstanceVariableWriteNode then write.value
-    when Prism::CallNode then write.arguments.arguments.first
-    else paired[write]
-    end
+    return [write.value] if write.is_a?(Prism::InstanceVariableWriteNode)
+    write.is_a?(Prism::CallNode) ? write.arguments.arguments.first(1) : paired.slice(write).values
   end
 
   def paired
@@ -80,8 +85,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def pairs(multi)
     values = multi.value
-    return [] unless values.is_a?(Prism::ArrayNode) && values.elements.none?(Prism::SplatNode)
-    multi.lefts.zip(values.elements)
+    values.is_a?(Prism::ArrayNode) && values.elements.none?(Prism::SplatNode) ? multi.lefts.zip(values.elements) : []
   end
 
   def argument?(value) = value.is_a?(Prism::LocalVariableReadNode) && inputs.include?(value.name)
@@ -118,9 +122,9 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name) + registered
 
-  def registered
-    hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).symbol }
-  end
+  def registered = hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { symbol(it) }
+
+  def symbol(node) = Hashira::Analysis::Syntax::Word.new(node).symbol
 
   def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
 
@@ -155,11 +159,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def cache?(name) = name.start_with?("@_") || memoized?(name)
 
-  def fields = @_fields ||= Hashira::Smells::Fields.new(nodes)
-
   def assigns(name) = writes.select { fields.of(it).include?(name) }
-
-  def nodes = @_nodes ||= subject.sweep
 
   def writes = @_writes ||= nodes.select { fields.of(it).any? }
 

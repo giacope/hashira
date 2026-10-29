@@ -954,6 +954,17 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
               found = @catalog.parent(code) if code.odd?
               found.nil? ? 0 : found.price
             end
+
+            def partial(code)
+              found = @catalog.find(code)
+              found = @codes.first if code.odd?
+              found.nil? ? 0 : found.price
+            end
+
+            def fetched
+              item = Shop::Catalog.new(@codes).fetch(1)
+              item.nil? ? 0 : item.price
+            end
           end
         end
       RUBY
@@ -963,7 +974,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
       eq(
         "Shop::Cart#total" => ["Shop::Catalog#find"], "Shop::Cart#first" => ["Shop::Catalog#find"],
         "Shop::Cart#held" => ["Shop::Catalog#parent"], "Shop::Cart#built" => ["Shop::Catalog#find"],
-        "Shop::Cart#mixed" => []
+        "Shop::Cart#mixed" => [], "Shop::Cart#partial" => [], "Shop::Cart#fetched" => []
       )
     )
   end

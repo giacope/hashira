@@ -13,11 +13,11 @@ class Hashira::Smells::Refusal
 
   def of
     statements = Hashira::Analysis::Syntax::Body.new(@definition).to_a.compact
-    return :nothing if statements.all?(Prism::NilNode)
-    :raise if statements.one? && raise?(statements.first)
+    return [:nothing] if statements.all?(Prism::NilNode)
+    statements.one? && raise?(statements.first) ? [:raise] : []
   end
 
-  def unimplemented? = of == :raise && UNIMPLEMENTED.match?(@definition.body.slice)
+  def unimplemented? = of == [:raise] && UNIMPLEMENTED.match?(@definition.body.slice)
 
   private
 

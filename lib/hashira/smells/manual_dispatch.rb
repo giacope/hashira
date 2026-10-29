@@ -33,6 +33,15 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
     end
   end
 
+  def initialize(
+    subject, rules, foreign = Hashira::Smells::Foreign.new(subject, subject.ownership),
+    switchboard = Hashira::Smells::Switches.new(subject.node, subject.ownership, subject.owner)
+  )
+    super(subject, rules)
+    @foreign = foreign
+    @switchboard = switchboard
+  end
+
   private
 
   def smelly? = !protocol?(subject.node.name) && (probes.any? || switches.any?)
@@ -49,9 +58,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def probe(call) = Hashira::Smells::Probe.new(call, subject, foreign)
 
-  def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
-
-  def switchboard = @_switchboard ||= Hashira::Smells::Switches.new(subject.node, subject.ownership, subject.owner)
+  attr_reader :foreign, :switchboard
 
   def switches = switchboard.typed + switchboard.statuses
 

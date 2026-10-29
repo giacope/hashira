@@ -66,7 +66,7 @@ class Hashira::Smells::Kinship
     @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments) || node.slice.delete_prefix("::") if node
   end
 
-  def words(name) = said[name]
+  def words(name) = said[name] ||= defined(name)
 
   def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
 
@@ -77,7 +77,7 @@ class Hashira::Smells::Kinship
     parents.reduce(Set.new) { |all, parent| all | @builtins.heritage(parent) }
   end
 
-  def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
+  def said = @_said ||= {}
 
   def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { named(it) }.to_set
 
@@ -85,7 +85,7 @@ class Hashira::Smells::Kinship
 
   def declared(swept)
     attributes = Hashira::Smells::Attributes.new(swept)
-    forwards = Hashira::Smells::Forwards.new(swept, Hashira::Smells::Bonds.new(swept), Set.new)
+    forwards = Hashira::Smells::Forwards.new(swept)
     attributes.readers.map(&:to_sym) + attributes.writers + forwards.names.to_a
   end
 

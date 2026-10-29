@@ -12,13 +12,13 @@ class Hashira::Smells::Doubt
   LOCAL = %w[@ # .].freeze
 
   class Suspect
-    def initialize(site, places, origin)
+    def initialize(site, places, origins)
       @site = site
       @places = places
-      @origin = origin
+      @origins = origins
     end
 
-    def to_h = { site: @site, places: @places, origin: @origin }.compact
+    def to_h = { site: @site, places: @places, **@origins }
 
     def phrase(package)
       checks = "#{Hashira::Prose::Count.new(@places, "method")} check#{"s" if @places == 1}"
@@ -27,15 +27,15 @@ class Hashira::Smells::Doubt
   end
 
   class Sighting
-    def initialize(name, site, origin, ratings)
+    def initialize(name, site, origins, ratings)
       @name = name
       @site = site
-      @origin = origin
+      @origins = origins
       @ratings = ratings
     end
 
     def finding(parts, testimony)
-      testimony.finding(KIND, @name, Suspect.new(@site, parts.size, @origin), @ratings)
+      testimony.finding(KIND, @name, Suspect.new(@site, parts.size, @origins), @ratings)
     end
   end
 
@@ -45,24 +45,26 @@ class Hashira::Smells::Doubt
     @sources = sources
   end
 
-  def to_h = { site: @site, origin: @origin, sources: @sources }.compact
+  def to_h = { site: @site, **origins, sources: @sources }
 
   def phrase(package) = "#{package} checks for nil (#{@site}). #{remedy}"
 
   def sightings(label, ratings)
     @sources.map do |name, site|
       named = name.start_with?(*LOCAL) ? label.sub(OWNER, "") + name : name
-      [named, Sighting.new(named, site, @origin, ratings), ["#{label} (#{site})"]]
+      [named, Sighting.new(named, site, origins, ratings), ["#{label} (#{site})"]]
     end
   end
 
   private
 
+  def origins = @origin == [] ? {} : { origin: @origin }
+
   def remedy
     case @origin
     when :absence then ABSENCE
-    when Array then optional
-    else ADVICE
+    when [] then ADVICE
+    else optional
     end
   end
 

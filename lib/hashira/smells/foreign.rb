@@ -122,7 +122,9 @@ class Hashira::Smells::Foreign
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
 
-  def keyed?(call) = KEYED_READS.include?(call.name) && Hashira::Analysis::Syntax::Word.new(key(call)).word?
+  def keyed?(call) = KEYED_READS.include?(call.name) && keys(call).any? { word?(it) }
+
+  def word?(node) = Hashira::Analysis::Syntax::Word.new(node).word?
 
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 
@@ -146,7 +148,5 @@ class Hashira::Smells::Foreign
 
   def unowned?(node) = !@ownership.owns?(node, @subject.owner)
 
-  def tests(&) = checks.of(&)
-
-  def checks = @_checks ||= Hashira::Smells::TypeTests.new(body, @ownership)
+  def tests(&) = Hashira::Smells::TypeTests.new(body, @ownership).of(&)
 end

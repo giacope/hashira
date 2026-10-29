@@ -114,7 +114,8 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
       "root" => "Prism", "role" => "interpreted_model",
       "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
     }
-    report = Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([record], trees), Fixtures::NONE)
+    types = Hashira::Smells::Census.new(project, trees).types
+    report = Hashira::Smells::Report.new(types, Hashira::Boundaries.new([record], trees), Fixtures::NONE)
     report.findings.select { it.to_h[:kind] == "boundary_sprawl" }
   end
 

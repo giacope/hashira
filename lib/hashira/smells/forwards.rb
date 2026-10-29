@@ -7,7 +7,7 @@ class Hashira::Smells::Forwards
 
   HANDS = %i[delegate].freeze
 
-  def initialize(nodes, bonds, stock)
+  def initialize(nodes, bonds = Hashira::Smells::Bonds.new(nodes), stock = Set.new)
     @nodes = nodes
     @bonds = bonds
     @stock = stock
@@ -16,6 +16,8 @@ class Hashira::Smells::Forwards
   def to_h = pairs.filter_map { |name, target| [name, field(target)] if named?(target) }.to_h
 
   def names = pairs.to_set { |name, _| name.to_sym }
+
+  def field(target) = target.start_with?("@") ? target : @bonds.field(target)
 
   private
 
@@ -44,8 +46,6 @@ class Hashira::Smells::Forwards
   def named?(target) = !target.empty? && !@stock.include?(target)
 
   def macros(kinds) = Hashira::Smells::Attributes.new(@nodes).macros(kinds)
-
-  def field(target) = target.start_with?("@") ? target : @bonds.field(target)
 
   def symbol(node) = Hashira::Analysis::Syntax::Word.new(node).to_a.first.to_s.to_sym
 end

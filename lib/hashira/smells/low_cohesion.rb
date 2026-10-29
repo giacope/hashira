@@ -4,8 +4,6 @@ require "prism"
 require_relative "common"
 
 class Hashira::Smells::LowCohesion < Hashira::Smells::Check
-  Piece = Data.define(:names, :fields, :calls)
-
   SIZE = 6
 
   MEMBERS = 2
@@ -50,7 +48,20 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     end
   end
 
+  def self.build(subject, rules)
+    sweep = subject.sweep
+    new(subject, rules, sweep, Hashira::Smells::Forwards.new(sweep, Hashira::Smells::Bonds.new(sweep), STOCK))
+  end
+
+  def initialize(subject, rules, sweep, forwards)
+    super(subject, rules)
+    @sweep = sweep
+    @forwards = forwards
+  end
+
   private
+
+  attr_reader :sweep, :forwards
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
 
@@ -68,10 +79,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def groups = @_groups ||= components.select { |members, fields| fields.any? && members.size >= MEMBERS }
 
-  def components
-    joined = pieces.reduce([]) { |found, piece| fuse(found, piece) }
-    joined.map { |piece| [piece.names.select { names.include?(it) }, piece.fields.select { kept.include?(it) }] }
-  end
+  def components = pieces.reduce([]) { |found, piece| fuse(found, piece) }.map { it.kept(names, kept) }
 
   def pieces = (methods + mixed).map { piece(it.node.name, hooked(it), []) } + setup.map { piece(nil, [it], inputs) }
 
@@ -86,7 +94,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def piece(name, nodes, given)
     found = nodes.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
     shared = found.grep(Prism::LocalVariableReadNode).map(&:name) & given
-    Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
+    Hashira::Smells::Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
   end
 
   def inputs = constructors.flat_map(&:parameters)
@@ -102,14 +110,8 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def family = subject.family
 
   def fuse(found, piece)
-    touching, apart = found.partition { linked?(it, piece) }
-    apart + [(touching + [piece]).reduce { |all, part| merge(all, part) }]
-  end
-
-  def merge(left, right) = Piece.new(left.names + right.names, left.fields | right.fields, left.calls | right.calls)
-
-  def linked?(left, right)
-    left.fields.intersect?(right.fields) || left.calls.intersect?(right.names) || right.calls.intersect?(left.names)
+    touching, apart = found.partition { it.linked?(piece) }
+    apart + [(touching + [piece]).reduce { |all, part| all.merge(part) }]
   end
 
   def fields(found) = (touched(found) + attributed(found) + reached(found) + (peeks?(found) ? kept.to_a : [])).uniq
@@ -124,7 +126,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     selves(found).filter_map { attributes[it.name.to_s.delete_suffix("=")] } + columned(Hashira::Smells::Columns.new(found).touched)
   end
 
-  def columned(names) = record? ? names.reject { declared?(it) }.map { bonds.field(it) } : []
+  def columned(names) = record? ? names.reject { declared?(it) }.map { forwards.field(it) } : []
 
   def declared?(name)
     [known, STOCK, forwards.names].any? { it.include?(name) } || MESSAGES.kernel?(name) || attributes.key?(name.to_s)
@@ -134,8 +136,6 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def columns = columned(Hashira::Smells::Columns.new(sweep).read).to_set
 
-  def bonds = @_bonds ||= Hashira::Smells::Bonds.new(sweep)
-
   def calls(found) = (selves(found).map(&:name) + sent(found)).select { known.include?(it) }.uniq
 
   def selves(found) = found.grep(Prism::CallNode).select { inward?(it.receiver) }
@@ -143,13 +143,13 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def sent(found)
-    selves(found).select { Hashira::Analysis::Syntax::Message.new(it).dispatch? }.flat_map { aimed(Array(it.arguments&.arguments).first) }
+    dispatched = selves(found).select { Hashira::Analysis::Syntax::Message.new(it).dispatch? }
+    dispatched.flat_map { Array(it.arguments&.arguments).first(1) }.flat_map { aimed(it) }
   end
 
   def reached(found) = sent(found).filter_map { attributes[it.to_s.delete_suffix("=")] }
 
   def aimed(name)
-    return [] unless name
     return [Hashira::Analysis::Syntax::Word.new(name).symbol] if Hashira::Analysis::Syntax::Word.new(name).word?
     INTERPOLATED.include?(name.class) ? affixed(name) : tabled
   end
@@ -168,10 +168,6 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def tabled = @_tabled ||= names.select { listed.include?(it) }
 
   def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.to_set(&:to_sym)
-
-  def sweep = @_sweep ||= subject.sweep
-
-  def forwards = @_forwards ||= Hashira::Smells::Forwards.new(sweep, bonds, STOCK)
 
   def attributes
     @_attributes ||= Hashira::Smells::Attributes.new(sweep).declared.to_h { [it, :"@#{it}"] }.merge(forwards.to_h)

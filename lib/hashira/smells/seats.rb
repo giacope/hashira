@@ -28,7 +28,7 @@ class Hashira::Smells::Seats
 
   def wraps
     @types.flat_map do |type|
-      handing = calls(type).select { sole(it).is_a?(Prism::SelfNode) }
+      handing = calls(type).select { sole(it).any?(Prism::SelfNode) }
       handing.flat_map { wrappers(type, it) }.map { [type.name, it] }
     end
   end
@@ -43,14 +43,16 @@ class Hashira::Smells::Seats
 
   def filling(call)
     given = Array(call.arguments&.arguments)
-    return [[call.name.to_s.delete_suffix("="), given.first]] if call.attribute_write?
+    return given.first(1).map { [slot(call), it] } if call.attribute_write?
     return [] unless SLOTS.include?(call.name)
-    given.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.product([defaulted(given)])
+    given.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.product(defaulted(given))
   end
+
+  def slot(call) = call.name.to_s.delete_suffix("=")
 
   def defaulted(given)
     pairs = given.grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
-    pairs.find { it.key.is_a?(Prism::SymbolNode) && it.key.unescaped == DEFAULT }&.value
+    pairs.select { it.key.is_a?(Prism::SymbolNode) && it.key.unescaped == DEFAULT }.first(1).map(&:value)
   end
 
   def wrappers(type, call)
@@ -60,9 +62,9 @@ class Hashira::Smells::Seats
 
   def folds?(call) = FOLDS.include?(call.name) && Hashira::Smells::Scope.new(call).inside.any? { built?(it) }
 
-  def built?(node) = node.is_a?(Prism::CallNode) && node.name == BUILD && sole(node)
+  def built?(node) = node.is_a?(Prism::CallNode) && node.name == BUILD && sole(node).any?
 
-  def sole(call) = (call.arguments.arguments.first if call.arguments&.arguments&.one?)
+  def sole(call) = call.arguments&.arguments&.one? ? call.arguments.arguments : []
 
   def decorator?(type)
     found = @lineage.definitions(type)

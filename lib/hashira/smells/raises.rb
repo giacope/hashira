@@ -3,11 +3,11 @@
 require "prism"
 
 class Hashira::Smells::Raises
-  def initialize(home)
-    @home = home
+  def initialize(home, errands = Hashira::Smells::Errands.new(home))
+    @errands = errands
   end
 
-  def raise?(node) = ends?(node, Set[])
+  def any?(nodes) = nodes.any? { ends?(it, Set[]) }
 
   private
 
@@ -18,7 +18,5 @@ class Hashira::Smells::Raises
       ends?(Hashira::Analysis::Syntax::Body.new(definition).to_a.last, seen)
   end
 
-  def reached(node) = node.is_a?(Prism::CallNode) ? errands.reached(node) : []
-
-  def errands = @_errands ||= Hashira::Smells::Errands.new(@home)
+  def reached(node) = node.is_a?(Prism::CallNode) ? @errands.reached(node) : []
 end

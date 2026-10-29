@@ -118,7 +118,7 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
 
   def working = @_working ||= family.definitions(parent).reject { refusal?(it) }.to_set { it.node.name } - [CONSTRUCTOR]
 
-  def refusal?(method) = !Hashira::Smells::Refusal.new(method.node).of.nil?
+  def refusal?(method) = Hashira::Smells::Refusal.new(method.node).of.any?
 
   def mode = framed? ? :overriding : :built
 

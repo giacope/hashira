@@ -60,26 +60,22 @@ class Hashira::Smells::Report
 
   SPRAWL = "boundary_sprawl"
 
-  def initialize(project, trees, boundaries, rules)
-    @project = project
-    @trees = trees
+  def initialize(types, boundaries, rules, family = Hashira::Smells::Hierarchy.new(types))
+    @types = types
     @boundaries = boundaries
     @rules = rules
+    @family = family
   end
 
   def findings = @_findings ||= checks.flat_map(&:findings) + spread + sprawl + bags + gathered
 
   private
 
-  def census = @_census ||= Hashira::Smells::Census.new(@project, @trees)
-
-  def types = @_types ||= census.types
+  attr_reader :types, :family
 
   def wholes
     @_wholes ||= types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it, family:) }
   end
-
-  def family = @_family ||= Hashira::Smells::Hierarchy.new(types)
 
   def methods = types.flat_map(&:defs)
 
@@ -99,12 +95,12 @@ class Hashira::Smells::Report
 
   def sprawl
     return [] unless wants?(SPRAWL)
-    Hashira::Smells::BoundarySprawl.new(methods, census.ownership, @boundaries.interpreted, @rules).findings
+    Hashira::Smells::BoundarySprawl.new(methods, @boundaries.interpreted, @rules).findings
   end
 
   def checks = @_checks ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES))
 
-  def sniff(subjects, kinds) = subjects.flat_map { |subject| kinds.map { it.new(subject, @rules) } }
+  def sniff(subjects, kinds) = subjects.flat_map { |subject| kinds.map { it.build(subject, @rules) } }
 
   def gathered
     groups = checks.flat_map(&:members).reduce({}) { |found, member| member.gather(found) }

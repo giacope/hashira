@@ -7,19 +7,6 @@ require_relative "readers"
 require_relative "refs"
 
 class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
-  MINTS = %i[new dup clone allocate rand srand generate].freeze
-
-  SOURCES = %w[SecureRandom Random].freeze
-
-  LITERALS = [
-    Prism::StringNode, Prism::SymbolNode, Prism::ArrayNode, Prism::HashNode,
-    Prism::IntegerNode, Prism::FloatNode, Prism::RegularExpressionNode
-  ].freeze
-
-  MATCHES = [Prism::NumberedReferenceReadNode, Prism::BackReferenceReadNode].freeze
-
-  MATCHED = %i[$~ $LAST_MATCH_INFO].freeze
-
   OWNER = /[#.][^#.]+\z/
 
   class Calls
@@ -50,6 +37,26 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     end
   end
 
+  def self.build(subject, rules)
+    node = subject.node
+    every = Hashira::Smells::Scope.new(node).inside(Prism::DefinedNode).grep(Prism::CallNode)
+    discards = Hashira::Smells::Discards.new(node)
+    pardons = Hashira::Smells::Pardons.new(
+      subject, Hashira::Smells::Reachability.build(subject, every, discards), Hashira::Smells::Sampling.new(node, every)
+    )
+    groups = Hashira::Smells::CallGroups.new(
+      every, Hashira::Smells::Steadiness.new(discards), Hashira::Smells::Bindings.new(node),
+      Hashira::Smells::Enclosures.new(node)
+    )
+    new(subject, rules, groups, pardons)
+  end
+
+  def initialize(subject, rules, groups, pardons)
+    super(subject, rules)
+    @groups = groups
+    @pardons = pardons
+  end
+
   def findings = []
 
   def members
@@ -63,55 +70,11 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def smelly? = repeats.any?
 
-  def ratings = repeats.each_value.all? { lesser?(it) } ? [:low] : []
+  def ratings = repeats.each_value.all? { @pardons.lesser?(it) } ? [:low] : []
 
-  def lesser?(nodes) = cheap?(nodes) || !reachable?(nodes.reject { preset?(it) })
-
-  def cheap?(nodes) = Hashira::Smells::Lookup.new(nodes.first, readers).cheap?
-
-  def readers = @_readers ||= Hashira::Smells::Readers.new(subject)
-
-  def preset?(node) = presets.include?(node)
-
-  def presets = @_presets ||= Set.new.compare_by_identity.merge(defaults)
-
-  def defaults = [subject.node.parameters].compact.flat_map { beneath(it) }
-
-  def every = @_every ||= Hashira::Smells::Scope.new(subject.node).inside(Prism::DefinedNode).grep(Prism::CallNode)
-
-  def calls = @_calls ||= every.reject { commanded?(it) || fresh?(it) || volatile?(it) || raises?(it) }
-
-  def raises?(node) = Hashira::Smells::Exits.new(node).raise?
-
-  def commanded?(node) = discards.include?(node)
-
-  def discards = @_discards ||= Hashira::Smells::Discards.new(subject.node)
-
-  def fresh?(node) = minted?(node) || fed(node).any? { minted?(it) }
-
-  def fed(node) = Array(node.arguments).flat_map { beneath(it) }.grep(Prism::CallNode)
-
-  def beneath(node) = [node] + Hashira::Smells::Scope.new(node).inside
-
-  def minted?(node) = MINTS.include?(node.name) || Hashira::Smells::Message.new(node).draws? || spawns?(node.receiver)
-
-  def spawns?(receiver) = LITERALS.include?(receiver.class) || SOURCES.include?(receiver&.slice)
-
-  def volatile?(node) = beneath(node).any? { matched?(it) }
-
-  def matched?(node)
-    case node
-    when *MATCHES then true
-    when Prism::GlobalVariableReadNode then MATCHED.include?(node.name)
-    else node.is_a?(Prism::CallNode) && node.name == :last_match && node.receiver&.slice == "Regexp"
-    end
+  def repeats
+    @_repeats ||= collapsed(outermost(together(@groups.to_h)).reject { |_, nodes| @pardons.excused?(nodes) })
   end
-
-  def plain?(node)
-    !node.receiver && !node.arguments && !node.block.is_a?(Prism::BlockArgumentNode)
-  end
-
-  def repeats = @_repeats ||= collapsed(outermost(together(found)).reject { |_, nodes| excused?(nodes) })
 
   def collapsed(groups)
     held = Set.new.compare_by_identity.merge(groups.values.flatten)
@@ -122,16 +85,6 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
     receiver = node.receiver
     receiver.is_a?(Prism::CallNode) && (held.include?(receiver) || prefixed?(receiver, held))
   end
-
-  def found = alike(usual).merge(alike(whole))
-
-  def excused?(nodes) = glance?(nodes) || sampling.sampled?(nodes)
-
-  def glance?(nodes) = cheap?(nodes) && nodes.combination(3).none? { thrice?(it) }
-
-  def thrice?(trio) = trio.combination(2).all? { reachable?(it) }
-
-  def sampling = @_sampling ||= Hashira::Smells::Sampling.new(subject.node, every)
 
   def outermost(groups) = groups.reject { |_handle, nodes| echoed?(nodes, groups) }
 
@@ -145,55 +98,7 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   def contains?(outer, node) = Hashira::Smells::Scope.new(outer).inside.any? { it.equal?(node) }
 
-  def together(groups) = groups.select { |_handle, nodes| reachable?(nodes) }
-
-  def reachable?(nodes) = nodes.combination(2).any? { |pair| branches.together?(pair) && !parted?(pair) }
-
-  def parted?(pair) = course.parted?(pair) || retries.retry?(*pair)
-
-  def retries = @_retries ||= Hashira::Smells::Retries.new(subject.node)
-
-  def course = @_course ||= Hashira::Smells::Course.new(subject, every, discards, branches)
-
-  def branches = @_branches ||= Hashira::Smells::Branches.new(subject.node)
-
-  def usual = calls.reject { plain?(it) || literal?(it) }.group_by { handle(it) }
-
-  def whole = calls.select { literal?(it) }.group_by { it.slice.gsub(/\s+/, " ") }
-
-  def literal?(node) = node.block.is_a?(Prism::BlockNode)
-
-  def alike(groups) = groups.reject { |_text, nodes| nodes.one? }.flat_map { |text, nodes| split(text, nodes) }.to_h
-
-  def split(text, nodes) = nodes.group_by { binding(it) }.map { |held, same| [[text, held], same] }
-
-  def binding(node) = [bindings.free(node), enclosure(node), lines(beneath(node).grep(Prism::SourceLineNode))]
-
-  def bindings = @_bindings ||= Hashira::Smells::Bindings.new(subject.node)
-
-  def enclosure(node) = blocks.reverse.find { Hashira::Smells::Scope.new(it).covers?(node) }&.location&.start_offset
-
-  def blocks = @_blocks ||= Hashira::Smells::Scope.new(subject.node).inside.select { closure?(it) }
-
-  def closure?(node) = Hashira::Smells::Scope.new(node).closure?
-
-  def handle(node) = index?(node) ? indexed(node) : "#{title(node)}#{signature(node)}"
-
-  def indexed(node) = "#{node.receiver.slice}[#{node.arguments.slice}]"
-
-  def index?(node) = node.name == :[] && node.receiver && node.arguments
-
-  def title(node)
-    [node.receiver&.slice, node.name].compact.join(node.safe_navigation? ? "&." : ".")
-  end
-
-  def signature(node)
-    wrap(([node.arguments&.slice] + pass(node.block)).compact)
-  end
-
-  def pass(block) = block.is_a?(Prism::BlockArgumentNode) ? [block.slice] : []
-
-  def wrap(parts) = parts.empty? ? "" : "(#{parts.join(", ")})"
+  def together(groups) = groups.select { |_handle, nodes| @pardons.reachable?(nodes) }
 
   def evidence
     repeats.map { |(handle, _), nodes| "#{handle} × #{nodes.size} (#{stamp(lines(nodes))})" }

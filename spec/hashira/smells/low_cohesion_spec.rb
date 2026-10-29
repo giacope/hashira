@@ -5,7 +5,8 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     within("lib/app/account.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      return Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules).findings.select { it.to_h[:kind] == "low_cohesion" }
+      types = Hashira::Smells::Census.new(project, trees).types
+      return Hashira::Smells::Report.new(types, Hashira::Boundaries.new([], trees), rules).findings.select { it.to_h[:kind] == "low_cohesion" }
     end
   end
 

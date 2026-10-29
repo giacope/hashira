@@ -21,7 +21,7 @@ class Hashira::Smells::Opaque
 
   private
 
-  def peeks?(call) = PEEKS.include?(call.name) || (EVALS.include?(call.name) && SOURCES.include?(source(call).class))
+  def peeks?(call) = PEEKS.include?(call.name) || (EVALS.include?(call.name) && sourced?(call))
 
-  def source(call) = call.arguments&.arguments&.first
+  def sourced?(call) = Array(call.arguments&.arguments).first(1).any? { SOURCES.include?(it.class) }
 end

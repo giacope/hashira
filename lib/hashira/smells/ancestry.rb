@@ -16,7 +16,7 @@ class Hashira::Smells::Ancestry
 
   def openings(name) = opened.fetch(name, [])
 
-  def owner(name, selector) = up(name).find { |type| openings(type).any? { defines?(it, selector) } }
+  def owner(name, selector) = up(name).lazy.select { |type| openings(type).any? { defines?(it, selector) } }.first(1)
 
   private
 

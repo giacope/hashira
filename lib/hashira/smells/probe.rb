@@ -26,7 +26,7 @@ class Hashira::Smells::Probe
 
   def excused? = asked?(PROTOCOLS) || unspoken? || computed? || foreign? || unknown? || stranger?
 
-  def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
+  def shown = "#{receiver&.slice || "self"}.respond_to?(#{messages.map(&:slice).join})"
 
   def trusted? = HELD.include?(receiver.class) || injected?
 
@@ -34,17 +34,19 @@ class Hashira::Smells::Probe
 
   def receiver = @call.receiver
 
-  def message = Array(@call.arguments&.arguments).first
+  def messages = Array(@call.arguments&.arguments).first(1)
 
-  def word = Hashira::Analysis::Syntax::Word.new(message)
+  def word = Hashira::Analysis::Syntax::Word.new(messages.fetch(0))
 
-  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(word.symbol)
+  def symbol? = messages.any?(Prism::SymbolNode)
 
-  def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
+  def asked?(names) = symbol? && names.include?(word.symbol)
 
-  def computed? = !message.nil? && !LITERAL.include?(message.class)
+  def unspoken? = symbol? && !spoken?
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax::Word.new(message).symbol)
+  def computed? = messages.any? { !LITERAL.include?(it.class) }
+
+  def spoken? = @subject.ownership.vocabulary.speaks?(word.symbol)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
@@ -52,7 +54,7 @@ class Hashira::Smells::Probe
 
   def typed? = @foreign.kinds(holder).any?
 
-  def stranger? = named? && LITERAL.include?(message.class) && @foreign.guessed?(holder) && unanswered?
+  def stranger? = named? && messages.any? { LITERAL.include?(it.class) } && @foreign.guessed?(holder) && unanswered?
 
   def unanswered? = @foreign.kinds(holder).none? { answers?(it) }
 

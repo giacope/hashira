@@ -61,7 +61,9 @@ class Hashira::Pipeline
 
   def duplication = @_duplication ||= analyzed(:duplication, Hashira::Duplication::Clones, churn)
 
-  def smells = @_smells ||= analyzed(:smells, Hashira::Smells::Report, boundaries, rules)
+  def smells
+    @_smells ||= (smelled if enabled?(:smells))
+  end
 
   def hotspots
     @_hotspots ||= Hashira::Hotspots::Rollup.new(complexity, duplication, churn) if complexity || duplication
@@ -70,6 +72,8 @@ class Hashira::Pipeline
   def churn = @_churn ||= Hashira::Churn.build(@project.history)
 
   def enabled?(analyzer) = @enabled.include?(analyzer)
+
+  def smelled = Hashira::Smells::Report.new(Hashira::Smells::Census.new(@project, parsed.all).types, boundaries, rules)
 
   def analyzed(name, kind, *extra)
     kind.new(@project, parsed.all, *extra) if enabled?(name)

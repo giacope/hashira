@@ -24,17 +24,18 @@ class Hashira::Smells::Installs
 
   def names = @_names ||= writes + attributes
 
+  def computed = @_computed ||= surveyed.flat_map { |swept| injections(swept).flat_map { prefixes(it) } }
+
   def writes = surveyed.flat_map { setters(it) }
 
-  def computed = @_computed ||= surveyed.flat_map { |swept| injections(swept).map { prefix(named(it)) } }
-
-  def attributes = macros.flat_map { it.arguments.arguments }.flat_map { words(it) }.map { :"@#{text(it)}" }
-
-  def macros = @swept.grep(Prism::CallNode).select { WRITERS.include?(it.name) && !it.receiver && it.arguments }
+  def attributes
+    macros = @swept.grep(Prism::CallNode).select { WRITERS.include?(it.name) && !it.receiver && it.arguments }
+    macros.flat_map { it.arguments.arguments }.flat_map { words(it) }.map { :"@#{text(it)}" }
+  end
 
   private
 
-  def literal(sets) = sets.map { named(it) }.select { word?(it) }.map { text(it).to_sym }
+  def literal(sets) = sets.flat_map { named(it) }.select { word?(it) }.map { text(it).to_sym }
 
   def bodies
     calls = Hashira::Analysis::Syntax::Body.new(@type.node).to_a.grep(Prism::CallNode).reject(&:receiver)
@@ -47,12 +48,14 @@ class Hashira::Smells::Installs
 
   def injections(swept) = swept.grep(Prism::CallNode).select { it.name == SET }
 
-  def named(call) = call.arguments&.arguments&.first
+  def named(call) = Array(call.arguments&.arguments).first(1)
 
-  def prefix(name)
-    name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
-    head = name.parts.first if INTERPOLATED.include?(name.class)
-    Hashira::Analysis::Syntax::Word.new(head).to_s if head.is_a?(Prism::StringNode)
+  def prefixes(call)
+    named(call).flat_map do |name|
+      name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
+      heads = INTERPOLATED.include?(name.class) ? name.parts.first(1) : []
+      heads.grep(Prism::StringNode).map { text(it) }
+    end
   end
 
   def words(node)
@@ -61,11 +64,16 @@ class Hashira::Smells::Installs
   end
 
   def listed(node)
-    value = Hashira::Analysis::Syntax::Value.new(declared(Hashira::Analysis::Syntax.new(node).segments.last)&.value).thaw
-    value.is_a?(Prism::ArrayNode) ? value.elements.select { word?(it) } : []
+    declared(node).flat_map do |constant|
+      value = Hashira::Analysis::Syntax::Value.new(constant.value).thaw
+      value.is_a?(Prism::ArrayNode) ? value.elements.select { word?(it) } : []
+    end
   end
 
-  def declared(name) = Hashira::Analysis::Syntax::Body.new(@type.node).constants.find { it.name.to_s == name }
+  def declared(node)
+    name = Hashira::Analysis::Syntax.new(node).segments.last
+    Hashira::Analysis::Syntax::Body.new(@type.node).constants.select { it.name.to_s == name }.first(1)
+  end
 
   def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
 
