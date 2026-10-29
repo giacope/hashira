@@ -12,4 +12,6 @@ class Evaluation::Home
   def join(*parts) = File.join(@root, *parts)
 
   def cases(*parts) = join("cases", *parts)
+
+  def yaml(*parts) = YAML.safe_load_file(join(*parts))
 end

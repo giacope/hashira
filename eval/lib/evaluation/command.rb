@@ -11,8 +11,9 @@ class Evaluation::Command
 
   CORPUS = HOME.join("tmp", "corpus")
 
-  def initialize(argv)
+  def initialize(argv, io: $stdout)
     @argv = argv
+    @io = io
   end
 
   def status
@@ -38,7 +39,7 @@ class Evaluation::Command
   def agree = show(Evaluation::Agreement.build(option("--agree"), option("--raters")&.split(",")).markdown)
 
   def show(text)
-    $stdout.puts(text)
+    @io.puts(text)
     0
   end
 

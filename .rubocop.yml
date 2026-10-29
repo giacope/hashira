@@ -32,3 +32,8 @@ Lint/SuppressedException:
 
 Style/RescueModifier:
   Enabled: false
+
+# No hidden effects: a file, a command or a global stream is reached through
+# an object the class is given.
+Kata/IoDiscipline:
+  CheckEffects: true

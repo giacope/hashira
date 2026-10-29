@@ -11,12 +11,13 @@ class Evaluation::Tool
 
   def self.build(root) = new(File.expand_path(root))
 
-  def initialize(root)
+  def initialize(root, scratch = Dir)
     @root = root
+    @scratch = scratch
   end
 
   def call(directory, arguments)
-    Dir.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
+    @scratch.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
   end
 
   def every = @_every ||= opting? ? ["--config", EVERY] : []

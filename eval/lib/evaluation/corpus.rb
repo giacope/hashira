@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
 class Evaluation::Corpus
-  LIST = Evaluation::Home.new.join("corpus.yml")
-
   def self.build(tool, root, draw, sizes = {})
-    settings = YAML.safe_load_file(LIST)
+    settings = Evaluation::Home.new.yaml("corpus.yml")
     new(tool, root, sizes.empty? ? settings : settings.merge("samples" => sizes), draw)
   end
 
