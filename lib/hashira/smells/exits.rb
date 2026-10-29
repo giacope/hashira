@@ -9,5 +9,5 @@ class Hashira::Smells::Exits
     @node = node
   end
 
-  def raise? = Hashira::Analysis::Syntax.new(@node).command?(RAISES)
+  def raise? = Hashira::Analysis::Syntax::Call.new(@node).command?(RAISES)
 end

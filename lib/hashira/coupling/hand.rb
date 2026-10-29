@@ -33,6 +33,6 @@ class Hashira::Coupling::Hand
 
   def message
     first = @call.arguments&.arguments&.first
-    Hashira::Analysis::Syntax.new(first).symbol if first.is_a?(Prism::SymbolNode)
+    Hashira::Analysis::Syntax::Word.new(first).symbol if first.is_a?(Prism::SymbolNode)
   end
 end

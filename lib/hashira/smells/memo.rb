@@ -40,12 +40,12 @@ class Hashira::Smells::Memo
   def tested? = @branch.predicate.equal?(@check)
 
   def lines(side)
-    Array(side.statements&.body).flat_map { it.is_a?(Prism::ParenthesesNode) ? Hashira::Analysis::Syntax.new(it).statements : [it] }
+    Array(side.statements&.body).flat_map { it.is_a?(Prism::ParenthesesNode) ? Hashira::Analysis::Syntax::Body.new(it).to_a : [it] }
   end
 
   def guards?(kept, names, method)
     returned = kept&.one? && kept.first.is_a?(Prism::ReturnNode) && kept.first.arguments
-    returned && answers?(returned.arguments, names) && Hashira::Analysis::Syntax.new(method).statements.any? { writes?(it, names) }
+    returned && answers?(returned.arguments, names) && Hashira::Analysis::Syntax::Body.new(method).to_a.any? { writes?(it, names) }
   end
 
   def answers?(found, names) = found.one? && names.include?(found.first.slice)

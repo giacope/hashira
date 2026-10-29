@@ -26,5 +26,5 @@ class Hashira::Smells::Lookup
 
   def keyed? = KEYED.include?(@call.name) && @call.arguments.arguments.all? { key?(it) }
 
-  def key?(node) = Hashira::Analysis::Syntax.new(node).word? || node.is_a?(Prism::IntegerNode)
+  def key?(node) = Hashira::Analysis::Syntax::Word.new(node).word? || node.is_a?(Prism::IntegerNode)
 end

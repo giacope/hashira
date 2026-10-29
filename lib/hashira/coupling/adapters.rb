@@ -23,7 +23,7 @@ class Hashira::Coupling::Adapters
   def named?(definition) = definition.path.last.start_with?("Application")
 
   def marked?(definition)
-    Hashira::Analysis::Syntax.new(definition.node).statements.grep(Prism::CallNode).any? { MARKS.include?(it.name) }
+    Hashira::Analysis::Syntax::Body.new(definition.node).to_a.grep(Prism::CallNode).any? { MARKS.include?(it.name) }
   end
 
   def classes = @_classes ||= @catalog.select(&:klass?)

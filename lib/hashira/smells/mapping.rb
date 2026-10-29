@@ -33,9 +33,9 @@ class Hashira::Smells::Mapping
     end
   end
 
-  def value?(node) = Hashira::Analysis::Syntax.new(node).fixed? || translated?(node)
+  def value?(node) = Hashira::Analysis::Syntax::Value.new(node).fixed? || translated?(node)
 
   def translated?(node) = node.is_a?(Prism::CallNode) && TRANSLATIONS.include?(node.name) && keyed?(node)
 
-  def keyed?(call) = Hashira::Analysis::Syntax.new(Array(call.arguments&.arguments).first).word?
+  def keyed?(call) = Hashira::Analysis::Syntax::Word.new(Array(call.arguments&.arguments).first).word?
 end

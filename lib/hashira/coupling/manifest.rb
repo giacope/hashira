@@ -32,5 +32,5 @@ class Hashira::Coupling::Manifest
 
   def source(text) = "#{text.delete_suffix(SOURCE)}#{SOURCE}"
 
-  def text(node) = Hashira::Analysis::Syntax.new(node).text
+  def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
 end

@@ -57,9 +57,9 @@ class Hashira::Smells::Repertoire
   def entries(tree)
     found = []
     Hashira::Analysis::TypeWalk.new(tree).walk do |node, full|
-      syntax = Hashira::Analysis::Syntax.new(node)
-      found << entry(full, syntax.statements, heritage(node), instance(node))
-      found.concat(syntax.constants.filter_map { built(full, it) if factory?(it.value) })
+      body = Hashira::Analysis::Syntax::Body.new(node)
+      found << entry(full, body.to_a, heritage(node), instance(node))
+      found.concat(body.constants.filter_map { built(full, it) if factory?(it.value) })
     end
     found
   end
@@ -81,13 +81,13 @@ class Hashira::Smells::Repertoire
   end
 
   def heritage(type)
-    mixed = Hashira::Analysis::Syntax.new(type).statements.grep(Prism::CallNode).select { MIXINS.include?(it.name) }
+    mixed = Hashira::Analysis::Syntax::Body.new(type).to_a.grep(Prism::CallNode).select { MIXINS.include?(it.name) }
     [*(type.superclass if type.is_a?(Prism::ClassNode)), *mixed.flat_map { it.arguments.arguments }]
   end
 
   def declared(node)
     return [node.name] if node.is_a?(Prism::DefNode) && !node.receiver
-    return [Hashira::Analysis::Syntax.new(node.new_name).text] if node.is_a?(Prism::AliasMethodNode)
+    return [Hashira::Analysis::Syntax::Word.new(node.new_name).to_s] if node.is_a?(Prism::AliasMethodNode)
     macro?(node) ? offered(node) : []
   end
 
@@ -95,7 +95,7 @@ class Hashira::Smells::Repertoire
 
   def offered(call) = Array(call.arguments&.arguments).flat_map { symbol?(it) ? [text(it)] : declared(it) }
 
-  def text(node) = Hashira::Analysis::Syntax.new(node).text
+  def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
 
   def symbol?(node) = node.is_a?(Prism::SymbolNode)
 

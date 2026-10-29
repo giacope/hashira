@@ -47,7 +47,7 @@ class Hashira::Complexity::Fragmentation
       @trees.flat_map do |tree|
         Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk).filter_map do |type, *|
           parent = Hashira::Analysis::Syntax.new(type.superclass).segments if type.is_a?(Prism::ClassNode)
-          [parent, Hashira::Analysis::Syntax.new(type).direct.map(&:name)] unless Array(parent).empty?
+          [parent, Hashira::Analysis::Syntax::Body.new(type).direct.map(&:name)] unless Array(parent).empty?
         end
       end
   end

@@ -54,5 +54,5 @@ class Hashira::Smells::Columns
 
   def arguments(call) = Array(call.arguments&.arguments)
 
-  def words(node) = Hashira::Analysis::Syntax.new(node).words
+  def words(node) = Hashira::Analysis::Syntax::Word.new(node).to_a
 end

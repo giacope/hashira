@@ -88,7 +88,7 @@ class Hashira::Smells::Switches
   def probe(call)
     probed = call.receiver
     tested = Array(call.arguments&.arguments).first
-    arm(probed, tested) if Hashira::Analysis::Syntax.new(call).type_test? && probed && type?(tested)
+    arm(probed, tested) if Hashira::Analysis::Syntax::Message.new(call).type_test? && probed && type?(tested)
   end
 
   def arm(subject, label) = Arm.new(subject, label)

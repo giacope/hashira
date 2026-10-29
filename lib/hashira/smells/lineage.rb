@@ -54,7 +54,7 @@ class Hashira::Smells::Lineage
   def message(type, node)
     case node
     when Prism::CallNode then [node.name, addressee(type, node.receiver)]
-    when Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).symbol, nil]
+    when Prism::SymbolNode then [Hashira::Analysis::Syntax::Word.new(node).symbol, nil]
     end
   end
 
@@ -115,7 +115,7 @@ class Hashira::Smells::Lineage
 
   def native?(name) = @messages.macro?(name)
 
-  def macros(type) = Hashira::Analysis::Syntax.new(type.node).statements.grep(Prism::CallNode).reject(&:receiver)
+  def macros(type) = Hashira::Analysis::Syntax::Body.new(type.node).to_a.grep(Prism::CallNode).reject(&:receiver)
 
   def vocabulary
     @_vocabulary ||= @types.flat_map { Hashira::Analysis::TypeWalk.new(it.node).sections }.to_set { |definition, _| definition.name }

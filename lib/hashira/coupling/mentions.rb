@@ -61,8 +61,8 @@ class Hashira::Coupling::Mentions
   def note(node, owner, nesting)
     case node
     when Prism::CallNode then called(node, owner, nesting)
-    when Prism::SymbolNode then names << Hashira::Analysis::Syntax.new(node).text
-    when Prism::StringNode then said(Hashira::Analysis::Syntax.new(node).text)
+    when Prism::SymbolNode then names << Hashira::Analysis::Syntax::Word.new(node).to_s
+    when Prism::StringNode then said(Hashira::Analysis::Syntax::Word.new(node).to_s)
     when *INTERPOLATED then built(node.parts)
     when *WRITES, Prism::ConstantPathNode then named(node)
     end
@@ -114,7 +114,7 @@ class Hashira::Coupling::Mentions
 
   def dynamic?(call) = sent?(call) && own?(call.receiver) && computed?(call)
 
-  def sent?(call) = Hashira::Analysis::Syntax.new(call).dispatch? || SENDS.include?(call.name)
+  def sent?(call) = Hashira::Analysis::Syntax::Message.new(call).dispatch? || SENDS.include?(call.name)
 
   def computed?(call)
     first = call.arguments&.arguments&.first

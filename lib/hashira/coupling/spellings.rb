@@ -26,8 +26,8 @@ class Hashira::Coupling::Spellings
   def nodes = @trees.values.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
 
   def roots(node)
-    return [] unless Hashira::Analysis::Syntax.new(node).macro?(REQUIRE)
-    Hashira::Analysis::Syntax.new(node.arguments.arguments.first).literal.to_s.scan(REQUIRED).flatten
+    return [] unless Hashira::Analysis::Syntax::Call.new(node).macro?(REQUIRE)
+    Hashira::Analysis::Syntax::Word.new(node.arguments.arguments.first).to_a.first.to_s.scan(REQUIRED).flatten
   end
 
   def shipped = @trees.keys.flat_map { it.delete_suffix(".rb").split("/") }

@@ -32,7 +32,7 @@ class Hashira::Coupling::Words
 
   def word(node)
     case node
-    when Prism::SymbolNode, Prism::StringNode then Hashira::Analysis::Syntax.new(node).text
+    when Prism::SymbolNode, Prism::StringNode then Hashira::Analysis::Syntax::Word.new(node).to_s
     end
   end
 end

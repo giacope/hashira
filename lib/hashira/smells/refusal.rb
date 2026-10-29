@@ -12,7 +12,7 @@ class Hashira::Smells::Refusal
   end
 
   def of
-    statements = Hashira::Analysis::Syntax.new(@definition).statements.compact
+    statements = Hashira::Analysis::Syntax::Body.new(@definition).to_a.compact
     return :nothing if statements.all?(Prism::NilNode)
     :raise if statements.one? && raise?(statements.first)
   end

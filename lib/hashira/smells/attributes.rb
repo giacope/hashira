@@ -26,6 +26,6 @@ class Hashira::Smells::Attributes
   private
 
   def names(call)
-    Array(call.arguments&.arguments).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+    Array(call.arguments&.arguments).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
   end
 end

@@ -46,7 +46,7 @@ class Hashira::Smells::Ancestry
 
   def above(node)
     calls = Hashira::Smells::Scope.new(node).sweep.grep(Prism::CallNode)
-    mixed = calls.select { Hashira::Analysis::Syntax.new(it).macro?(MIXINS) }.flat_map { it.arguments.arguments }
+    mixed = calls.select { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }.flat_map { it.arguments.arguments }
     [*(node.superclass if node.is_a?(Prism::ClassNode)), *mixed]
   end
 end

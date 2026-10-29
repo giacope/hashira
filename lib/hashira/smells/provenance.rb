@@ -117,13 +117,13 @@ class Hashira::Smells::Provenance
 
   def filled?(name)
     found = Hashira::Analysis::TypeWalk.new(@subject.home).sections.map(&:first).select { it.name == name }
-    found.any? && found.all? { settled?(Hashira::Analysis::Syntax.new(it).statements) }
+    found.any? && found.all? { settled?(Hashira::Analysis::Syntax::Body.new(it).to_a) }
   end
 
   def settled?(statements)
     tail = statements.last
     value = tail.is_a?(Prism::InstanceVariableOrWriteNode) ? tail.value : tail
-    statements.one? && Hashira::Analysis::Syntax.new(value).default?
+    statements.one? && Hashira::Analysis::Syntax::Value.new(value).default?
   end
 
   def hosted?(name) = @subject.host == :module && @subject.ownership.vocabulary.speaks?(name)

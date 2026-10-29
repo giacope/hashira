@@ -43,7 +43,7 @@ class Hashira::Smells::Vocabulary
       when Prism::CallNode then node.arguments&.arguments.to_a
       else []
       end
-    offered.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+    offered.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
   end
 
   def stem(name) = name.to_s.delete_suffix("=")

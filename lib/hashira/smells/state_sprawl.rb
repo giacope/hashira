@@ -104,7 +104,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def exposed = @_exposed ||= exposing.grep(Prism::SymbolNode).map { field(it) }
 
-  def field(symbol) = :"@#{Hashira::Analysis::Syntax.new(symbol).text}"
+  def field(symbol) = :"@#{Hashira::Analysis::Syntax::Word.new(symbol)}"
 
   def exposing = readers.flat_map { Array(it.arguments&.arguments) }
 
@@ -118,15 +118,15 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def founding = @_founding ||= [CONSTRUCTOR] + helpers.map(&:name) + registered
 
-  def registered = hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { syntax(it).symbol }
-
-  def syntax(node) = Hashira::Analysis::Syntax.new(node)
+  def registered
+    hooks.flat_map { Array(it.arguments&.arguments) }.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).symbol }
+  end
 
   def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
 
-  def bodies = subject.nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }
+  def bodies = subject.statements
 
-  def hook?(call) = !call.receiver && !Hashira::Analysis::TypeWalk.new(call).marker?
+  def hook?(call) = !call.receiver && !Hashira::Analysis::Syntax::Call.new(call).marker?
 
   def helpers = sweeps(constructors).grep(Prism::CallNode).reject(&:receiver)
 

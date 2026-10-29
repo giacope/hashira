@@ -17,7 +17,7 @@ class Hashira::Coupling::SpecWords
     nodes.flat_map do |node|
       case node
       when Prism::CallNode then node.name.to_s.then { [(it unless node.variable_call?), matched(it)] }
-      when Prism::SymbolNode then named.include?(node) ? [] : [Hashira::Analysis::Syntax.new(node).text]
+      when Prism::SymbolNode then named.include?(node) ? [] : [Hashira::Analysis::Syntax::Word.new(node).to_s]
       when Prism::ConstantReadNode, Prism::ConstantPathNode then [node.name.name]
       else []
       end

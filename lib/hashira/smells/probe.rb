@@ -36,13 +36,15 @@ class Hashira::Smells::Probe
 
   def message = Array(@call.arguments&.arguments).first
 
-  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(Hashira::Analysis::Syntax.new(message).symbol)
+  def word = Hashira::Analysis::Syntax::Word.new(message)
+
+  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(word.symbol)
 
   def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
 
   def computed? = !message.nil? && !LITERAL.include?(message.class)
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.new(message).symbol)
+  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax::Word.new(message).symbol)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
@@ -54,7 +56,7 @@ class Hashira::Smells::Probe
 
   def unanswered? = @foreign.kinds(holder).none? { answers?(it) }
 
-  def answers?(kind) = @subject.ownership.repertoire.of(kind).include?(Hashira::Analysis::Syntax.new(message).text)
+  def answers?(kind) = @subject.ownership.repertoire.of(kind).include?(word.to_s)
 
   def named? = NAMED.include?(receiver.class)
 

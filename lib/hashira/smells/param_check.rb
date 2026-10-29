@@ -52,7 +52,7 @@ class Hashira::Smells::ParamCheck
   def measured?(call)
     sides = [call.receiver, *call.arguments&.arguments]
     others = sides - reads(sides)
-    others.size < sides.size && others.any? { !Hashira::Analysis::Syntax.new(it).fixed? }
+    others.size < sides.size && others.any? { !Hashira::Analysis::Syntax::Value.new(it).fixed? }
   end
 
   def mapped? = tested.any? && !Hashira::Smells::Conditions.new(@node).couple? && branches.compact.all? { literal?(it) }

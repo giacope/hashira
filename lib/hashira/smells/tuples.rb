@@ -11,7 +11,7 @@ class Hashira::Smells::Tuples
 
   def bags
     @types.flat_map do |type|
-      Hashira::Analysis::Syntax.new(type.node).constants.filter_map { valued(type, it.name.to_s, it.value) } +
+      Hashira::Analysis::Syntax::Body.new(type.node).constants.filter_map { valued(type, it.name.to_s, it.value) } +
         [valued(type, nil, superclass(type))].compact
     end
   end

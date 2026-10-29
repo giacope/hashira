@@ -22,7 +22,7 @@ class Hashira::Complexity::Calls
 
   def aimed(call)
     target = call.arguments&.arguments&.first
-    return [] unless Hashira::Analysis::Syntax.new(call).dispatch? && target.is_a?(Prism::SymbolNode)
-    [Hashira::Analysis::Syntax.new(target).symbol]
+    return [] unless Hashira::Analysis::Syntax::Message.new(call).dispatch? && target.is_a?(Prism::SymbolNode)
+    [Hashira::Analysis::Syntax::Word.new(target).symbol]
   end
 end

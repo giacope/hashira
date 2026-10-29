@@ -79,7 +79,7 @@ class Hashira::Smells::Hierarchy
   def claimed = @_claimed ||= @types.select(&:claimed).to_set(&:name)
 
   def marked?(type)
-    Hashira::Analysis::Syntax.new(type.node).statements.any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
+    Hashira::Analysis::Syntax::Body.new(type.node).to_a.any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
   end
 
   def births

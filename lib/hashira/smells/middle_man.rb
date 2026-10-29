@@ -79,7 +79,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   end
 
   def sole(definition)
-    held = Hashira::Analysis::Syntax.new(definition).statements
+    held = Hashira::Analysis::Syntax::Body.new(definition).to_a
     held.one? && held.first.is_a?(Prism::CallNode) ? held : []
   end
 

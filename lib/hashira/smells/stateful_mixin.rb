@@ -81,7 +81,7 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def aside?(node) = asides.any? { Hashira::Smells::Scope.new(it).covers?(node) }
 
-  def asides = @_asides ||= subject.sweep.select { Hashira::Analysis::TypeWalk.new(it).apart? }.map(&:block)
+  def asides = @_asides ||= subject.sweep.select { Hashira::Analysis::Syntax::Message.new(it).apart? }.map(&:block)
 
   def included = @_included ||= statements.grep(Prism::DefNode).select { it.name == INCLUDED && it.receiver }
 

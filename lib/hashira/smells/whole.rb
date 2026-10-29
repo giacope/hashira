@@ -16,7 +16,7 @@ module Hashira
 
         def home = openings.find { named?(it) } || largest
 
-        def largest = openings.max_by { Analysis::Syntax.new(it.node).statements.compact.size }
+        def largest = openings.max_by { Hashira::Analysis::Syntax::Body.new(it.node).to_a.compact.size }
 
         def named?(opening)
           short, long = [spelled(opening.file.delete_suffix(".rb"), "/"), spelled(subject, "::")].sort_by(&:size)
@@ -39,7 +39,7 @@ module Hashira
 
         def sweep = nodes.flat_map { Scope.new(it).sweep }
 
-        def statements = nodes.flat_map { Hashira::Analysis::Syntax.new(it).statements }.compact
+        def statements = nodes.flat_map { Hashira::Analysis::Syntax::Body.new(it).to_a }.compact
 
         def legible? = sweep.none? { Opaque.new([it]).any? }
 

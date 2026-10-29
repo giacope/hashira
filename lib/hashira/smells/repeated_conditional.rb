@@ -62,7 +62,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
     def dispatch? = @atom.is_a?(Prism::CallNode) && (TYPES.include?(@atom.name) || fixed?)
 
-    def fixed? = COMPARISONS.include?(@atom.name) && sides.any? { Hashira::Analysis::Syntax.new(it).fixed? }
+    def fixed? = COMPARISONS.include?(@atom.name) && sides.any? { Hashira::Analysis::Syntax::Value.new(it).fixed? }
 
     def sides = [@atom.receiver, *@atom.arguments&.arguments]
 

@@ -28,7 +28,7 @@ class Hashira::Smells::TypeTests
 
   def probes(&) = calls.select { tests?(it) && local?(it.receiver, &) }.filter_map { key(it) }
 
-  def tests?(call) = Hashira::Analysis::Syntax.new(call).type_test?
+  def tests?(call) = Hashira::Analysis::Syntax::Message.new(call).type_test?
 
   def arms(&)
     switches = @body.select { CASES.include?(it.class) && local?(it.predicate, &) }

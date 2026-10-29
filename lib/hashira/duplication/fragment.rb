@@ -92,7 +92,7 @@ class Hashira::Duplication::Fragment
 
   def words(node)
     return [node.name] if SPOKEN.include?(node.class)
-    WRITTEN.include?(node.class) ? Hashira::Analysis::Syntax.new(node).text.scan(/\w+/) : []
+    WRITTEN.include?(node.class) ? Hashira::Analysis::Syntax::Word.new(node).to_s.scan(/\w+/) : []
   end
 
   def bodies = opened? ? @roots.first.compact_child_nodes.grep(Prism::StatementsNode).first(1) : []

@@ -26,7 +26,7 @@ class Hashira::Smells::Concerns
 
   def names = @_names ||= @sketches.select { concern?(it) }.to_set(&:name)
 
-  def concern?(sketch) = Hashira::Analysis::Syntax.new(sketch.node).statements.any? { hands?(it) }
+  def concern?(sketch) = Hashira::Analysis::Syntax::Body.new(sketch.node).to_a.any? { hands?(it) }
 
   def hands?(node)
     case node
@@ -37,7 +37,7 @@ class Hashira::Smells::Concerns
   end
 
   def concerned?(call)
-    return false unless Hashira::Analysis::Syntax.new(call).macro?([EXTEND])
+    return false unless Hashira::Analysis::Syntax::Call.new(call).macro?([EXTEND])
     segments = Hashira::Analysis::Syntax.new(call.arguments.arguments.first).segments
     segments == CONCERN || segments.last == LEVEL.delete_prefix("::")
   end

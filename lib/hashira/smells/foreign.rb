@@ -63,7 +63,7 @@ class Hashira::Smells::Foreign
 
   def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 
-  def tails = @_tails ||= Hashira::Analysis::Syntax.new(@subject.node).statements.compact.last(1)
+  def tails = @_tails ||= Hashira::Analysis::Syntax::Body.new(@subject.node).to_a.compact.last(1)
 
   def convert? = tails.any? { made?(it) } && stateless?
 
@@ -122,7 +122,7 @@ class Hashira::Smells::Foreign
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }
 
-  def keyed?(call) = KEYED_READS.include?(call.name) && Hashira::Analysis::Syntax.new(key(call)).word?
+  def keyed?(call) = KEYED_READS.include?(call.name) && Hashira::Analysis::Syntax::Word.new(key(call)).word?
 
   def reassignments(name) = among(Prism::LocalVariableOperatorWriteNode, name)
 

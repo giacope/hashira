@@ -10,7 +10,7 @@ class Hashira::Smells::Bond
   end
 
   def pairs
-    return [] unless Hashira::Analysis::Syntax.new(@call).bare?
+    return [] unless Hashira::Analysis::Syntax::Call.new(@call).macro?([@call.name])
     words(@call.arguments.arguments.first).flat_map { bonds(it) }
   end
 
@@ -24,7 +24,7 @@ class Hashira::Smells::Bond
     option("polymorphic").any?(Prism::TrueNode) ? [key, :"#{name}_type"] : [key]
   end
 
-  def option(key) = Hashira::Analysis::Syntax.new(@call).given(key)
+  def option(key) = Hashira::Analysis::Syntax::Value.new(@call).given(key)
 
-  def words(node) = Hashira::Analysis::Syntax.new(node).words
+  def words(node) = Hashira::Analysis::Syntax::Word.new(node).to_a
 end

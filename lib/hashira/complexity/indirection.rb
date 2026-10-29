@@ -62,7 +62,7 @@ class Hashira::Complexity::Indirection
 
   def survey(tree, symbols, receivers)
     nodes = Hashira::Analysis::NodeWalk.new(tree).collect
-    symbols.merge(nodes.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.map(&:to_sym))
+    symbols.merge(nodes.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.map(&:to_sym))
     receivers.merge(nodes.grep(Prism::CallNode).reject { SELVES.include?(it.receiver.class) }.map(&:name))
   end
 end

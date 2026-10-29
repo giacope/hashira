@@ -6,7 +6,7 @@ class Hashira::Complexity::Defined
   end
 
   def name
-    named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax.new(named).symbol : :"define_method(#{named.slice})"
+    named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax::Word.new(named).symbol : :"define_method(#{named.slice})"
   end
 
   def body = @call.block.body

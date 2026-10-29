@@ -34,10 +34,10 @@ class Hashira::Smells::Installs
 
   private
 
-  def literal(sets) = sets.map { named(it) }.select { Hashira::Analysis::Syntax.new(it).word? }.map { text(it).to_sym }
+  def literal(sets) = sets.map { named(it) }.select { word?(it) }.map { text(it).to_sym }
 
   def bodies
-    calls = Hashira::Analysis::Syntax.new(@type.node).statements.grep(Prism::CallNode).reject(&:receiver)
+    calls = Hashira::Analysis::Syntax::Body.new(@type.node).to_a.grep(Prism::CallNode).reject(&:receiver)
     @swept.grep(Prism::DefNode).reject(&:receiver) + calls.filter_map(&:block).grep(Prism::BlockNode)
   end
 
@@ -52,22 +52,22 @@ class Hashira::Smells::Installs
   def prefix(name)
     name = name.receiver if name.is_a?(Prism::CallNode) && CASTS.include?(name.name)
     head = name.parts.first if INTERPOLATED.include?(name.class)
-    Hashira::Analysis::Syntax.new(head).text if head.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax::Word.new(head).to_s if head.is_a?(Prism::StringNode)
   end
 
   def words(node)
-    return [node] if Hashira::Analysis::Syntax.new(node).word?
+    return [node] if word?(node)
     node.is_a?(Prism::SplatNode) ? listed(node.expression) : []
   end
 
   def listed(node)
-    value = syntax(declared(syntax(node).segments.last)&.value).thaw
-    value.is_a?(Prism::ArrayNode) ? value.elements.select { syntax(it).word? } : []
+    value = Hashira::Analysis::Syntax::Value.new(declared(Hashira::Analysis::Syntax.new(node).segments.last)&.value).thaw
+    value.is_a?(Prism::ArrayNode) ? value.elements.select { word?(it) } : []
   end
 
-  def declared(name) = syntax(@type.node).constants.find { it.name.to_s == name }
+  def declared(name) = Hashira::Analysis::Syntax::Body.new(@type.node).constants.find { it.name.to_s == name }
 
-  def syntax(node) = Hashira::Analysis::Syntax.new(node)
+  def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
 
-  def text(node) = Hashira::Analysis::Syntax.new(node).text
+  def word?(node) = Hashira::Analysis::Syntax::Word.new(node).word?
 end

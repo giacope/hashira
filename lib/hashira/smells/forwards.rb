@@ -31,14 +31,14 @@ class Hashira::Smells::Forwards
   def handed = macros(HANDS).flat_map { handing(it) }
 
   def handing(call)
-    target = symbol(Hashira::Analysis::Syntax.new(call).given("to").first)
+    target = symbol(Hashira::Analysis::Syntax::Value.new(call).given("to").first)
     Hashira::Smells::Attributes.new([call]).declared(HANDS).map { ["#{prefix(call, target)}#{it}", target] }
   end
 
   def prefix(call, target)
-    given = Hashira::Analysis::Syntax.new(call).given("prefix")
+    given = Hashira::Analysis::Syntax::Value.new(call).given("prefix")
     return "#{target}_" if given.any?(Prism::TrueNode)
-    given.select { Hashira::Analysis::Syntax.new(it).word? }.map { "#{symbol(it)}_" }.join
+    given.select { Hashira::Analysis::Syntax::Word.new(it).word? }.map { "#{symbol(it)}_" }.join
   end
 
   def named?(target) = !target.empty? && !@stock.include?(target)
@@ -47,5 +47,5 @@ class Hashira::Smells::Forwards
 
   def field(target) = target.start_with?("@") ? target : @bonds.field(target)
 
-  def symbol(node) = Hashira::Analysis::Syntax.new(node).literal.to_s.to_sym
+  def symbol(node) = Hashira::Analysis::Syntax::Word.new(node).to_a.first.to_s.to_sym
 end

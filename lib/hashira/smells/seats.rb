@@ -45,7 +45,7 @@ class Hashira::Smells::Seats
     given = Array(call.arguments&.arguments)
     return [[call.name.to_s.delete_suffix("="), given.first]] if call.attribute_write?
     return [] unless SLOTS.include?(call.name)
-    given.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.product([defaulted(given)])
+    given.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.product([defaulted(given)])
   end
 
   def defaulted(given)

@@ -79,7 +79,7 @@ class Hashira::Coupling::Surface
   end
 
   def written(opening, hidden)
-    Hashira::Analysis::Syntax.new(opening.node).constants.map do |node|
+    Hashira::Analysis::Syntax::Body.new(opening.node).constants.map do |node|
       name = node.name.to_s
       constant(opening, node, opening.full + [name], hidden: hidden.include?(name))
     end
@@ -138,7 +138,7 @@ class Hashira::Coupling::Surface
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 
-  def foreign?(node) = !core?(Hashira::Analysis::Syntax.new(node).origins)
+  def foreign?(node) = !core?(Hashira::Analysis::Syntax::Message.new(node).origins)
 
   def core?(names) = names.any? { @builtins.core?(it) }
 end

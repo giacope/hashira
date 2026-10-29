@@ -58,9 +58,9 @@ class Hashira::Smells::Plantings
     receiver.name if receiver.is_a?(Prism::LocalVariableReadNode)
   end
 
-  def literal?(call) = Hashira::Analysis::Syntax.new(call.arguments&.arguments&.first).word?
+  def literal?(call) = Hashira::Analysis::Syntax::Word.new(call.arguments&.arguments&.first).word?
 
-  def ivar(call) = Hashira::Analysis::Syntax.new(call.arguments.arguments.first).text.to_sym
+  def ivar(call) = Hashira::Analysis::Syntax::Word.new(call.arguments.arguments.first).to_s.to_sym
 
   def built(type, definition, value)
     return unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)

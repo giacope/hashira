@@ -31,7 +31,7 @@ class Hashira::Coupling::Associations
   end
 
   def targets(node)
-    return [] unless Hashira::Analysis::Syntax.new(node).macro?(MACROS) && option(node, "polymorphic").none?(Prism::TrueNode)
+    return [] unless Hashira::Analysis::Syntax::Call.new(node).macro?(MACROS) && option(node, "polymorphic").none?(Prism::TrueNode)
     name = given(node) || inferred(node)
     return [] unless name&.match?(CONSTANT)
     [Target.new(name:, line: node.location.start_line, guarantee: guarantee(node), macro: node.name)]
@@ -39,7 +39,7 @@ class Hashira::Coupling::Associations
 
   private
 
-  def option(call, key) = Hashira::Analysis::Syntax.new(call).given(key)
+  def option(call, key) = Hashira::Analysis::Syntax::Value.new(call).given(key)
 
   def guarantee(call)
     dependent = option(call, "dependent").first
@@ -49,15 +49,15 @@ class Hashira::Coupling::Associations
 
   def given(call)
     named = option(call, "class_name").first
-    Hashira::Analysis::Syntax.new(named).text if named.is_a?(Prism::StringNode)
+    Hashira::Analysis::Syntax::Word.new(named).to_s if named.is_a?(Prism::StringNode)
   end
 
   def inferred(call)
-    source = literal(option(call, "source").first)
-    base = source || literal(call.arguments.arguments.first)
+    source = words(option(call, "source").first)
+    base = (source + words(call.arguments.arguments.first)).first
     return unless base
-    COLLECTIONS.include?(call.name) || source ? @inflection.classify(base) : @inflection.camelize(base)
+    COLLECTIONS.include?(call.name) || source.any? ? @inflection.classify(base) : @inflection.camelize(base)
   end
 
-  def literal(node) = Hashira::Analysis::Syntax.new(node).literal
+  def words(node) = Hashira::Analysis::Syntax::Word.new(node).to_a.map(&:to_s)
 end

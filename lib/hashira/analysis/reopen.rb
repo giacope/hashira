@@ -11,7 +11,7 @@ module Hashira
       def walk(stack = [], roots: nil, &)
         full = resolve(Syntax.new(@receiver), stack, roots)
         yield(@node, full, stack, full)
-        TypeWalk.new(@node).beneath(stack, roots, &)
+        TypeWalk.new(@node.body).walk(stack, roots:, &)
       end
 
       private

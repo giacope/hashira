@@ -36,7 +36,7 @@ class Hashira::Smells::Message
 
   def sent(node)
     case node
-    when *NAMES then Hashira::Analysis::Syntax.new(node).text
+    when *NAMES then Hashira::Analysis::Syntax::Word.new(node).to_s
     when *INTERPOLATED then node.parts.map { sent(it).then { |part| part.empty? ? HOLE : part } }.join
     else ""
     end

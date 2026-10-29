@@ -91,7 +91,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def inputs = constructors.flat_map(&:parameters)
 
-  def setup = constructors.flat_map { Hashira::Analysis::Syntax.new(it.node).statements.compact }
+  def setup = constructors.flat_map { Hashira::Analysis::Syntax::Body.new(it.node).to_a.compact }
 
   def constructors = @_constructors ||= built(subject.owned).then { it.empty? ? bequeathed : it }
 
@@ -116,7 +116,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def peeks?(found) = selves(found).any? { it.name == LISTING || (it.name == PEEK && computed?(it)) }
 
-  def computed?(call) = call.arguments && !Hashira::Analysis::Syntax.new(call.arguments.arguments.first).word?
+  def computed?(call) = call.arguments && !Hashira::Analysis::Syntax::Word.new(call.arguments.arguments.first).word?
 
   def touched(found) = Hashira::Smells::Fields.new(found).named(FIELDS)
 
@@ -143,14 +143,14 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def sent(found)
-    selves(found).select { Hashira::Analysis::Syntax.new(it).dispatch? }.flat_map { aimed(Array(it.arguments&.arguments).first) }
+    selves(found).select { Hashira::Analysis::Syntax::Message.new(it).dispatch? }.flat_map { aimed(Array(it.arguments&.arguments).first) }
   end
 
   def reached(found) = sent(found).filter_map { attributes[it.to_s.delete_suffix("=")] }
 
   def aimed(name)
     return [] unless name
-    return [Hashira::Analysis::Syntax.new(name).symbol] if Hashira::Analysis::Syntax.new(name).word?
+    return [Hashira::Analysis::Syntax::Word.new(name).symbol] if Hashira::Analysis::Syntax::Word.new(name).word?
     INTERPOLATED.include?(name.class) ? affixed(name) : tabled
   end
 
@@ -161,13 +161,13 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     names.select { it.start_with?(head) && it.end_with?(tail) }
   end
 
-  def written?(name) = Hashira::Analysis::Syntax.new(name.parts.last).literal == "="
+  def written?(name) = Hashira::Analysis::Syntax::Word.new(name.parts.last).to_a == [:"="]
 
   def writers = @_writers ||= names.select { it.end_with?("=") } + Hashira::Smells::Attributes.new(sweep).writers
 
   def tabled = @_tabled ||= names.select { listed.include?(it) }
 
-  def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }.to_set(&:to_sym)
+  def listed = sweep.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }.to_set(&:to_sym)
 
   def sweep = @_sweep ||= subject.sweep
 

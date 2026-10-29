@@ -15,7 +15,7 @@ class Hashira::Smells::Picks
   private
 
   def handed(call, name)
-    return Hashira::Analysis::Syntax.new(call).given(name) unless positions.include?(name)
+    return Hashira::Analysis::Syntax::Value.new(call).given(name) unless positions.include?(name)
     Array(call.arguments&.arguments).grep_v(Prism::KeywordHashNode).drop(positions.index(name)).first(1)
   end
 

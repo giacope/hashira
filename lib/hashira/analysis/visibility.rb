@@ -47,14 +47,14 @@ class Hashira::Analysis::Visibility
       [*scan(node.compact_child_nodes, section).first(2), section]
     end
 
-    def bare?(node) = Hashira::Analysis::TypeWalk.new(node).marker?
+    def bare?(node) = Hashira::Analysis::Syntax::Call.new(node).marker?
 
     def lift?(node) = LIFTS.include?(node.name) && !node.receiver && node.block.is_a?(Prism::BlockNode)
 
     def switch(name, arguments, section)
       return [*NONE, section + [name]] unless arguments
       given = arguments.arguments
-      overrides = given.grep(Prism::SymbolNode).to_h { [Hashira::Analysis::Syntax.new(it).symbol, name] }
+      overrides = given.grep(Prism::SymbolNode).to_h { [Hashira::Analysis::Syntax::Word.new(it).symbol, name] }
       [given.grep(Prism::DefNode).map { [it, name] }, overrides, section]
     end
 
@@ -85,7 +85,7 @@ class Hashira::Analysis::Visibility
 
   def extended? = (@_extended ||= [statements(@node).any? { reflexive?(it) }]).first
 
-  def class_level? = Hashira::Analysis::TypeWalk.new(@node).class_level?
+  def class_level? = Hashira::Analysis::Syntax::Body.new(@node).class_level?
 
   def reflexive?(node)
     node in Prism::CallNode[name: :extend, receiver: nil, arguments: Prism::ArgumentsNode[arguments: [Prism::SelfNode]]]

@@ -55,8 +55,8 @@ class Hashira::Smells::Ownership
 
   def held
     @_held ||=
-      claimed.flat_map { |node, full| named(node, full).zip(Hashira::Analysis::Syntax.new(node).constants) }
-        .to_h { |path, constant| [path.join("::"), Hashira::Analysis::Syntax.new(constant.value).thaw] }
+      claimed.flat_map { |node, full| named(node, full).zip(Hashira::Analysis::Syntax::Body.new(node).constants) }
+        .to_h { |path, constant| [path.join("::"), Hashira::Analysis::Syntax::Value.new(constant.value).thaw] }
   end
 
   def among(known, segments, owner, rooted)
@@ -78,11 +78,11 @@ class Hashira::Smells::Ownership
 
   def claimed = @_claimed ||= walked.select { |_node, full| claimed?(full) }
 
-  def named(node, full) = Hashira::Analysis::Syntax.new(node).constants.map { full + [it.name.to_s] }
+  def named(node, full) = Hashira::Analysis::Syntax::Body.new(node).constants.map { full + [it.name.to_s] }
 
   def charted(node, full)
-    Hashira::Analysis::Syntax.new(node).constants.filter_map do |constant|
-      keys = chart(Hashira::Analysis::Syntax.new(constant.value).thaw)
+    Hashira::Analysis::Syntax::Body.new(node).constants.filter_map do |constant|
+      keys = chart(Hashira::Analysis::Syntax::Value.new(constant.value).thaw)
       [full + [constant.name.to_s], keys] if keys
     end
   end

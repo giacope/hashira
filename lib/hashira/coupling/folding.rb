@@ -52,11 +52,13 @@ class Hashira::Coupling::Folding
 
   def badges = lone.group_by(&:name).select { |_name, ones| ones.all? { badge?(it) } }.transform_values(&:first)
 
-  def badge?(definition) = definition.module? && syntax(definition.node).statements.all? { syntax(it).macro?(MIXINS) }
+  def badge?(definition)
+    definition.module? && body(definition.node).all? { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }
+  end
 
-  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(syntax(it).segments) }.first(1)
+  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(segments(it)) }.first(1)
 
-  def adoptions(badge) = syntax(badge.node).statements.flat_map { it.arguments.arguments }
+  def adoptions(badge) = body(badge.node).flat_map { it.arguments.arguments }
 
   def singles
     @_singles ||= lone.select(&:klass?).group_by(&:name).transform_values { it.find(&:superclass) || it.last }
@@ -66,9 +68,11 @@ class Hashira::Coupling::Folding
 
   def anchored = @_anchored ||= @definitions.select(&:nested?).to_set(&:name)
 
-  def target(one) = @census.pinpoint(syntax(one.superclass).segments)
+  def target(one) = @census.pinpoint(segments(one.superclass))
 
-  def syntax(node) = Hashira::Analysis::Syntax.new(node)
+  def segments(node) = Hashira::Analysis::Syntax.new(node).segments
+
+  def body(node) = Hashira::Analysis::Syntax::Body.new(node).to_a
 
   def settle(name, links)
     trail = [name]

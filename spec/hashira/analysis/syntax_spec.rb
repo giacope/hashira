@@ -3,14 +3,6 @@
 RSpec.describe(Hashira::Analysis::Syntax, :aggregate_failures) do
   def parse(source) = Prism.parse(source).value
 
-  describe "#type_test?" do
-    it "reads a call to is_a?, kind_of? or instance_of? as a type test, and nothing else" do
-      nodes = %w[a.is_a?(B) a.kind_of?(B) a.instance_of?(B) a.size(B) is_a].map { parse(it).statements.body.first }
-      expect(nodes.map { described_class.new(it).type_test? }).to(eq([true, true, true, false, false]))
-      expect(described_class.new(parse("B").statements.body.first).type_test?).to(be(false))
-    end
-  end
-
   describe ".segments" do
     it "reads simple and nested constant paths" do
       node = parse("A::B::C").statements.body.first
@@ -32,30 +24,19 @@ RSpec.describe(Hashira::Analysis::Syntax, :aggregate_failures) do
     end
   end
 
-  describe ".text / .symbol" do
-    it "reads a literal's text as valid UTF-8, whatever bytes its escapes spell" do
-      string, symbol = parse('["\\xFFok", :"caf\\u00e9"]').statements.body.first.elements
-      expect(described_class.new(string).text).to(eq("\uFFFDok"))
-      expect(described_class.new(string).symbol.name).to(eq("\uFFFDok"))
-      expect(described_class.new(symbol).symbol).to(eq(:café))
-    end
-  end
-
-  describe ".static? / .dynamic?" do
+  describe ".static?" do
     def node(source) = parse(source).statements.body.first
 
     it "calls a path static when every link is a constant, down to the root or ::" do
       expect(%w[A A::B ::A::B].map { described_class.new(node(it)).static? }).to(eq([true, true, true]))
-      expect(%w[A A::B ::A::B].map { described_class.new(node(it)).dynamic? }).to(eq([false, false, false]))
     end
 
-    it "calls a path hanging off an expression dynamic, however deep" do
-      expect(%w[self::A foo::A::B a.b::C].map { described_class.new(node(it)).dynamic? }).to(eq([true, true, true]))
-      expect(described_class.new(node("self::A")).static?).to(be(false))
+    it "calls a path hanging off an expression not static, however deep" do
+      expect(%w[self::A foo::A::B a.b::C].map { described_class.new(node(it)).static? }).to(eq([false, false, false]))
     end
 
-    it "calls anything that is not a constant path neither" do
-      expect([described_class.new(nil).static?, described_class.new(node("foo")).dynamic?]).to(eq([false, false]))
+    it "calls anything that is not a constant path not static" do
+      expect([described_class.new(nil).static?, described_class.new(node("foo")).static?]).to(eq([false, false]))
     end
   end
 
@@ -83,36 +64,6 @@ RSpec.describe(Hashira::Analysis::Syntax, :aggregate_failures) do
 
     it "nests a single-segment definition in the current scope even when a top-level namesake exists" do
       expect(described_class.new(parse("Foo").statements.body.first).place([%w[Baz]], Set[%w[Foo]])).to(eq(%w[Baz Foo]))
-    end
-  end
-
-  describe ".direct" do
-    it "finds defs directly in the body, not in nested types" do
-      tree = parse(<<~RUBY)
-        class Outer
-          def one = 1
-          def two = 2
-
-          class Inner
-            def three = 3
-          end
-        end
-      RUBY
-      outer = tree.statements.body.first
-      expect(described_class.new(outer).direct.map(&:name)).to(eq(%i[one two]))
-    end
-
-    it "handles a class body with a rescue clause" do
-      tree = parse("class A\n  def x = 1\nrescue\n  nil\nend")
-      node = tree.statements.body.first
-      expect(described_class.new(node).direct).to(eq([]))
-    end
-
-    it "handles a single-statement and an empty body" do
-      single = parse("class A; def only = 1; end").statements.body.first
-      expect(described_class.new(single).direct.map(&:name)).to(eq(%i[only]))
-      empty = parse("class A; end").statements.body.first
-      expect(described_class.new(empty).direct).to(eq([]))
     end
   end
 

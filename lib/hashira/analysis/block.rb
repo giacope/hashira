@@ -43,7 +43,7 @@ module Hashira
 
       def opening = (mixed if Syntax.new(@call.receiver).static?)
 
-      def apart? = @call.block.is_a?(Prism::BlockNode) && (built? || Syntax.new(@call).macro?([REFINE]))
+      def apart? = @call.block.is_a?(Prism::BlockNode) && (built? || Syntax::Call.new(@call).macro?([REFINE]))
 
       private
 
@@ -61,7 +61,7 @@ module Hashira
 
       def app? = @host.is_a?(Prism::ClassNode) && APPS.match?(@host.superclass&.slice.to_s)
 
-      def refined = (@call.arguments.arguments.first.slice if Syntax.new(@call).macro?([REFINE]))
+      def refined = (@call.arguments.arguments.first.slice if Syntax::Call.new(@call).macro?([REFINE]))
 
       def built? = FACTORIES[Syntax.new(@call.receiver).segments.join("::")] == @call.name
 
@@ -79,7 +79,7 @@ module Hashira
         node.compact_child_nodes.any? { it.is_a?(Prism::DefNode) || (!FENCES.include?(it.class) && defines?(it)) }
       end
 
-      def names = Array(@call.arguments&.arguments).filter_map { Syntax.new(it).literal }.grep(CAMEL)
+      def names = Array(@call.arguments&.arguments).flat_map { Syntax::Word.new(it).to_a.map(&:to_s) }.grep(CAMEL)
     end
   end
 end

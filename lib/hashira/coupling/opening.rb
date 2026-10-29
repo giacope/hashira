@@ -8,13 +8,13 @@ module Hashira
       Data.define(:node, :full, :path, :stack, :file) do
         def klass? = node.is_a?(Prism::ClassNode)
 
-        def class_level? = Hashira::Analysis::TypeWalk.new(node).class_level?
+        def class_level? = Hashira::Analysis::Syntax::Body.new(node).class_level?
 
         def owner = class_level? ? path[...-1] : path
 
         def shown = (class_level? ? full[...-1] : full).join("::")
 
-        def statements = Hashira::Analysis::Syntax.new(node).statements.compact
+        def statements = Hashira::Analysis::Syntax::Body.new(node).to_a.compact
 
         def hidden = calls(:private_constant).flat_map { symbols(it) }.to_set
 
@@ -23,13 +23,13 @@ module Hashira
         end
 
         def symbols(call)
-          call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+          call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
         end
 
         def mixins = %i[include prepend].flat_map { calls(it) }.flat_map { it.arguments.arguments }
 
         def assignments
-          Hashira::Analysis::Syntax.new(node).constants.map { [path + [it.name.to_s], it.value, stack + [full]] }
+          Hashira::Analysis::Syntax::Body.new(node).constants.map { [path + [it.name.to_s], it.value, stack + [full]] }
         end
 
         def loads? = statements.grep(Prism::CallNode).any? { outward?(it.receiver) }

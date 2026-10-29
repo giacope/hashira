@@ -27,7 +27,7 @@ class Hashira::Coupling::Declared
   def value(node)
     case node
     when Prism::ArrayNode then node.elements.flat_map { value(it) }
-    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).text]
+    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax::Word.new(node).to_s]
     when Prism::RegularExpressionNode then compiles?(node) ? [expression(node)] : []
     else []
     end

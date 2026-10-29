@@ -65,7 +65,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
     call.safe_navigation? ? nullable?(receiver) : (call.name == :blank? && HELD.include?(receiver.class))
   end
 
-  def fallback?(node) = nullable?(node.left) && Hashira::Analysis::Syntax.new(node.right).default?
+  def fallback?(node) = nullable?(node.left) && Hashira::Analysis::Syntax::Value.new(node.right).default?
 
   def nullable?(node)
     values = assignments(node).map(&:value)
@@ -110,7 +110,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def fetching?(check) = tested(check).all? { finder?(it) }
 
-  def predicate? = subject.node.then { it.name.end_with?("?") && Hashira::Analysis::Syntax.new(it).statements.one? }
+  def predicate? = subject.node.then { it.name.end_with?("?") && Hashira::Analysis::Syntax::Body.new(it).to_a.one? }
 
   def guard?(check) = validator? && tested(check).all? { required?(it) } && !reporting?(check)
 
@@ -136,7 +136,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def default?(branch)
     found = Array(branch.statements&.body)
-    found.one? && Hashira::Analysis::Syntax.new(returned(found.first)).default?
+    found.one? && Hashira::Analysis::Syntax::Value.new(returned(found.first)).default?
   end
 
   def returned(node) = node.is_a?(Prism::ReturnNode) ? Array(node.arguments&.arguments).first : node

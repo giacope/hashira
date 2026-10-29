@@ -34,7 +34,7 @@ class Hashira::Smells::Nulls
   end
 
   def nullable?(definition)
-    held = Hashira::Analysis::Syntax.new(definition).statements.compact
+    held = Hashira::Analysis::Syntax::Body.new(definition).to_a.compact
     held.empty? || returns?(definition) || FLOW.reach(held.last(1)).any? { open?(it) }
   end
 

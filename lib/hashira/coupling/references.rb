@@ -34,7 +34,7 @@ class Hashira::Coupling::References
 
   def collect(node, home = nesting)
     return unless node
-    return collect(node.parent, home) if syntax(node).dynamic?
+    return collect(node.parent, home) if node.is_a?(Prism::ConstantPathNode) && !syntax(node).static?
     return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
     spread(node, home + claimed(node))

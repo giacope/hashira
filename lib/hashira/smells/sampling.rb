@@ -39,7 +39,7 @@ class Hashira::Smells::Sampling
 
   def bare(operand)
     case operand
-    when Prism::ParenthesesNode then bare(Hashira::Analysis::Syntax.new(operand).statements.last)
+    when Prism::ParenthesesNode then bare(Hashira::Analysis::Syntax::Body.new(operand).to_a.last)
     when Prism::LocalVariableWriteNode then bare(operand.value)
     else operand
     end

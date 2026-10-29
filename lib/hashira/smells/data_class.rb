@@ -41,13 +41,13 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
 
   def plain?(node)
     case node
-    when Prism::CallNode then Hashira::Smells::Attributes.new([node]).macros.any? || Hashira::Analysis::TypeWalk.new(node).marker?
+    when Prism::CallNode then Hashira::Smells::Attributes.new([node]).macros.any? || Hashira::Analysis::Syntax::Call.new(node).marker?
     when Prism::DefNode then !node.receiver && (node.name == CONSTRUCTOR ? stores?(node) : access?(node))
     else false
     end
   end
 
-  def body(definition) = Hashira::Analysis::Syntax.new(definition).statements.compact
+  def body(definition) = Hashira::Analysis::Syntax::Body.new(definition).to_a.compact
 
   def stores?(definition) = body(definition).all? { it.is_a?(Prism::InstanceVariableWriteNode) && given?(it.value) }
 

@@ -26,17 +26,15 @@ class Hashira::Coupling::Lineage
   end
 
   def mixins(definition)
-    calls = syntax(definition.node).statements.grep(Prism::CallNode).select { mixin?(it) }
+    calls = Hashira::Analysis::Syntax::Body.new(definition.node).to_a.grep(Prism::CallNode).select { mixin?(it) }
     calls.flat_map { it.arguments.arguments }.map { link(it, definition.scope) }
   end
 
   def mixin?(call) = MIXINS.include?(call.name) && !call.receiver && call.arguments
 
   def link(node, nesting)
-    read = syntax(node)
+    read = Hashira::Analysis::Syntax.new(node)
     return unless read.static?
     Link.new(segments: read.segments, nesting: read.rooted? ? [] : nesting)
   end
-
-  def syntax(node) = Hashira::Analysis::Syntax.new(node)
 end

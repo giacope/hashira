@@ -32,7 +32,7 @@ class Hashira::Engine
   def engine?(node) = node.is_a?(Prism::ClassNode) && PARENTS.include?(node.superclass&.slice)
 
   def isolated(node)
-    Hashira::Analysis::Syntax.new(node).statements.grep(Prism::CallNode).select { it.name == :isolate_namespace && it.arguments }
+    Hashira::Analysis::Syntax::Body.new(node).to_a.grep(Prism::CallNode).select { it.name == :isolate_namespace && it.arguments }
       .map { Hashira::Analysis::Syntax.new(it.arguments.arguments.first).segments }.reject(&:empty?)
   end
 end

@@ -34,7 +34,7 @@ class Hashira::Coupling::Definitions
     package = @project.package(file)
     Hashira::Analysis::TypeWalk.new(tree).walk(roots: roots) do |node, full, stack, lexical|
       next unless lexical == full
-      [node, *Hashira::Analysis::Syntax.new(node).constants].each { yield(it, path(full, it), package, stack + [full], file) }
+      [node, *Hashira::Analysis::Syntax::Body.new(node).constants].each { yield(it, path(full, it), package, stack + [full], file) }
     end
   end
 end

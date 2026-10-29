@@ -38,7 +38,7 @@ class Hashira::Smells::Exports
   end
 
   def aliases(node, name)
-    constants = Hashira::Analysis::Syntax.new(node).constants.select { PATHS.include?(it.value.class) }
+    constants = Hashira::Analysis::Syntax::Body.new(node).constants.select { PATHS.include?(it.value.class) }
     constants.map { ["#{name}::#{it.name}", resolved(Hashira::Analysis::Syntax.new(it.value).segments, name)] }
   end
 

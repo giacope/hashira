@@ -22,7 +22,7 @@ module Hashira
 
         def core?(builtins) = type? && scope.last.then { it.one? && builtins.core?(it.first) }
 
-        def counted? = klass? || (module? && !Hashira::Analysis::Syntax.new(node).direct.empty?)
+        def counted? = klass? || (module? && !Hashira::Analysis::Syntax::Body.new(node).direct.empty?)
 
         def value? = node.is_a?(Prism::ConstantWriteNode) && !Hashira::Coupling::Body.new(node.value).built?
 
