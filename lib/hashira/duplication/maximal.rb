@@ -22,5 +22,10 @@ class Hashira::Duplication::Maximal
 
   def covers?(bigger, cluster) = !bigger.form.convention? || cluster.mass < bigger.mass + @margin
 
-  def news?(sites, bigger) = !sites.all? { it.touches?(bigger) } && sites.count { !it.within?(bigger) } >= FRESH
+  def news?(sites, bigger)
+    spans = bigger.map(&:span)
+    own = sites.map(&:span)
+    return false if own.all? { |span| spans.any? { span.overlaps?(it) } }
+    own.count { |span| spans.none? { span.inside?(it) } } >= FRESH
+  end
 end

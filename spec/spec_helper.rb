@@ -85,6 +85,11 @@ module Fixtures
 
   def cluster(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted.first
 
+  # The file each clone site sits in, and the lines it spans.
+  def site_files(sites) = sites.map { it.span.to_a.first }
+
+  def site_ranges(sites) = sites.map { it.span.range }
+
   def duplication(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)

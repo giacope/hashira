@@ -21,9 +21,11 @@ class Hashira::Duplication::Inverse
 
   def words(site) = name(enclosing(site)).sub(/[!?=]\z/, "").split("_")
 
-  def enclosing(site) = @definitions.fetch(site.file, []).select { site.within?([it]) }.max_by(&:line)
+  def enclosing(site)
+    @definitions.fetch(site.span.to_a.first, []).select { site.span.inside?(it.span) }.max_by(&:span)
+  end
 
-  def name(definition) = definition ? definition.roots.first.name.to_s : ""
+  def name(definition) = definition ? definition.to_a.first.name.to_s : ""
 
   def opposed?(left, right)
     differing = left.zip(right).reject { |one, two| one == two }

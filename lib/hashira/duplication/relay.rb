@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Duplication::Relay
-  def initialize(cluster, defined, lead = Hashira::Duplication::Lead.new(cluster.canonical.statements))
+  def initialize(cluster, defined, lead = Hashira::Duplication::Lead.new(Hashira::Duplication::Statements.new(cluster.canonical.to_a).to_a))
     @cluster = cluster
     @defined = defined
     @lead = lead
@@ -18,7 +18,7 @@ class Hashira::Duplication::Relay
 
   private
 
-  def header = [*canonical.roots.grep(Prism::DefNode).flat_map { [it, *walk(it.parameters)] }, *@lead.named]
+  def header = [*canonical.to_a.grep(Prism::DefNode).flat_map { [it, *walk(it.parameters)] }, *@lead.named]
 
   def canonical = @cluster.canonical
 

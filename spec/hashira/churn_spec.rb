@@ -143,23 +143,21 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     end
   end
 
-  def sites(*files) = files.map { Fakes::Site.new(it) }
-
   it "is hot only when two distinct files both change more than the typical file" do
     churn = described_class.new("a.rb" => 5, "b.rb" => 3, "c.rb" => 2, "d.rb" => 1, "e.rb" => 1)
-    expect(churn.hot?(sites("a.rb", "b.rb"))).to(be(true))
-    expect(churn.hot?(sites("a.rb", "c.rb"))).to(be(false))
-    expect(churn.hot?(sites("a.rb", "a.rb", "d.rb"))).to(be(false))
+    expect(churn.hot?(["a.rb", "b.rb"])).to(be(true))
+    expect(churn.hot?(["a.rb", "c.rb"])).to(be(false))
+    expect(churn.hot?(["a.rb", "a.rb", "d.rb"])).to(be(false))
   end
 
   it "calls a file busy only above the median, so a history where every file changes once has no hot clone" do
-    expect(described_class.new("a.rb" => 1, "b.rb" => 1).hot?(sites("a.rb", "b.rb"))).to(be(false))
+    expect(described_class.new("a.rb" => 1, "b.rb" => 1).hot?(["a.rb", "b.rb"])).to(be(false))
     expect(
       described_class.new(
         "a.rb" => 3, "b.rb" => 3, "c.rb" => 1,
         "d.rb" => 1
-      ).hot?(sites("a.rb", "b.rb"))
+      ).hot?(["a.rb", "b.rb"])
     ).to(be(true))
-    expect(described_class.new({}).hot?(sites("a.rb", "b.rb"))).to(be(false))
+    expect(described_class.new({}).hot?(["a.rb", "b.rb"])).to(be(false))
   end
 end

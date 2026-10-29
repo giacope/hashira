@@ -13,7 +13,10 @@ class Hashira::Duplication::Candidates
     @walks = walks
   end
 
-  def fragments = windows + wholes.map { Hashira::Duplication::Fragment.new(@file, [it], @walks, code) }.reject(&:sink?)
+  def fragments
+    kept = wholes.reject { sink?(it) }
+    windows + kept.map { Hashira::Duplication::Fragment.new(@file, [it], @walks, code) }
+  end
 
   private
 
@@ -36,6 +39,11 @@ class Hashira::Duplication::Candidates
   end
 
   def code = Hashira::Duplication::Setting.new(declarative: false, recurring: [])
+
+  def sink?(node)
+    statements = Hashira::Duplication::Statements.new([node]).to_a
+    statements.one? && Hashira::Duplication::Sink.new(statements.first).sink?
+  end
 
   def sequence(statements, setting)
     Hashira::Duplication::Sequence.new(@file, statements, @walks, setting)

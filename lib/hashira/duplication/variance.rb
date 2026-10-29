@@ -24,20 +24,20 @@ class Hashira::Duplication::Variance
   end
 
   def kinds
-    return [:structure] if @canonical.types != @other.types
+    return [:structure] if @canonical.shape.to_a != @other.shape.to_a
     differing.map { |left, right| category(left, right) }.uniq
   end
 
   def drifts = differing.map(&:first)
 
   def structural?
-    return false unless @canonical.types == @other.types
+    return false unless @canonical.shape.to_a == @other.shape.to_a
     named.any? && named.all? { |left, right| left.name != right.name }
   end
 
   private
 
-  def pairs = @canonical.nodes.zip(@other.nodes)
+  def pairs = @canonical.body.to_a.zip(@other.body.to_a)
 
   def named = @_named ||= pairs.select { |left, _| spoken?(left) && !inner?(left) && !recurring?(left) }
 
@@ -45,11 +45,11 @@ class Hashira::Duplication::Variance
 
   def worded?(node) = WORD.match?(node.name.to_s)
 
-  def recurring?(node) = @canonical.recurs?(node.name) || @other.recurs?(node.name)
+  def recurring?(node) = @canonical.body.recurs?(node.name) || @other.body.recurs?(node.name)
 
   def inner?(node) = nested.any? { it.equal?(node) }
 
-  def nested = @_nested ||= @canonical.nodes.grep(Prism::ConstantPathNode).filter_map(&:parent)
+  def nested = @_nested ||= @canonical.body.to_a.grep(Prism::ConstantPathNode).filter_map(&:parent)
 
   def differing = pairs.reject { |left, right| signature(left) == signature(right) }
 
@@ -60,7 +60,7 @@ class Hashira::Duplication::Variance
     CATEGORIES.keys.find { CATEGORIES[it].include?(type) } || :message
   end
 
-  def relayed? = @canonical.types.any? { RELAYS.include?(it) }
+  def relayed? = @canonical.shape.to_a.any? { RELAYS.include?(it) }
 
   def signature(node) = [*node.deconstruct_keys(FIELDS).values_at(*FIELDS), value(node), guarded?(node)]
 

@@ -63,8 +63,8 @@ class Hashira::Duplication::DuplicationFinding
 
   def to_finding
     site = @cluster.canonical
-    name = Hashira::Analysis::Finding::Name.new(site.location, [site.digest])
-    proof = Hashira::Analysis::Finding::Proof.new(evidence, sorted.map(&:location))
+    name = Hashira::Analysis::Finding::Name.new(site.span.to_s, [site.shape.digest])
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, sorted.map { it.span.to_s })
     Hashira::Analysis::Finding.new(KIND, name, detail, proof)
   end
 
@@ -72,10 +72,10 @@ class Hashira::Duplication::DuplicationFinding
 
   def detail
     variance = Hashira::Duplication::Delta.new(@cluster).kind
-    Overlap.new(@cluster.count, @cluster.mass, variance, @churn.hot?(@cluster.to_a))
+    Overlap.new(@cluster.count, @cluster.mass, variance, @churn.hot?(@cluster.map { it.span.to_a.first }))
   end
 
-  def evidence = sorted.map(&:range)
+  def evidence = sorted.map { it.span.range }
 
-  def sorted = @cluster.sort_by(&:rank)
+  def sorted = @cluster.sort_by(&:span)
 end

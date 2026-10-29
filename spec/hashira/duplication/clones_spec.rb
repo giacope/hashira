@@ -20,7 +20,8 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
   end
 
   def measured(clones)
-    [clones.clusters.flat_map(&:to_a).select { it.file.end_with?("a.rb") }.map(&:mass), clones.coverage]
+    sites = clones.clusters.flat_map(&:to_a)
+    [sites.select { site_files([it]).first.end_with?("a.rb") }.map { it.shape.mass }, clones.coverage]
   end
 
   it "measures a file's coverage in distinct nodes, so lines two clusters share are counted once" do

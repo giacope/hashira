@@ -7,6 +7,11 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
     body = ->(recv) { "def run\n #{recv}\n #{recv}\n #{recv}\nend\n" }
     { "a.rb" => body.call(first), "b.rb" => body.call(second) }
   end
+  it "lists the ranges of its sites in file order" do
+    sites = clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))").to_a.reverse.to_h
+    expect(described_class.new(cluster(sites)).to_h[:locations]).to(eq(%w[a.rb:1-5 b.rb:1-5]))
+  end
+
   it "reports :identical when the sites are byte-for-byte the same" do
     expect(kind(clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))"))).to(eq(:identical))
   end

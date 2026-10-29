@@ -3,9 +3,6 @@
 # Small working stand-ins for hashira's collaborators, for specs that need an
 # object with a collaborator's interface and none of its machinery.
 module Fakes
-  # A place a clone sits: the file it is in.
-  Site = Data.define(:file)
-
   # A method's complexity: the file it is in and its cognitive score.
   Score =
     Data.define(:file, :cognitive) do

@@ -28,16 +28,21 @@ module Hashira
       def each(&) = @sites.each(&)
 
       def canonical
-        @_canonical ||= @sites.map(&:types).tally.then { |shapes| @sites.max_by { [shapes[it.types], it.mass] } }
+        @_canonical ||= @sites.map { it.shape.to_a }.tally.then { |shapes| @sites.max_by { shaped(it, shapes) } }
       end
 
       def variances = others.map { Variance.new(canonical, it) }
 
-      def mass = canonical.mass
+      def mass = canonical.shape.mass
 
-      def form = Form.new(@sites.map(&:types).uniq.one?, structural?, @sites.size)
+      def form = Form.new(@sites.map { it.shape.to_a }.uniq.one?, structural?, @sites.size)
 
       private
+
+      def shaped(site, shapes)
+        shape = site.shape
+        [shapes[shape.to_a], shape.mass]
+      end
 
       def others = @_others ||= @sites.reject { it.equal?(canonical) }
 

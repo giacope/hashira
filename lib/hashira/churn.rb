@@ -35,7 +35,7 @@ class Hashira::Churn
 
   def hits(file) = @counts.fetch(file.b, 0)
 
-  def hot?(members) = members.map(&:file).uniq.count { often?(it) } >= FILES_THAT_DRIFT_APART
+  def hot?(files) = files.uniq.count { often?(it) } >= FILES_THAT_DRIFT_APART
 
   private
 

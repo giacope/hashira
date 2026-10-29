@@ -12,19 +12,22 @@ module Hashira
         @right = right
       end
 
-      def near? = !left.overlaps?(right) && named? && drifted?
+      def near? = !left.span.overlaps?(right.span) && named? && drifted?
 
-      def drifted? = both(:types).uniq.size == 2 && close?(:counts, :types, SHAPES)
+      def drifted?
+        shapes = both(:shape)
+        shapes.map(&:to_a).uniq.size == 2 && close?(shapes, SHAPES)
+      end
 
-      def named? = words.any?(&:empty?) ? words.all?(&:empty?) : close?(:spoken, :vocabulary, NAMES)
+      def named? = words.any?(&:empty?) ? words.all?(&:empty?) : close?(both(:words), NAMES)
 
       private
 
-      def close?(tallies, sequences, floor)
-        bound(*both(tallies)) >= floor && Similarity.new(*both(sequences)).ratio >= floor
+      def close?(roles, floor)
+        bound(*roles.map(&:to_h)) >= floor && Similarity.new(*roles.map(&:to_a)).ratio >= floor
       end
 
-      def words = both(:vocabulary)
+      def words = both(:words).map(&:to_a)
 
       def both(feature) = [left, right].map { it.public_send(feature) }
 
