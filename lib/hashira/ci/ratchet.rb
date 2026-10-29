@@ -58,11 +58,16 @@ class Hashira::CI::Ratchet
 
   def recorded = collapsed(@findings.size, scored(@findings).size)
 
-  def judged = @_judged ||= @findings.reject { @baseline.predates?(it.kind) }
+  def judged = @_judged ||= @findings.reject { it.of?(@baseline.newer) }
 
   def newer
-    unseen = (@findings - judged).map(&:kind).tally
-    @io.puts(NEWER % unseen.map { |kind, count| "#{count} #{kind}" }.join(", ")) unless unseen.empty?
+    unseen = @findings - judged
+    @io.puts(NEWER % unjudged(unseen).join(", ")) unless unseen.empty?
+  end
+
+  def unjudged(unseen)
+    found = @baseline.newer.map { |kind| [kind, unseen.select { it.of?([kind]) }] }.reject { it.last.empty? }
+    found.sort_by { |_kind, group| unseen.index(group.fetch(0)) }.map { |kind, group| "#{group.size} #{kind}" }
   end
 
   def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
@@ -77,9 +82,9 @@ class Hashira::CI::Ratchet
 
   def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
 
-  def scored(findings) = findings.group_by(&:signature).sort.to_h { |key, group| [key, mark(group)] }
-
-  def mark(group) = Hashira::CI::Mark.new(magnitude: group.filter_map(&:magnitude).max, trace: group.first.trace)
+  def scored(findings)
+    findings.map(&:scored).reduce({}) { |all, one| all.merge(one) { |_key, was, now| was + now } }.sort.to_h
+  end
 
   def drift
     added = @graph.edges.reject { @baseline.edges.include?(it.to_s) }

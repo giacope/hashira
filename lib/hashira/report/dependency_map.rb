@@ -27,7 +27,7 @@ class Hashira::Report::DependencyMap
 
   def over = split.first.size - kept.size
 
-  def loners = @io.puts("  + #{Hashira::Report::Count.new(split.last.size, "package")} with no edges either way")
+  def loners = @io.puts("  + #{Hashira::Prose::Count.new(split.last.size, "package")} with no edges either way")
 
   def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
 end

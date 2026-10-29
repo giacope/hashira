@@ -35,6 +35,21 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   PEEK = :instance_variable_get
 
+  class Seams
+    def initialize(site, count, size)
+      @site = site
+      @count = count
+      @size = size
+    end
+
+    def to_h = { site: @site, count: @count, size: @size }
+
+    def phrase(package)
+      "#{package} splits into #{@count} groups of methods that share no state (#{@site}). " \
+        "Split the class along that seam."
+    end
+  end
+
   private
 
   def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
@@ -164,7 +179,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def kept = @_kept ||= sweep.select { READS.include?(it.class) }.to_set(&:name) | attributes.values | columns
 
-  def detail = { site:, count: groups.size, size: methods.size }
+  def detail = Seams.new(site, groups.size, methods.size)
 
   def evidence = groups.map { |members, fields| "#{members.join(", ")} (#{fields.sort.join(", ")})" }
 end

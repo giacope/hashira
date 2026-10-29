@@ -12,7 +12,7 @@ class Hashira::Smells::Shape
     @nodes = nodes
   end
 
-  def of = Digest::SHA256.hexdigest(marks.inspect).slice(0, LENGTH)
+  def to_s = Digest::SHA256.hexdigest(marks.inspect).slice(0, LENGTH)
 
   private
 

@@ -6,16 +6,23 @@ class Hashira::Smells::Check
     @rules = rules
   end
 
-  def finding
-    return unless smelly?
+  def findings
+    return [] unless smelly?
     found = evidence
     told = detail
-    Hashira::Analysis::Finding.new(
-      kind:, package: label, detail: told, evidence: found, anchors: anchors(told), **marks(found)
-    )
+    proof = Hashira::Analysis::Finding::Proof.new(found, anchors(told.to_h[:site].to_s), shapes, ratings)
+    [Hashira::Analysis::Finding.new(kind, Hashira::Analysis::Finding::Name.new(label), told, proof)]
   end
 
+  def members = []
+
   private
+
+  def member(section, key, part, testimony) = Hashira::Smells::Member.new(section, key, [part], testimony)
+
+  def testimony(lines, extra, anchors) = Hashira::Smells::Testimony.new(lines, extra, anchors, ratings)
+
+  def cited(lines, spot) = testimony(lines, [], anchors(spot))
 
   attr_reader :subject
 
@@ -29,20 +36,18 @@ class Hashira::Smells::Check
 
   def site = subject.site
 
-  def detail = { site: }
-
   def spots(nodes) = "#{subject.file}:#{nodes.map { it.location.start_line }.uniq.join(", ")}"
 
   def evidence = []
 
-  def rating = {}
+  def ratings = []
 
-  def anchors(told)
-    file, lines = told.to_h[:site].to_s.split(":", 2)
+  def anchors(spot)
+    file, lines = spot.split(":", 2)
     [site, *lines.to_s.split(", ").map { "#{file}:#{it}" }].uniq
   end
 
-  def marks(found) = rating.merge(shape: (Hashira::Smells::Shape.new(subject.content).of if found.empty?))
+  def shapes = [Hashira::Smells::Shape.new(subject.content)]
 
   def tally(name, lines) = "#{name} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
 end

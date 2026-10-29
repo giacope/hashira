@@ -34,7 +34,7 @@ class Hashira::CI::Baseline
 
   def marks = recorded.fetch("findings", {}).to_h { |key, magnitude| [renamed(key), mark(key, magnitude)] }
 
-  def predates?(kind) = recorded.key?("kinds") ? !recorded["kinds"].include?(kind) : INTRODUCED.fetch(kind, 0) > version
+  def newer = @kinds.select { predates?(it) }
 
   def version = recorded.fetch("version", SCHEMA_VERSION)
 
@@ -77,7 +77,9 @@ class Hashira::CI::Baseline
 
   def current(kind) = RENAMES.fetch(kind, kind)
 
-  def mark(key, magnitude) = Hashira::CI::Mark.new(magnitude:, trace: traces[key])
+  def mark(key, magnitude) = Hashira::Analysis::Mark.new(magnitude:, trace: traces[key])
+
+  def predates?(kind) = recorded.key?("kinds") ? !recorded["kinds"].include?(kind) : INTRODUCED.fetch(kind, 0) > version
 
   def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
 

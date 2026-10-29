@@ -119,17 +119,14 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   describe(Hashira::Report::FindingList) do
-    def complex(name, cognitive)
-      detail = Hashira::Complexity::MethodFinding::Effort.new(
-        cognitive:, calls: 1, site: "#{name}.rb:1",
-        dominant: "if"
-      )
-      Hashira::Analysis::Finding.new(kind: "complexity", package: "A##{name}", detail:, evidence: [])
+    def effort(name, cognitive)
+      Hashira::Complexity::MethodFinding::Effort.new(cognitive:, calls: 1, site: "#{name}.rb:1", dominant: "if")
     end
 
+    def complex(name, cognitive, ratings: []) = handmade("complexity", "A##{name}", effort(name, cognitive), ratings:)
+
     def smell(kind, name, file = name)
-      detail = { site: "#{file}.rb:2", owner: :class }
-      Hashira::Analysis::Finding.new(kind:, package: "A##{name}", detail:, evidence: [])
+      handmade(kind, "A##{name}", Fakes::Detail.new({ site: "#{file}.rb:2", owner: :class, kind: :identical }))
     end
 
     def findings
@@ -140,7 +137,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
       ]
     end
 
-    def packages(list) = list.map(&:package)
+    def packages(list) = list.map { it.to_h[:package] }
 
     it "deals the kinds in turn, each worst first where it has a magnitude, else in the order found" do
       expect(packages(Hashira::Report::Spread.new(findings).to_a)).to(
@@ -161,7 +158,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
     end
 
     it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do
-      doubted = complex("doubted", 50).with(confidence: :low)
+      doubted = complex("doubted", 50, ratings: [:low])
       dealt = Hashira::Report::Spread.new([doubted, complex("plain", 12), smell("nil_check", "n1")]).to_a
       expect(packages(dealt)).to(eq(%w[A#plain A#n1 A#doubted]))
     end
@@ -179,7 +176,8 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
             "  nil_check         3 in 2 files",
             "  utility_function  1 in 1 file",
             "",
-            "  complexity: A#worst — cognitive 30, 1 calls (worst.rb:1). #{Hashira::Report::Phrases::FLATTEN}"
+            "  complexity: A#worst — cognitive 30, 1 calls (worst.rb:1). " \
+              "flatten the branching — guard clauses, early returns, or polymorphism."
           ]
         )
       )
@@ -194,15 +192,15 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   describe(Hashira::Report::Tally) do
-    def finding(kind, package, evidence, detail: nil)
-      Hashira::Analysis::Finding.new(kind:, package:, detail:, evidence:)
+    def finding(kind, package, evidence, detail: {})
+      handmade(kind, package, Fakes::Detail.new(detail), evidence:)
     end
 
     it "counts the distinct files a kind names, wherever it names them" do
       findings = [
         finding("cycle", "a", ["models/a.rb:3: B", "models/b.rb:9: A"]),
         finding("cycle", "b", ["models/b.rb:4: C", "models/c.rb:1: B"]),
-        finding("duplication", "x/y.rb:5", ["x/y.rb:5-9", "x/z.rb:1-5"]),
+        finding("duplication", "x/y.rb:5", ["x/y.rb:5-9", "x/z.rb:1-5"], detail: { kind: :identical }),
         finding("roll_call", "pkg", ["lib/one.rb", "lib/two.rb"]),
         finding("complexity", "A#m", ["if +3 (line 4)"], detail: { site: "a/m.rb:2" })
       ]

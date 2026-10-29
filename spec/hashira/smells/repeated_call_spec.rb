@@ -1,9 +1,18 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
-  def repeated(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_call")
+  def merged(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_call")
+
+  # The finding per class, read back per method from its evidence ("Class#method: call × n (lines)").
+  def repeated(source) = merged(source).flat_map { methods_of(it) }
+
+  def methods_of(finding)
+    finding.to_h[:evidence].map { it.split(": ", 2) }.group_by(&:first)
+      .map { |name, lines| { package: name, evidence: lines.map(&:last) } }
+  end
+
   it "flags the same receiver-and-arguments call made twice" do
-    findings = repeated(<<~RUBY)
+    source = <<~RUBY
       module App
         module Zone
           class Thing
@@ -14,9 +23,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] })
+    expect(repeated(source).map { [it.to_h[:package], it.to_h[:evidence]] })
       .to(eq([["App::Zone::Thing#double", ["@other.thing(1) × 2 (line 5)"]]]))
-    expect(message(findings.first)).to(include("repeats identical calls", "zone/thing.rb:4"))
+    expect(message(merged(source).first)).to(include("App::Zone::Thing repeats 1 call in 1 method", "zone/thing.rb:4"))
   end
 
   it "leaves a plain read of a near object made twice alone, even fed on, and reports it read three times" do
@@ -39,7 +48,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(%w[App::Zone::Thing#thrice App::Zone::Thing#queried App::Zone::Thing#helper])
     )
   end
@@ -70,7 +79,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[helper thrice computed chained called].map { "App::Zone::Thing##{it}" }))
+    expect(findings.map { it.to_h[:package] }).to(
+      eq(%w[helper thrice computed chained called].map { "App::Zone::Thing##{it}" })
+    )
   end
 
   it "reads a call to a reader the class or an ancestor declares as the instance variable it reads, plain or keyed" do
@@ -117,8 +128,10 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         RUBY
       },
       "repeated_call"
+    ).flat_map { methods_of(it) }
+    expect(findings.map { it.to_h[:package] }).to(
+      eq(%w[thrice helper chained called blocked other].map { "App::Page##{it}" })
     )
-    expect(findings.map(&:package)).to(eq(%w[thrice helper chained called blocked other].map { "App::Page##{it}" }))
   end
 
   it "counts the plain reads one run makes, not every read across branches that never run together" do
@@ -144,7 +157,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq([["App::Zone::Thing#crowded", ["@room.messages × 4 (lines 14, 15)"]]])
     )
   end
@@ -189,7 +202,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[same passed apart skewed]))
+    expect(findings.map { it.to_h[:package].split("#").last }).to(eq(%w[same passed apart skewed]))
   end
 
   it "reads a reading the loop names as it measures it, in parentheses, for the deadline loop it is" do
@@ -217,7 +230,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[boxed]))
+    expect(findings.map { it.to_h[:package].split("#").last }).to(eq(%w[boxed]))
   end
 
   it "takes a call that holds a measured reading for a new value each time, as the reading is, not an unmeasured one" do
@@ -242,7 +255,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["clock.now(:ms) × 3 (lines 14, 15)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["clock.now(:ms) × 3 (lines 14, 15)"]))
   end
 
   it "parts two calls when the receiver is handed on between them, as an argument, a keyword or a stored result" do
@@ -277,7 +290,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#plain"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#plain"]))
   end
 
   it "parts two calls around a command on the receiver that takes the first as its unparenthesized argument" do
@@ -298,7 +311,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#forwarded"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#forwarded"]))
   end
 
   it "counts a bare call handed a block argument, unlike a bare read, as a call that can repeat" do
@@ -317,7 +330,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#handed"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#handed"]))
   end
 
   it "never surveys the bindings of a call made once, which cannot repeat" do
@@ -381,7 +394,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[twice reuse bare empty]))
+    expect(findings.map { it.to_h[:package].split("#").last }).to(eq(%w[twice reuse bare empty]))
   end
 
   it "tracks safe navigation, receiverless argument calls, and block passes" do
@@ -409,7 +422,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "@maybe&.load(1) × 2 (line 5)", "fetch(:host, @ttl) × 2 (line 9)",
@@ -449,7 +462,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "transaction { save } × 2 (lines 5, 6)", "@rows.map { compute } × 2 (lines 10, 11)",
@@ -492,7 +505,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["it.name × 3 (line 22)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["it.name × 3 (line 22)"]))
   end
 
   it "takes a read of it twice for style, as it does a named block variable's" do
@@ -549,7 +562,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["parent.type(1) × 2 (lines 33, 34)", "node.name(1) × 2 (lines 40, 42)"])
     )
   end
@@ -615,7 +628,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "@flips.fetch(@calls) × 2 (lines 22, 23)", "@source.char(at) × 2 (line 27)",
@@ -705,7 +718,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[heads lines]))
+    expect(findings.map { it.to_h[:package].split("#").last }).to(eq(%w[heads lines]))
   end
 
   it "excuses repeats that no single run can reach twice" do
@@ -872,7 +885,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "@config.limit(1) × 2 (lines 7, 10)", "row.peek(2) × 2 (lines 17, 20)", "@store.name(3) × 2 (lines 26, 30)",
@@ -897,7 +910,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 5, 6)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@io.tick(1) × 2 (lines 5, 6)"]))
   end
 
   it "counts calls in a rescue body and its else clause when execution can reach both" do
@@ -921,7 +934,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 6, 10)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@io.tick(1) × 2 (lines 6, 10)"]))
   end
 
   it "counts a call in a condition repeated in the branch it guards" do
@@ -938,7 +951,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@store.fetch(key) × 2 (lines 5, 6)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@store.fetch(key) × 2 (lines 5, 6)"]))
   end
 
   it "counts a call in a rescue body repeated in the ensure that follows it" do
@@ -957,7 +970,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@io.close(1) × 2 (lines 7, 9)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@io.close(1) × 2 (lines 7, 9)"]))
   end
 
   it "excuses calls on opposite sides of a rescue modifier" do
@@ -1193,7 +1206,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["@io.tick(1) × 2 (lines 5, 6)", "@io.tick(2) × 2 (lines 10, 11)", "@io.tick(3) × 2 (line 16)"])
     )
   end
@@ -1212,7 +1225,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["Other.new.name × 2 (line 8)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["Other.new.name × 2 (line 8)"]))
   end
 
   it "reports a repeated chain once, not again for each prefix repeated on the same calls, and a wider prefix alone" do
@@ -1229,7 +1242,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         ["DateTime.now.utc × 2 (line 4)", "format(@params[:id]) × 2 (line 6)", "Time.now × 3 (line 8)"]
       )
@@ -1263,7 +1276,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@io.tick(1) × 2 (lines 13, 14)"]))
   end
 
   it "reads `call and return` and `call and raise` as an exit, but `or return` as a guard the run passes" do
@@ -1294,7 +1307,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@io.tick(2) × 3 (lines 19, 20, 21)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@io.tick(2) × 3 (lines 19, 20, 21)"]))
   end
 
   it "excuses a call inside an exit's value and its twin after the exit, which never both run" do
@@ -1382,7 +1395,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "user.account.name × 2 (lines 5, 6)", "@io.tick(1) × 2 (lines 12, 13)", "@io.tick(2) × 2 (lines 19, 20)",
@@ -1411,8 +1424,8 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#probe"]))
-    expect(findings.flat_map(&:evidence)).to(eq(["Rails.error × 2 (line 10)"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#probe"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["Rails.error × 2 (line 10)"]))
   end
 
   it "counts two reads as two values when a command on the receiver, or a call handed it, runs between them" do
@@ -1555,7 +1568,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "job.status(:now) × 2 (lines 5, 7)", "job.status(:now) × 2 (lines 11, 13)",
@@ -1615,7 +1628,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["path.size.>(0) × 2 (lines 29, 31)", "path.size.succ × 2 (lines 37, 39)"])
     )
   end
@@ -1641,7 +1654,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[variable asked plain handle bare other].map { "App::Zone::Probe##{it}" }))
+    expect(findings.map { it.to_h[:package] }).to(
+      eq(%w[variable asked plain handle bare other].map { "App::Zone::Probe##{it}" })
+    )
   end
 
   it "parts reads of an instance variable around a call on self whose method moves it, however deep" do
@@ -1695,9 +1710,9 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    shown = findings.flat_map(&:evidence).map { it[/\A\S+/] }
+    shown = findings.flat_map { it.to_h[:evidence] }.map { it[/\A\S+/] }
     expect(shown).to(eq((%w[@scanner.pos] * 6) + %w[scanner.pos @scanner.pos]))
-    expect(findings.flat_map(&:evidence).map { it[/lines? (\d+)/, 1] }).to(eq(%w[12 13 14 15 16 17 18 19]))
+    expect(findings.flat_map { it.to_h[:evidence] }.map { it[/lines? (\d+)/, 1] }).to(eq(%w[12 13 14 15 16 17 18 19]))
   end
 
   it "reads __LINE__ as the line it is written on, so the same text on two lines is two values" do
@@ -1717,7 +1732,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "__LINE__.+(1) × 2 (line 9)",
@@ -1766,7 +1781,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "Regexp.escape(text) × 2 (line 4)", "$stdout.write(text) × 2 (line 6)",
@@ -1798,81 +1813,41 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  # Each method in a class of its own, so each finding is one method's, rated as that method's repeats are.
+  def rated(*methods)
+    classes = methods.each_with_index.map { |body, index| "class Thing#{index}\n#{body}\nend\n" }
+    merged("module App\nmodule Zone\n#{classes.join}end\nend\n").map { it.to_h[:confidence] }
+  end
+
   it "rates a finding low when each repeat is a cheap read: a plain reader or a literal-key lookup" do
-    findings = repeated(<<~RUBY)
-      module App
-        module Zone
-          class Thing
-            def reader(job) = [job.status, job.status, job.status]
-
-            def keyed = [@params[:id], @params[:id], @params[:id]]
-
-            def both(job) = [job&.status, job&.status, @params.dig(:a, :b), @params.dig(:a, :b), job&.status]
-          end
-        end
-      end
-    RUBY
-    expect(findings.map(&:confidence)).to(eq(%i[low low low]))
+    found = rated(
+      "def reader(job) = [job.status, job.status, job.status]",
+      "def keyed = [@params[:id], @params[:id], @params[:id]]",
+      "def both(job) = [job&.status, job&.status, @params.dig(:a, :b), @params.dig(:a, :b), job&.status]"
+    )
+    expect(found).to(eq(%w[low low low]))
   end
 
   it "keeps clock reads, reach-through chains, and calls with blocks or computed keys at full confidence" do
-    findings = repeated(<<~RUBY)
-      module App
-        module Zone
-          class Thing
-            def stamped = [Time.now, Time.now]
-
-            def current = [Time.current, Time.current]
-
-            def dated = [Date.current, Date.current]
-
-            def today = [Date.today, Date.today]
-
-            def ticked = [clock.now, clock.now]
-
-            def spun = [Process.clock_gettime(1), Process.clock_gettime(1)]
-
-            def chained(job) = [job.run.status, job.run.status]
-
-            def computed(key) = [@params[key], @params[key]]
-
-            def mixed(key) = [@params[:id], @params[:id], @params[key], @params[key]]
-
-            def passed(rows) = [rows.map(&:name), rows.map(&:name)]
-
-            def called = [compute(1), compute(1)]
-
-            def cursor(page) = [page.current, page.current, page.current]
-          end
-        end
-      end
-    RUBY
-    expect(findings.map(&:confidence)).to(eq(([nil] * 11) + [:low]))
+    found = rated(
+      "def stamped = [Time.now, Time.now]", "def current = [Time.current, Time.current]",
+      "def dated = [Date.current, Date.current]", "def today = [Date.today, Date.today]",
+      "def ticked = [clock.now, clock.now]", "def spun = [Process.clock_gettime(1), Process.clock_gettime(1)]",
+      "def chained(job) = [job.run.status, job.run.status]", "def computed(key) = [@params[key], @params[key]]",
+      "def mixed(key) = [@params[:id], @params[:id], @params[key], @params[key]]",
+      "def passed(rows) = [rows.map(&:name), rows.map(&:name)]", "def called = [compute(1), compute(1)]",
+      "def cursor(page) = [page.current, page.current, page.current]"
+    )
+    expect(found).to(eq((%w[medium] * 11) + %w[low]))
   end
 
   it "rates a repeat low when one of the pair is a parameter default, which runs only when the argument is left out" do
-    findings = repeated(<<~RUBY)
-      module App
-        module Zone
-          class Thing
-            def run(at: clock.now)
-              schedule(at, clock.now)
-            end
-
-            def twice(at: clock.now)
-              schedule(at, clock.now, clock.now)
-            end
-
-            def plain(at)
-              schedule(at, clock.now, clock.now)
-            end
-          end
-        end
-      end
-    RUBY
-    expect(findings.map { [it.package, it.confidence] }).to(
-      eq([["App::Zone::Thing#run", :low], ["App::Zone::Thing#twice", nil], ["App::Zone::Thing#plain", nil]])
+    found = rated(
+      "def run(at: clock.now)\n  schedule(at, clock.now)\nend",
+      "def twice(at: clock.now)\n  schedule(at, clock.now, clock.now)\nend",
+      "def plain(at)\n  schedule(at, clock.now, clock.now)\nend"
     )
+    expect(found).to(eq(%w[low medium medium]))
   end
 
   it "collapses chains that share a repeated prefix into the prefix, which one local fixes, and prints an index read" do
@@ -1891,7 +1866,7 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence))
+    expect(findings.flat_map { it.to_h[:evidence] })
       .to(eq(["qm.message × 5 (line 5)", "params[:user] × 2 (line 8)", "qm.message.scope × 2 (line 10)"]))
   end
 end

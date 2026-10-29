@@ -5,7 +5,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
   def sniffing(options)
     rules = options ? Hashira::Config::Rules::ALL : Hashira::Config::Rules.new({})
     pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:), **options.to_h)
-    [pipeline.smells.class, pipeline.findings.map(&:kind)]
+    [pipeline.smells.class, pipeline.findings.map { it.to_h[:kind] }]
   end
 
   it "runs inside the pipeline by default and steps aside when skipped" do
@@ -23,7 +23,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
   def narrowed(kinds)
     rules = Hashira::Config::Rules::ALL.narrowed(kinds, Fixtures::KINDS)
     files = { "lib/app/zone/thing.rb" => "module App\n  class Thing\n    def go(x) = x.to_s\n  end\nend\n" }
-    within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.map(&:kind) }
+    within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.map { it.to_h[:kind] } }
   end
 
   def spied = [Hashira::Smells::DataClump, Hashira::Smells::BoundarySprawl, Hashira::Smells::SpreadSwitch]
@@ -74,7 +74,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "utility_function")
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#open", "App::Zone::Thing#shown"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#open", "App::Zone::Thing#shown"]))
   end
 
   it "names singleton subjects with a dot and instance subjects with a hash" do
@@ -98,7 +98,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "manual_dispatch")
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing.probe App::Zone::Thing#poke]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing.probe App::Zone::Thing#poke]))
   end
 
   it "handles every parameter shape when hunting control parameters" do
@@ -131,8 +131,8 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "control_parameter")
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))
-    expect(findings.first.evidence).to(eq(["bravo (line 6)", "delta (line 6)"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#mixed App::Zone::Thing#sneaky]))
+    expect(findings.first.to_h[:evidence]).to(eq(["bravo (line 6)", "delta (line 6)"]))
   end
 
   it "names a compound-path type the way Ruby resolves it, not the way it nests" do
@@ -148,7 +148,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "assumed_state")
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing"]))
   end
 
   it "names what a concern or class << self defines for the class with a dot, private ones included" do
@@ -192,7 +192,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "manual_dispatch")
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(
         %w[
           App::Zone::Greets.summon App::Zone::Greets.stash App::Zone::Greets.shelve App::Zone::Greets#greet
@@ -228,7 +228,7 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
   it "names a ClassMethods module's methods for the concern only when the concern hands it to its host" do
     files = hooks.to_h { |name, hook| ["lib/app/#{name.downcase}.rb", concern(name, hook)] }
     files["lib/app/duck.rb"] = "class Duck\n  def honk = 1\n  def moo = 1\nend\n"
-    expect(sniffed(files, "manual_dispatch").map(&:package).sort).to(
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }.sort).to(
       eq(
         %w[
           Bare::ClassMethods#find Bare::ClassMethods#hide Bare::ClassMethods.own Blocked.find Blocked.hide
@@ -250,6 +250,6 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
     }
     findings = sniffed(files, "state_sprawl")
     parked = %w[@d @e].map { "#{it} (parked between calls)" }
-    expect(findings.map(&:evidence)).to(eq([%w[@a @b @c] + parked]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([%w[@a @b @c] + parked]))
   end
 end

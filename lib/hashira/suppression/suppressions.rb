@@ -18,8 +18,8 @@ class Hashira::Suppression::Suppressions
   end
 
   def screen(findings)
-    judged = findings.map { Hashira::Suppression::Silence.new(it, directives).verdict }
+    judged = findings.map { it.silenced(directives) }
     used = judged.flat_map(&:last)
-    Screened.new(kept: judged.filter_map(&:first), suppressed: judged.flat_map { it[1] }, unused: directives - used)
+    Screened.new(kept: judged.flat_map(&:first), suppressed: judged.flat_map { it[1] }, unused: directives - used)
   end
 end

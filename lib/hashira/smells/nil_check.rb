@@ -17,6 +17,12 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   GUARDS = BRANCHES.first(2).freeze
 
+  def findings = sources.empty? ? super : []
+
+  def members
+    detail.sightings(label, ratings).map { |key, seen, lines| member(:source, key, seen, cited(lines, spots(checks))) }
+  end
+
   private
 
   def smelly? = checks.any?
@@ -86,9 +92,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
     end
   end
 
-  def chooser(arm) = cases.find { it.conditions.any? { it.equal?(arm) } }.predicate
-
-  def cases = body.grep(Prism::CaseNode)
+  def chooser(arm) = body.grep(Prism::CaseNode).find { it.conditions.any? { it.equal?(arm) } }.predicate
 
   def excused?(check) = guard?(check) || defaulted?(check) || raising?(check) || answering?(check) || memo?(check)
 
@@ -108,9 +112,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def predicate? = subject.node.then { it.name.end_with?("?") && Hashira::Analysis::Syntax.new(it).statements.one? }
 
-  def guard?(check)
-    validations.validator?(subject.node.name) && tested(check).all? { required?(it) } && !reporting?(check)
-  end
+  def guard?(check) = validator? && tested(check).all? { required?(it) } && !reporting?(check)
+
+  def validator? = validations.validator?(subject.node.name)
 
   def validations = @_validations ||= Hashira::Smells::Validations.new(subject.home)
 
@@ -145,13 +149,13 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def finder?(node) = node.is_a?(Prism::CallNode) && FINDERS.include?(node.name)
 
-  def rating = checks.all? { tested(it).all? { external?(it) } } ? { confidence: :low } : {}
+  def ratings = checks.all? { tested(it).all? { external?(it) } } ? [:low] : []
 
   def external?(node) = node.is_a?(Prism::LocalVariableReadNode) && foreign.external?(node.name)
 
-  def detail = { site: spots(checks), origin:, sources: }.compact
+  def detail = Hashira::Smells::Doubt.new(spots(checks), origin, sources)
 
-  def sources = sightings.group_by(&:first).sort.to_h { |name, pairs| [name, spots(pairs.map(&:last))] }
+  def sources = @_sources ||= sightings.group_by(&:first).sort.to_h { |name, pairs| [name, spots(pairs.map(&:last))] }
 
   def sightings = checks.flat_map { |check| tested(check).filter_map { origin_of(it) }.map { [it, check] } }
 

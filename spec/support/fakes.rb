@@ -15,6 +15,28 @@ module Fakes
   # The duplication analyzer: the clone mass it measured per file.
   Duplication = Data.define(:coverage)
 
+  # A finding's detail: the fields it prints, and a phrase that names the package and the site.
+  Detail =
+    Data.define(:fields) do
+      def to_h = fields
+
+      def phrase(package) = "#{package} (#{fields[:site]})"
+    end
+
+  # A suppression directive that silences nothing and notes every anchor a finding asks it about.
+  class Directive
+    def initialize
+      @asked = []
+    end
+
+    def covers?(_kind, anchor)
+      @asked << anchor
+      false
+    end
+
+    def to_a = @asked
+  end
+
   # The hotspot rollup: the files it ranked, and whether churn weighed them.
   Hotspots =
     Data.define(:files, :weighed) do

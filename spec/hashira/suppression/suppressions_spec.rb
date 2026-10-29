@@ -15,7 +15,7 @@ RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
     source = complex("  # hashira:disable-next-line complexity, feature_envy -- a parser table\n\n  # generated\n")
     result = screened({ "lib/app/knot.rb" => source }, enabled: %i[complexity])
     finding, directive = result.suppressed.first
-    expect([finding.kind, directive.reason, directive.site, directive.kinds]).to(
+    expect([finding.to_h[:kind], directive.reason, directive.site, directive.kinds]).to(
       eq(["complexity", "a parser table", "knot.rb:2", %w[complexity feature_envy]])
     )
     expect([result.kept, result.unused]).to(all(be_empty))
@@ -40,14 +40,16 @@ RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
 
   it "keeps a finding of another kind on the same line" do
     source = complex("  # hashira:disable-next-line feature_envy -- not this one\n")
-    expect(screened({ "lib/app/knot.rb" => source }, enabled: %i[complexity]).kept.map(&:kind)).to(eq(["complexity"]))
+    expect(screened({ "lib/app/knot.rb" => source }, enabled: %i[complexity]).kept.map { it.to_h[:kind] }).to(
+      eq(["complexity"])
+    )
   end
 
   it "silences a smell on the line of the check it names" do
     source = "class Box\n  def initialize = @x = nil\n  def get\n    " \
       "@x.nil? # hashira:disable nil_check -- why\n  end\nend\n"
     result = screened({ "lib/app/box.rb" => source }, enabled: %i[smells])
-    expect(result.suppressed.map { it.first.kind }).to(eq(["nil_check"]))
+    expect(result.suppressed.map { it.first.to_h[:kind] }).to(eq(["nil_check"]))
   end
 
   def copied(name, head = "")
@@ -60,7 +62,7 @@ RSpec.describe(Hashira::Suppression::Suppressions, :aggregate_failures) do
   it "drops one copy from a clone and keeps the rest, until fewer than two remain" do
     files = { "lib/app/a.rb" => copied("A", silenced), "lib/app/b.rb" => copied("B"), "lib/app/c.rb" => copied("C") }
     kept = screened(files, enabled: %i[duplication]).kept.first
-    expect([kept.package, kept.evidence.size, kept.detail.size, kept.anchors])
+    expect([kept.to_h[:package], kept.to_h[:evidence].size, kept.to_h[:detail][:size], anchors_of(kept)])
       .to(eq(["b.rb:2", 2, 2, ["b.rb:2", "c.rb:2"]]))
     result = screened(files.except("lib/app/c.rb"), enabled: %i[duplication])
     expect([result.kept, result.suppressed.size]).to(eq([[], 1]))

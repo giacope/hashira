@@ -4,7 +4,7 @@ require "prism"
 
 class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
   class Envy
-    def initialize(site:, names:, types:, balance:)
+    def initialize(site, names, types, balance)
       @site = site
       @names = names
       @types = types
@@ -12,6 +12,15 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
     end
 
     def to_h = { site: @site, names: @names, types: @types, **@balance.to_h }
+
+    def phrase(package)
+      "#{package} refers to #{Hashira::Prose::Quoted.new(@names)} more than to self, #{@balance.phrase(@names)} " \
+        "(#{@site}). The behavior may belong on #{choices}."
+    end
+
+    private
+
+    def choices = [@types[0..-2].join(", "), @types.last].reject(&:empty?).join(" or ")
   end
 
   class Balance
@@ -21,6 +30,8 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
     end
 
     def to_h = { count: @count, ego: @ego }
+
+    def phrase(names) = "#{@count}#{" each" unless names.one?} to #{@ego}"
   end
 
   private
@@ -54,7 +65,7 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def detail = Envy.new(site:, names: envied.map(&:name).uniq, types:, balance: Balance.new(count, refs.ego))
+  def detail = Envy.new(site, envied.map(&:name).uniq, types, Balance.new(count, refs.ego))
 
   def count = refs.lines(envied.first).size
 

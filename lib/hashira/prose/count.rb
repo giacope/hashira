@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class Hashira::Report::Count
+class Hashira::Prose::Count
   def initialize(number, noun)
     @number = number
     @noun = noun

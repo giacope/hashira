@@ -11,7 +11,7 @@ layers:
   - gates: [ci, diagram]
   - pipeline: ["(root)", report]
   - analyzers: [complexity, coupling, duplication, hotspots, smells, suppression]
-  - foundation: [analysis, config, runtime]
+  - foundation: [analysis, config, prose, runtime]
 boundaries:
   - root: Prism
     role: interpreted_model

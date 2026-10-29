@@ -15,9 +15,9 @@ class Hashira::Smells::Bags
     def finding(readings)
       used = readings.of(self)
       return [] if used.empty?
-      detail = { site: @site, fields: used.flat_map(&:fields).uniq, users: used.size }
-      anchors = [@site, *used.map(&:spot)].uniq
-      [Hashira::Analysis::Finding.new(kind: KIND, package: @name, detail:, evidence: used.map(&:to_s), anchors:)]
+      detail = Hashira::Smells::DataClass::Holding.new(@site, used.flat_map(&:fields).uniq, [used.size])
+      proof = Hashira::Analysis::Finding::Proof.new(used.map(&:to_s), [@site, *used.map(&:spot)].uniq)
+      [Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(@name), detail, proof)]
     end
 
     def outside?(owner) = ![@name, @name.sub(/::[^:]+\z/, "")].include?(owner)

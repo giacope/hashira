@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
+RSpec.describe(Hashira::Smells::Member, :aggregate_failures) do
   def grouped(files, kind, rules = Hashira::Config::Rules.parse({ kind => true }, Fixtures::KINDS))
     within(files) do
-      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.select { it.kind == kind }
+      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).findings.select { it.to_h[:kind] == kind }
     end
   end
 
@@ -25,7 +25,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       RUBY
     }
     found = grouped(files, "concrete_inheritance")
-    expect(found.map { [it.package, it.detail.to_h, it.evidence] }).to(
+    expect(found.map { [it.to_h[:package], it.to_h[:detail], it.to_h[:evidence]] }).to(
       eq(
         [
           [
@@ -68,7 +68,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
       RUBY
     }
     found = grouped(files, "refused_bequest")
-    expect(found.map { [it.package, it.detail.to_h, it.evidence, it.anchors] }).to(
+    expect(found.map { [it.to_h[:package], it.to_h[:detail], it.to_h[:evidence], anchors_of(it)] }).to(
       eq(
         [
           [
@@ -116,7 +116,9 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
 
   it "reports one message chain per class edge, with each method that reaches through it" do
     sites = ["Shop::Desk#run (desk.rb:3)", "Shop::Desk#go (desk.rb:4)", "Shop::Till#run (till.rb:3)"]
-    expect([chain.package, chain.detail[:places], chain.evidence.first(3)]).to(eq(["Order → Customer", 4, sites]))
+    expect([chain.to_h[:package], chain.to_h[:detail][:places], chain.to_h[:evidence].first(3)]).to(
+      eq(["Order → Customer", 4, sites])
+    )
   end
 
   it "says how many methods reach through the edge and what to do" do
@@ -150,7 +152,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     end
   RUBY
 
-  def nils = grouped({ "lib/app/account.rb" => account }, "nil_check").to_h { [it.package, it] }
+  def nils = grouped({ "lib/app/account.rb" => account }, "nil_check").to_h { [it.to_h[:package], it] }
 
   it "reports one nil check per nil the class makes, and keeps a local's check on its method" do
     expect(nils.keys).to(
@@ -163,7 +165,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
     said = "Shop::Account@owner may be nil, and 2 methods check for it (account.rb:4). " \
       "Prefer a default, a null object, or polymorphism. Settle it where the nil is made."
     sites = ["Shop::Account#name (account.rb:4)", "Shop::Account#mail (account.rb:5)"]
-    expect([owner.evidence, message(owner)]).to(eq([sites, said]))
+    expect([owner.to_h[:evidence], message(owner)]).to(eq([sites, said]))
   end
 
   def backends = <<~RUBY
@@ -197,7 +199,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   RUBY
 
   it "names a nil an inherited or mixed-in method makes for the class that defines it, one finding for every heir" do
-    found = grouped({ "lib/app/backends.rb" => backends }, "nil_check").to_h { [it.package, it.evidence] }
+    found = grouped({ "lib/app/backends.rb" => backends }, "nil_check").to_h { [it.to_h[:package], it.to_h[:evidence]] }
     expect(found).to(
       eq(
         "Shop::Base#dir_path" => [
@@ -229,7 +231,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   RUBY
 
   it "cites, for each nil a method checks, only the lines that test that nil" do
-    found = grouped({ "lib/app/query.rb" => query }, "nil_check").to_h { [it.package, it.evidence] }
+    found = grouped({ "lib/app/query.rb" => query }, "nil_check").to_h { [it.to_h[:package], it.to_h[:evidence]] }
     expect(found).to(
       eq(
         "Shop::Query@fields" => ["Shop::Query#response (query.rb:11)"],
@@ -255,7 +257,7 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   end
 
   it "names a strict finding's mode in its detail, where a parent built on its own names none" do
-    expect(tightly({ "lib/app/charge.rb" => charges }, "concrete_inheritance").map { it.detail.to_h[:mode] })
+    expect(tightly({ "lib/app/charge.rb" => charges }, "concrete_inheritance").map { it.to_h[:detail][:mode] })
       .to(eq([:overriding]))
   end
 
@@ -275,12 +277,12 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   it "names, under strict, a nil an owned method answers for that method, wherever the checks are" do
     found = tightly(stocked, "nil_check")
     sites = ["Shop::Cart#total (cart.rb:3)", "Shop::Cart#label (cart.rb:4)"]
-    told = [grouped(stocked, "nil_check"), found.map { [it.package, it.evidence] }]
+    told = [grouped(stocked, "nil_check"), found.map { [it.to_h[:package], it.to_h[:evidence]] }]
     expect(told).to(eq([[], [["Shop::Catalog#find", sites]]]))
     expect(message(found.first)).to(start_with("Shop::Catalog#find may be nil, and 2 methods check for it (cart.rb:3)"))
   end
 
-  def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.package, it] }
+  def repeats = grouped({ "lib/app/till.rb" => counter }, "repeated_call").to_h { [it.to_h[:package], it] }
 
   def counter
     <<~RUBY
@@ -303,14 +305,14 @@ RSpec.describe(Hashira::Smells::Grouping, :aggregate_failures) do
   end
 
   it "reports one repeated-call finding per class, doubted only when every repeat in it is" do
-    expect([repeats.keys.sort, repeats.values.select(&:doubted?).map(&:package)])
+    expect([repeats.keys.sort, repeats.values.select { it.to_h[:confidence] == "low" }.map { it.to_h[:package] }])
       .to(eq([%w[Shop::Desk Shop::Shelf Shop::Till], %w[Shop::Shelf]]))
   end
 
   it "lists each method's repeated calls as evidence and counts calls and methods" do
     till = repeats["Shop::Till"]
     said = "Shop::Till repeats 4 calls in 3 methods (till.rb:3). Name the result in a local variable."
-    expect([till.evidence.first(2), message(till), message(repeats["Shop::Desk"])]).to(
+    expect([till.to_h[:evidence].first(2), message(till), message(repeats["Shop::Desk"])]).to(
       eq(
         [
           ["Shop::Till#ring: io.tick(1) × 2 (line 3)", "Shop::Till#open: io.tick(2) × 2 (line 4)"], said,

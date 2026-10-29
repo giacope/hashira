@@ -12,7 +12,7 @@ RSpec.describe(Hashira::CI::Baseline, :aggregate_failures) do
     { "kind" => "feature_envy", "package" => "Café::Menú#total", "reason" => "reads its order — by design" }
   end
 
-  def envy = { "feature_envy:Café::Menú#total" => Hashira::CI::Mark.new(magnitude: 3, trace: nil) }
+  def envy = { "feature_envy:Café::Menú#total" => Hashira::Analysis::Mark.new(magnitude: 3, trace: nil) }
 
   describe "#edges" do
     it "returns nothing recorded when the file is absent" do
@@ -69,7 +69,7 @@ RSpec.describe(Hashira::CI::Baseline, :aggregate_failures) do
 
   it "writes no traces section when no finding carries a trace" do
     within({}) do
-      marks = { "dupe:a3" => Hashira::CI::Mark.new(magnitude: 30, trace: nil) }
+      marks = { "dupe:a3" => Hashira::Analysis::Mark.new(magnitude: 30, trace: nil) }
       described_class.new("b.json").write([], marks, packaging: "folder")
       expect(JSON.parse(File.read("b.json")).keys).to(eq(%w[version packaging analyzers targets edges findings]))
     end

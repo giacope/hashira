@@ -5,7 +5,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     within("lib/app/account.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      return Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules).findings.select { it.kind == "low_cohesion" }
+      return Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules).findings.select { it.to_h[:kind] == "low_cohesion" }
     end
   end
 
@@ -54,7 +54,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
 
   it "flags a class whose methods fall into groups that share no field and never call each other" do
     finding = split(account).first
-    expect([finding.package, finding.detail, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(
         [
           "Account", { site: "account.rb:1", count: 2, size: 6 },
@@ -138,7 +138,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
       split(account("#{stub}\n  def report = notify(summary)") + heir.call('"closed"\n  def extra = balance.to_s'))
     ]
     groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, summary, report (@mailer)"]
-    expect([found[0], *found[1..].map { it.first.evidence }]).to(eq([[], groups, groups, groups]))
+    expect([found[0], *found[1..].map { it.first.to_h[:evidence] }]).to(eq([[], groups, groups, groups]))
   end
 
   it "joins methods through a project module the class includes, whose methods call back into the class" do
@@ -146,7 +146,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     groups = ["deposit, withdraw, balance (@balance)", "notify, remind, ping, audit (@mailer)"]
     found = [mixed("include Bridge", bridge), mixed("include Held", bridge), mixed("include Comparable")]
       .map { split(it) }
-    expect([found[0], found[1], found[2].first.evidence]).to(eq([[], [], groups]))
+    expect([found[0], found[1], found[2].first.to_h[:evidence]]).to(eq([[], [], groups]))
   end
 
   it "joins every group through a method that reads fields by computed name, in the class or a module it includes" do
@@ -206,7 +206,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     RUBY
     strict = [account("", "class Account < ApplicationRecord"), model].map { split(it, Fixtures::STRICT).size }
     expect([strict, [model].map { split(it).size + split(it, Hashira::Config::Rules::ALL).size }]).to(eq([[1, 1], [0]]))
-    expect(split(model, Fixtures::STRICT).first.evidence).to(
+    expect(split(model, Fixtures::STRICT).first.to_h[:evidence]).to(
       eq(
         [
           "debt, credit, overdrawn? (@balance)",
@@ -365,7 +365,7 @@ RSpec.describe(Hashira::Smells::LowCohesion, :aggregate_failures) do
     delegations = ["delegate :hostname, :region, to: :class", "delegate :hostname, :region, to: TARGET"]
     sources = delegations.map { entry(it).sub("site.title", "site.title + region") }
     expect(sources.map { split(it, Fixtures::STRICT).size }).to(eq([1, 1]))
-    expect(split(sources.first, Fixtures::STRICT).first.evidence).to(
+    expect(split(sources.first, Fixtures::STRICT).first.to_h[:evidence]).to(
       eq(["old_url, label (@path)", "organisation, tna_timestamp, site_title, launched? (@site)"])
     )
   end

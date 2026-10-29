@@ -15,34 +15,78 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   SWEEP = 4
 
-  Pair =
-    Data.define(:files, :shared, :revisions) do
-      def degree = (200.0 * shared / revisions.sum).round
+  JOINT = " <-> "
 
-      def key = files.join(" <-> ")
+  class Bond
+    ADVICE = {
+      true => "and one refers to the other — every change crosses the package boundary. " \
+        "Narrow what one asks of the other, or move them into one package.",
+      false => "though neither refers to the other — the coupling is hidden. " \
+        "Name what they share in one place both can depend on."
+    }.freeze
+
+    def initialize(sides, shared, degree, explicit)
+      @sides = sides
+      @shared = shared
+      @degree = degree
+      @explicit = explicit
     end
 
-  Detail =
-    Data.define(:files, :packages, :shared, :degree, :explicit) do
-      def key = files.join(" <-> ")
+    def to_h
+      files, packages = @sides.transpose
+      { files:, packages:, shared: @shared, degree: @degree, explicit: @explicit }
     end
+
+    def phrase(_package)
+      first, second = @sides.map { |file, package| "#{file} (#{package})" }
+      "#{first} and #{second} changed together in #{@shared} commits, #{@degree}% of their changes, " \
+        "#{ADVICE.fetch(@explicit)}"
+    end
+  end
+
+  class Pair
+    def initialize(files, shared, revisions)
+      @files = files
+      @shared = shared
+      @revisions = revisions
+    end
+
+    def <=>(other) = rank <=> other.rank
+
+    def joint?(floor) = degree >= floor && yield(@files)
+
+    def finding(kind)
+      sides, explicit, anchors = yield(@files)
+      shown = sides.map(&:first)
+      evidence = shown.zip(@revisions).map { |file, count| "#{file}: #{count} commits" }
+      name = Hashira::Analysis::Finding::Name.new(sides.fetch(0).last, [shown.join(JOINT)])
+      bond = Bond.new(sides, @shared, degree, explicit)
+      Hashira::Analysis::Finding.new(kind, name, bond, Hashira::Analysis::Finding::Proof.new(evidence, anchors))
+    end
+
+    protected
+
+    def rank = [-degree, -@shared, @files.join(JOINT)]
+
+    private
+
+    def degree = (200.0 * @shared / @revisions.sum).round
+  end
 
   def list
     return [] unless project.history.deep?
-    pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
+    pairs.sort.map { |pair| pair.finding(KIND) { |files| described(files) } }
   end
 
   private
 
   def pairs
     frequent = together.select { |_files, shared| shared >= limit("commits", COMMITS) }
-    frequent.map { |files, shared| Pair.new(files:, shared:, revisions: files.map { revisions[it] }) }
-      .select { joint?(it) }
+    frequent.map { |files, shared| Pair.new(files, shared, files.map { revisions[it] }) }
+      .select { |pair| pair.joint?(limit("degree", DEGREE)) { |files| apart?(files) && !registration?(files) } }
   end
 
   def revisions = @_revisions ||= changesets.flatten.tally
-
-  def joint?(pair) = pair.degree >= limit("degree", DEGREE) && apart?(pair.files) && !registration?(pair.files)
 
   def registration?(files) = registered?(files) && !explicit?(files.map { sources.fetch(it) })
 
@@ -76,18 +120,8 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def package(file) = (@_packages ||= {})[file] ||= graph.home(sources.fetch(file))
 
-  def entry(pair)
-    detail = described(pair)
-    evidence = detail.files.zip(pair.revisions).map { |file, count| "#{file}: #{count} commits" }
-    finding(package: detail.packages.first, digest: detail.key, evidence:, detail:, anchors: anchors(pair))
-  end
-
-  def described(pair)
-    files = pair.files
-    Detail.new(
-      files: files.map { shown(it) }, packages: files.map { package(it) }, shared: pair.shared, degree: pair.degree,
-      explicit: explicit?(files.map { sources.fetch(it) })
-    )
+  def described(files)
+    [files.map { [shown(it), package(it)] }, explicit?(files.map { sources.fetch(it) }), anchors(files)]
   end
 
   def shown(file) = file.dup.force_encoding(Encoding::UTF_8)
@@ -101,8 +135,8 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
       end
   end
 
-  def anchors(pair)
-    pair.files.map do |file|
+  def anchors(files)
+    files.map do |file|
       first = graph.trees.fetch(sources.fetch(file)).statements.body.first
       "#{shown(file)}:#{first ? first.location.start_line : 1}"
     end

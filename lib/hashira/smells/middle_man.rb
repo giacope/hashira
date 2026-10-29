@@ -18,7 +18,22 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   CONSTRUCTOR = :initialize
 
-  Relay = Data.define(:site, :delegate, :count, :total)
+  class Relay
+    ADVICE = "Let callers talk to the delegate directly, or give the class work of its own."
+
+    def initialize(site, delegate, count, total)
+      @site = site
+      @delegate = delegate
+      @count = count
+      @total = total
+    end
+
+    def to_h = { site: @site, delegate: @delegate, count: @count, total: @total }
+
+    def phrase(package)
+      "#{package} forwards #{@count} of its #{@total} public methods to #{@delegate} (#{@site}). #{ADVICE}"
+    end
+  end
 
   private
 
@@ -91,7 +106,7 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
     end
   end
 
-  def detail = Relay.new(site:, delegate:, count: heaviest.size, total: publics.size)
+  def detail = Relay.new(site, delegate, heaviest.size, publics.size)
 
   def evidence = heaviest.map { "#{it.node.name} (line #{it.line})" }
 end

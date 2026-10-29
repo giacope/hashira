@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing", %w[@a @b @c @d @e]]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(eq([["App::Zone::Thing", %w[@a @b @c @d @e]]]))
     expect(message(findings.first)).to(include("holds 5 instance variables", "zone/thing.rb:3"))
   end
 
@@ -123,7 +123,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @d @g]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(%w[@a @b @c @d @g]))
   end
 
   it "counts a field that defined? tests as a flag rather than guarding a memo" do
@@ -147,7 +147,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @packed @value]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(%w[@a @b @c @packed @value]))
   end
 
   it "does not count underscore-prefixed memoization caches as state" do
@@ -259,7 +259,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(%w[@closed @level @log @reader @socket]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(%w[@closed @level @log @reader @socket]))
   end
 
   it "weighs a field first assigned outside the constructor double: an intermediate result parked between methods" do
@@ -287,7 +287,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
     finding = findings.first
     expect(findings.size).to(eq(1))
     expect(message(finding)).to(include("holds 5 instance variables, weighing 5, more than 4"))
-    expect(finding.evidence).to(
+    expect(finding.to_h[:evidence]).to(
       eq(["@cache", "@path", "@rows", "@summary (read by no method: handed off)", "@valid (parked between calls)"])
     )
   end
@@ -341,7 +341,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         def show = [@total, @count]
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["Report"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["Report"]))
   end
 
   it "weighs an assign double once another method, or a reader, takes it up between calls" do
@@ -386,7 +386,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
       "@email", "@name (parked between calls)", "@notes (read by no method: handed off)",
       "@role (given to the constructor)", "@team (parked between calls)"
     ]
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Form", evidence]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(eq([["App::Form", evidence]]))
   end
 
   it "takes a constructor's call to its own attribute writer for the write it is" do
@@ -436,7 +436,9 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(%w[@a @b @c @d @e] + ["@hue (read by no method: handed off)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
+      eq(%w[@a @b @c @d @e] + ["@hue (read by no method: handed off)"])
+    )
   end
 
   it "counts a field a constructor helper assigns, or one set in the class body, as constructor state" do
@@ -478,7 +480,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Parked"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Parked"]))
   end
 
   it "weighs a field the constructor takes straight from its arguments as nothing: an input, like a job's arguments" do
@@ -526,7 +528,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         def link = [@badge, @endpoint, @rest, @more, @last]
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq(
         [
           [
@@ -554,7 +556,7 @@ RSpec.describe(Hashira::Smells::StateSprawl, :aggregate_failures) do
         def pull = [@spec = Spec.new(@body), @gem = Gem.new(@owner)]
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["@body", "@gem (parked between calls)", "@owner (given to the constructor)", "@spec (parked between calls)"])
     )
   end

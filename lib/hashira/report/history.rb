@@ -11,7 +11,7 @@ module Hashira
         commits = depth.commits
         shallow = depth.shallow
         return "no git history" unless shallow || commits.positive?
-        "#{shallow ? "shallow" : "too little"} git history (#{Hashira::Report::Count.new(commits, "commit")})"
+        "#{shallow ? "shallow" : "too little"} git history (#{Hashira::Prose::Count.new(commits, "commit")})"
       end
 
       private

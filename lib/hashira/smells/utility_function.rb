@@ -5,6 +5,8 @@ require "prism"
 class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
   PROTOCOL = { 0 => %i[hash inspect to_s], 1 => %i[== eql? equal? <=> === coerce] }.freeze
 
+  ADVICE = "Move it onto the object it serves, or make it private."
+
   private
 
   def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && !protocol? && calls? && stateless?
@@ -15,7 +17,7 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
 
   def stateless? = refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
 
-  def detail = { site: }
+  def detail = Hashira::Smells::Spot.new(site, "touches no instance state", ADVICE)
 
   def refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 

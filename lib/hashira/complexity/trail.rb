@@ -1,7 +1,19 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Trail
-  Trace = Data.define(:site, :chain)
+  class Trace
+    def initialize(site:, chain:)
+      @site = site
+      @chain = chain
+    end
+
+    def to_h = { site: @site, chain: @chain }
+
+    def phrase(package)
+      "#{package} reaches its work through #{Hashira::Prose::Count.new(@chain, "hollow helper")}, " \
+        "private one-liners called once that only pass a call on (#{@site}). Inline them into their callers."
+    end
+  end
 
   def initialize(entry, helpers)
     @entry = entry

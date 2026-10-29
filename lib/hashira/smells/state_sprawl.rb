@@ -4,18 +4,23 @@ require "prism"
 
 class Hashira::Smells::StateSprawl < Hashira::Smells::Check
   class Sprawl
-    def initialize(site:, count:, weight:, limit:)
+    ADVICE = "Split the class, or gather related fields into value objects."
+
+    def initialize(site, count, heft)
       @site = site
       @count = count
-      @weight = weight
-      @limit = limit
+      @heft = heft
     end
 
-    def to_h = { site: site, count: count, weight: weight, limit: limit }
+    def to_h
+      weight, limit = @heft
+      { site: @site, count: @count, weight:, limit: }
+    end
 
-    private
-
-    attr_reader :site, :count, :weight, :limit
+    def phrase(package)
+      weight, limit = @heft
+      "#{package} holds #{@count} instance variables, weighing #{weight}, more than #{limit} (#{@site}). #{ADVICE}"
+    end
   end
 
   LIMIT = 4
@@ -179,7 +184,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def probes(body) = body.grep(Prism::DefinedNode).map(&:value).grep(Prism::InstanceVariableReadNode).map(&:name)
 
-  def detail = Sprawl.new(site:, count: names.size, weight:, limit:)
+  def detail = Sprawl.new(site, names.size, [weight, limit])
 
   def evidence = names.map { "#{it}#{given.include?(it) ? GIVEN : NOTES[heft(it)]}" }
 end

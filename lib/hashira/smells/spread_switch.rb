@@ -13,14 +13,17 @@ class Hashira::Smells::SpreadSwitch
     @whole = whole
   end
 
-  def finding
-    return if spread.empty?
-    Hashira::Analysis::Finding.new(kind: KIND, package: @whole.subject, detail:, evidence:, anchors:)
+  def findings
+    return [] if spread.empty?
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, anchors)
+    [Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(@whole.subject), detail, proof)]
   end
 
   def detail
     file = spread.fetch(0).first.file
-    { site: "#{file}:#{lines(file).join(", ")}", via: ["a type check spread over #{methods} methods"] }
+    Hashira::Smells::ManualDispatch::Dispatch.new(
+      "#{file}:#{lines(file).join(", ")}", ["a type check spread over #{methods} methods"]
+    )
   end
 
   def anchors = spread.map { site(it) }.uniq

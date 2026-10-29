@@ -6,9 +6,9 @@ RSpec.describe(Hashira::Coupling::Audiences, :aggregate_failures) do
   it "splits disjoint client bases into separate audiences" do
     split = audiences("a" => %w[X Y], "b" => %w[X Y], "c" => %w[P Q], "d" => %w[P Q])
     expect(split).to(be_split)
-    expect(split.parts.map(&:users)).to(eq([%w[a b], %w[c d]]))
-    expect(split.parts.map(&:constants)).to(eq([%w[X Y], %w[P Q]]))
-    expect(split.parts.map(&:shared)).to(eq([false, false]))
+    expect(split.parts.map { it.to_h[:users] }).to(eq([%w[a b], %w[c d]]))
+    expect(split.parts.map { it.to_h[:constants] }).to(eq([%w[X Y], %w[P Q]]))
+    expect(split.parts.map { it.to_h[:shared] }).to(eq([false, false]))
   end
 
   it "separates a majority-shared kernel from a single client's private slice" do

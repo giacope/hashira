@@ -15,7 +15,7 @@ class Hashira::CI::Accepted
       @reason = reason
     end
 
-    def matches?(finding) = @kind == finding.kind && (@digest || @package) == finding.identity
+    def matches?(finding) = finding.of?([@kind]) && finding.scored.key?("#{@kind}:#{@digest || @package}")
 
     def label = @reason || "accepted (no reason recorded)"
 

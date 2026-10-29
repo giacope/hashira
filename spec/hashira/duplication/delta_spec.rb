@@ -92,6 +92,7 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
   it "serializes to a hash whose kind selects the refactoring advice" do
     delta = described_class.new(cluster(clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")))
     expect(delta.to_h).to(include(sites: 2, kind: :literal))
-    expect(Hashira::Report::Phrases::DUPLICATION_ADVICE.fetch(delta.kind)).to(include("extract a method"))
+    overlap = Hashira::Duplication::DuplicationFinding::Overlap.new(2, 10, delta.kind, false)
+    expect(overlap.phrase("a.rb:1")).to(include("extract a method"))
   end
 end

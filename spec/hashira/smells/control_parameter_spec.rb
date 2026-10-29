@@ -25,7 +25,9 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
 
   it "flags a flag only where a caller picks it as a literal: true, false or a symbol" do
     calls = ["w.write(@quoted)\n  w.emit(raw: compute)", "w.write(false)\n  w.emit(raw: :yes)", "Writer.new.write(:on)"]
-    expect(calls.map { picked(it).map(&:package) }).to(eq([[], %w[Writer#write Writer#emit], %w[Writer#write]]))
+    expect(calls.map { picked(it).map { it.to_h[:package] } }).to(
+      eq([[], %w[Writer#write Writer#emit], %w[Writer#write]])
+    )
   end
 
   def cart(call) = "class Cart\n  def go\n  #{call}\n end\nend\n"
@@ -45,7 +47,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
       "items.first(2).write(true)\n  Database.write(true)\n  [Database].first.build(:pg)"
     ]
     found = calls.map { flagged("lib/app/d.rb" => source, "lib/app/c.rb" => cart(it)) }
-    expect(found.map { it.map(&:package) })
+    expect(found.map { it.map { it.to_h[:package] } })
       .to(eq([[], %w[Database.build], %w[Database#write], [], *[%w[Database#write]] * 3, []]))
   end
 
@@ -71,7 +73,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    found = flagged("lib/app/top.rb" => top, "lib/app/shop.rb" => shop).map(&:package)
+    found = flagged("lib/app/top.rb" => top, "lib/app/shop.rb" => shop).map { it.to_h[:package] }
     expect(found).to(eq(%w[Shop::Database#write Database.build]))
   end
 
@@ -80,7 +82,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
     calls = ["\"x\".camelize(:lower)", "[1].camelize(:lower)"]
     caller = "module App\n  class String; end\n  class C\n    def go = %s\n  end\nend\n"
     found = calls.map { flagged("lib/app/s.rb" => reopened, "lib/app/c.rb" => format(caller, it)) }
-    expect(found.map { it.map(&:package) }).to(eq([%w[String#camelize], []]))
+    expect(found.map { it.map { it.to_h[:package] } }).to(eq([%w[String#camelize], []]))
   end
 
   it "leaves a factory alone whose every branch only builds an object: the switch maps a name to a strategy" do
@@ -93,14 +95,14 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
       end
     RUBY
     caller = "module App\n  class Cart\n    def go = [Store.build(:pg), Store.open(:pg)]\n  end\nend\n"
-    expect(flagged("lib/app/store.rb" => source, "lib/app/cart.rb" => caller).map(&:package)).to(eq(%w[App::Store.open]))
+    expect(flagged("lib/app/store.rb" => source, "lib/app/cart.rb" => caller).map { it.to_h[:package] }).to(eq(%w[App::Store.open]))
   end
 
   it "leaves a private or protected helper's flag alone: the explicit public methods in front are the interface" do
     head = "class Writer\n  def quoted = put(true)\n  def plain = put(false)\n"
     put = "def put(quoted) = quoted ? @io.puts(1) : @io.puts(2)\nend\n"
     sources = %w[private protected public].map { "#{head}  #{it}\n  #{put}" }
-    expect(sources.map { flagged("lib/app/w.rb" => it).map(&:package) }).to(eq([[], [], %w[Writer#put]]))
+    expect(sources.map { flagged("lib/app/w.rb" => it).map { it.to_h[:package] } }).to(eq([[], [], %w[Writer#put]]))
   end
 
   it "flags a parameter that only decides which path to take" do
@@ -119,7 +121,9 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing#write", ["quoted (line 5)"]]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq([["App::Zone::Thing#write", ["quoted (line 5)"]]])
+    )
     expect(message(findings.first)).to(include("is steered by 'quoted'", "zone/thing.rb:4"))
   end
 
@@ -151,7 +155,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(%w[App::Zone::Thing#pick App::Zone::Thing#veto App::Zone::Thing#sort App::Zone::Thing#bump])
     )
   end
@@ -246,7 +250,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["deep (line 5)"], ["eager (line 10)"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["deep (line 5)"], ["eager (line 10)"]]))
   end
 
   it "accepts parameters used in an else branch" do
@@ -305,7 +309,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["mode (line 5)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["mode (line 5)"]))
   end
 
   it "reports each controlling parameter with every deciding line" do
@@ -322,7 +326,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["kind (lines 5, 6)"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["kind (lines 5, 6)"]))
   end
 
   it "follows an elsif ladder rung by rung, listing the lines in order" do
@@ -341,7 +345,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["kind (lines 5, 7)"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["kind (lines 5, 7)"]))
   end
 
   it "takes a comparison against another value as data, not a switch" do
@@ -390,7 +394,9 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["mode (lines 5, 6, 7)", "mode (line 10)", "level (line 13)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
+      eq(["mode (lines 5, 6, 7)", "mode (line 10)", "level (line 13)"])
+    )
   end
 
   it "takes a conditional that only maps the parameter to literal values as a lookup" do
@@ -471,7 +477,7 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(
         %w[
           App::Zone::Thing#apply App::Zone::Thing#label App::Zone::Thing#bare App::Zone::Thing#blank

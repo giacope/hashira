@@ -71,7 +71,7 @@ module Fixtures
   end
 
   def sniffed(files, kind, rules: Hashira::Config::Rules::ALL)
-    smells(files, rules:) { |report| return report.findings.select { it.kind == kind } }
+    smells(files, rules:) { |report| return report.findings.select { it.of?([kind]) } }
   end
 
   def strictly(files, kind) = sniffed(files, kind, rules: STRICT)
@@ -91,7 +91,19 @@ module Fixtures
     end
   end
 
-  def message(finding) = Hashira::Report::Phrases.new(finding).message
+  def message(finding) = finding.to_h.fetch(:message)
+
+  def anchors_of(finding) = Fakes::Directive.new.tap { finding.silenced([it]) }.to_a
+
+  def packages_in(findings) = findings.map { it.to_h[:package] }
+
+  def mark_of(finding) = finding.scored.values.fetch(0)
+
+  def handmade(kind, package, detail = Fakes::Detail.new({}), evidence: [], anchors: [], digests: [], **marks)
+    shapes, ratings = marks.values_at(:shapes, :ratings).map { Array(it) }
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, anchors, shapes, ratings)
+    Hashira::Analysis::Finding.new(kind, Hashira::Analysis::Finding::Name.new(package, digests), detail, proof)
+  end
 
   # While the block runs, the first argument each instance of klass is built with, and, when a method is named,
   # that argument again each time the method runs on the instance: watched by a TracePoint, which replaces nothing.

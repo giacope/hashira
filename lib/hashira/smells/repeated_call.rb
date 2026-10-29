@@ -20,11 +20,50 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
 
   MATCHED = %i[$~ $LAST_MATCH_INFO].freeze
 
+  OWNER = /[#.][^#.]+\z/
+
+  class Calls
+    def initialize(site, places, calls)
+      @site = site
+      @places = places
+      @calls = calls
+    end
+
+    def to_h = { site: @site, places: @places, calls: @calls }
+
+    def phrase(package)
+      repeats = "#{Hashira::Prose::Count.new(@calls, "call")} in #{Hashira::Prose::Count.new(@places, "method")}"
+      "#{package} repeats #{repeats} (#{@site}). Name the result in a local variable."
+    end
+  end
+
+  class Repeat
+    def initialize(kind, owner, site)
+      @kind = kind
+      @owner = owner
+      @site = site
+    end
+
+    def finding(parts, testimony)
+      calls = Calls.new(@site, parts.size, testimony.proof.to_a.size)
+      testimony.finding(@kind, @owner, calls)
+    end
+  end
+
+  def findings = []
+
+  def members
+    return [] unless smelly?
+    owner = label.sub(OWNER, "")
+    lines = evidence.map { "#{label}: #{it}" }
+    [member(:repeat, owner, Repeat.new(kind, owner, site), cited(lines, site))]
+  end
+
   private
 
   def smelly? = repeats.any?
 
-  def rating = repeats.each_value.all? { lesser?(it) } ? { confidence: :low } : {}
+  def ratings = repeats.each_value.all? { lesser?(it) } ? [:low] : []
 
   def lesser?(nodes) = cheap?(nodes) || !reachable?(nodes.reject { preset?(it) })
 

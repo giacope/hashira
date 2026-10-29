@@ -3,6 +3,20 @@
 class Hashira::Smells::ControlParameter < Hashira::Smells::Check
   HIDDEN = %i[private protected].freeze
 
+  class Steering
+    def initialize(site, names)
+      @site = site
+      @names = names
+    end
+
+    def to_h = { site: @site, names: @names }
+
+    def phrase(package)
+      "#{package} is steered by #{Hashira::Prose::Quoted.new(@names)} (#{@site}). " \
+        "Split the method, or pass a strategy instead of a flag."
+    end
+  end
+
   private
 
   def smelly? = !HIDDEN.include?(subject.section) && culprits.any?
@@ -20,7 +34,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     Hashira::Smells::ParamCheck.new(subject.node, name).matches.map { it.location.start_line }
   end
 
-  def detail = { site:, names: culprits.map { |name, _lines| name } }
+  def detail = Steering.new(site, culprits.map { |name, _lines| name })
 
   def evidence = culprits.map { |name, lines| tally(name, lines) }
 end

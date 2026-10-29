@@ -40,7 +40,7 @@ class Hashira::Report::MetricsTable
   def leaf?(metric) = metric.types <= 1 && metric.efferent.zero? && metric.afferent <= 1
 
   def note
-    leaves = Hashira::Report::Count.new(spared.size, "single-type leaf package")
+    leaves = Hashira::Prose::Count.new(spared.size, "single-type leaf package")
     @io.puts("  + #{leaves} (TC ≤ 1, Ca ≤ 1, Ce = 0) — hidden for brevity")
   end
 

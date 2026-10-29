@@ -49,7 +49,7 @@ class Hashira::Report::Text
       "(#{count(packages, "package")}, #{count(total, "file")})\n\n"
   end
 
-  def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
+  def count(number, noun) = Hashira::Prose::Count.new(number, noun).to_s
 
   def total = @view.size
 

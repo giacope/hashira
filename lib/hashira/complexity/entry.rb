@@ -5,7 +5,8 @@ module Hashira
     Entry =
       Data.define(:kind, :file, :site) do
         def finding(detail, evidence)
-          Hashira::Analysis::Finding.new(kind:, package: site.subject, anchors: [spot], detail:, evidence:)
+          proof = Hashira::Analysis::Finding::Proof.new(evidence, [spot])
+          Hashira::Analysis::Finding.new(kind, Hashira::Analysis::Finding::Name.new(site.subject), detail, proof)
         end
 
         def cite(node) = "#{node.name} (line #{node.location.start_line})"

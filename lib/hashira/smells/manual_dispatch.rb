@@ -16,6 +16,23 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   STATUSED = "a status switch"
 
+  class Dispatch
+    DUCK = "Trust the duck type, or split the callers into two adapters."
+
+    SWITCH = "Move each branch onto the type or state it tests, and let polymorphism pick."
+
+    def initialize(site, via)
+      @site = site
+      @via = via
+    end
+
+    def to_h = { site: @site, via: @via }
+
+    def phrase(package)
+      "#{package} dispatches manually via #{@via.join(" and ")} (#{@site}). #{@via == [PROBE] ? DUCK : SWITCH}"
+    end
+  end
+
   private
 
   def smelly? = !protocol?(subject.node.name) && (probes.any? || switches.any?)
@@ -42,9 +59,9 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def lines = (probes.map(&:line) + switches.flat_map(&:lines)).uniq.sort
 
-  def detail = { site: "#{subject.file}:#{lines.join(", ")}", via: }
+  def detail = Dispatch.new("#{subject.file}:#{lines.join(", ")}", via)
 
   def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(it.to_s, it.lines) }
 
-  def rating = probes.any? && switches.none? && probes.all?(&:trusted?) ? { confidence: :high } : {}
+  def ratings = probes.any? && switches.none? && probes.all?(&:trusted?) ? [:high] : []
 end

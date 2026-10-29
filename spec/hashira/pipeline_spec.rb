@@ -7,7 +7,7 @@ RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
     end
   end
 
-  def kinds(enabled) = run(enabled) { return it.findings.map(&:kind).uniq }
+  def kinds(enabled) = run(enabled) { return it.findings.map { it.to_h[:kind] }.uniq }
 
   def hotspots(enabled) = run(enabled) { return it.hotspots }
 

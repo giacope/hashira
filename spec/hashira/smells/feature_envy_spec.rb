@@ -40,7 +40,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] })
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] })
       .to(eq([["App::Zone::Thing#total", ["order (line 5)", "self (line 5)"]]]))
     expect(message(findings.first)).to(eq("App::Zone::Thing#total refers to 'order' #{said}"))
   end
@@ -134,7 +134,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     expect(message(findings.first)).to(
       include("'left', 'right' more than to self, 2 each to 1", "may belong on Left or Right.")
     )
-    expect(findings.first.evidence).to(eq(["left (lines 6, 7)", "right (lines 8, 9)", "self (line 5)"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["left (lines 6, 7)", "right (lines 8, 9)", "self (line 5)"]))
   end
 
   it "stays quiet when self is referenced at least as often" do
@@ -253,7 +253,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
       },
       "feature_envy"
     )
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#widen"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#widen"]))
   end
 
   it "reads case/when type dispatch as a guard too" do
@@ -314,7 +314,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick", "App::Zone::Thing#bump", "App::Zone::Thing#scoop"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#pick", "App::Zone::Thing#bump", "App::Zone::Thing#scoop"]))
   end
 
   it "counts an explicit self receiver once" do
@@ -329,7 +329,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["order (line 5)", "self (line 5)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["order (line 5)", "self (line 5)"]))
   end
 
   it "still flags a name when the guard or lookup is about something else" do
@@ -351,7 +351,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#price", "App::Zone::Thing#label"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#price", "App::Zone::Thing#label"]))
   end
 
   it "still flags an exception rescued from an error class defined as a constant" do
@@ -375,7 +375,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#guard"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#guard"]))
   end
 
   it "stays quiet about a stateless converter that ends by building a typed object" do
@@ -406,7 +406,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#absorb"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#absorb"]))
   end
 
   it "stays quiet about a structure the method itself builds from a literal" do
@@ -443,7 +443,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#sweep"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#sweep"]))
   end
 
   it "reads values_at and dig with literal keys as wire access" do
@@ -514,7 +514,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
       },
       "feature_envy"
     )
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#wield"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#wield"]))
   end
 
   it "stays quiet about an exception rescued from foreign or implied classes" do
@@ -563,7 +563,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#guard"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#guard"]))
   end
 
   it "reads dispatch through a table keyed by foreign classes as a guard" do
@@ -646,7 +646,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(
         [
           "App::Zone::Thing#near", "App::Zone::Thing#blank",
@@ -735,8 +735,8 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
       end
     RUBY
     findings = sniffed(parcels.merge("lib/app/zone/thing.rb" => thing), "feature_envy")
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
-    expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
+    expect(findings.last.to_h[:evidence]).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
   end
 
   def relation(parent = "", extra = "")
@@ -776,7 +776,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     base = "class Base\n    def primary_key = :id\n    def routed? = true\n  end\n"
     framed = relation(" < ActiveRecord::Relation")
     sources = [relation, relation(" < Base", base), framed, relation(" < Bare", "class Bare; end\n")]
-    found = sources.map { sniffed({ "lib/app/z.rb" => it, "lib/app/i.rb" => indexer }, "feature_envy").map(&:package) }
+    found = sources.map { packages_in(sniffed({ "lib/app/z.rb" => it, "lib/app/i.rb" => indexer }, "feature_envy")) }
     expect(found).to(eq([[], *[%w[App::Zone::Indexer#reindex]] * 2, []]))
   end
 
@@ -810,8 +810,8 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#fill"]))
-    expect(findings.first.evidence).to(eq(["order (lines 14, 15, 16)", "self (line 13)"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#fill"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["order (lines 14, 15, 16)", "self (line 13)"]))
   end
 
   it "treats what a foreign constructor or chain yields to its block as foreign" do
@@ -871,7 +871,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#forge App::Zone::Thing#wire App::Zone::Thing#weld]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#forge App::Zone::Thing#wire App::Zone::Thing#weld]))
   end
 
   it "sees block parameters referenced together, as in a comparator, as peers rather than a destination" do
@@ -895,7 +895,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ranks App::Zone::Thing#grouped]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#ranks App::Zone::Thing#grouped]))
   end
 
   it "stays quiet about locals holding core values: literals, constants, permitted params, or a .to_h or .map" do
@@ -960,7 +960,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#ship"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#ship"]))
   end
 
   it "reads fetch with a literal key and a default as a keyed read" do
@@ -981,7 +981,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#pick"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Thing#pick"]))
   end
 
   it "stays quiet about a mapper whose reads all feed a hash literal or a constructor, render, or update" do
@@ -1049,7 +1049,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#total App::Zone::Thing#notify App::Zone::Thing#wrap]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#total App::Zone::Thing#notify App::Zone::Thing#wrap]))
   end
 
   it "stays quiet about a sum type normalised with a type test and a keyed read" do
@@ -1121,7 +1121,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#record App::Zone::Thing#store App::Zone::Thing#keep]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#record App::Zone::Thing#store App::Zone::Thing#keep]))
   end
 
   it "stays quiet about a fake's method its real peer also defines, and still flags one it adds" do
@@ -1152,7 +1152,7 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::FakeLauncher#check"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::FakeLauncher#check"]))
   end
 
   it "takes a case/in pattern on a library class for the type, over the variable's name" do

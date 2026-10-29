@@ -4,6 +4,31 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
   def checked(source, rules: Hashira::Config::Rules::ALL)
     sniffed({ "lib/app/zone/thing.rb" => source }, "nil_check", rules:)
   end
+
+  # The methods that check a nil, in file order: a finding's own package, or each method a source's finding lists.
+  def checkers(findings)
+    findings.flat_map { sites(it.to_h) }.sort_by { |_name, site| site[/:(\d+)/, 1].to_i }.map(&:first)
+  end
+
+  def sites(told)
+    return [[told[:package], told[:detail][:site], told[:confidence]]] unless told[:detail].key?(:places)
+    told[:evidence].map { [*it.delete_suffix(")").split(" (", 2), told[:confidence]] }
+  end
+
+  def doubted(findings)
+    findings.flat_map { sites(it.to_h) }.sort_by { it[1][/:(\d+)/, 1].to_i }.map { [it[0], it[2] == "low"] }
+  end
+
+  # Each method that checks a nil, and the sources its checks name: a source's finding lists the methods that check it.
+  def sources_of(findings)
+    pairs =
+      findings.flat_map do |found|
+        told = found.to_h
+        next [[told[:package], []]] unless told[:detail].key?(:places)
+        told[:evidence].map { [it.split(" (", 2).first, [told[:package]]] }
+      end
+    pairs.group_by(&:first).transform_values { |all| all.flat_map(&:last).sort }
+  end
   it "flags nil?, nil comparisons, and when-nil clauses with their lines" do
     findings = checked(<<~RUBY)
       module App
@@ -27,7 +52,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(checkers(findings)).to(
       eq(%w[App::Zone::Thing#query App::Zone::Thing#compare App::Zone::Thing#strict App::Zone::Thing#branch])
     )
     expect(message(findings.first)).to(include("checks for nil", "zone/thing.rb:6"))
@@ -56,7 +81,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
       end
     RUBY
     findings = sniffed({ "lib/app/error.rb" => source }, "nil_check")
-    expect(findings.map(&:package)).to(eq(%w[App::Error.code App::Labels#tag]))
+    expect(checkers(findings)).to(eq(%w[App::Error.code App::Labels#tag]))
   end
 
   it "takes a reader that answers a literal, or memoizes one, for a value that is never nil" do
@@ -88,7 +113,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#loaded App::Zone::Thing#watched]))
+    expect(checkers(findings)).to(eq(%w[App::Zone::Thing#loaded App::Zone::Thing#watched]))
   end
 
   it "leaves a nil to Ruby when an owned constant only holds a core value, and owns what an owned class answers" do
@@ -117,7 +142,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#found]))
+    expect(checkers(findings)).to(eq(%w[App::Zone::Thing#found]))
   end
 
   it "reaches methods defined inside blocks and class << self" do
@@ -136,7 +161,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#check", "App::Zone::Thing.peek"]))
+    expect(checkers(findings)).to(eq(["App::Zone::Thing#check", "App::Zone::Thing.peek"]))
   end
 
   it "leaves a value that arrives from outside to the boundary: a public argument, a payload, a library's answer" do
@@ -177,8 +202,8 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Thing#mixed"]))
-    expect(findings.first.detail[:site]).to(eq("zone/thing.rb:24"))
+    expect(checkers(findings)).to(eq(["App::Zone::Thing#mixed"]))
+    expect(findings.first.to_h[:detail][:site]).to(eq("zone/thing.rb:24"))
   end
 
   it "flags a value the method built or fetched from an owned class, but not a nil it never named" do
@@ -221,7 +246,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[built owned resolved looked]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[built owned resolved looked]))
   end
 
   it "ignores comparisons that never involve nil" do
@@ -306,7 +331,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[ordered owned noted reported selfish unregistered]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[ordered owned noted reported selfish unregistered]))
   end
 
   it "leaves a default given where a parameter or payload value enters, which is the remedy itself" do
@@ -366,8 +391,9 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[held bare computed empty]))
-    expect(findings.first(2).map(&:evidence)).to(eq([["@ttl (line 5)"], ["ttl (line 12)"]]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[held bare computed empty]))
+    told = findings.to_h { [it.to_h[:package], it.to_h[:evidence]] }.values_at("App::Zone::Thing@ttl", "App::Zone::Thing#bare")
+    expect(told).to(eq([["App::Zone::Thing#held (zone/thing.rb:5)"], ["ttl (line 12)"]]))
   end
 
   it "leaves a library's object to its own nil contract, and doubts a value only partly the codebase's" do
@@ -423,7 +449,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    doubts = findings.map { [it.package.split("#").last, it.doubted?] }
+    doubts = doubted(findings).map { |name, low| [name.split("#").last, low] }
     expect(doubts).to(eq([["mixed", false], ["unbound", true], ["shadowed", false]]))
   end
 
@@ -449,7 +475,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.detail[:origin] }).to(eq([:absence, nil, :absence]))
+    expect(findings.map { it.to_h[:detail][:origin] }).to(eq([:absence, nil, :absence]))
     expect(message(findings.first)).to(include("checks for nil", "exists? instead of fetching a record"))
   end
 
@@ -488,14 +514,14 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map { it.package.split("#").last } }
+    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| checkers(all).map { it.split("#").last } }
     expect(found).to(eq([%w[held found], %w[held found optional keyword]]))
   end
 
   it "takes a private method's nil default for a nil the code leaves, behind &., under strict only" do
     source = "module App\n  class Thing\n    def run = label\n\n    private\n\n    " \
       "def label(name = nil) = name&.upcase\n  end\nend\n"
-    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map(&:package) }
+    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map { it.to_h[:package] } }
     expect(found).to(eq([[], ["App::Thing#label"]]))
   end
 
@@ -515,7 +541,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[titled]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[titled]))
   end
 
   it "flags a literal fallback for a value the codebase leaves nil, but not memoization or a computed fallback" do
@@ -544,7 +570,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[limit cache]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[limit cache]))
   end
 
   it "reads a guard whose only statement fills the value it tests as memoization, like ||=" do
@@ -590,7 +616,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[other twice otherwise shared]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[other twice otherwise shared]))
   end
 
   it "reads memoization with an else that answers the value, a longer fill, or a guard return before the fill" do
@@ -674,7 +700,9 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[other chatty? late wrong inverted noisy either idle]))
+    expect(checkers(findings).map { it.split("#").last }).to(
+      eq(%w[other chatty? late wrong inverted noisy either idle])
+    )
   end
 
   it "flags unless on a value the codebase leaves nil, but not on a flag or a method's result" do
@@ -711,7 +739,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { it.package.split("#").last }).to(eq(%w[start pick]))
+    expect(checkers(findings).map { it.split("#").last }).to(eq(%w[start pick]))
   end
 
   it "names what each check tests, and under safe navigation only the receiver it guards" do
@@ -735,7 +763,14 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["found (line 7)"], ["self.name (line 11)"]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq(
+        [
+          ["App::Zone::Thing#merged", ["found (line 7)"]],
+          ["App::Zone::Thing#name", ["App::Zone::Thing#pick (zone/thing.rb:11)"]]
+        ]
+      )
+    )
   end
 
   it "leaves a check alone whose branch raises: the nil is what the guard asserts against" do
@@ -752,7 +787,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         def warn = (@log.warn("no adapter") if @adapter.nil?)
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["Builder#warn"]))
+    expect(checkers(findings)).to(eq(["Builder#warn"]))
   end
 
   it "leaves a check alone whose branch calls a method of the class that always raises, as it would the raise" do
@@ -786,7 +821,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         def again!(name) = again!(name)
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[Form#loose! Form#soft! Form#peer! Form#cycle!]))
+    expect(checkers(findings)).to(eq(%w[Form#loose! Form#soft! Form#peer! Form#cycle!]))
   end
 
   it "lets a one-line predicate answer its own nil test, but not one that branches or does more first" do
@@ -809,7 +844,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         def sized? = @x.nil? ? false : @x.any?
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[Box#full? Box#ready? Box#sized?]))
+    expect(checkers(findings)).to(eq(%w[Box#full? Box#ready? Box#sized?]))
   end
 
   it "flags, under strict, a public method testing its own nil-defaulted parameter: two methods in one" do
@@ -835,7 +870,9 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     RUBY
     findings = checked(source, rules: Fixtures::STRICT)
     expect(checked(source)).to(be_empty)
-    expect(findings.map { [it.package, it.detail[:origin]] }).to(eq([["App::Price#discounted", ["coupon"]]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:detail][:origin]] }).to(
+      eq([["App::Price#discounted", ["coupon"]]])
+    )
     expect(message(findings.first)).to(
       eq(
         "App::Price#discounted checks for nil (zone/thing.rb:6). 'coupon' defaults to nil, so callers may pass " \
@@ -862,7 +899,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       end
     RUBY
-    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map(&:package) }
+    found = [checked(source), checked(source, rules: Fixtures::STRICT)].map { |all| all.map { it.to_h[:package] } }
     expect(found).to(eq([[], ["App::Page#shorthand", "App::Page#tested"]]))
   end
 
@@ -922,7 +959,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
       RUBY
     }
     expect(sniffed(files, "nil_check")).to(be_empty)
-    expect(strictly(files, "nil_check").to_h { [it.package, it.detail[:sources].keys] }).to(
+    expect(sources_of(strictly(files, "nil_check"))).to(
       eq(
         "Shop::Cart#total" => ["Shop::Catalog#find"], "Shop::Cart#first" => ["Shop::Catalog#find"],
         "Shop::Cart#held" => ["Shop::Catalog#parent"], "Shop::Cart#built" => ["Shop::Catalog#find"],
@@ -968,7 +1005,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       RUBY
     }
-    expect(strictly(files, "nil_check").to_h { [it.package, it.detail[:sources].keys] }).to(
+    expect(sources_of(strictly(files, "nil_check"))).to(
       eq("Shop::Wired#drain" => ["Shop::Socket#read_nonblock"], "Shop::Piped#drain" => ["Shop::Socket#read_nonblock"])
     )
   end
@@ -995,7 +1032,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
         end
       RUBY
     }
-    expect(strictly(files, "nil_check").map(&:package)).to(eq(["Shop::Cart#owned"]))
+    expect(sources_of(strictly(files, "nil_check"))).to(eq("Shop::Cart#owned" => ["Shop::Catalog#find"]))
   end
 
   def answers(body)
@@ -1074,7 +1111,7 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
       RUBY
     }
     found = [sniffed(files, "nil_check"), strictly(files, "nil_check")]
-    told = found.map { |all| all.to_h { [it.package, [it.detail[:origin], it.detail[:sources].keys]] } }
-    expect(told).to(eq([{ "Shop::Cart#own" => [nil, ["#count"]], "Shop::Cart#first" => [nil, []] }] * 2))
+    told = found.map { |all| [sources_of(all), all.map { it.to_h[:detail][:origin] }] }
+    expect(told).to(eq([[{ "Shop::Cart#own" => ["Shop::Cart#count"], "Shop::Cart#first" => [] }, [nil, nil]]] * 2))
   end
 end

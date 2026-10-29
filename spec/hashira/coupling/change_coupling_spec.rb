@@ -35,7 +35,7 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
 
   def found(raw, directories = ["lib/app"])
     rules = Hashira::Config::Rules.parse({ "change_coupling" => raw }, Fixtures::KINDS)
-    Hashira::Pipeline.new(Hashira::Project.new(directories, rules:)).findings.select { it.kind == "change_coupling" }
+    Hashira::Pipeline.new(Hashira::Project.new(directories, rules:)).findings.select { it.to_h[:kind] == "change_coupling" }
   end
 
   def cut
@@ -53,7 +53,8 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
   end
 
   it "pairs files in two packages that change together in most of their commits" do
-    expect(coupled.first.map { [it.digest, it.detail.shared, it.detail.degree, it.anchors] }).to(
+    found = coupled.first
+    expect(found.map { [it.to_h[:digest], it.to_h[:detail][:shared], it.to_h[:detail][:degree], anchors_of(it)] }).to(
       eq([["a/x.rb <-> b/y.rb", 5, 67, %w[a/x.rb:3 b/y.rb:1]], ["d/p.rb <-> e/q.rb", 5, 59, %w[d/p.rb:1 e/q.rb:1]]])
     )
   end
@@ -66,7 +67,7 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
   def registered(source)
     within(files.merge("lib/app/d/p.rb" => source)) do
       history
-      return found(true).map(&:digest)
+      return found(true).map { it.to_h[:digest] }
     end
   end
 
@@ -80,7 +81,7 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
   end
 
   it "moves the commits, the share and the size of a commit worth counting" do
-    limits = coupled({ "commits" => 6 }, { "degree" => 67 }, { "files" => 1 }).map { it.map(&:digest) }
+    limits = coupled({ "commits" => 6 }, { "degree" => 67 }, { "files" => 1 }).map { it.map { it.to_h[:digest] } }
     expect(limits).to(eq([[], ["a/x.rb <-> b/y.rb"], []]))
   end
 
@@ -117,7 +118,7 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
     within(rails) do
       git("init", "-q")
       5.times { commit(%w[app/models/order.rb app/models/invoice.rb app/policies/order_policy.rb]) }
-      return found(true, ["app"]).map { it.detail.packages }
+      return found(true, ["app"]).map { it.to_h[:detail][:packages] }
     end
   end
 
@@ -130,7 +131,7 @@ RSpec.describe(Hashira::Coupling::ChangeCoupling, :aggregate_failures) do
       git("init", "-q")
       5.times { commit(%w[lib/app/a/v.rb lib/app/b/y.rb]) }
       5.times { commit(%w[lib/app/d/p.rb lib/app/e/q.rb]) }
-      return found(true).map(&:digest)
+      return found(true).map { it.to_h[:digest] }
     end
   end
 

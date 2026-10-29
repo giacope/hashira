@@ -11,6 +11,20 @@ class Hashira::Smells::BoundarySprawl
 
   BUILTINS = Hashira::Runtime::Builtins.new
 
+  class Reach
+    def initialize(count, files)
+      @count = count
+      @files = files
+    end
+
+    def to_h = { count: @count, files: @files }
+
+    def phrase(package)
+      "#{@count} methods across #{@files} files each pick apart #{package}'s " \
+        "internals. Front the boundary with one adapter the rest can lean on."
+    end
+  end
+
   def initialize(subjects, ownership, interpreted, rules)
     @subjects = subjects
     @ownership = ownership
@@ -37,11 +51,9 @@ class Hashira::Smells::BoundarySprawl
   def finding(root, contexts)
     files = contexts.map(&:file).uniq
     return unless wide?(contexts.size, files.size)
-    Hashira::Analysis::Finding.new(
-      kind: KIND, package: root,
-      detail: { count: contexts.size, files: files.size },
-      evidence: contexts.first(SHOWN).map(&:site)
-    )
+    proof = Hashira::Analysis::Finding::Proof.new(contexts.first(SHOWN).map(&:site))
+    reach = Reach.new(contexts.size, files.size)
+    Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(root), reach, proof)
   end
 
   def wide?(methods, files) = methods >= @rules.threshold(KIND, METHOD_FLOOR) && files >= FILE_FLOOR

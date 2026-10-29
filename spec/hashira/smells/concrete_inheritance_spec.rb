@@ -40,26 +40,28 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
       "lib/app/a_ext.rb" => "App::Report.class_eval do\n  def extra = 1\nend\n",
       "lib/app/report.rb" => reports, "lib/app/use.rb" => built
     }
-    expect(sniffed(files, "concrete_inheritance").map { it.detail.home }).to(eq(["report.rb:2"]))
+    expect(sniffed(files, "concrete_inheritance").map { it.to_h[:detail][:site] }).to(eq(["report.rb:2"]))
   end
 
   it "flags a subclass of an owned class that the project also builds on its own, naming where" do
     finding = concrete(reports, built).first
-    expect([finding.package, finding.detail.to_h, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(
         [
-          "App::Daily", { site: "report.rb:6", parent: "App::Report", home: "report.rb:2", mode: :built },
-          ["App::Report.new (use.rb:3)"]
+          "App::Report", { site: "report.rb:2", places: 1, parent: "App::Report" },
+          ["App::Daily (report.rb:6)", "App::Report.new (use.rb:3)"]
         ]
       )
     )
   end
 
+  def lineage(finding) = [finding.to_h[:package], finding.to_h[:detail][:parent]]
+
   def labelled(parent) = "module App\n  class Label < #{parent}\n    def tag = self\n  end\nend\n"
 
   it "flags a subclass of a concrete core collection or value class, under strict only" do
     reopened = "class String\n  def shout = upcase\nend\n"
-    found = %w[String ::Array Hash Set].map { strict(reopened + labelled(it)).map { [it.package, it.detail.parent] } }
+    found = %w[String ::Array Hash Set].map { |parent| strict(reopened + labelled(parent)).map { lineage(it) } }
     expect(found).to(eq(%w[String Array Hash Set].map { [["App::Label", it]] }))
     expect(%w[String Hash].map { concrete(reopened + labelled(it)) }).to(all(be_empty))
   end
@@ -68,6 +70,7 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
     said = "App::Label extends Hash, a concrete core class (report.rb:2). Keep one in a field and give the class " \
       "methods of its own: what it inherits (map, select, merge) answers a plain Hash, not this class."
     expect(message(strict(labelled("Hash")).first)).to(eq(said))
+    expect(strict(labelled("Hash")).first.to_h[:evidence]).to(eq(["App::Label < Hash (report.rb:2)"]))
   end
 
   it "leaves a subclass of a core class that is not a collection or a value alone" do
@@ -76,7 +79,7 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
   end
 
   it "says what the parent is and what to do" do
-    said = "App::Daily inherits from App::Report, a concrete class the project also builds (report.rb:6). " \
+    said = "App::Report is a concrete class the project also builds, and a subclass extends it (report.rb:2). " \
       "Extract what they share into an abstract base both extend, or compose instead."
     expect(message(concrete(reports, built).first)).to(eq(said))
   end
@@ -90,7 +93,7 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
       "lib/app/conversions.rb" => "module App\n  class Report\n    def to_csv = rows.join(\",\")\n  end\nend\n",
       "lib/app/report.rb" => reports, "lib/app/use.rb" => built
     }
-    expect(sniffed(files, "concrete_inheritance").map { it.detail.home }).to(eq(["report.rb:2"]))
+    expect(sniffed(files, "concrete_inheritance").map { it.to_h[:detail][:site] }).to(eq(["report.rb:2"]))
   end
 
   it "resolves the built constant lexically, from the caller's namespace outward, and through a full path" do
@@ -141,12 +144,12 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
     expect((framed + [root]).flat_map { [concrete(it, built), strict(it, built)] }).to(all(be_empty))
   end
 
-  def overriding = "App::Daily#rows (report.rb:7)"
+  def overriding = ["App::Daily (report.rb:6)", "App::Daily#rows (report.rb:7)"]
 
   it "flags, under strict, a subclass under a framework root overriding a working method of its concrete parent" do
-    found = [" < ActiveRecord::Base", " < StandardError"].map { strict(reports(it)).map { [it.package, it.evidence] } }
-    expect([found, concrete(reports(" < ActiveRecord::Base"))]).to(eq([[[["App::Daily", [overriding]]]] * 2, []]))
-    said = "App::Daily overrides working methods of App::Report, a concrete class (report.rb:6). " \
+    found = [" < ActiveRecord::Base", " < StandardError"].map { strict(reports(it)).map { [it.to_h[:package], it.to_h[:evidence]] } }
+    expect([found, concrete(reports(" < ActiveRecord::Base"))]).to(eq([[[["App::Report", overriding]]] * 2, []]))
+    said = "App::Report is a concrete class, and a subclass overrides its working methods (report.rb:2). " \
       "Extract what they share into an abstract base both extend, or compose instead."
     expect(message(strict(reports(" < ActiveRecord::Base")).first)).to(eq(said))
   end
@@ -159,7 +162,7 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
 
   it "takes a core-named parent the namespace defines for that class, not the core one" do
     owned = "module App\n  class Hash < ::Hash\n  end\n\n  class Mash < Hash\n  end\nend\n"
-    expect(strict(owned).map(&:package)).to(eq(["App::Hash"]))
+    expect(strict(owned).map { it.to_h[:package] }).to(eq(["App::Hash"]))
   end
 
   it "leaves an override alone under a framework root when the parent is abstract or the method a hook or a refusal" do
@@ -172,12 +175,14 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
 
   it "flags a deeper subclass of a built class whose owned ancestors extend nothing foreign" do
     root = reports(" < Root").sub("module App\n", "module App\n  class Root\n  end\n\n")
-    expect(concrete(root, built).map(&:package)).to(eq(["App::Daily"]))
+    expect(concrete(root, built).map { [it.to_h[:package], it.to_h[:evidence].first] }).to(
+      eq([["App::Report", "App::Daily (report.rb:9)"]])
+    )
   end
 
   it "lists at most three of the places that build the parent" do
     many = "module App\n  class Runner\n#{(1..4).map { "    def r#{it} = Report.new\n" }.join}  end\nend\n"
-    expect(concrete(reports, many).first.evidence.size).to(eq(3))
+    expect(concrete(reports, many).first.to_h[:evidence].drop(1).size).to(eq(3))
   end
 
   it "survives classes that name each other as parents" do

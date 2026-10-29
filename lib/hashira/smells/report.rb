@@ -6,15 +6,14 @@ require_relative "records"
 require_relative "tuples"
 require_relative "boundary_sprawl"
 require_relative "check"
+require_relative "member"
+require_relative "testimony"
 require_relative "concrete_inheritance"
 require_relative "data_class"
 require_relative "exports"
-require_relative "heirs"
-require_relative "bequests"
 require_relative "hierarchy"
 require_relative "attributes"
 require_relative "factory"
-require_relative "grouping"
 require_relative "naming"
 require_relative "refusal"
 require_relative "values"
@@ -33,6 +32,7 @@ require_relative "manual_dispatch"
 require_relative "module_initialize"
 require_relative "opaque"
 require_relative "origin"
+require_relative "doubt"
 require_relative "nil_check"
 require_relative "ownership"
 require_relative "repeated_conditional"
@@ -67,7 +67,7 @@ class Hashira::Smells::Report
     @rules = rules
   end
 
-  def findings = @_findings ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES)) + spread + sprawl + bags
+  def findings = @_findings ||= checks.flat_map(&:findings) + spread + sprawl + bags + gathered
 
   private
 
@@ -85,7 +85,7 @@ class Hashira::Smells::Report
 
   def spread
     return [] unless wants?(SPREAD)
-    wholes.select { it.kind == :class }.filter_map { Hashira::Smells::SpreadSwitch.new(it).finding }
+    wholes.select { it.kind == :class }.flat_map { Hashira::Smells::SpreadSwitch.new(it).findings }
   end
 
   def wanted(checks) = checks.select { wants?(Hashira::Smells::Kind.new(it).to_s) }
@@ -102,7 +102,13 @@ class Hashira::Smells::Report
     Hashira::Smells::BoundarySprawl.new(methods, census.ownership, @boundaries.interpreted, @rules).findings
   end
 
-  def sniff(subjects, checks)
-    subjects.flat_map { |subject| checks.filter_map { |check| check.new(subject, @rules).finding } }
+  def checks = @_checks ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES))
+
+  def sniff(subjects, kinds) = subjects.flat_map { |subject| kinds.map { it.new(subject, @rules) } }
+
+  def gathered
+    groups = checks.flat_map(&:members).reduce({}) { |found, member| member.gather(found) }
+    groups.each_with_index.sort_by { |((section, _key), _member), index| [section, index] }
+      .map { |(_key, member), _index| member.finding }
   end
 end

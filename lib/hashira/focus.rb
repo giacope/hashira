@@ -23,7 +23,5 @@ class Hashira::Focus
 
   def named?(finding) = sites(finding).any? { wanted.include?(it) }
 
-  def sites(finding) = quotes(finding).filter_map { SITE.match(it)&.[](:path) }
-
-  def quotes(finding) = [finding.package, finding.detail.to_h[:site], *finding.evidence].compact
+  def sites(finding) = finding.quotes.filter_map { SITE.match(it)&.[](:path) }
 end

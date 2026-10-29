@@ -14,8 +14,8 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
 
   def list
     (constants + methods).sort_by(&:place).map do |member|
-      noun = member.selector ? :method : :constant
-      finding(package: member.name, detail: { site: member.site, noun: }, evidence: [], anchors: [member.site])
+      unused = Hashira::Coupling::Unused.new(member.site, member.selector ? :method : :constant)
+      sighted(member.name, unused, [], [member.site])
     end
   end
 

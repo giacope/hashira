@@ -26,16 +26,16 @@ RSpec.describe(Hashira::Complexity::Scores, :aggregate_failures) do
 
   it "flags methods over the threshold as findings with a breakdown and advice" do
     findings = flagged(Fixtures::COMPLEX_FILES)
-    expect(findings.map { [it.kind, it.package] }).to(eq([["complexity", "App::Knot::Tangle#tangled"]]))
+    expect(findings.map { [it.to_h[:kind], it.to_h[:package]] }).to(eq([["complexity", "App::Knot::Tangle#tangled"]]))
     expect(message(findings.first)).to(include("cognitive 12, 4 calls", "guard clauses"))
-    expect(findings.first.evidence).to(include("if +10 (lines 9, 10, 11, 12)", "boolean +2 (line 13)"))
+    expect(findings.first.to_h[:evidence]).to(include("if +10 (lines 9, 10, 11, 12)", "boolean +2 (line 13)"))
   end
 
   it "flags a method from exactly the threshold, and not one point below it" do
     ten = "def ten\n if a\n  if b\n   if c\n    d if e\n   end\n  end\n end\nend\n"
     nine = "def nine\n x if p\n x if q\n x if r\n if a\n  if b\n   c if d\n  end\n end\nend\n"
     files = { "lib/app/knot/edge.rb" => "module App; module Knot; class Edge\n#{ten}#{nine}end; end; end\n" }
-    expect([ranked(files).map(&:cognitive), flagged(files).map(&:package)]).to(eq([[10, 9], ["App::Knot::Edge#ten"]]))
+    expect([ranked(files).map(&:cognitive), flagged(files).map { it.to_h[:package] }]).to(eq([[10, 9], ["App::Knot::Edge#ten"]]))
   end
 
   it "names the method's site and advises on the label that cost the most, not the first one seen" do

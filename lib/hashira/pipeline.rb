@@ -76,13 +76,11 @@ class Hashira::Pipeline
   end
 
   def findings
-    found = structural + listed(complexity) + listed(duplication) + grouped
-    focus.narrow(found.select { rules.enabled?(it.kind) })
+    found = structural + listed(complexity) + listed(duplication) + listed(smells)
+    focus.narrow(found.select { it.of?(enabled) })
   end
 
   def focus = @_focus ||= Hashira::Focus.new(@project, @only)
-
-  def grouped = Hashira::Smells::Grouping.new(listed(smells)).findings
 
   private
 
@@ -95,6 +93,8 @@ class Hashira::Pipeline
   def suppressions = @_suppressions ||= Hashira::Suppression::Suppressions.new(@project, parsed, kinds)
 
   def kinds(checks = Hashira::Checks.new) = checks.to_a
+
+  def enabled(checks = Hashira::Checks.new) = @_enabled ||= checks.select { rules.enabled?(it) }
 
   def coupling
     @_coupling ||= Hashira::Coupling::Report.new(@project, parsed.all, packaging: settle(@packaging), rules: rules)

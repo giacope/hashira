@@ -3,24 +3,30 @@
 class Hashira::Report::Tally
   SITE = /\A(?<path>[^\s:]+\.rb)(?::|\z)/
 
-  Row =
-    Data.define(:kind, :count, :files) do
-      def line(wide, tall) = "  #{kind.ljust(wide)}  #{count.to_s.rjust(tall)} in #{reach}"
-
-      def reach = Hashira::Report::Count.new(files, "file").to_s
-    end
-
   def initialize(findings)
     @findings = findings
   end
 
-  def rows = @findings.group_by(&:kind).map { |kind, group| row(kind, group) }.sort_by { [-it.count, it.kind] }
+  def to_h = rows.to_h { |kind, count, files| [kind, { count:, files: }] }
 
-  def to_h = rows.to_h { [it.kind, { count: it.count, files: it.files }] }
+  def lines
+    wide = rows.map { it.fetch(0).length }.max
+    tall = rows.fetch(0).fetch(1).to_s.length
+    rows.map { |kind, count, files| "  #{kind.ljust(wide)}  #{count.to_s.rjust(tall)} in #{reach(files)}" }
+  end
 
   private
 
-  def row(kind, group) = Row.new(kind:, count: group.size, files: group.flat_map { paths(it) }.uniq.size)
+  def rows
+    @_rows ||=
+      kinds.map { |kind, group| [kind, group.size, files(group)] }.sort_by { |kind, count, _files| [-count, kind] }
+  end
 
-  def paths(finding) = [finding.package, finding.site, *finding.evidence].filter_map { it[SITE, "path"] }
+  def kinds = @findings.group_by { it.to_h.fetch(:kind) }
+
+  def files(group) = group.flat_map { paths(it) }.uniq.size
+
+  def paths(finding) = finding.quotes.filter_map { it[SITE, "path"] }
+
+  def reach(files) = Hashira::Prose::Count.new(files, "file").to_s
 end

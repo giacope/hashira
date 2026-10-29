@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::CI::Accepted, :aggregate_failures) do
-  def finding(kind: "cycle", package: "app", digest: nil)
-    Hashira::Analysis::Finding.new(kind:, package:, digest:, evidence: [])
-  end
+  def finding(kind: "cycle", package: "app", digest: nil) = handmade(kind, package, digests: [digest].compact)
 
   def accepting(entry) = described_class.new([entry])
 
@@ -17,8 +15,8 @@ RSpec.describe(Hashira::CI::Accepted, :aggregate_failures) do
     within({}) do
       File.write("b.json", JSON.generate(acceptance))
       screened = described_class.build("b.json").screen([finding, finding(kind: "unstable_dependency")])
-      expect([screened.all.map(&:kind), screened.accepted])
-        .to(eq([%w[unstable_dependency], [[finding, "usage conformance-tests the CLI"]]]))
+      expect([screened.all.map { it.to_h[:kind] }, screened.accepted.map { |found, why| [found.to_h, why] }])
+        .to(eq([%w[unstable_dependency], [[finding.to_h, "usage conformance-tests the CLI"]]]))
     end
   end
 

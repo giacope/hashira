@@ -1,9 +1,7 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Focus, :aggregate_failures) do
-  def finding(package, site, evidence: [])
-    Hashira::Analysis::Finding.new(kind: "cycle", package:, detail: { site: }, evidence:)
-  end
+  def finding(package, site, evidence: []) = handmade("cycle", package, Fakes::Detail.new({ site: }), evidence:)
 
   def focused(paths, &)
     within(Fixtures::CYCLIC_FILES) { yield(described_class.new(Hashira::Project.new(["lib/app"]), paths)) }
@@ -34,7 +32,7 @@ RSpec.describe(Hashira::Focus, :aggregate_failures) do
 
   it "names a file the duplication findings carry in place of a package" do
     focused(["lib/app/core/util.rb"]) do |focus|
-      clone = Hashira::Analysis::Finding.new(kind: "duplication", package: "core/util.rb:3", evidence: [])
+      clone = handmade("duplication", "core/util.rb:3")
       expect(focus.narrow([clone])).to(eq([clone]))
     end
   end

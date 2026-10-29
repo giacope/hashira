@@ -53,7 +53,7 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
   it "types a local by a type test against an owned class, whatever its name" do
     tested = "def t?(item) = (item.parent.nil? if item.is_a?(FileTree::Node))"
     found = sniffed({ "lib/app/tree.rb" => tree, "lib/app/translator.rb" => translator(tested) }, "nil_check")
-    expect(found.map(&:package)).to(eq(["App::Translator#t?"]))
+    expect(found.map { it.to_h[:package] }).to(eq(["App::Translator#t?"]))
   end
 
   def inspector(body)
@@ -72,7 +72,7 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
     RUBY
   end
 
-  def probed(body) = sniffed({ "lib/app/inspector.rb" => inspector(body) }, "manual_dispatch").map(&:package)
+  def probed(body) = sniffed({ "lib/app/inspector.rb" => inspector(body) }, "manual_dispatch").map { it.to_h[:package] }
 
   it "leaves a probe on a value of unknown type, and a probe of a computed message, alone" do
     untyped = "def show(variable)\n  value = instance_variable_get(variable)\n  value.respond_to?(:name)\nend"
@@ -113,7 +113,7 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
       end
     RUBY
     found = sniffed({ "lib/app/core.rb" => core }, "assumed_state")
-    expect(found.map(&:evidence)).to(eq([["@region"]]))
+    expect(found.map { it.to_h[:evidence] }).to(eq([["@region"]]))
   end
 
   it "links a method that sends a computed name to every method the name's literal parts can spell" do
@@ -162,7 +162,7 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
       end
     RUBY
     names = %w[Mock RecordingMock Fake Spare]
-    found = names.map { sniffed({ "lib/app/compute.rb" => format(compute, it) }, "utility_function").map(&:package) }
+    found = names.map { packages_in(sniffed({ "lib/app/compute.rb" => format(compute, it) }, "utility_function")) }
     both = %w[RecordingMock Spare].map { |name| ["App::Compute::#{name}#list_flavors", "App::Compute::#{name}#reset_data"] }
     expect(found).to(eq([["App::Compute::Mock#reset_data"], both.first, ["App::Compute::Fake#reset_data"], both.last]))
   end
@@ -182,6 +182,6 @@ RSpec.describe(Hashira::Smells::Foreign, :aggregate_failures) do
         end
       end
     RUBY
-    expect(sniffed({ "lib/app/router.rb" => router }, "low_cohesion").map { it.detail[:count] }).to(eq([3]))
+    expect(sniffed({ "lib/app/router.rb" => router }, "low_cohesion").map { it.to_h[:detail][:count] }).to(eq([3]))
   end
 end

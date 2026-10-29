@@ -20,12 +20,42 @@ class Hashira::Coupling::Navigation < Hashira::Coupling::Rule
 
   def owning?(from, to) = declared[[from, to]].any? { OWNING.include?(it.macro.to_sym) }
 
+  class Tangle
+    def initialize(parent, children, guarantees, anchor)
+      @parent = parent
+      @children = children
+      @guarantees = guarantees
+      @anchor = anchor
+    end
+
+    def to_h = { parent: @parent, children: @children, guarantees: @guarantees }
+
+    def phrase(_package)
+      return paired(@children.fetch(0)) if @children.one?
+      "#{@parent} is navigated both ways by #{@children.size} models, #{@children.join(", ")}: each declares an " \
+        "association to the other (#{@anchor}), which ties them together. Drop #{@parent}'s side of each " \
+        "and query the model where it is needed.#{carried}"
+    end
+
+    private
+
+    def paired(child)
+      "#{@parent} and #{child} each declare an association to the other (#{@anchor}) — navigating both " \
+        "ways ties them together. Drop #{@parent}'s side and query #{child} where it is needed.#{carried}"
+    end
+
+    def carried
+      return "" if @guarantees.empty?
+      carries = @guarantees.map { it.split(": ", 2).last }.join("; ")
+      " It carries #{carries}: hand that to an object above both, or to the foreign key, first."
+    end
+  end
+
   def entry(parent, children)
     links = ties(parent, children)
-    finding(
-      package: parent, evidence: links.map(&:said).uniq, anchors: links.map(&:anchor).uniq,
-      detail: { parent:, children:, guarantees: links.filter_map { graph.pledges[it.site] }.uniq }
-    )
+    anchors = links.map(&:anchor).uniq
+    tangle = Tangle.new(parent, children, links.filter_map { graph.pledges[it.site] }.uniq, anchors.first)
+    sighted(parent, tangle, links.map(&:said).uniq, anchors)
   end
 
   def ties(parent, children)

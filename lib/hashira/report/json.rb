@@ -35,11 +35,7 @@ class Hashira::Report::Json
     { suppressed: silenced, unused_suppressions: @view.screened.unused.map(&:to_h) }
   end
 
-  def rendered(finding)
-    finding.to_h.merge(message: Hashira::Report::Phrases.new(finding).message, confidence: confidence(finding))
-  end
-
-  def confidence(finding) = Hashira::Report::Confidence.new(finding).of
+  def rendered(finding) = finding.to_h
 
   def coupling
     graph = @view.graph

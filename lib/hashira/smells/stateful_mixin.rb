@@ -23,6 +23,19 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   INCLUDED = :included
 
+  class Mixing
+    ADVICE = "Make it a decorator: wrap the host and reach it through its public methods."
+
+    def initialize(site, uses)
+      @site = site
+      @uses = uses
+    end
+
+    def to_h = { site: @site, uses: @uses }
+
+    def phrase(package) = "#{package} mixes behavior into its host's own state (#{@site}). #{ADVICE}"
+  end
+
   private
 
   def smelly? = mixin? && (lent.any? || !lifted?) && !subject.singular? && uses.any? && subject.legible?
@@ -92,7 +105,7 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def line(node) = node.location.start_line
 
-  def detail = { site:, uses: uses.size }
+  def detail = Mixing.new(site, uses.size)
 
   def evidence = uses
 end

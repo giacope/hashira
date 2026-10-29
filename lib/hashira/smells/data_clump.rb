@@ -11,9 +11,13 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   INWARD = [NilClass, Prism::SelfNode].freeze
 
+  ADVICE = "Introduce a parameter object."
+
   private
 
   def smelly? = clumps.any?
+
+  def detail = Hashira::Smells::Spot.new(site, "passes the same parameters between methods", ADVICE)
 
   def candidates
     @_candidates ||= subject.owned.reject(&:polymorphic?).map { [it, carried(it).sort] }.select { clump?(it.last) }

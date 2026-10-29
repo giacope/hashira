@@ -3,8 +3,8 @@
 RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
   it "reports one finding per cluster, with each site as evidence and a refactoring" do
     findings = duplication(Fixtures::DUPLICATION_FILES, &:findings)
-    expect(findings.map { [it.kind, message(it)] }).to(match([["duplication", include("2 similar fragments")]]))
-    expect(findings.first.evidence).to(
+    expect(findings.map { [it.to_h[:kind], message(it)] }).to(match([["duplication", include("2 similar fragments")]]))
+    expect(findings.first.to_h[:evidence]).to(
       include(a_string_matching(%r{orders/checkout\.rb:4-8}), a_string_matching(%r{billing/refund\.rb:4-8}))
     )
   end
@@ -42,7 +42,7 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
     end
   end
 
-  def digest_of(files) = duplication(files) { |clones| clones.findings.first.digest }
+  def digest_of(files) = duplication(files) { |clones| clones.findings.first.to_h[:digest] }
 
   it "keys a clone by a digest that survives it moving down the file and changes when it changes" do
     original = digest_of(Fixtures::DUPLICATION_FILES)

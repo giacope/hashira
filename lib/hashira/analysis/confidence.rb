@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
-class Hashira::Report::Confidence
+class Hashira::Analysis::Confidence
   HIGH = "high"
+
   MEDIUM = "medium"
+
   LOW = "low"
+
+  CLONES = "duplication"
 
   MEASURED = %w[
     cycle unstable_dependency mixed_audience wide_edge roll_call complexity layer_violation bidirectional_association
@@ -13,22 +17,17 @@ class Hashira::Report::Confidence
 
   HEDGED = %i[structure convention].freeze
 
-  def initialize(finding)
-    @finding = finding
+  def initialize(kind, detail)
+    @kind = kind
+    @detail = detail
   end
 
-  def of
-    stated = @finding.confidence
-    stated ? stated.to_s : inferred
+  def to_s
+    return copied(@detail.to_h.fetch(:kind)) if @kind == CLONES
+    MEASURED.include?(@kind) ? HIGH : MEDIUM
   end
 
   private
-
-  def inferred
-    kind = @finding.kind
-    return copied(@finding.detail.kind) if kind == "duplication"
-    MEASURED.include?(kind) ? HIGH : MEDIUM
-  end
 
   def copied(variance)
     return LOW if HEDGED.include?(variance)

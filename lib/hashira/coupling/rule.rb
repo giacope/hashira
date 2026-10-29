@@ -15,9 +15,14 @@ class Hashira::Coupling::Rule
 
   def threshold(default) = @rules.threshold(self.class::KIND, default)
 
-  def weighed(from, to, weight) = { from:, to:, weight: }
+  def finding(name, detail, proof) = Hashira::Analysis::Finding.new(self.class::KIND, name, detail, proof)
 
-  def finding(**attributes)
-    Hashira::Analysis::Finding.new(kind: self.class::KIND, cycle: nil, **attributes)
+  def sighted(package, detail, evidence, anchors = [])
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, anchors)
+    finding(Hashira::Analysis::Finding::Name.new(package), detail, proof)
   end
+
+  def between(from, to) = Hashira::Analysis::Finding::Name.new(from, ["#{from} -> #{to}"])
+
+  def looped(key, cycles) = Hashira::Analysis::Finding::Name.new(key, [], [cycles.path(key)])
 end

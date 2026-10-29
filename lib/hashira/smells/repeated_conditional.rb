@@ -20,6 +20,19 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   QUERIES = %i[exists? exist? where find_by].freeze
 
+  class Echoes
+    def initialize(site, count)
+      @site = site
+      @count = count
+    end
+
+    def to_h = { site: @site, count: @count }
+
+    def phrase(package)
+      "#{package} branches on the same test #{@count} times (#{@site}). Replace the scattered checks with polymorphism."
+    end
+  end
+
   class Test
     def initialize(atom, region, root)
       @atom = atom
@@ -106,7 +119,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
     node.predicate if node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode) || node.is_a?(Prism::CaseNode)
   end
 
-  def detail = { site:, count: repeats.map(&:size).max }
+  def detail = Echoes.new(site, repeats.map(&:size).max)
 
   def evidence = repeats.map { |tests| row(tests.map(&:cue)) }
 

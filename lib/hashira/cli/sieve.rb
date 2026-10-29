@@ -8,7 +8,7 @@ class Hashira::CLI::Sieve
 
   def narrowing? = @focus.narrowing? || @kinds.any?
 
-  def narrow(findings) = findings.select { keeps?(it.kind) }
+  def narrow(findings) = @kinds.empty? ? findings : findings.select { it.of?(@kinds) }
 
   def keeps?(kind) = @kinds.empty? || @kinds.include?(kind)
 end

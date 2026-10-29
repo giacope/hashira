@@ -144,7 +144,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "deals the findings across kinds in the order the text report shows them" do
     with_pipeline do |project, graph, findings|
-      expected = Hashira::Report::Spread.new(findings.all).to_a.map(&:package)
+      expected = Hashira::Report::Spread.new(findings.all).to_a.map { it.to_h[:package] }
       expect(emit(view(project, graph, findings))["findings"].map { it["package"] }).to(eq(expected))
     end
   end
@@ -156,26 +156,27 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
     end
   end
 
-  describe(Hashira::Report::Confidence) do
+  describe(Hashira::Analysis::Confidence) do
     def clone(variance)
-      detail = Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: variance, hot: false)
-      Hashira::Analysis::Finding.new(kind: "duplication", package: "a.rb:1", detail:, evidence: [])
+      detail = Hashira::Duplication::DuplicationFinding::Overlap.new(2, 30, variance, false)
+      handmade("duplication", "a.rb:1", detail)
     end
+
+    def rated(finding) = finding.to_h.fetch(:confidence)
 
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
       kinds = %i[identical literal message constant mixed renamed renamed_literal nil_guard renamed_nil_guard structure
         convention]
-      rated = kinds.map { described_class.new(clone(it)).of }
-      expect(rated).to(eq(%w[high high high high medium medium medium medium medium low low]))
+      expect(kinds.map { rated(clone(it)) }).to(eq(%w[high high high high medium medium medium medium medium low low]))
     end
 
     it "takes the confidence a finding states over the one its kind implies" do
-      stated = %i[low high].map { Hashira::Analysis::Finding.new(kind: "nil_check", package: "p", evidence: [], confidence: it) }
-      expect(stated.map { described_class.new(it).of }).to(eq(%w[low high]))
+      stated = %i[low high].map { handmade("nil_check", "p", ratings: [it]) }
+      expect(stated.map { rated(it) }).to(eq(%w[low high]))
     end
 
     it "treats every structural kind and complexity as measured, and every smell and history guess as a pattern" do
-      rate = ->(kind) { described_class.new(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])).of }
+      rate = ->(kind) { described_class.new(kind, Fakes::Detail.new({})).to_s }
       guesses = %w[change_coupling dead_code]
       expect([*(Fixtures::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
       expect([*Fixtures::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))

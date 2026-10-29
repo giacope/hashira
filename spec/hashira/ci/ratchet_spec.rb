@@ -6,27 +6,25 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
   let(:graph) { pipeline(["lib/app"]).last }
 
   def finding(kind, package, digest: nil)
-    Hashira::Analysis::Finding.new(kind:, package:, digest:, evidence: ["a.rb:1"], detail: detail(kind))
+    handmade(kind, package, detail(kind), evidence: ["a.rb:1"], digests: [digest].compact)
   end
 
   def detail(kind)
     return Hashira::Complexity::Trail::Trace.new(site: "a.rb:1", chain: 2) if kind == "indirection"
-    Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: :identical, hot: false)
+    Hashira::Duplication::DuplicationFinding::Overlap.new(2, 30, :identical, false)
   end
 
   def scored(kind, package, value)
-    Hashira::Analysis::Finding.new(
-      kind:, package:, evidence: ["a.rb:1"],
-      detail: Hashira::Complexity::MethodFinding::Effort.new(cognitive: value, calls: 3, site: "a.rb:1", dominant: "if")
-    )
+    effort = Hashira::Complexity::MethodFinding::Effort.new(cognitive: value, calls: 3, site: "a.rb:1", dominant: "if")
+    handmade(kind, package, effort, evidence: ["a.rb:1"])
   end
 
   def smell(kind, package, shape: nil)
-    Hashira::Analysis::Finding.new(kind:, package:, evidence: [], detail: { site: "a.rb:1" }, shape:)
+    handmade(kind, package, Fakes::Detail.new({ site: "a.rb:1" }), shapes: [shape].compact)
   end
 
-  def ratchet(findings = [], path = "baseline.json", io: StringIO.new)
-    described_class.new(graph, findings, Hashira::CI::Baseline.new(path), io:)
+  def ratchet(findings = [], path = "baseline.json", io: StringIO.new, kinds: [])
+    described_class.new(graph, findings, Hashira::CI::Baseline.new(path, kinds:), io:)
   end
 
   def scoped(analyzers:, targets:)
@@ -51,7 +49,7 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
     [yield(io), io.string]
   end
 
-  def told(findings = [], focus = sweeping) = noted { ratchet(findings, io: it).check(focus) }
+  def told(findings = [], focus = sweeping, kinds: []) = noted { ratchet(findings, io: it, kinds:).check(focus) }
 
   def updated(findings) = noted { shown(Hashira::CI::Update.new(ratchet(findings, io: it), "b.json")) }
 
@@ -77,7 +75,21 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
     described_class.new(graph, [finding("cycle", "alpha")], known, io: StringIO.new).record
     expect(saved["kinds"]).to(eq(%w[cycle nil_check]))
     newer = [finding("cycle", "alpha"), finding("indirection", "A#run"), finding("indirection", "B#run")]
-    expect(told(newer)).to(match([0, start_with("Not ratcheted: 2 indirection — kinds this baseline predates.")]))
+    expect(told(newer, kinds: Fixtures::KINDS)).to(
+      match([0, start_with("Not ratcheted: 2 indirection — kinds this baseline predates.")])
+    )
+  end
+
+  it "names the kinds a baseline predates in the order their findings come" do
+    known = Hashira::CI::Baseline.new("baseline.json", kinds: %w[cycle])
+    described_class.new(graph, [], known, io: StringIO.new).record
+    newer = [smell("nil_check", "B#run"), finding("indirection", "A#run")]
+    expect(told(newer, kinds: Fixtures::KINDS).last).to(start_with("Not ratcheted: 1 nil_check, 1 indirection —"))
+  end
+
+  it "judges a kind that arrived in the version a baseline lists no kinds for" do
+    seed(findings: {}, version: 7, packaging: "folder")
+    expect(told([finding("indirection", "A#b")], kinds: Fixtures::KINDS)).to(match([1, include("NEW FINDING:")]))
   end
 
   it "reads a baseline older than the kinds list by the version each kind arrived in, and by the kinds' new names" do
@@ -89,7 +101,7 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
       finding("repeated_call", "A#b"), finding("state_sprawl", "C"), finding("unstable_dependency", "D"),
       finding("indirection", "A#b")
     ]
-    expect(told(current)).to(
+    expect(told(current, kinds: Fixtures::KINDS)).to(
       match([0, include("Not ratcheted: 1 indirection", "Ratchet OK: 3 edges, 4 findings, unchanged.")])
     )
     seed(findings: {}, version: 7, packaging: "folder")

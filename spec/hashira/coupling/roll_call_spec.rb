@@ -5,6 +5,10 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
     described_class.new(lists.transform_values { |list| literals(list) }, homes).rolls
   end
 
+  def told(roll) = roll.finding("roll_call").to_h
+
+  def words(roll) = told(roll)[:detail][:words]
+
   def literals(list)
     (list.first.is_a?(Array) ? list : [list]).each_with_index.map do |words, index|
       Hashira::Coupling::Words::Literal.new(words: Set.new(words), line: index + 1)
@@ -16,8 +20,8 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
       { "a.rb" => %w[w x y], "b.rb" => %w[w x y z], "c.rb" => %w[w x y] },
       { "a.rb" => "p", "b.rb" => "q", "c.rb" => "p" }
     )
-    expect(found.map(&:to_h)).to(
-      eq([{ words: %w[w x y], files: %w[a.rb b.rb c.rb], packages: %w[p q], sites: %w[a.rb:1 b.rb:1 c.rb:1] }])
+    expect(found.map { [it.to_h, told(it)[:evidence]] }).to(
+      eq([[{ words: %w[w x y], files: %w[a.rb b.rb c.rb], packages: %w[p q] }, %w[a.rb:1 b.rb:1 c.rb:1]]])
     )
   end
 
@@ -33,7 +37,7 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
     generic = %w[a.rb b.rb c.rb].to_h { [it, %w[id created_at name x]] }
     partial = { "a.rb" => %w[w x y a b c d e], "b.rb" => %w[w x y], "c.rb" => %w[w x y] }
     edge = { "a.rb" => %w[w x y a b], "b.rb" => %w[w x y], "c.rb" => %w[w x y] }
-    expect([generic, partial, edge].map { rolls(it, homes).map(&:words) }).to(eq([[], [], [%w[w x y]]]))
+    expect([generic, partial, edge].map { rolls(it, homes).map { words(it) } }).to(eq([[], [], [%w[w x y]]]))
   end
 
   it "keeps only the widest roll when one swallows another" do
@@ -41,7 +45,7 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
       { "a.rb" => %w[w x y z], "b.rb" => %w[w x y z], "c.rb" => %w[w x y z], "d.rb" => %w[x y z] },
       { "a.rb" => "p", "b.rb" => "q", "c.rb" => "r", "d.rb" => "s" }
     )
-    expect(found.map(&:words)).to(eq([%w[w x y z]]))
+    expect(found.map { words(it) }).to(eq([%w[w x y z]]))
   end
 
   it "ignores words that never leave one package" do
@@ -73,6 +77,6 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
   it "finds a roll that one literal in each file holds whole" do
     lists = { "a.rb" => [%w[x y z], %w[q]], "b.rb" => [%w[q], %w[w x y z]], "c.rb" => [%w[z y x]] }
     found = rolls(lists, { "a.rb" => "p", "b.rb" => "q", "c.rb" => "r" })
-    expect(found.map { [it.words, it.sites] }).to(eq([[%w[x y z], %w[a.rb:1 b.rb:2 c.rb:1]]]))
+    expect(found.map { [words(it), told(it)[:evidence]] }).to(eq([[%w[x y z], %w[a.rb:1 b.rb:2 c.rb:1]]]))
   end
 end

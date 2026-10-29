@@ -8,14 +8,14 @@ RSpec.describe(Hashira::CI::Gate, :aggregate_failures) do
     gate.status
   end
 
+  def detail(kind)
+    return Hashira::Coupling::Imbalance::Gap.new("a", "b", 0.0, 1.0) if kind == "unstable_dependency"
+    Hashira::Coupling::Cycle::Ring.new(%w[a b], [], Hashira::Coupling::Ties.new([["a", "b", 1]]), true)
+  end
+
   def finding(kind:, evidence:)
-    Hashira::Analysis::Finding.new(
-      kind:, package: "a", cycle: %w[a b a], evidence:,
-      detail: {
-        members: %w[a b], folded: [], cut: [{ from: "a", to: "b", weight: 1 }],
-        from: "a", to: "b", from_instability: 0.0, to_instability: 1.0
-      }
-    )
+    name = Hashira::Analysis::Finding::Name.new("a", [], [%w[a b a]])
+    Hashira::Analysis::Finding.new(kind, name, detail(kind), Hashira::Analysis::Finding::Proof.new(evidence))
   end
 
   it "passes when no findings match the gated kinds" do

@@ -14,7 +14,7 @@ class Hashira::CI::Gate
 
   private
 
-  def offending = @_offending ||= @findings.all.select { @kinds.include?(it.kind) }
+  def offending = @_offending ||= @findings.all.select { it.of?(@kinds) }
 
   def failure
     offending.each { Hashira::Report::FindingLines.new(it, io: @io).print }
@@ -24,7 +24,7 @@ class Hashira::CI::Gate
   end
 
   def tally(offending)
-    offending.group_by(&:kind).map { |kind, list| [kind, list.size] }
+    @kinds.uniq.map { |kind| [kind, offending.count { it.of?([kind]) }] }.reject { it.last.zero? }
       .sort_by { |kind, size| [-size, kind] }.map { |kind, size| "#{kind} #{size}" }.join(", ")
   end
 

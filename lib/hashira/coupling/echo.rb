@@ -7,11 +7,11 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
 
   REST_ACTIONS = %w[index show new create edit update destroy].to_set.freeze
 
-  def list = Hashira::Coupling::RollCall.new(lists, homes).rolls.reject { framework?(it) }.map { entry(it) }
+  def list = Hashira::Coupling::RollCall.new(lists, homes).rolls.reject { framework?(it) }.map { it.finding(KIND) }
 
   private
 
-  def framework?(roll) = project.rails? && REST_ACTIONS.superset?(roll.words.to_set)
+  def framework?(roll) = project.rails? && roll.within?(REST_ACTIONS)
 
   def sightings
     @_sightings ||=
@@ -24,9 +24,4 @@ class Hashira::Coupling::Echo < Hashira::Coupling::Rule
   def lists = sightings.to_h { |file, _home, words| [file, words] }
 
   def homes = sightings.to_h { |file, home, _words| [file, home] }
-
-  def entry(roll)
-    words, files, packages, sites = roll.deconstruct
-    finding(package: packages.first, digest: words.join(","), evidence: sites, detail: { words:, files:, packages: })
-  end
 end

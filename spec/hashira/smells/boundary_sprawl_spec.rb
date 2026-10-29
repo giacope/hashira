@@ -21,8 +21,10 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
 
   it "flags one foreign type picked apart across many methods and files" do
     findings = sniffed(spread(methods: 12, files: 3), "boundary_sprawl")
-    expect(findings.map { [it.package, it.detail, it.evidence.size] }).to(eq([["Prism", { count: 12, files: 3 }, 4]]))
-    expect(findings.first.evidence.first).to(include("zone/probe0.rb:4"))
+    expect(findings.map { [it.to_h[:package], it.to_h[:detail], it.to_h[:evidence].size] }).to(
+      eq([["Prism", { count: 12, files: 3 }, 4]])
+    )
+    expect(findings.first.to_h[:evidence].first).to(include("zone/probe0.rb:4"))
     expect(message(findings.first)).to(
       include(
         "12 methods across 3 files each pick apart Prism's internals",
@@ -38,7 +40,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
 
   it "counts a foreign root the codebase never defines, whether or not hashira has it loaded" do
     findings = sniffed(spread(methods: 12, files: 3, tested: "Rubydex::Graph"), "boundary_sprawl")
-    expect(findings.map(&:package)).to(eq(["Rubydex"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["Rubydex"]))
   end
 
   it "never counts a class built into Ruby itself, which has no adapter to be missing" do
@@ -53,14 +55,16 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
 
   it "counts a type tested through a namespace that copies a foreign one's constants against that foreign root" do
     files = spread(methods: 12, files: 3, tested: "App::Ast::CallNode").merge("lib/app/ast.rb" => copies)
-    expect(sniffed(files, "boundary_sprawl").map(&:package)).to(eq(["Prism"]))
+    expect(sniffed(files, "boundary_sprawl").map { it.to_h[:package] }).to(eq(["Prism"]))
   end
 
   it "follows a copy of a copy, and an alias, to the foreign root" do
     relayed = spread(methods: 12, files: 3, tested: "App::Types::CallNode").merge("lib/app/ast.rb" => copies + relay)
     aliased = spread(methods: 12, files: 3, tested: "App::Node")
       .merge("lib/app/node.rb" => "module App\n  Node = Parser::AST::Node\nend\n")
-    expect([relayed, aliased].map { sniffed(it, "boundary_sprawl").map(&:package) }).to(eq([["Prism"], ["Parser"]]))
+    expect([relayed, aliased].map { sniffed(it, "boundary_sprawl").map { it.to_h[:package] } }).to(
+      eq([["Prism"], ["Parser"]])
+    )
   end
 
   it "resolves a ::-rooted type at the root, past an owned namesake or a copying namespace of the same name" do
@@ -70,7 +74,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
       spread(methods: 12, files: 3, tested: "::Ast::CallNode").merge("lib/app/ast.rb" => copies),
       spread(methods: 12, files: 3, tested: "Ast::CallNode").merge("lib/app/ast.rb" => copies)
     ]
-    expect(files.map { sniffed(it, "boundary_sprawl").map(&:package) }).to(eq([["Ast"], ["Ast"], ["Prism"]]))
+    expect(files.map { sniffed(it, "boundary_sprawl").map { it.to_h[:package] } }).to(eq([["Ast"], ["Ast"], ["Prism"]]))
   end
 
   it "takes no copy from a const_get of another name or none, another fetch, or another setter" do
@@ -85,7 +89,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
       end
     RUBY
     files = spread(methods: 12, files: 3, tested: "App::Ast::CallNode").merge("lib/app/ast.rb" => odd)
-    expect(sniffed(files, "boundary_sprawl").map(&:package)).to(eq(["App"]))
+    expect(sniffed(files, "boundary_sprawl").map { it.to_h[:package] }).to(eq(["App"]))
   end
 
   it "leaves a copying namespace the constants it defines itself" do
@@ -111,7 +115,7 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
       "entrypoint" => "lib/app/trees.rb", "reason" => "the AST is the input model"
     }
     report = Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([record], trees), Fixtures::NONE)
-    report.findings.select { it.kind == "boundary_sprawl" }
+    report.findings.select { it.to_h[:kind] == "boundary_sprawl" }
   end
 
   def spread(methods:, files:, tested: "Prism::CallNode")
