@@ -5,21 +5,11 @@ class Hashira::Coupling::Inflection
     @table = table
   end
 
-  def plural(word) = inflect(word, @table.plurals)
+  def plural(word) = @table.plural(word)
 
-  def singular(word) = inflect(word, @table.singulars)
+  def singular(word) = @table.singular(word)
 
-  def camelize(word) = word.split("/").map { |part| part.split("_").map { cased(it) }.join }.join("::")
+  def camelize(word) = word.split("/").map { |part| part.split("_").map { @table.cased(it) }.join }.join("::")
 
   def classify(word) = camelize(singular(word))
-
-  private
-
-  def inflect(word, rules)
-    return word if @table.uncountables.any? { word.downcase.match?(/\b#{Regexp.escape(it)}\z/) }
-    rule, replacement = rules.find { |pattern, _| word.match?(pattern) }
-    rule ? word.sub(rule, replacement) : word
-  end
-
-  def cased(part) = @table.acronyms.find { it.downcase == part } || part.capitalize
 end

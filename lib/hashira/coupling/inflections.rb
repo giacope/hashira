@@ -31,25 +31,44 @@ module Hashira
 
     private_constant :PLURALS, :SINGULARS, :IRREGULARS, :UNCOUNTABLES
 
-    Inflections =
-      Data.define(:plurals, :singulars, :uncountables, :acronyms) do
-        def self.of(trees) = trees.reduce(STOCK.irregulars(IRREGULARS)) { |table, tree| Declared.new(tree).onto(table) }
+    class Inflections
+      def self.of(trees) = trees.reduce(STOCK) { |table, tree| Hashira::Coupling::Declared.new(tree).onto(table) }
 
-        def irregulars(pairs) = pairs.reduce(self) { |table, (one, many)| table.irregular(one, many) }
-
-        def irregular(one, many)
-          with(
-            plurals: [rule(one, many), rule(many, many)] + plurals,
-            singulars: [rule(many, one), rule(one, one)] + singulars
-          )
-        end
-
-        def rule(from, to) = [/(#{from[0]})#{from[1..]}$/i, "\\1#{to[1..]}"]
+      def initialize(plurals, singulars, uncountables, acronyms)
+        @plurals = plurals
+        @singulars = singulars
+        @uncountables = uncountables
+        @acronyms = acronyms
       end
 
-    STOCK = Inflections.new(
-      plurals: PLURALS.reverse, singulars: SINGULARS.reverse,
-      uncountables: UNCOUNTABLES, acronyms: []
-    )
+      def +(other) = other.under(@plurals, @singulars, @uncountables, @acronyms)
+
+      def plural(word) = inflect(word, @plurals)
+
+      def singular(word) = inflect(word, @singulars)
+
+      def cased(part) = @acronyms.find { it.downcase == part } || part.capitalize
+
+      protected
+
+      def under(plurals, singulars, uncountables, acronyms)
+        self.class.new(@plurals + plurals, @singulars + singulars, uncountables + @uncountables, acronyms + @acronyms)
+      end
+
+      private
+
+      def inflect(word, rules)
+        return word if @uncountables.any? { word.downcase.match?(/\b#{Regexp.escape(it)}\z/) }
+        rule, replacement = rules.find { |pattern, _| word.match?(pattern) }
+        rule ? word.sub(rule, replacement) : word
+      end
+    end
+
+    STOCK =
+      IRREGULARS.reduce(Inflections.new(PLURALS.reverse, SINGULARS.reverse, UNCOUNTABLES, [])) do |table, pair|
+        table + Hashira::Coupling::Irregular.new(*pair).to_table
+      end
+
+    private_constant :STOCK
   end
 end

@@ -50,8 +50,8 @@ RSpec.describe(Hashira::Coupling::Inflection, :aggregate_failures) do
       irregular "outside", "ignored"
     RUBY
     found = inflection(source)
-    expect(%w[cacti oxes feet data moose api_keys geese Geese].map { found.classify(it) }).to(
-      eq(%w[Cactus Ox Foot Data Moose APIKey Goose Geese])
+    expect(%w[cacti oxes feet data moose api_keys geese Geese lone].map { found.classify(it) }).to(
+      eq(%w[Cactus Ox Foot Data Moose APIKey Goose Geese Lone])
     )
     expect(%w[cactus ox Ox foot football lone outside].map { found.plural(it) }).to(
       eq(%w[cacti oxes Oxes feet footballs lones outsides])
