@@ -9,9 +9,7 @@ class Hashira::Smells::Scope
 
   CLOSURES = [Prism::BlockNode, Prism::LambdaNode].freeze
 
-  LOOPS = (CLOSURES + [Prism::WhileNode, Prism::UntilNode, Prism::ForNode]).freeze
-
-  private_constant :TYPES, :FENCES, :CLOSURES, :LOOPS
+  private_constant :TYPES, :FENCES, :CLOSURES
 
   def initialize(node)
     @node = node
@@ -22,19 +20,6 @@ class Hashira::Smells::Scope
   def sweep = below(TYPES)
 
   def bare = below(FENCES + CLOSURES)
-
-  def fence? = FENCES.include?(@node.class)
-
-  def closure? = CLOSURES.include?(@node.class)
-
-  def loop? = LOOPS.include?(@node.class)
-
-  def covers?(node) = stretch.cover?(Hashira::Smells::Scope.new(node).stretch)
-
-  def stretch
-    spot = @node.location
-    spot.start_offset..spot.end_offset
-  end
 
   private
 

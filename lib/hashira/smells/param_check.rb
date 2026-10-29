@@ -23,7 +23,7 @@ class Hashira::Smells::ParamCheck
   private
 
   def nested
-    @_nested ||= Hashira::Smells::Conditions.new(branches).nested.map { self.class.new(it, @name) }
+    @_nested ||= Hashira::Smells::Conditionals.new(branches).nested.map { self.class.new(it, @name) }
   end
 
   def branches = Hashira::Smells::Conditions.new(@node).branches
@@ -37,7 +37,7 @@ class Hashira::Smells::ParamCheck
   def tested = reads(predicate)
 
   def working?
-    reads(branches.compact.flat_map { Hashira::Smells::Conditions.new(it).plain }).any?
+    reads(Hashira::Smells::Conditionals.new(branches.compact).plain).any?
   end
 
   def absolved?

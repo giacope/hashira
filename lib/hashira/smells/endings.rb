@@ -51,9 +51,9 @@ class Hashira::Smells::Endings
 
   def raise?(node) = Hashira::Smells::Exits.new(node).raise?
 
-  def loops = @_loops ||= nodes.select { Hashira::Smells::Scope.new(it).loop? }
+  def loops = @_loops ||= nodes.select { Hashira::Smells::Border.new(it).loop? }
 
-  def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
+  def covers?(outer, node) = Hashira::Smells::Extent.new(outer).covers?(node)
 
   def nodes = @_nodes ||= Hashira::Smells::Scope.new(@definition).inside
 

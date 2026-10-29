@@ -52,12 +52,12 @@ class Hashira::Smells::Refs
   def sightings = @_sightings ||= walk(@node, [@node])
 
   def walk(root, scopes)
-    root.compact_child_nodes.reject { Hashira::Smells::Scope.new(it).fence? }.flat_map do |child|
+    root.compact_child_nodes.reject { Hashira::Smells::Border.new(it).fence? }.flat_map do |child|
       [*sighting(child, scopes), *walk(child, nested(child, scopes))]
     end
   end
 
-  def nested(node, scopes) = Hashira::Smells::Scope.new(node).closure? ? scopes + [node] : scopes
+  def nested(node, scopes) = Hashira::Smells::Border.new(node).closure? ? scopes + [node] : scopes
 
   def sighting(node, scopes)
     return [[SELF, node]] if selfish?(node)

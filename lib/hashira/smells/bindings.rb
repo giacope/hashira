@@ -28,9 +28,9 @@ class Hashira::Smells::Bindings
     end
 
     def enter(node)
-      scope = Hashira::Smells::Scope.new(node)
-      loops = nested(node, @loops, scope.loop?)
-      Frame.new(scopes: nested(node, @scopes, scope.closure?), loops:, moment: @moment)
+      border = Hashira::Smells::Border.new(node)
+      loops = nested(node, @loops, border.loop?)
+      Frame.new(scopes: nested(node, @scopes, border.closure?), loops:, moment: @moment)
     end
 
     def at(moment) = Frame.new(scopes: @scopes, loops: @loops, moment:)
@@ -111,7 +111,7 @@ class Hashira::Smells::Bindings
   def survey = Ledger.new(notes(@definition, Frame.new(scopes: [@definition], loops: [], moment: nil)))
 
   def notes(root, frame)
-    root.compact_child_nodes.reject { Hashira::Smells::Scope.new(it).fence? }.flat_map do |child|
+    root.compact_child_nodes.reject { Hashira::Smells::Border.new(it).fence? }.flat_map do |child|
       timed = asked?(root, child) ? frame.at(root.location.start_offset) : frame
       [[child, timed], *notes(child, timed.enter(child))]
     end

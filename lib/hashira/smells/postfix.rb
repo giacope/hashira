@@ -14,7 +14,7 @@ class Hashira::Smells::Postfix
 
   def asks?(child) = trailing? && child.equal?(@node.predicate)
 
-  def covers?(node) = Hashira::Smells::Scope.new(@node.predicate).covers?(node)
+  def covers?(node) = Hashira::Smells::Extent.new(@node.predicate).covers?(node)
 
   def start = @node.location.start_offset
 end

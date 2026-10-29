@@ -111,7 +111,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
     subject.nodes.flat_map { [it] + Hashira::Smells::Scope.new(it).sweep.select { opens?(it) } }
   end
 
-  def opens?(node) = Hashira::Smells::Scope.new(node).then { it.fence? || it.closure? }
+  def opens?(node) = Hashira::Smells::Border.new(node).then { it.fence? || it.closure? }
 
   def predicates(region) = Hashira::Smells::Scope.new(region).bare.filter_map { predicate(it) }
 

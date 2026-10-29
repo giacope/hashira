@@ -23,7 +23,7 @@ class Hashira::Smells::Course
 
     def before?(node) = node.location.end_offset < @last.location.end_offset && !covers?(@last, node)
 
-    def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
+    def covers?(outer, node) = Hashira::Smells::Extent.new(outer).covers?(node)
 
     def met?(call, branches) = [@first, @last].all? { branches.together?([call, it]) }
   end

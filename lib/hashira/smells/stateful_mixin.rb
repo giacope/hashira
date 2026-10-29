@@ -79,7 +79,7 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def hooked = (subject.nodes + included).flat_map { Hashira::Smells::Scope.new(it).inside }.reject { aside?(it) }
 
-  def aside?(node) = asides.any? { Hashira::Smells::Scope.new(it).covers?(node) }
+  def aside?(node) = asides.any? { Hashira::Smells::Extent.new(it).covers?(node) }
 
   def asides = @_asides ||= subject.sweep.select { Hashira::Analysis::Syntax::Message.new(it).apart? }.map(&:block)
 
@@ -93,7 +93,7 @@ class Hashira::Smells::StatefulMixin < Hashira::Smells::Check
 
   def hosted?(call) = Hashira::Smells::Origin.new(call.receiver).self? && hosts.any? { it.covers?(call) }
 
-  def hosts = @_hosts ||= hooks.map { Hashira::Smells::Scope.new(it) }
+  def hosts = @_hosts ||= hooks.map { Hashira::Smells::Extent.new(it) }
 
   def hooks = statements.grep(Prism::CallNode).select { it.name == INCLUDED }
 

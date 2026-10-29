@@ -15,12 +15,12 @@ class Hashira::Smells::Recheck
     def settles?(atom, held, moment) = held.include?(call.receiver.slice) && (follows?(atom, moment) || locks?(atom))
 
     def follows?(atom, moment)
-      command && call.location.start_offset < moment && !Hashira::Smells::Scope.new(call).covers?(atom)
+      command && call.location.start_offset < moment && !Hashira::Smells::Extent.new(call).covers?(atom)
     end
 
     def locks?(atom)
       block = call.block
-      block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.new(block).covers?(atom)
+      block.is_a?(Prism::BlockNode) && Hashira::Smells::Extent.new(block).covers?(atom)
     end
 
     private
@@ -33,7 +33,7 @@ class Hashira::Smells::Recheck
   end
 
   def settled?(atom, held)
-    Hashira::Smells::Scope.new(@method).covers?(atom) &&
+    Hashira::Smells::Extent.new(@method).covers?(atom) &&
       (trailing.find { it.covers?(atom) }&.start || atom.location.start_offset).then do |moment|
         changes.any? { it.settles?(atom, held, moment) }
       end
