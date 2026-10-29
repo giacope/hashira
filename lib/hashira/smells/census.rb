@@ -4,7 +4,8 @@ require "prism"
 
 class Hashira::Smells::Census
   def initialize(
-    project, trees, catalog = Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(project, trees)),
+    project, trees,
+    catalog = Hashira::Coupling::Catalog.build(project, trees, Hashira::Coupling::Definitions.build(project, trees)),
     ownership = Hashira::Smells::Ownership.new(trees.values, catalog)
   )
     @project = project

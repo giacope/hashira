@@ -3,10 +3,14 @@
 class Hashira::Coupling::Definitions
   include Enumerable
 
-  def initialize(project, trees, folders = Hashira::Coupling::Folders.new(project.paths))
-    @project = project
+  def self.build(project, trees)
+    new(trees, Hashira::Coupling::Folders.new(project.paths), Hashira::Coupling::Autoload.new(project, trees))
+  end
+
+  def initialize(trees, folders, autoload)
     @trees = trees
     @folders = folders
+    @autoload = autoload
   end
 
   def each(&)
@@ -15,31 +19,18 @@ class Hashira::Coupling::Definitions
 
   def packages = @trees.keys.map { @folders.package(it) }.uniq
 
-  def engine = framework.engine.flat_map { it.split("::") }
+  def roots = @_roots ||= @autoload.roots
 
-  def roots = @_roots ||= autoload.roots
-
-  def implied = autoload.namespaces
-
-  def dependencies = Hashira::Coupling::Dependencies.new(paths.expand("."))
-
-  def spellings = @_spellings ||= Hashira::Coupling::Spellings.new(@trees)
+  def implied = @autoload.namespaces
 
   private
-
-  def paths = @_paths ||= @project.paths
-
-  def framework = @_framework ||= @project.framework
-
-  def autoload = @_autoload ||= Hashira::Coupling::Autoload.new(@project, @trees)
 
   def path(full, node) = node.is_a?(Prism::ConstantWriteNode) ? full + [node.name.to_s] : full
 
   def scan(file, tree)
-    package = @folders.package(file)
     Hashira::Analysis::TypeWalk.new(tree).walk(roots: roots) do |node, full, stack, lexical|
       next unless lexical == full
-      [node, *Hashira::Analysis::Syntax::Body.new(node).constants].each { yield(it, path(full, it), package, stack + [full], file) }
+      [node, *Hashira::Analysis::Syntax::Body.new(node).constants].each { yield(it, path(full, it), stack + [full], file) }
     end
   end
 end

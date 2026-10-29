@@ -16,7 +16,7 @@ class Hashira::Coupling::Heritage
 
   def outside?(path) = outside[path]
 
-  def patched?(path) = @census.abroad?(path)
+  def patched?(path) = !path.empty? && !builtin?(path.first) && !@census.owned?(path)
 
   private
 
@@ -64,4 +64,6 @@ class Hashira::Coupling::Heritage
   def foreign?(node) = !core?(Hashira::Analysis::Syntax::Message.new(node).origins)
 
   def core?(names) = names.any? { @builtins.core?(it) }
+
+  def builtin?(root) = @builtins.core?(root) || @builtins.library?(root)
 end

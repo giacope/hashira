@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Placement
-  def self.build(packaging, project, catalog)
-    {
-      folder: Hashira::Coupling::FolderPlacement,
-      namespace: Hashira::Coupling::NamespacePlacement
-    }.fetch(packaging).new(project, catalog)
+  def self.build(packaging, project, catalog, definitions)
+    kinds = { folder: Hashira::Coupling::FolderPlacement, namespace: Hashira::Coupling::NamespacePlacement }
+    kinds.fetch(packaging).build(project, catalog, definitions)
   end
 
-  def initialize(project, catalog, folders = Hashira::Coupling::Folders.new(project.paths))
+  def initialize(project, catalog, folders)
     @project = project
     @catalog = catalog
     @folders = folders

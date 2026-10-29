@@ -183,7 +183,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
         expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Charge", "Report -> Plain"))
-        expect(census.folds.map { it[:from] }).to(eq(%w[Leaf]))
+        expect(census.folds.map(&:to_h).map { it[:from] }).to(eq(%w[Leaf]))
       end
     end
 
@@ -197,7 +197,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
         expect(edges(graph).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Notification"))
-        expect(census.folds.map { it[:from] }).to(eq(%w[Message]))
+        expect(census.folds.map(&:to_h).map { it[:from] }).to(eq(%w[Message]))
       end
     end
 
@@ -213,7 +213,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/models/shop/stripe/refund.rb" => shop.call("Stripe::Refund", "Shop::Refund")
       }
       analyze(files, directories: %w[app lib], packaging: :namespace) do |_project, census, graph|
-        expect([census.folds, edges(graph)]).to(eq([[], ["Stripe -> Charge", "Stripe -> Refund"]]))
+        expect([census.folds.map(&:to_h), edges(graph)]).to(eq([[], ["Stripe -> Charge", "Stripe -> Refund"]]))
       end
     end
 
@@ -227,7 +227,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
         expect(graph.edges.map(&:to_s).grep(/\AReport/)).to(contain_exactly("Report -> Ledger", "Report -> Solo"))
-        expect(census.folds.map(&:from)).not_to(include("Ledger"))
+        expect(census.folds.map { it.to_h[:from] }).not_to(include("Ledger"))
       end
     end
 
@@ -314,7 +314,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
           "class CurrentResource < ApplicationResource\n  def owner = [Current.user, Billing::Invoice]\nend\n"
       }
       census, graph = shop(resources)
-      expect([census.folds, census.packages]).to(
+      expect([census.folds.map(&:to_h), census.packages]).to(
         match([be_empty, include("(web)").and(exclude("OrderResource", "CurrentResource"))])
       )
       expect(edges(graph)).to(
@@ -331,7 +331,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
           "class ThingsController < App::BaseController\n  def index = Order\nend\n"
       }
       census, graph = shop(controllers)
-      expect([census.folds, census.types["App"]]).to(eq([[], 1]))
+      expect([census.folds.map(&:to_h), census.types["App"]]).to(eq([[], 1]))
       expect(edges(graph)).to(include("(web) -> Order").and(exclude("App -> Order")))
     end
 
@@ -498,7 +498,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         )
       )
       expect(census.packages).not_to(include("BillingDecorator", "UserDecorator"))
-      expect(census.folds).to(
+      expect(census.folds.map(&:to_h)).to(
         include(
           { from: "BillingDecorator", to: "Billing", via: "suffix" },
           { from: "UserDecorator", to: "User", via: "suffix" }
@@ -536,7 +536,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/models/sandbox.rb" => "class Sandbox < Sandbox::Base\n  def run = 1\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-        expect(census.folds).to(be_empty)
+        expect(census.folds.map(&:to_h)).to(be_empty)
         expect(census.packages).to(include("Sandbox"))
       end
     end
@@ -548,7 +548,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/models/shop.rb" => "class Shop\n  def run = Orders::RefundJob\nend\n"
       )
       census, graph = charted(files)
-      expect([census.folds, census.types["Order"]])
+      expect([census.folds.map(&:to_h), census.types["Order"]])
         .to(match([include({ from: "Orders", to: "Order", via: "plural" }), eq(2)]))
       expect([edges(graph), graph.cycles.knots]).to(match([include("Shop -> Order"), be_empty]))
     end
@@ -567,7 +567,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
 
     it "folds -es and -ies plurals too, and keeps a plural with no singular namesake" do
       census, _graph = charted(plurals)
-      expect(census.folds).to(
+      expect(census.folds.map(&:to_h)).to(
         contain_exactly(
           { from: "Boxes", to: "Box", via: "plural" }, { from: "Categories", to: "Category", via: "plural" }
         )
@@ -583,7 +583,7 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/models/user.rb" => "class User\n  def ship = [OrderShipped, OrderPaid]\nend\n"
       )
       census, graph = charted(files)
-      expect(census.folds).to(
+      expect(census.folds.map(&:to_h)).to(
         contain_exactly(
           { from: "OrderPaid", to: "Notifier", via: "mixin" }, { from: "OrderShipped", to: "Notifier", via: "mixin" }
         )
@@ -606,14 +606,14 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
         "app/events/order_gone.rb" => "module OrderGone\nend\n"
       )
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-        expect(census.folds).to(be_empty)
+        expect(census.folds.map(&:to_h)).to(be_empty)
       end
     end
 
     it "discloses every fold with its kind" do
       files = Fixtures::RAILS_FILES.merge(Fixtures::SANDBOX_FILES, Fixtures::NOTIFY_FILES)
       analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, _graph|
-        expect(census.folds).to(
+        expect(census.folds.map(&:to_h)).to(
           include(
             { from: "SandboxPolicy", to: "Sandbox", via: "suffix" },
             { from: "GraceNotification", to: "Notification", via: "base" }

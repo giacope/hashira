@@ -5,7 +5,7 @@ class Hashira::Report::GraphPayload
     @graph = graph
   end
 
-  def to_h = { packages:, edges:, folds: @graph.folds }
+  def to_h = { packages:, edges:, folds: @graph.folds.map(&:to_h) }
 
   private
 

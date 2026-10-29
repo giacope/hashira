@@ -12,15 +12,15 @@ class Hashira::Coupling::Census
 
   def packaging = placement.mode
 
-  def types = roster.types
+  def types = roster.to_h
 
-  def prefix = catalog.prefix
+  def prefix = Hashira::Coupling::Naming.new(definitions, framework).to_a
 
   def origins = roster.origins
 
-  def roots = catalog.roots
+  def roots = definitions.roots
 
-  def packages = roster.packages | placement.baseline
+  def packages = roster.to_a | placement.baseline
 
   def folds = folding.disclosed
 
@@ -39,7 +39,7 @@ class Hashira::Coupling::Census
 
   def vias(path) = scope.vias(path)
 
-  def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
+  def files(path) = (@_files ||= catalog.group_by(&:to_a).transform_values { |found| filed(found) }).fetch(path, [])
 
   def charge(file, nesting, target)
     return placed(file, nesting) unless nesting.empty?
@@ -52,11 +52,9 @@ class Hashira::Coupling::Census
 
   def home(file) = homes[file] || placed(file, [])
 
-  def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
+  def classes = @_classes ||= catalog.select { it.form.klass? }.to_set { it.to_a.join("::") }
 
-  def owned?(path) = territory.owned?(path)
-
-  def abroad?(path) = territory.outside?(path)
+  def owned?(path) = catalog.owned?(path)
 
   def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
 
@@ -68,13 +66,13 @@ class Hashira::Coupling::Census
 
   private
 
-  def territory = catalog.territory
-
   def framework = @_framework ||= @project.framework
 
-  def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
+  def definitions = @_definitions ||= Hashira::Coupling::Definitions.build(@project, @trees)
 
-  def placement = @_placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
+  def catalog = @_catalog ||= Hashira::Coupling::Catalog.build(@project, @trees, definitions)
+
+  def placement = @_placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog, definitions)
 
   def roster = @_roster ||= tally
 
@@ -88,9 +86,11 @@ class Hashira::Coupling::Census
 
   def homes = @_homes ||= dominants(placement.placed)
 
-  def tops = @_tops ||= dominants(placement.placed.select { |definition, _| definition.scope.one? })
+  def tops = @_tops ||= dominants(placement.placed.select { it.first.site.top? })
 
-  def dominants(placed) = placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
+  def dominants(placed) = placed.select(&:last).group_by { it.first.site.to_s }.transform_values { dominant(it) }
+
+  def filed(definitions) = definitions.map { it.site.to_s }.uniq
 
   def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).fetch(0)
 
@@ -102,6 +102,6 @@ class Hashira::Coupling::Census
 
   def scope
     current = roster
-    (@_scopes ||= {})[current] ||= Hashira::Coupling::Scope.new(current.registry, catalog, placement)
+    (@_scopes ||= {})[current] ||= Hashira::Coupling::Scope.new(current, catalog, placement)
   end
 end

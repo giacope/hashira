@@ -7,7 +7,7 @@ module Hashira
         @definitions = definitions
       end
 
-      def infer = build(@definitions.map { |_node, full, _package| full }.uniq, [])
+      def infer = build(@definitions.map { |_node, full| full }.uniq, [])
 
       private
 

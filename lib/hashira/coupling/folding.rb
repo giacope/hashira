@@ -17,9 +17,7 @@ class Hashira::Coupling::Folding
 
   def map = @_map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
 
-  def disclosed
-    map.map { |from, to| { from:, to:, via: KINDS[kinds.index { it.key?(from) }] } }
-  end
+  def disclosed = map.map { |from, to| Hashira::Coupling::Fold.new(from, to, KINDS[kinds.index { it.key?(from) }]) }
 
   private
 
@@ -28,7 +26,7 @@ class Hashira::Coupling::Folding
   def links = @_links ||= kinds.reverse.reduce(:merge)
 
   def parents
-    @_parents ||= singles.select { |_name, one| one.superclass }.to_h { |name, one| [name, target(one)] }.compact
+    @_parents ||= singles.select { |_name, kin| kin.parent.any? }.to_h { |name, kin| [name, target(kin)] }.compact
   end
 
   def named = singles.keys.to_h { [it, crop(it)] }.select { |_name, stem| stem && @census.packages.include?(stem) }
@@ -50,29 +48,31 @@ class Hashira::Coupling::Folding
 
   def mixins = badges.flat_map { |name, badge| adopted(badge).map { [name, it] } }.to_h
 
-  def badges = lone.group_by(&:name).select { |_name, ones| ones.all? { badge?(it) } }.transform_values(&:first)
-
-  def badge?(definition)
-    definition.module? && body(definition.node).all? { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }
+  def badges
+    named = lone.group_by { it.to_a.first }
+    named.select { |_name, ones| ones.all? { badge?(it.form) } }.transform_values { it.first.form }
   end
 
-  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(segments(it)) }.first(1)
+  def badge?(form)
+    form.type? && !form.klass? && form.to_a.all? { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }
+  end
 
-  def adoptions(badge) = body(badge.node).flat_map { it.arguments.arguments }
+  def adopted(badge) = badge.to_a.flat_map { it.arguments.arguments }.lazy.filter_map { pinpoint(it) }.first(1)
 
   def singles
-    @_singles ||= lone.select(&:klass?).group_by(&:name).transform_values { it.find(&:superclass) || it.last }
+    @_singles ||=
+      lone.select { it.form.klass? }.group_by { it.to_a.first }.transform_values do |ones|
+        (ones.find { it.kin.parent.any? } || ones.last).kin
+      end
   end
 
-  def lone = @_lone ||= @definitions.reject { it.nested? || it.path.empty? || anchored.include?(it.name) }
+  def lone = @_lone ||= @definitions.reject { it.site.nested? || it.to_a.empty? || anchored.include?(it.to_a.first) }
 
-  def anchored = @_anchored ||= @definitions.select(&:nested?).to_set(&:name)
+  def anchored = @_anchored ||= @definitions.select { it.site.nested? }.to_set { it.to_a.first }
 
-  def target(one) = @census.pinpoint(segments(one.superclass))
+  def target(kin) = pinpoint(kin.parent.first)
 
-  def segments(node) = Hashira::Analysis::Syntax.new(node).segments
-
-  def body(node) = Hashira::Analysis::Syntax::Body.new(node).to_a
+  def pinpoint(node) = @census.pinpoint(Hashira::Analysis::Syntax.new(node).segments)
 
   def settle(name, links)
     trail = [name]

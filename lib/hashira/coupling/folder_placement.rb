@@ -3,11 +3,20 @@
 require_relative "placement"
 
 class Hashira::Coupling::FolderPlacement < Hashira::Coupling::Placement
+  def self.build(project, catalog, definitions)
+    new(project, catalog, Hashira::Coupling::Folders.new(project.paths), definitions)
+  end
+
+  def initialize(project, catalog, folders, definitions)
+    super(project, catalog, folders)
+    @definitions = definitions
+  end
+
   def mode = :folder
 
-  def placed = catalog.map { [it, it.folder] }
+  def placed = catalog.map { [it, folders.package(it.site.to_s)] }
 
-  def baseline = catalog.folders
+  def baseline = @definitions.packages
 
   def charge(file, _nesting) = folders.package(file)
 

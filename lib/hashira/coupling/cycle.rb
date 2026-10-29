@@ -52,5 +52,5 @@ class Hashira::Coupling::Cycle < Hashira::Coupling::Rule
 
   def pledges(edges) = edges.to_h { |from, to, _weight| [[from, to], graph.guarantees(from, to).sort] }
 
-  def folded(members) = (members & graph.folds.map { it[:to] }).reject { graph.unfolded.cycles.through?(it) }
+  def folded(members) = (members & graph.folds.map { it.to_h[:to] }).reject { graph.unfolded.cycles.through?(it) }
 end

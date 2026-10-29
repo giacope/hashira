@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Scope
-  def initialize(registry, catalog, placement)
-    @registry = registry
+  def initialize(roster, catalog, placement, lineage = Hashira::Coupling::Lineage.new(catalog))
+    @roster = roster
     @catalog = catalog
     @placement = placement
+    @lineage = lineage
   end
 
   def resolve(segments, nesting)
@@ -12,7 +13,7 @@ class Hashira::Coupling::Scope
     owner(found) if found && !@placement.skip?(found)
   end
 
-  def locate(segments, nesting) = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
+  def locate(segments, nesting) = bind(Hashira::Coupling::Ancestor.new(segments, nesting), 1)
 
   def pinpoint(segments) = resolve(segments, [])
 
@@ -20,10 +21,10 @@ class Hashira::Coupling::Scope
 
   private
 
-  def owner(path) = @registry.owner(path)
+  def owner(path) = @roster.owner(path)
 
   def bind(link, reach)
-    segments, nesting = link.deconstruct
+    segments, nesting = link.to_a
     [*nesting.reverse, *ancestors(nesting.last)].lazy.flat_map { descend(it, segments, reach) }.first ||
       top(segments, reach).first
   end
@@ -49,7 +50,7 @@ class Hashira::Coupling::Scope
 
   def settled = @_settled ||= {}
 
-  def known?(path) = @registry.claimed?(path) && @catalog.owned?(path)
+  def known?(path) = @roster.claimed?(path) && @catalog.owned?(path)
 
   def ancestors(innermost) = innermost ? lineage(@catalog.strip(innermost)) : []
 
@@ -63,5 +64,5 @@ class Hashira::Coupling::Scope
 
   def climb(path) = parents(path).flat_map { [it, *lineage(it)] }.uniq
 
-  def parents(path) = @catalog.parents(path).filter_map { bind(it, it.reach) }
+  def parents(path) = @lineage.parents(path).filter_map { bind(it, it.reach) }
 end

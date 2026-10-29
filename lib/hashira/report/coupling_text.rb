@@ -20,7 +20,7 @@ class Hashira::Report::CouplingText
   def folded(folds)
     return if folds.empty?
     @page.puts("Folded (packages joined to the one they belong to):")
-    folds.each { @page.puts("  #{it[:from]} -> #{it[:to]} (#{it[:via]})") }
+    folds.each { @page.puts("  #{it}") }
     @page.puts("")
   end
 

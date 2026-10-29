@@ -1,15 +1,6 @@
 # frozen_string_literal: true
 
-require "prism"
-
 class Hashira::Coupling::Lineage
-  MIXINS = %i[include prepend].freeze
-
-  Link =
-    Data.define(:segments, :nesting) do
-      def reach = segments.length
-    end
-
   def initialize(definitions)
     @definitions = definitions
   end
@@ -19,22 +10,6 @@ class Hashira::Coupling::Lineage
   private
 
   def links
-    @_links ||=
-      @definitions.select(&:type?).group_by(&:path).transform_values do |openings|
-        openings.flat_map { [(link(it.superclass, it.scope[...-1]) if it.klass?), *mixins(it)].compact }
-      end
-  end
-
-  def mixins(definition)
-    calls = Hashira::Analysis::Syntax::Body.new(definition.node).to_a.grep(Prism::CallNode).select { mixin?(it) }
-    calls.flat_map { it.arguments.arguments }.map { link(it, definition.scope) }
-  end
-
-  def mixin?(call) = MIXINS.include?(call.name) && !call.receiver && call.arguments
-
-  def link(node, nesting)
-    read = Hashira::Analysis::Syntax.new(node)
-    return unless read.static?
-    Link.new(segments: read.segments, nesting: read.rooted? ? [] : nesting)
+    @_links ||= @definitions.group_by(&:to_a).transform_values { |openings| openings.flat_map { it.kin.to_a } }
   end
 end

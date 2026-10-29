@@ -10,42 +10,43 @@ class Hashira::Coupling::Adapters
   end
 
   def include?(name)
-    @_names ||= classes.group_by(&:name).select { |_, group| framed?(group) }.keys.to_set
+    @_names ||= classes.group_by { it.to_a.first }.select { |_, group| framed?(group) }.keys.to_set
     @_names.include?(name)
   end
 
   private
 
-  def framed?(group) = group.all? { !owned?(it) } && group.any? { adapter?(it) } && !concrete?(group)
-
-  def concrete?(group) = group.any? { parent(it) == RECORD } && group.none? { marked?(it) || named?(it) }
-
-  def named?(definition) = definition.path.last.start_with?("Application")
-
-  def marked?(definition)
-    Hashira::Analysis::Syntax::Body.new(definition.node).to_a.grep(Prism::CallNode).any? { MARKS.include?(it.name) }
+  def framed?(group)
+    group.all? { !owned?(it.kin, it.site) } && group.any? { adapter?(it.to_a) } && !concrete?(group)
   end
 
-  def classes = @_classes ||= @catalog.select(&:klass?)
-
-  def adapter?(definition) = heirs.any? { ends?(definition.path, it) }
-
-  def parent(definition) = Hashira::Analysis::Syntax.new(definition.superclass).segments
-
-  def heirs = @_heirs ||= classes.map { @catalog.strip(parent(it)) }.reject(&:empty?)
-
-  def owned?(definition)
-    segments = parent(definition)
-    return !definition.superclass if segments.empty?
-    candidates(definition, segments).any? { paths.include?(@catalog.strip(it)) }
+  def concrete?(group)
+    group.any? { parent(it.kin) == RECORD } && group.none? { marked?(it.form) || named?(it.to_a) }
   end
 
-  def candidates(definition, segments)
-    return [segments] if Hashira::Analysis::Syntax.new(definition.superclass).rooted?
-    [*definition.scope[...-1].reverse.map { it + segments }, segments]
+  def named?(path) = path.last.start_with?("Application")
+
+  def marked?(form) = form.to_a.grep(Prism::CallNode).any? { MARKS.include?(it.name) }
+
+  def classes = @_classes ||= @catalog.select { it.form.klass? }
+
+  def adapter?(path) = heirs.any? { ends?(path, it) }
+
+  def parent(kin) = superclass(kin).segments
+
+  def superclass(kin) = Hashira::Analysis::Syntax.new(kin.parent.first)
+
+  def heirs = @_heirs ||= classes.map { @catalog.strip(parent(it.kin)) }.reject(&:empty?)
+
+  def owned?(kin, site)
+    segments = parent(kin)
+    return kin.parent.empty? if segments.empty?
+    candidates(kin, site, segments).any? { paths.include?(@catalog.strip(it)) }
   end
 
-  def paths = @_paths ||= @catalog.to_set(&:path)
+  def candidates(kin, site, segments) = superclass(kin).rooted? ? [segments] : site.nestings(segments)
+
+  def paths = @_paths ||= @catalog.to_set(&:to_a)
 
   def ends?(path, segments) = path.last(segments.size) == segments
 end
