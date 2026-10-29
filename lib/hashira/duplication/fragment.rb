@@ -71,7 +71,7 @@ class Hashira::Duplication::Fragment
 
   def opened? = @roots.one? && OPENED.include?(@roots.first.class)
 
-  def recurring = @setting.recurring
+  def recurs?(name) = @setting.recurs?(name)
 
   def identifiers = @_identifiers ||= nodes.filter_map { it.deconstruct_keys([:name])[:name] }
 
@@ -99,7 +99,7 @@ class Hashira::Duplication::Fragment
 
   def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
 
-  def macros = @setting.declarative ? nodes.grep(Prism::CallNode).reject(&:receiver) : []
+  def macros = @setting.macros(nodes)
 
   def muted = @walks.muted(@roots).uniq
 

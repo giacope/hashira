@@ -25,7 +25,7 @@ class Hashira::Duplication::Quiet
 
   def stored?(node) = (node in Prism::InstanceVariableWriteNode[value: Prism::LocalVariableReadNode])
 
-  def recoveries = Hashira::Duplication::Recovery.of(@nodes).flat_map { @walks.nodes([it.clause]) }
+  def recoveries = Hashira::Duplication::Recovery.of(@nodes).flat_map { @walks.nodes([it]) }
 
   def sinks = @nodes.grep(Prism::CallNode).map { Hashira::Duplication::Sink.new(it) }.select(&:sink?)
 end

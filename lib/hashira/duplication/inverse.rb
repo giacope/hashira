@@ -15,7 +15,7 @@ class Hashira::Duplication::Inverse
     @definitions = definitions
   end
 
-  def inverse? = @cluster.size == PAIR && opposed?(*@cluster.sites.map { words(it) })
+  def inverse? = @cluster.count == PAIR && opposed?(*@cluster.map { words(it) })
 
   private
 

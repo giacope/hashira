@@ -30,7 +30,7 @@ class Hashira::Duplication::Clusters
   def sets
     fragments = @all.select { |fragment| fragment.mass >= BASE_MASS }.reject(&:schema?)
     shaped = fragments.group_by(&:types).each_value.flat_map { it.each_cons(2).to_a }
-    @_sets ||= Hashira::Duplication::UnionFind.new(shaped + Hashira::Duplication::NearMiss.new(fragments).pairs)
+    Hashira::Duplication::UnionFind.new(shaped + Hashira::Duplication::NearMiss.new(fragments).pairs)
   end
 
   def admitted(group)
@@ -40,8 +40,9 @@ class Hashira::Duplication::Clusters
   end
 
   def fits?(cluster)
-    base = !cluster.uniform? || cluster.structural? ? NEAR_MASS : BASE_MASS
-    recurrences = cluster.convention? ? 0 : [cluster.size - PAIR, 0].max
+    form = cluster.form
+    base = !form.uniform? || form.structural? ? NEAR_MASS : BASE_MASS
+    recurrences = form.convention? ? 0 : [cluster.count - PAIR, 0].max
     cluster.mass >= base + (recurrences * PENALTY_PER_RECURRENCE)
   end
 end

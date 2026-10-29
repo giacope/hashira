@@ -6,7 +6,7 @@ class Hashira::Duplication::Delta
   end
 
   def kind
-    return :convention if @cluster.convention?
+    return :convention if @cluster.form.convention?
     return :identical if variances.empty?
     return :structure if variances.include?(:structure)
     return :renamed if inner.empty?
@@ -14,7 +14,7 @@ class Hashira::Duplication::Delta
   end
 
   def to_h
-    { mass: @cluster.mass, sites: @cluster.size, kind: }.merge(locations: @cluster.sites.sort_by(&:rank).map(&:range))
+    { mass: @cluster.mass, sites: @cluster.count, kind: }.merge(locations: @cluster.sort_by(&:rank).map(&:range))
   end
 
   private
@@ -25,7 +25,5 @@ class Hashira::Duplication::Delta
 
   def inner = variances - [:renamed]
 
-  def variances = @_variances ||= @cluster.others.flat_map { variance(it).kinds }.uniq
-
-  def variance(other) = Hashira::Duplication::Variance.new(@cluster.canonical, other)
+  def variances = @_variances ||= @cluster.variances.flat_map(&:kinds).uniq
 end

@@ -45,7 +45,7 @@ class Hashira::Duplication::Variance
 
   def worded?(node) = WORD.match?(node.name.to_s)
 
-  def recurring?(node) = (@canonical.recurring | @other.recurring).include?(node.name)
+  def recurring?(node) = @canonical.recurs?(node.name) || @other.recurs?(node.name)
 
   def inner?(node) = nested.any? { it.equal?(node) }
 

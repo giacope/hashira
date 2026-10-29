@@ -72,10 +72,10 @@ class Hashira::Duplication::DuplicationFinding
 
   def detail
     variance = Hashira::Duplication::Delta.new(@cluster).kind
-    Overlap.new(@cluster.size, @cluster.mass, variance, @churn.hot?(@cluster.sites))
+    Overlap.new(@cluster.count, @cluster.mass, variance, @churn.hot?(@cluster.to_a))
   end
 
   def evidence = sorted.map(&:range)
 
-  def sorted = @cluster.sites.sort_by(&:rank)
+  def sorted = @cluster.sort_by(&:rank)
 end

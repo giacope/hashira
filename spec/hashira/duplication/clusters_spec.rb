@@ -19,7 +19,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     }
   end
   it "clusters an exact clone into one finding covering both sites, at maximal size" do
-    expect(clusters(exact).map { [it.size, it.mass, it.canonical.range, it.sites.map(&:file)] }).to(
+    expect(clusters(exact).map { [it.count, it.mass, it.canonical.range, it.map(&:file)] }).to(
       eq([[2, 23, "a.rb:1-5", ["a.rb", "b.rb"]]])
     )
   end
@@ -30,19 +30,19 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
         "g.finalize(:x, :y)\nend\n"
     }
     cluster = clusters(exact.merge(drifted)).first
-    expect(cluster.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
+    expect(cluster.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
     expect(cluster.mass).to(eq(23))
   end
 
   it "pulls a near-miss variant into the cluster as a distinct site" do
     cluster = clusters(near).first
-    expect(cluster.size).to(eq(2))
-    expect(cluster.sites.map(&:types).uniq.size).to(eq(2))
+    expect(cluster.count).to(eq(2))
+    expect(cluster.map(&:types).uniq.size).to(eq(2))
   end
 
   it "measures each site of a near-miss cluster by its own copy" do
     cluster = clusters(near).first
-    expect(cluster.sites.map { [it.file, it.mass] }.sort).to(eq([["c.rb", 40], ["d.rb", 44]]))
+    expect(cluster.map { [it.file, it.mass] }.sort).to(eq([["c.rb", 40], ["d.rb", 44]]))
   end
 
   it "suppresses a near-miss below the raised near-miss floor" do
@@ -56,7 +56,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
   it "finds an exact stretch even when one copy runs a statement longer" do
     body = " g.configure(fetch(:h), fetch(:p))\n g.connect(3, 30)\n g.finalize(:x, :y)\n"
     longer = { "a.rb" => "def a(g)\n#{body} g.log(:done)\nend\n", "b.rb" => "def b(g)\n#{body}end\n" }
-    expect(clusters(longer).map { it.sites.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"]]))
+    expect(clusters(longer).map { it.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"]]))
   end
 
   it "reports an exact clone whose mass sits exactly on the floor" do
@@ -69,7 +69,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       ".authenticate(token: load(:t), scope: :admin)"
     tail = ".audit(user: current(:id), at: now(:utc), level: 1).notify(:ops, :team)"
     cluster = clusters("c.rb" => "def a(r) = #{head}\n", "d.rb" => "def b(r) = #{head}#{tail}\n").first
-    expect(cluster.sites.map(&:mass)).to(contain_exactly(40, 60))
+    expect(cluster.map(&:mass)).to(contain_exactly(40, 60))
   end
 
   def pay
@@ -87,14 +87,14 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       "a.rb" => "def a(gateway, order, queue)\n#{pay}#{ship}end\n",
       "b.rb" => "def b(gateway)\n#{pay}end\n", "c.rb" => "def c(order, queue)\n#{ship}end\n"
     }
-    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"], ["a.rb:5-7", "c.rb:2-4"]]))
+    expect(clusters(sources).map { it.map(&:range) }).to(eq([["a.rb:2-4", "b.rb:2-4"], ["a.rb:5-7", "c.rb:2-4"]]))
   end
 
   it "reports a repeat inside one method once, never as one site or as sites sharing a statement" do
     one = " g.configure(host: fetch(:h), port: fetch(:p), mode: :sync)\n"
     two = " g.authorize(token: load(:t), scope: :admin)\n"
     repeated = { "a.rb" => "def m(g)\n#{one}#{two}#{one}#{two}#{one}end\n" }
-    expect(clusters(repeated).map { it.sites.map(&:range) }).to(eq([["a.rb:2-3", "a.rb:4-5"]]))
+    expect(clusters(repeated).map { it.map(&:range) }).to(eq([["a.rb:2-3", "a.rb:4-5"]]))
   end
 
   it "does not pair a small method with a much larger one that merely contains it" do
@@ -140,7 +140,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       "a.rb" => "def back\n link_to dest, class: \"btn\" do\n  #{labelled("back.svg", "Go Back")}\n end\nend\n",
       "b.rb" => "def save\n tag.button type: \"submit\" do\n  #{labelled("save.svg", "Save")}\n end\nend\n"
     }
-    expect(clusters(helper).first.sites.map(&:range)).to(contain_exactly("a.rb:3-3", "b.rb:3-3"))
+    expect(clusters(helper).first.map(&:range)).to(contain_exactly("a.rb:3-3", "b.rb:3-3"))
   end
 
   it "holds a match that shares nothing but its shape to the near-miss floor" do
@@ -183,7 +183,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       "invoice.rb" => "class Invoice < ApplicationRecord\n belongs_to :account\n " \
         "def total\n  lines.sum { it.price * it.count }\n end\nend\n"
     }
-    expect(clusters(logic).first.sites.map(&:file)).to(contain_exactly("order.rb", "invoice.rb"))
+    expect(clusters(logic).first.map(&:file)).to(contain_exactly("order.rb", "invoice.rb"))
   end
 
   it "keeps receiverless macros with runtime arguments as executable code" do
@@ -203,12 +203,12 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
         end
       RUBY
     }
-    expect(clusters(runtime).first.sites.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
+    expect(clusters(runtime).first.map(&:file)).to(contain_exactly("a.rb", "b.rb"))
   end
 
   it "reads macros sent to a receiver as code, not as a schema" do
     macros = ->(name) { "class #{name}\n Config.set :a, 1\n Config.put \"b\", 2.0\n Config.flag :c, true, nil\nend\n" }
-    expect(clusters("a.rb" => macros["A"], "b.rb" => macros["B"]).first.sites.map(&:file)).to(eq(["a.rb", "b.rb"]))
+    expect(clusters("a.rb" => macros["A"], "b.rb" => macros["B"]).first.map(&:file)).to(eq(["a.rb", "b.rb"]))
   end
 
   it "leaves a run of bare macros alone — a directive with no arguments is still schema" do
@@ -266,7 +266,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
   it "reads the same macros as code outside a class body, or once a block or lambda carries logic" do
     outside = ->(name) { resource(name, "owner").sub(/\Aclass \w+\n/, "").delete_suffix("end\n") }
     logic = ->(name) { resource(name, "owner").sub("contact.email", "email || r.no").sub("Current.tenant", "a if b") }
-    sites = [outside, logic].map { clusters("a.rb" => it["Order"], "b.rb" => it["Invoice"]).first.size }
+    sites = [outside, logic].map { clusters("a.rb" => it["Order"], "b.rb" => it["Invoice"]).first.count }
     expect(sites).to(eq([2, 2]))
   end
 
@@ -276,15 +276,25 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       "end\n attribute :b do |#{param}| #{param}.#{four}.#{five} if #{param}.#{six} end\nend\n"
   end
 
-  it "does not count a macro name the class repeats three times as a name two copies share" do
-    mine = "strip presence fallback to_s upcase visible?"
-    sources = {
+  def mine = "strip presence fallback to_s upcase visible?"
+
+  def attributed
+    {
       "a.rb" => attributes("A", "r", mine),
       "b.rb" => attributes("B", "x", "squish first default to_sym downcase shown?")
     }
+  end
+
+  it "does not count a macro name the class repeats three times as a name two copies share" do
+    sources = attributed
     expect(clusters(sources)).to(be_empty)
-    expect(clusters(sources.transform_values { it.sub(" attribute :id\n", "") }).first.size).to(eq(2))
-    expect(clusters(sources.merge("b.rb" => attributes("B", "x", mine))).first.size).to(eq(2))
+    expect(clusters(sources.transform_values { it.sub(" attribute :id\n", "") }).first.count).to(eq(2))
+    expect(clusters(sources.merge("b.rb" => attributes("B", "x", mine))).first.count).to(eq(2))
+  end
+
+  it "does not count a macro name as shared when only one of the two classes repeats it" do
+    sources = attributed
+    expect(clusters(sources.merge("b.rb" => sources.fetch("b.rb").sub(" attribute :id\n", "")))).to(be_empty)
   end
 
   def settings(group, host, port)
@@ -408,14 +418,14 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
 
   it "leaves alone tests whose body is one call to the project's own assertion, as it does such methods" do
     expect(clusters(leavers)).to(be_empty)
-    expect(clusters(leavers.merge("leaving.rb" => "module Leaving; end\n")).map(&:size)).to(eq([2]))
+    expect(clusters(leavers.merge("leaving.rb" => "module Leaving; end\n")).map(&:count)).to(eq([2]))
   end
 
   it "still reports calls to a method the project does not define, or copies that differ beyond the arguments" do
     external = client.sub(/ def request.*\n/, "")
     renamed = client("def patch(path, body, headers: {}) = request(:post, path, body: body.to_json, headers:)")
     longer = client.gsub(/= (request\(:\w+, path)(.*)\n/, "\n  \\1\\2\n  log(:sent, path)\n end\n")
-    expect([external, renamed, longer].map { clusters("c.rb" => it).first.size }).to(eq([2, 2, 2]))
+    expect([external, renamed, longer].map { clusters("c.rb" => it).first.count }).to(eq([2, 2, 2]))
   end
 
   def job(name, id)
@@ -451,8 +461,8 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     body = ->(word) { " update!(at: now, why:)\n audit(:#{word}, why:, at: clock.now)\n notify(:#{word}, why)\n" }
     inverse = "class A\n def lock!(why)\n#{body["lock"]} end\n def unlock!(why)\n#{body["unlock"]} end\nend\n"
     expect(clusters("a.rb" => inverse)).to(be_empty)
-    expect(clusters("a.rb" => inverse.sub("def unlock!", "def freeze!")).first.size).to(eq(2))
-    expect(clusters("a.rb" => inverse, "b.rb" => "def c(why)\n#{body["lock"]}end\n").first.size).to(eq(3))
+    expect(clusters("a.rb" => inverse.sub("def unlock!", "def freeze!")).first.count).to(eq(2))
+    expect(clusters("a.rb" => inverse, "b.rb" => "def c(why)\n#{body["lock"]}end\n").first.count).to(eq(3))
   end
 
   def guard = "before_action { authorize!(:read, model.constantize, scope: current_tenant.id, via: :role) }"
@@ -470,7 +480,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     { "t1.rb" => "class T1\n#{body}", "t2.rb" => "class T2\n#{body}" }
   end
 
-  def kinds(sources) = clusters(sources).map { [Hashira::Duplication::Delta.new(it).kind, it.size] }
+  def kinds(sources) = clusters(sources).map { [Hashira::Duplication::Delta.new(it).kind, it.count] }
 
   it "reports a line ten files repeat as one convention listing every site, not as pairs that hold it" do
     sources = authorized(8).merge(twins.transform_values { it.sub("\n", "\n #{guard}\n") })
@@ -478,23 +488,23 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
   end
 
   it "holds a repeated line under ten sites, or one whose sites share nothing but its shape, to the recurrence floor" do
-    expect(clusters(authorized(9)).map(&:size)).to(eq([2]))
+    expect(clusters(authorized(9)).map(&:count)).to(eq([2]))
     unlike = ->(n) { "class U#{n}\n b#{n} { a#{n}!(:read, m#{n}.k#{n}, s: t#{n}.i#{n}, v: :r) }\nend\n" }
     expect(clusters((1..12).to_h { ["u#{it}.rb", unlike[it]] })).to(be_empty)
   end
 
   it "keeps a bigger clone that holds the convention line, once it outweighs the line by the base floor" do
     weighed = ->(tail) { clusters(authorized(10).transform_values { it.sub(/render_thing\(:k\d+/, "\\0#{tail}") }) }
-    expect(weighed[", d, a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[8, 32], [10, 16]]))
-    expect(weighed[", a: 1, b: 2, c: 3"].map { [it.size, it.mass] }).to(eq([[10, 16]]))
+    expect(weighed[", d, a: 1, b: 2, c: 3"].map { [it.count, it.mass] }).to(eq([[8, 32], [10, 16]]))
+    expect(weighed[", a: 1, b: 2, c: 3"].map { [it.count, it.mass] }).to(eq([[10, 16]]))
   end
 
   it "drops a smaller clone kept alive by a single site the bigger clone does not cover" do
-    expect(nested(1).map { it.sites.map(&:file) }).to(eq([%w[a.rb b.rb]]))
+    expect(nested(1).map { it.map(&:file) }).to(eq([%w[a.rb b.rb]]))
   end
 
   it "keeps a smaller clone that two sites outside the bigger clone share" do
-    expect(nested(2).map { it.sites.map(&:file).sort }).to(eq([%w[a.rb b.rb], %w[c0.rb c1.rb]]))
+    expect(nested(2).map { it.map(&:file).sort }).to(eq([%w[a.rb b.rb], %w[c0.rb c1.rb]]))
   end
 
   it "keeps a clone whose site only shares a line with a bigger clone, rather than sitting inside it" do
@@ -508,7 +518,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       "b.rb" => "def b(r)\n#{one}#{two}#{three} r.x\nend\n",
       "c.rb" => "def c(r)\n#{three}#{four}#{five} r.y\nend\n"
     }
-    expect(clusters(sources).map { it.sites.map(&:range) }).to(eq([%w[a.rb:2-4 b.rb:2-4], %w[a.rb:4-6 c.rb:2-4]]))
+    expect(clusters(sources).map { it.map(&:range) }).to(eq([%w[a.rb:2-4 b.rb:2-4], %w[a.rb:4-6 c.rb:2-4]]))
   end
 
   def nested(extra) = clusters(wholes.merge((0...extra).to_h { ["c#{it}.rb", "def c(r)\n#{head} r.x(#{it})\nend\n"] }))
@@ -526,7 +536,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
       body = ->(first, last) { "def m\n #{first}.go(1)\n mid.run\n #{last}.go(2)\nend\n" }
       all = fragments("a.rb" => body["alpha", "beta"], "b.rb" => body["gamma", "beta"])
       group = %w[a.rb:2-3 a.rb:3-4 b.rb:3-4].map { |range| all.find { it.range == range } }
-      sites = [group, group.reverse].map { described_class.new(it).cluster.sites.map(&:range).sort }
+      sites = [group, group.reverse].map { described_class.new(it).cluster.map(&:range).sort }
       expect(sites).to(eq([%w[a.rb:3-4 b.rb:3-4]] * 2))
     end
   end
@@ -660,7 +670,7 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
 
     it "still reports a log line among other statements, counting its interpolated message as one string" do
       cluster = clusters(pair(:retried)).first
-      expect(cluster.sites.map(&:range)).to(eq(%w[a.rb:2-6 b.rb:2-6]))
+      expect(cluster.map(&:range)).to(eq(%w[a.rb:2-6 b.rb:2-6]))
       expect(cluster.mass).to(eq(25))
     end
 

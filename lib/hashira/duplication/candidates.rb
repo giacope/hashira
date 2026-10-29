@@ -20,7 +20,7 @@ class Hashira::Duplication::Candidates
   def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.new(@tree).collect
 
   def windows
-    reported = Hashira::Duplication::Recovery.of(nodes).map { it.clause.statements }
+    reported = Hashira::Duplication::Recovery.of(nodes).map(&:statements)
     (nodes.grep(Prism::StatementsNode) - reported).flat_map { sequence(it.body, bodies.fetch(it, code)).fragments }
   end
 

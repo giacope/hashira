@@ -10,17 +10,17 @@ class Hashira::Duplication::Maximal
 
   def reduced
     ordered.each_with_object([]) do |cluster, kept|
-      kept << cluster if news?(cluster.sites, shadows(cluster, kept))
+      kept << cluster if news?(cluster.to_a, shadows(cluster, kept))
     end
   end
 
   private
 
-  def ordered = @clusters.sort_by { [it.convention? ? -it.size : 0, -it.mass] }
+  def ordered = @clusters.sort_by { [it.form.convention? ? -it.count : 0, -it.mass] }
 
-  def shadows(cluster, kept) = kept.select { covers?(it, cluster) }.flat_map(&:sites)
+  def shadows(cluster, kept) = kept.select { covers?(it, cluster) }.flat_map(&:to_a)
 
-  def covers?(bigger, cluster) = !bigger.convention? || cluster.mass < bigger.mass + @margin
+  def covers?(bigger, cluster) = !bigger.form.convention? || cluster.mass < bigger.mass + @margin
 
   def news?(sites, bigger) = !sites.all? { it.touches?(bigger) } && sites.count { !it.within?(bigger) } >= FRESH
 end

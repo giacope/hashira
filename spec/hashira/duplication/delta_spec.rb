@@ -85,7 +85,7 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
 
   it "reports :structure over a literal drift, measured by the shape most sites share" do
     sources = { "a.rb" => settling(30), "b.rb" => settling(60), "c.rb" => settling(30, " gateway.log(:slow)\n") }
-    expect(cluster(sources)).to(have_attributes(size: 3, mass: 47))
+    expect(cluster(sources)).to(have_attributes(count: 3, mass: 47))
     expect(kind(sources)).to(eq(:structure))
   end
 
