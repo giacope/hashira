@@ -610,9 +610,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
   end
 
   it "reads a class name's ancestry once, however many files reopen it" do
-    swept = []
-    spy_on(Hashira::Smells::Scope, :sweep, swept)
-    smells(reopened, &:findings)
+    swept = observed(Hashira::Smells::Scope, :sweep) { smells(reopened, &:findings) }
     expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 1, report: 3))
   end
 end

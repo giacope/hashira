@@ -9,6 +9,7 @@ end
 
 require "hashira"
 require "tmpdir"
+require_relative "support/fakes"
 
 module Fixtures
   def within(files, &)
@@ -92,14 +93,19 @@ module Fixtures
 
   def message(finding) = Hashira::Report::Phrases.new(finding).message
 
-  def spy_on(klass, method, log)
-    allow(klass).to(
-      receive(:new).and_wrap_original do |make, node|
-        made = make.call(node)
-        allow(made).to(receive(method).and_wrap_original { |call| (log << node) && call.call })
-        made
-      end
-    )
+  # While the block runs, the first argument each instance of klass is built with, and, when a method is named,
+  # that argument again each time the method runs on the instance: watched by a TracePoint, which replaces nothing.
+  def observed(klass, method = :initialize, &)
+    built = {}.compare_by_identity
+    seen = []
+    TracePoint.new(:call) { |call| watch(call, klass, method, built, seen) }.enable(&)
+    seen
+  end
+
+  def watch(call, klass, method, built, seen)
+    return unless call.self.is_a?(klass)
+    built[call.self] = call.binding.local_variable_get(call.parameters.first.last) if call.method_id == :initialize
+    seen << built.fetch(call.self) if call.method_id == method
   end
 
   def capture

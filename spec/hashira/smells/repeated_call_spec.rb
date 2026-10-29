@@ -321,9 +321,10 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
   end
 
   it "never surveys the bindings of a call made once, which cannot repeat" do
-    asked = []
-    spy_on(Hashira::Smells::Bindings, :free, asked)
-    repeated("module App\n  class Thing\n    def once = @other.thing(1) + @other.other(2)\n  end\nend\n")
+    asked =
+      observed(Hashira::Smells::Bindings, :free) do
+        repeated("module App\n  class Thing\n    def once = @other.thing(1) + @other.other(2)\n  end\nend\n")
+      end
     expect(asked).to(eq([]))
   end
 

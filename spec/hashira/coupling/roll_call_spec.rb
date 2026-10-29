@@ -22,13 +22,10 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
   end
 
   it "is handed only the files that hold a word list" do
-    handed = []
-    allow(described_class).to(
-      receive(:new).and_wrap_original { |make, lists, homes| (handed << lists.keys) && make.call(lists, homes) }
-    )
-    files = %w[a b c].to_h { ["lib/app/#{it}/#{it}.rb", "STATES = %i[draft sent paid].freeze\n"] }
-    within(files.merge("lib/app/d/d.rb" => "X = 1\n")) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])).findings }
-    expect(handed).to(eq([%w[a/a.rb b/b.rb c/c.rb]]))
+    lists = %w[a b c].to_h { ["lib/app/#{it}/#{it}.rb", "STATES = %i[draft sent paid].freeze\n"] }
+    files = lists.merge("lib/app/d/d.rb" => "X = 1\n")
+    handed = observed(described_class) { within(files) { Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])).findings } }
+    expect(handed.map(&:keys)).to(eq([%w[a/a.rb b/b.rb c/c.rb]]))
   end
 
   it "leaves out column and schema words, and lists the shared words are only a small part of" do

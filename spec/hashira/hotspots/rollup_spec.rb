@@ -1,13 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Hotspots::Rollup, :aggregate_failures) do
-  def score(file, cognitive)
-    instance_double(Hashira::Complexity::MethodScore, file:, cognitive:)
-  end
+  def score(file, cognitive) = Fakes::Score.new(file:, cognitive:)
 
-  def complexity(scores) = instance_double(Hashira::Complexity::Scores, ranked: scores)
+  def complexity(scores) = Fakes::Complexity.new(scores)
 
-  def duplication(coverage) = instance_double(Hashira::Duplication::Clones, coverage:)
+  def duplication(coverage) = Fakes::Duplication.new(coverage)
 
   def rollup(scores: [], coverage: {}, churn: {})
     described_class.new(complexity(scores), duplication(coverage), Hashira::Churn.new(churn))

@@ -138,7 +138,7 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     end
   end
 
-  def sites(*files) = files.map { instance_double(Hashira::Duplication::Fragment, file: it) }
+  def sites(*files) = files.map { Fakes::Site.new(it) }
 
   it "is hot only when two distinct files both change more than the typical file" do
     churn = described_class.new("a.rb" => 5, "b.rb" => 3, "c.rb" => 2, "d.rb" => 1, "e.rb" => 1)

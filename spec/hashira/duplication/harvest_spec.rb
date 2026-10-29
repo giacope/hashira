@@ -118,9 +118,9 @@ RSpec.describe(Hashira::Duplication::Harvest, :aggregate_failures) do
   end
 
   it "walks each statement's subtree once, however many windows and whole nodes include it" do
-    walked = []
-    spy_on(Hashira::Analysis::NodeWalk, :collect, walked)
-    kinds = fragments("m.rb" => "class M\n  def m\n    a\n    b(1) if c\n  end\n  def n = d\nend\n").map(&:types)
+    source = { "m.rb" => "class M\n  def m\n    a\n    b(1) if c\n  end\n  def n = d\nend\n" }
+    kinds = []
+    walked = observed(Hashira::Analysis::NodeWalk, :collect) { kinds = fragments(source).map(&:types) }
     expect(walked.map(&:object_id).tally.values.max).to(eq(1))
     expect(kinds).to(include(%i[def_node statements_node call_node]))
   end

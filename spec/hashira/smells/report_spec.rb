@@ -28,10 +28,16 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
 
   def spied = [Hashira::Smells::DataClump, Hashira::Smells::BoundarySprawl, Hashira::Smells::SpreadSwitch]
 
+  # The classes among these that are built while the block runs, seen as they initialize.
+  def built(classes, &)
+    seen = []
+    TracePoint.new(:call) { |call| seen << call.self.class if call.method_id == :initialize }.enable(&)
+    seen.uniq & classes
+  end
+
   it "computes only the smells a run reports" do
-    spied.each { allow(it).to(receive(:new).and_call_original) }
-    expect(narrowed(%w[utility_function])).to(eq(%w[utility_function]))
-    expect(spied).to(all(have_received(:new).exactly(0).times))
+    expect(built(spied) { expect(narrowed(%w[utility_function])).to(eq(%w[utility_function])) }).to(be_empty)
+    expect(built(spied) { narrowed(%w[data_clump boundary_sprawl manual_dispatch]) }).to(match_array(spied))
   end
 
   it "honours visibility markers in all their spellings" do
