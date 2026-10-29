@@ -43,7 +43,7 @@ RSpec.describe(Hashira::Coupling::Census, "#resolve", :aggregate_failures) do
       "lib/app/keys/keys.rb" => "module App\n  module Keys\n    MUTEX = 1\n  end\nend\n"
     }
     found = analyze(files) { |_project, census, graph| [graph.sightings.map(&:path), *vias(census)] }
-    expect(found).to(match([include(%w[Keys MUTEX]), eq(Set[%w[Store]]), eq([])]))
+    expect(found).to(match([include(%w[Keys MUTEX]), eq([%w[Store]]), eq([])]))
   end
 
   it "walks outward through enclosing namespaces before falling back to top level" do

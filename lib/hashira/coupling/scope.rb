@@ -16,7 +16,7 @@ class Hashira::Coupling::Scope
 
   def pinpoint(segments) = resolve(segments, [])
 
-  def vias = @_vias ||= Hash.new { |hash, path| hash[path] = Set.new }
+  def vias(path) = settled.filter_map { |(via, _rest), found| via if found == [path] }
 
   private
 
@@ -40,14 +40,14 @@ class Hashira::Coupling::Scope
 
   def settle(path, rest)
     return unless path && known?(path)
-    rest.empty? ? path : ancestral(path, rest) || path
+    rest.empty? ? path : ancestral(path, rest).fetch(0, path)
   end
 
   def ancestral(path, rest)
-    found = lineage(path).lazy.flat_map { descend(it, rest, rest.length) }.first
-    vias[found] << path
-    found
+    settled[[path, rest]] ||= lineage(path).lazy.flat_map { descend(it, rest, rest.length) }.first(1)
   end
+
+  def settled = @_settled ||= {}
 
   def known?(path) = @registry.claimed?(path) && @catalog.owned?(path)
 

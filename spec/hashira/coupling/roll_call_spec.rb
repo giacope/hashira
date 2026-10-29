@@ -11,7 +11,7 @@ RSpec.describe(Hashira::Coupling::RollCall, :aggregate_failures) do
 
   def literals(list)
     (list.first.is_a?(Array) ? list : [list]).each_with_index.map do |words, index|
-      Hashira::Coupling::Words::Literal.new(words: Set.new(words), line: index + 1)
+      Hashira::Coupling::Words::Literal.new(Set.new(words), index + 1)
     end
   end
 

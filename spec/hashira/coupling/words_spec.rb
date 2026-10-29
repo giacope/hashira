@@ -10,7 +10,8 @@ RSpec.describe(Hashira::Coupling::Words, :aggregate_failures) do
       MIX = ["two words", :epsilon, 9, *rest]
       call(:zeta, "eta")
     RUBY
-    expected = [[Set.new(%w[alpha beta]), 1], [Set.new(%w[gamma delta]), 2], [Set.new(%w[epsilon]), 3]]
-    expect(described_class.new(tree).lists.map { [it.words, it.line] }).to(eq(expected))
+    every = described_class::Literal.new(Set.new(%w[alpha beta gamma delta epsilon zeta eta]), 0)
+    expected = [[%w[alpha beta], "k.rb:1"], [%w[delta gamma], "k.rb:2"], [%w[epsilon], "k.rb:3"]]
+    expect(described_class.new(tree).lists.map { [it.shared(every).sort, it.site("k.rb")] }).to(eq(expected))
   end
 end

@@ -9,7 +9,7 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def mode = :namespace
 
-  def placed = catalog.map { [it, home(it)] }
+  def placed = catalog.flat_map { |definition| home(definition).map { [definition, it] } }
 
   def baseline = []
 
@@ -36,8 +36,9 @@ class Hashira::Coupling::NamespacePlacement < Hashira::Coupling::Placement
 
   def home(definition)
     file = definition.file
-    return package(definition.name) unless apart?(file)
-    (tested?(file) ? TEST : WEB) unless claimed.include?(definition.path)
+    return [package(definition.name)] unless apart?(file)
+    return [] if claimed.include?(definition.path)
+    [tested?(file) ? TEST : WEB]
   end
 
   def package(name) = held.include?(name) ? project.root : name

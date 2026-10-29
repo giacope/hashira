@@ -57,7 +57,7 @@ class Hashira::Coupling::RollCall
 
   private
 
-  def lists = @_lists ||= @raw.transform_values { |literals| literals.map { it.with(words: it.words - GENERIC) } }
+  def lists = @_lists ||= @raw.transform_values { |literals| literals.map { it.without(GENERIC) } }
 
   def files = @_files ||= lists.keys.sort
 
@@ -67,19 +67,17 @@ class Hashira::Coupling::RollCall
   end
 
   def shared(mine, theirs)
-    words = mine.words & theirs.words
-    words.size >= MIN_WORDS && most?(words, mine) && most?(words, theirs) ? [words] : []
+    words = mine.shared(theirs)
+    words.size >= MIN_WORDS && mine.holds?(words, SHARE) && theirs.holds?(words, SHARE) ? [words] : []
   end
 
-  def most?(words, literal) = words.size >= SHARE * literal.words.size
-
-  def holding(file, words) = lists[file].select { it.words >= words && most?(words, it) }
+  def holding(file, words) = lists[file].select { it.holds?(words, SHARE) }
 
   def entry(words)
     holders = files.select { holding(it, words).any? }
     spread = holders.map { @homes[it] }.uniq.sort
     return unless holders.size >= MIN_FILES && spread.size >= MIN_PACKAGES
-    sites = holders.map { "#{it}:#{holding(it, words).fetch(0).line}" }
+    sites = holders.map { holding(it, words).fetch(0).site(it) }
     Roll.new(words.sort, holders, spread, sites)
   end
 end

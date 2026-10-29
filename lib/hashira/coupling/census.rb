@@ -37,7 +37,7 @@ class Hashira::Coupling::Census
 
   def locate(segments, nesting) = scope.locate(segments, nesting)
 
-  def vias(path) = scope.vias.fetch(path, [])
+  def vias(path) = scope.vias(path)
 
   def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
 
