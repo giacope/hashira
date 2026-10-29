@@ -15,16 +15,17 @@ class Hashira::Complexity::Trail
     end
   end
 
-  def initialize(entry, helpers)
+  def initialize(entry, helpers, node)
     @entry = entry
     @helpers = helpers
+    @node = node
   end
 
   def finding(limit) = (build if path.size >= limit)
 
   private
 
-  def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@entry.site.node)
+  def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@node)
 
-  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path.map { @entry.cite(it) })
+  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path.zip)
 end

@@ -1,62 +1,49 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Components
-  Search =
-    Data.define(:graph, :index, :low, :stack, :work, :found) do
-      def run
-        graph.each_key { start(it) unless index.key?(it) }
-        found
-      end
-      private
-      def start(root)
-        descend(root)
-        step until work.empty?
-      end
+  ENTER = :enter
 
-      def enter(node)
-        low[node] = index[node] = index.size
-        stack.push(node)
-      end
-
-      def step
-        node, position = work.last
-        child = graph.fetch(node)[position]
-        child ? advance(node, child) : finish
-      end
-
-      def advance(node, child)
-        work.last[-1] += 1
-        return descend(child) unless index.key?(child)
-        lower(node, index[child]) if low.key?(child)
-      end
-
-      def descend(node)
-        enter(node)
-        work.push([node, 0])
-      end
-
-      def finish
-        node, = work.pop
-        least = low[node]
-        parent = work.last
-        lower(parent.first, least) if parent
-        close(node) if least == index[node]
-      end
-
-      def lower(node, value) = low[node] = [low[node], value].min
-
-      def close(node)
-        component = []
-        component << take until component.last == node
-        found << component
-      end
-
-      def take = stack.pop.tap { low.delete(it) }
-    end
+  LEAVE = :leave
 
   def initialize(graph)
     @graph = graph
   end
 
-  def to_a = Search.new(graph: @graph, index: {}, low: {}, stack: [], work: [], found: []).run
+  def to_a
+    assigned = Set.new
+    back = transposed
+    finished.reverse_each.filter_map do |root|
+      next if assigned.include?(root)
+      found = flood(root, assigned, back)
+      assigned.merge(found)
+      found
+    end
+  end
+
+  private
+
+  def finished
+    seen = Set.new
+    order = []
+    stack = entries(@graph.keys)
+    until stack.empty?
+      step, node = stack.pop
+      next order << node if step == LEAVE
+      stack.push([LEAVE, node], *entries(@graph.fetch(node))) if seen.add?(node)
+    end
+    order
+  end
+
+  def entries(nodes) = nodes.reverse.map { [ENTER, it] }
+
+  def flood(root, assigned, back)
+    seen = Set[root]
+    found = [root]
+    found.each { |node| found.concat(back.fetch(node, []).select { !assigned.include?(it) && seen.add?(it) }) }
+  end
+
+  def transposed
+    edges = @graph.flat_map { |node, children| children.map { [it, node] } }
+    edges.group_by(&:first).transform_values { it.map(&:last) }
+  end
 end

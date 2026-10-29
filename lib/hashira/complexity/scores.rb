@@ -16,10 +16,10 @@ class Hashira::Complexity::Scores
 
   def classes = Hashira::Complexity::Rollup.new(scores).classes.sort_by { -it.cognitive }
 
-  def lists = { methods: ranked, classes: }
+  def to_h = { methods: ranked, classes: }
 
   def findings
-    flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } +
+    flagged.map(&:finding) +
       Hashira::Complexity::Indirection.new(sites, @trees.values, @rules).findings +
       Hashira::Complexity::Fragmentation.new(sites, notes, @trees.values, @rules).findings
   end
@@ -33,15 +33,18 @@ class Hashira::Complexity::Scores
 
   def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
 
-  def scores = @_scores ||= sites.map { |relative, site| score(relative, site) }
+  def scores = @_scores ||= scored(Hashira::Complexity::Recursion.new(sites))
 
   def flagged = ranked.select { it.cognitive >= @rules.threshold(KIND, THRESHOLD) }
 
-  def harvest(relative, tree) = Hashira::Complexity::Sites.new(tree).to_enum(:each).map { [relative, it] }
+  def harvest(relative, tree)
+    Hashira::Complexity::Sites.new(tree).to_enum(:each).map { |owner, node| [relative, owner, node] }
+  end
 
-  def recursion = @_recursion ||= Hashira::Complexity::Recursion.new(sites.map(&:last))
-
-  def score(relative, site)
-    Hashira::Complexity::CognitiveScore.new(site.node).score(site.subject, relative, recursion.increments(site))
+  def scored(recursion)
+    sites.map do |relative, owner, node|
+      extra = recursion.increments(owner, node)
+      Hashira::Complexity::CognitiveScore.new(node).score(owner.subject(node), relative, extra)
+    end
   end
 end

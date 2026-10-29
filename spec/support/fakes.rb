@@ -7,7 +7,10 @@ module Fakes
   Site = Data.define(:file)
 
   # A method's complexity: the file it is in and its cognitive score.
-  Score = Data.define(:file, :cognitive)
+  Score =
+    Data.define(:file, :cognitive) do
+      def charge = [file, cognitive]
+    end
 
   # The complexity analyzer: the method scores it ranked.
   Complexity = Data.define(:ranked)

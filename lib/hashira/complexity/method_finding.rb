@@ -37,31 +37,18 @@ class Hashira::Complexity::MethodFinding
     def phrase(package) = "#{package} — cognitive #{@cognitive}, #{@calls} calls (#{@site}). #{ADVICE.fetch(@dominant)}"
   end
 
-  def initialize(score)
-    @score = score
+  def initialize(subject, site, charges)
+    @subject = subject
+    @site = site
+    @charges = charges
   end
 
   def to_finding
-    name = Hashira::Analysis::Finding::Name.new(@score.subject)
-    Hashira::Analysis::Finding.new(KIND, name, detail, Hashira::Analysis::Finding::Proof.new(evidence, [site]))
+    proof = Hashira::Analysis::Finding::Proof.new(@charges.evidence, [@site])
+    Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(@subject), detail, proof)
   end
 
   private
 
-  def detail
-    Effort.new(cognitive: @score.cognitive, calls: @score.calls, site:, dominant:)
-  end
-
-  def site = "#{@score.file}:#{@score.line}"
-
-  def evidence
-    @score.increments.group_by(&:label).map do |label, increments|
-      lines = increments.map(&:line).uniq
-      "#{label} +#{increments.sum(&:cost)} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
-    end
-  end
-
-  def dominant
-    @score.increments.group_by(&:label).transform_values { it.sum(&:cost) }.max_by(&:last).fetch(0)
-  end
+  def detail = Effort.new(cognitive: @charges.total, calls: @charges.count, site: @site, dominant: @charges.dominant)
 end

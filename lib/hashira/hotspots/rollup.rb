@@ -9,23 +9,21 @@ class Hashira::Hotspots::Rollup
 
   def weighed? = @churn.history?
 
-  def files = costs.reject { it.cost.zero? }.sort_by { [-it.rank, it.file] }
+  def files = costs.reject(&:idle?).sort
 
   private
 
   def costs = (cognitive.keys | duplicated.keys).map { cost(it) }
 
   def cost(file)
-    Hashira::Hotspots::FileCost.new(
-      file:, cognitive: cognitive[file], duplication: duplicated[file], churn: @churn.hits(file)
-    )
+    Hashira::Hotspots::FileCost.new(file, cognitive[file], duplicated[file], @churn.hits(file))
   end
 
   def scores = @complexity ? @complexity.ranked : []
 
   def coverage = @duplication ? @duplication.coverage : {}
 
-  def cognitive = @_cognitive ||= bucketed(scores.map { [it.file, it.cognitive] })
+  def cognitive = @_cognitive ||= bucketed(scores.map(&:charge))
 
   def duplicated = @_duplicated ||= Hash.new(0).merge(coverage)
 

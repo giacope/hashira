@@ -48,15 +48,13 @@ class Hashira::Complexity::Shard
 
   def counted = @_counted ||= found.reject { predicate?(it) }
 
-  def predicate?(helper) = helper.node.name.end_with?(QUESTION)
+  def predicate?(helper) = helper.name.end_with?(QUESTION)
 
-  def mean = @_mean ||= methods.sum { Hashira::Complexity::Span.new(it.node, @notes).size }.fdiv(methods.size)
+  def mean = @_mean ||= methods.sum { Hashira::Complexity::Span.new(it, @notes).size }.fdiv(methods.size)
 
-  def methods = [@entry.site] + found
+  def methods = @reach.methods
 
-  def build = @entry.finding(spread, found.map { cited(it) })
-
-  def cited(helper) = "#{@entry.cite(helper.node)}#{UNCOUNTED if predicate?(helper)}"
+  def build = @entry.finding(spread, found.map { [it, (UNCOUNTED if predicate?(it))] })
 
   def spread
     Spread.new(site: @entry.spot, helpers: counted.size, lines: mean.round(2), path: @reach.path)

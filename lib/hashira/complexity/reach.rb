@@ -1,12 +1,14 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Reach
-  def initialize(entry, table)
-    @entry = entry
+  def initialize(root, table)
+    @root = root
     @table = table
   end
 
-  def helpers = @_helpers ||= descend(@entry.node)
+  def helpers = @_helpers ||= descend(@root)
+
+  def methods = [@root] + helpers
 
   def path = @_path ||= trail(parents.keys.last)
 
@@ -14,12 +16,12 @@ class Hashira::Complexity::Reach
 
   private
 
-  def root = @entry.node.name
+  def root = @root.name
 
   def descend(node)
     links(node).flat_map do |name|
       helper = @table.fetch(name)
-      [helper, *descend(helper.node)]
+      [helper, *descend(helper)]
     end
   end
 
@@ -35,7 +37,7 @@ class Hashira::Complexity::Reach
 
   def adopted(name) = links(node(name)).to_h { [it, name] }
 
-  def node(name) = name == root ? @entry.node : @table.fetch(name).node
+  def node(name) = name == root ? @root : @table.fetch(name)
 
   def trail(name) = name ? trail(parents[name]) + [name] : []
 end

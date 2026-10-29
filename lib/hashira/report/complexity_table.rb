@@ -24,7 +24,7 @@ class Hashira::Report::ComplexityTable
     scored = scores.select { it.cognitive.positive? }
     return if scored.empty?
     @io.puts("#{title}:\n\n")
-    Hashira::Report::Columns.new(headers, scored.first(@top).map(&:cells), io: @io).print
+    Hashira::Report::Columns.new(headers, scored.first(@top).map(&:to_a), io: @io).print
     close(scored.size - @top)
   end
 

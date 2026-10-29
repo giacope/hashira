@@ -44,7 +44,7 @@ class Hashira::Report::Json
 
   def lists
     @_lists ||= { findings: Hashira::Report::Spread.new(@view.findings.to_a).to_a }
-      .merge(Hash(@view.complexity&.lists))
+      .merge(Hash(@view.complexity&.to_h))
       .merge(duplication: @view.duplication&.clusters, hotspots: @view.hotspots&.files).compact
   end
 

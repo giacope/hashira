@@ -1,19 +1,24 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Complexity
-    Increment = Data.define(:line, :cost, :label)
+class Hashira::Complexity::MethodScore
+  OWNER = /[#.]/
 
-    MethodScore =
-      Data.define(:subject, :file, :line, :cognitive, :calls, :increments) do
-        def to_h = super.except(:increments)
-
-        def cells = [subject, cognitive, calls, "#{file}:#{line}"]
-      end
-
-    ClassScore =
-      Data.define(:name, :cognitive, :method_count, :peak) do
-        def cells = [name, cognitive, method_count, peak]
-      end
+  def initialize(subject, file, line, charges)
+    @subject = subject
+    @file = file
+    @line = line
+    @charges = charges
   end
+
+  def cognitive = @charges.total
+
+  def owner = @subject.split(OWNER, 2).first
+
+  def charge = [@file, cognitive]
+
+  def finding = Hashira::Complexity::MethodFinding.new(@subject, "#{@file}:#{@line}", @charges).to_finding
+
+  def to_h = { subject: @subject, file: @file, line: @line, cognitive:, calls: @charges.count }
+
+  def to_a = [@subject, cognitive, @charges.count, "#{@file}:#{@line}"]
 end

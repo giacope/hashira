@@ -5,7 +5,7 @@ class Hashira::Complexity::Hops
     @helpers = helpers
   end
 
-  def longest(node) = callees(node).map { hop(it.node) }.max_by(&:size) || []
+  def longest(node) = callees(node).map { hop(it) }.max_by(&:size) || []
 
   private
 

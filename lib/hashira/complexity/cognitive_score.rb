@@ -65,10 +65,8 @@ class Hashira::Complexity::CognitiveScore
   def total = walked.total
 
   def score(subject, file, extra)
-    all = increments + extra
-    Hashira::Complexity::MethodScore.new(
-      subject:, file:, line: @node.location.start_line, cognitive: all.sum(&:cost), calls:, increments: all
-    )
+    charges = Hashira::Complexity::Charges.new(increments + extra, calls)
+    Hashira::Complexity::MethodScore.new(subject, file, @node.location.start_line, charges)
   end
 
   private

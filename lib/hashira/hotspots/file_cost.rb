@@ -1,20 +1,30 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Hotspots
-    CHURN_FLOOR = 1
+class Hashira::Hotspots::FileCost
+  CHURN_FLOOR = 1
 
-    FileCost =
-      Data.define(:file, :cognitive, :duplication, :churn) do
-        def cost = cognitive + duplication
-
-        def rank = cost * heat
-
-        def heat = [churn, CHURN_FLOOR].max
-
-        def to_h = super.merge(cost:, rank:)
-
-        def cells = [file, cognitive, duplication, churn, rank]
-      end
+  def initialize(file, cognitive, duplication, churn)
+    @file = file
+    @cognitive = cognitive
+    @duplication = duplication
+    @churn = churn
   end
+
+  def idle? = cost.zero?
+
+  def <=>(other) = order <=> other.order
+
+  def to_h = { file: @file, cognitive: @cognitive, duplication: @duplication, churn: @churn, cost:, rank: }
+
+  def to_a = [@file, @cognitive, @duplication, @churn, rank]
+
+  protected
+
+  def order = [-rank, @file]
+
+  private
+
+  def cost = @cognitive + @duplication
+
+  def rank = cost * [@churn, CHURN_FLOOR].max
 end

@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Recursion
+  LABEL = "recursion"
+
   def initialize(sites)
     @sites = sites
   end
 
-  def increments(site) = site.recursion(cyclic)
+  def increments(owner, node)
+    cyclic.include?(owner.subject(node)) ? [Hashira::Complexity::Increment.new(node.location.start_line, 1, LABEL)] : []
+  end
 
   private
 
@@ -15,7 +19,9 @@ class Hashira::Complexity::Recursion
 
   def looped?((first, *rest)) = rest.any? || graph.fetch(first).include?(first)
 
-  def graph = @_graph ||= @sites.to_h { [it.subject, it.callees.select { known.include?(it) }] }
+  def graph = @_graph ||= linked.transform_values { |callees| callees.select { linked.key?(it) } }
 
-  def known = @_known ||= @sites.to_set(&:subject)
+  def linked = @_linked ||= @sites.to_h { |_file, owner, node| [owner.subject(node), callees(owner, node)] }
+
+  def callees(owner, node) = Hashira::Complexity::Calls.new(node).names.map { "#{owner.family(node)}#{it}" }
 end

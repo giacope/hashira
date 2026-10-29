@@ -22,20 +22,20 @@ class Hashira::Complexity::Fragmentation
 
   def findings
     limits = %w[helpers lines].zip([HELPERS, LINES]).map { |name, default| @rules.limit(KIND, name, default) }
-    @sites.filter_map { |file, site| shard(file, site).finding(*limits) if entry?(site) }
+    @sites.filter_map { |file, owner, node| shard(file, owner, node).finding(*limits) if entry?(node) }
   end
 
   private
 
-  def shard(file, site)
-    entry = Hashira::Complexity::Entry.new(KIND, file, site)
-    reach = Hashira::Complexity::Reach.new(site, helpers(site.family))
+  def shard(file, owner, node)
+    entry = Hashira::Complexity::Entry.new(KIND, file, owner.subject(node), node)
+    reach = Hashira::Complexity::Reach.new(node, helpers(owner.family(node)))
     Hashira::Complexity::Shard.new(entry, reach, @notes.fetch(file))
   end
 
-  def helpers(family) = (@_helpers ||= {})[family] ||= table(family).select { |name, site| helper?(family, name, site) }
+  def helpers(family) = (@_helpers ||= {})[family] ||= table(family).select { |name, node| helper?(family, name, node) }
 
-  def helper?(family, name, site) = !exposed.include?(site.node) && callers(family)[name] == 1 && !hook?(family, name)
+  def helper?(family, name, node) = !exposed.include?(node) && callers(family)[name] == 1 && !hook?(family, name)
 
   def hook?(family, name)
     owner = family.delete_suffix("#").delete_suffix(".").split("::")
@@ -54,14 +54,16 @@ class Hashira::Complexity::Fragmentation
 
   def callers(family)
     (@_callers ||= {})[family] ||=
-      table(family).values.flat_map { Hashira::Complexity::Calls.new(it.node).names - [it.node.name] }.tally
+      table(family).values.flat_map { Hashira::Complexity::Calls.new(it).names - [it.name] }.tally
   end
 
-  def entry?(site) = exposed.include?(site.node) && !HIDDEN.include?(site.node.name)
+  def entry?(node) = exposed.include?(node) && !HIDDEN.include?(node.name)
 
   def exposed = @_exposed ||= Hashira::Complexity::Sections.new(@trees).parted(OPEN)
 
-  def table(family) = (@_tables ||= {})[family] ||= families.fetch(family).to_h { [it.node.name, it] }
+  def table(family) = (@_tables ||= {})[family] ||= families.fetch(family).to_h { |*, node| [node.name, node] }
 
-  def families = @_families ||= @sites.map(&:last).select { it.node.is_a?(Prism::DefNode) }.group_by(&:family)
+  def families
+    @_families ||= @sites.select { |_file, _owner, node| node.is_a?(Prism::DefNode) }.group_by { |_file, owner, node| owner.family(node) }
+  end
 end

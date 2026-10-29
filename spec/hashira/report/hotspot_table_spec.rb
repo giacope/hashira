@@ -2,7 +2,7 @@
 
 RSpec.describe(Hashira::Report::HotspotTable, :aggregate_failures) do
   def cost(file, cognitive, duplication, churn)
-    Hashira::Hotspots::FileCost.new(file:, cognitive:, duplication:, churn:)
+    Hashira::Hotspots::FileCost.new(file, cognitive, duplication, churn)
   end
 
   def render(files, top: described_class::TOP, weighed: true)

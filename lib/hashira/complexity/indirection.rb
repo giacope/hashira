@@ -18,10 +18,10 @@ class Hashira::Complexity::Indirection
   end
 
   def findings
-    @sites.filter_map do |file, site|
-      next if helping.include?(site)
-      entry = Hashira::Complexity::Entry.new(KIND, file, site)
-      Hashira::Complexity::Trail.new(entry, helpers(site.family)).finding(limit)
+    @sites.filter_map do |file, owner, node|
+      next if helping.include?(node)
+      entry = Hashira::Complexity::Entry.new(KIND, file, owner.subject(node), node)
+      Hashira::Complexity::Trail.new(entry, helpers(owner.family(node)), node).finding(limit)
     end
   end
 
@@ -33,20 +33,23 @@ class Hashira::Complexity::Indirection
 
   def helpers(family) = (@_helpers ||= {})[family] ||= chosen(family)
 
-  def chosen(family) = defined(family).select { |name, site| helper?(family, name, site) }
+  def chosen(family) = defined(family).select { |name, node| helper?(family, name, node) }
 
-  def helper?(family, name, site) = hidden.include?(site.node) && single?(family, name)
+  def helper?(family, name, node) = hidden.include?(node) && single?(family, name)
 
   def hidden = @_hidden ||= Hashira::Complexity::Sections.new(@trees).parted([PRIVATE])
 
-  def defined(family) = families.fetch(family).select { it.node.is_a?(Prism::DefNode) }.to_h { [it.node.name, it] }
+  def defined(family)
+    families.fetch(family).filter_map { |_file, _owner, node| [node.name, node] if node.is_a?(Prism::DefNode) }.to_h
+  end
 
-  def families = @_families ||= @sites.map(&:last).group_by(&:family)
+  def families = @_families ||= @sites.group_by { |_file, owner, node| owner.family(node) }
 
   def single?(family, name) = calls(family)[name] == 1 && [named, received, borrowed].none? { it.include?(name) }
 
   def calls(family)
-    (@_calls ||= {})[family] ||= families.fetch(family).flat_map { Hashira::Complexity::Calls.new(it.node).sent }.tally
+    (@_calls ||= {})[family] ||=
+      families.fetch(family).flat_map { |*, node| Hashira::Complexity::Calls.new(node).sent }.tally
   end
 
   def borrowed = @_borrowed ||= families.keys.flat_map { |family| calls(family).keys - defined(family).keys }.to_set

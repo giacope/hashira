@@ -75,4 +75,9 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
     borrowed = "#{walk}class Other\n  include Walk\n  def go = second(1)\nend\n"
     expect([twice, named, received, borrowed].map { traced(it).map { it.to_h[:package] } }).to(eq([[]] * 4))
   end
+
+  it "still takes a method for borrowed when the class that calls it only builds it with define_method" do
+    built = "#{walk}class Other\n  define_method(%(second)) { |rows| rows }\n  def go = second(1)\nend\n"
+    expect(traced(built)).to(eq([]))
+  end
 end
