@@ -24,7 +24,7 @@ class Evaluation::Board
 
   private
 
-  def suites = @checks.group_by(&:suite).transform_values { tally(it) }
+  def suites = @checks.map(&:entry).group_by(&:first).transform_values { |entries| tally(entries.map(&:last)) }
 
-  def tally(checks) = { "passed" => checks.count(&:passed?), "total" => checks.size, "checks" => checks.map(&:row) }
+  def tally(rows) = { "passed" => rows.count { it["passed"] }, "total" => rows.size, "checks" => rows }
 end

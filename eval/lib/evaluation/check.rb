@@ -1,12 +1,16 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Check =
-    Data.define(:suite, :name, :expected, :actual) do
-      def self.of(suite, name, expected, actual) = new(suite:, name:, expected:, actual:)
+class Evaluation::Check
+  def self.of(suite, name, expected, actual) = new(suite, name, expected, actual)
 
-      def passed? = expected == actual
+  def initialize(suite, name, expected, actual)
+    @suite = suite
+    @name = name
+    @expected = expected
+    @actual = actual
+  end
 
-      def row = { "name" => name, "passed" => passed? }.merge("expected" => expected, "actual" => actual)
-    end
+  def entry = [@suite, to_h]
+
+  def to_h = { "name" => @name, "passed" => @expected == @actual, "expected" => @expected, "actual" => @actual }
 end

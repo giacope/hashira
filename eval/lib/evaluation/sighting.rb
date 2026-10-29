@@ -5,7 +5,7 @@ module Evaluation
 
   Sighting =
     Data.define(:corpus, :finding, :home) do
-      def kind = finding["kind"]
+      def kind = finding.fetch("kind")
 
       def key = "#{corpus}|#{kind}|#{identity}"
 
@@ -15,7 +15,7 @@ module Evaluation
 
       def sites
         case kind
-        when "duplication" then finding["evidence"]
+        when "duplication" then finding.fetch("evidence")
         when "change_coupling" then finding.dig("detail", "files").map { "#{it}:1" }
         else [finding.dig("detail", "site") || finding["package"]]
         end

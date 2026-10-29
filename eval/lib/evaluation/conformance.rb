@@ -44,8 +44,8 @@ class Evaluation::Conformance
   end
 
   def defined(source)
-    found = source.match(DEFINITION)
-    found[1] ? ".#{found[2]}" : found[2]
+    singleton, name = source.match(DEFINITION).captures
+    singleton ? ".#{name}" : name
   end
 
   def label(name) = name.start_with?(".") ? name : "##{name}"

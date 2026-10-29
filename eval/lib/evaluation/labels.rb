@@ -10,7 +10,7 @@ class Evaluation::Labels
     @pending = pending
   end
 
-  def verdict(key) = entries.dig(key, "label")
+  def verdicts(key) = entries.slice(key).values.map { it["label"] }
 
   def entries = @_entries ||= listed.reject { @pending && blank?(it) }.to_h { [it["key"], vetted(it)] }
 

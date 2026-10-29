@@ -5,7 +5,7 @@ module Evaluation
     Data.define(:salt, :shelves) do
       def initialize(shelves: Shelves.new, **) = super
 
-      def self.build(seed) = seed ? new(salt: "#{seed}|") : new(salt: "")
+      def self.build(seeds) = new(salt: seeds.map { "#{it}|" }.join)
 
       def labels = Labels.new(shelves.labels(seed))
 
