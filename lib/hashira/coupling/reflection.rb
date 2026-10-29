@@ -14,11 +14,7 @@ class Hashira::Coupling::Reflection
   def roots
     @_roots ||=
       @reflected.filter_map do |owner, segments|
-        segments ? @census.locate(segments, nestings.fetch(owner, [])) : homes[owner]
+        segments ? @census.locate(segments, @openings.nest(owner)) : @openings.home(owner).first
       end
   end
-
-  def homes = @_homes ||= @openings.to_h { [it.node, it.path] }.compare_by_identity
-
-  def nestings = @_nestings ||= @openings.to_h { [it.node, it.stack + [it.full]] }.compare_by_identity
 end

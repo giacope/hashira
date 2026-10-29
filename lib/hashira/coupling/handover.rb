@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Handover
-  def initialize(handed, census, told, foreign)
+  def initialize(handed, census, told, foreign = :foreign)
     @handed = handed
     @census = census
     @told = told
@@ -11,6 +11,8 @@ class Hashira::Coupling::Handover
   def hosts(path) = gifts.fetch(path, [])
 
   def told?(path) = @told.any? { path.last(it.size) == it || it.last(path.size) == path }
+
+  def foreign?(host) = host == @foreign
 
   private
 

@@ -40,6 +40,16 @@ module Fakes
     def to_a = @asked
   end
 
+  # The dead-code check's hosting: the types a framework hosts; it patches and backs none.
+  Hosting =
+    Data.define(:hosted) do
+      def hosted?(path) = hosted.include?(path)
+
+      def patched?(_path) = false
+
+      def backed?(_path) = false
+    end
+
   # The hotspot rollup: the files it ranked, and whether churn weighed them.
   Hotspots =
     Data.define(:files, :weighed) do

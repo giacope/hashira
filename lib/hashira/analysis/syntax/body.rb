@@ -20,5 +20,7 @@ class Hashira::Analysis::Syntax::Body
 
   def constants = to_a.grep(Prism::ConstantWriteNode)
 
+  def calls(name) = to_a.grep(Prism::CallNode).select { it.name == name && it.receiver.nil? && it.arguments }
+
   def class_level? = @node.is_a?(Prism::ModuleNode) && @node.name == CLASS_LEVEL
 end

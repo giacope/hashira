@@ -826,4 +826,65 @@ RSpec.describe(Hashira::Coupling::DeadCode, :aggregate_failures) do
       )
     )
   end
+
+  def hidden
+    {
+      "lib/app/box.rb" => <<~RUBY
+        module App
+          class Box
+            HIDE = 1
+            private_constant :HIDE
+          end
+
+          class Box
+            HIDE = 2
+          end
+
+          class Shelf
+            Crate = Class.new
+            private_constant :Crate
+
+            class Crate
+              def unused = 1
+            end
+
+            def self.make = Crate.new
+          end
+        end
+      RUBY
+    }
+  end
+
+  it "takes a library's constant for API only when every declaration shows it, and a method only on a shown owner" do
+    expect(dead(hidden)).to(eq(%w[App::Box::HIDE App::Shelf::Crate#unused]))
+  end
+
+  def mirrored
+    {
+      "lib/app/reader.rb" => "class Reader\n  def read(name) = name::Shelf.const_get(name)\nend\n",
+      "lib/app/shelf.rb" => "class Shelf\n  class Spare; end\nend\n"
+    }
+  end
+
+  it "reaches nothing through a const_get on a constant read off a computed scope" do
+    expect(dead(mirrored, roots: ["Reader"])).to(eq(%w[Shelf::Spare]))
+  end
+
+  def twice
+    pairs = "class Pair; end\nclass Pair; end\n#{"\n" * 6}class Twice; end\nclass Twice; end\n"
+    { "lib/app/twice.rb" => pairs, "lib/app/main.rb" => "class Main; end\n" }
+  end
+
+  def unused(site, name) = Hashira::Coupling::Unused.new(site, :constant).phrase(name)
+
+  def said(tree, roots)
+    within(tree) do
+      rules = Hashira::Config::Rules.parse({ "dead_code" => { "roots" => roots } }, Fixtures::KINDS)
+      return kept(Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), rules)).map { message(it) }
+    end
+  end
+
+  it "reports a constant declared twice in one file at the site that sorts first as text" do
+    expect(said(twice, ["Main"])).to(eq([unused("twice.rb:1", "Pair"), unused("twice.rb:10", "Twice")]))
+  end
 end
