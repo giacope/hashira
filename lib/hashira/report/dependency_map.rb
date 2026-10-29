@@ -31,13 +31,3 @@ class Hashira::Report::DependencyMap
 
   def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
 end
-
-Hashira::Report::DependencyRow =
-  Data.define(:graph, :package) do
-    def to_s
-      outgoing = graph.outgoing(package).map { "#{it}(#{graph.weight(package, it)})" }
-      format("  %-12s -> %-32s <- %s", package, listed(outgoing), listed(graph.incoming(package)))
-    end
-    private
-    def listed(items) = items.empty? ? "(none)" : items.join(", ")
-  end

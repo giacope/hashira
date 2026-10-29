@@ -16,6 +16,8 @@ class Hashira::Coupling::Surface
       def hosts = exposed ? [path[...-1]].reject(&:empty?) : []
 
       def sign = name.delete_suffix(selector).chars.fetch(-1)
+
+      def mark = [sign, selector]
     end
 
   def initialize(project, trees, census, builtins = Hashira::Runtime::Builtins.new)
@@ -45,7 +47,7 @@ class Hashira::Coupling::Surface
 
   def lineage(path) = [path, *ancestors(path)]
 
-  def forebears(member) = ancestors(member.owner).flat_map { selectors.fetch([it, member.sign, member.selector], []) }
+  def forebears(member) = ancestors(member.owner).flat_map { selectors.fetch([it, *member.mark], []) }
 
   def mixers(path) = (@_mixers ||= mixed).fetch(path, [])
 
@@ -57,7 +59,7 @@ class Hashira::Coupling::Surface
 
   private
 
-  def selectors = @_selectors ||= methods.group_by { [it.owner, it.sign, it.selector] }
+  def selectors = @_selectors ||= methods.group_by { [it.owner, *it.mark] }
 
   def outside = @_outside ||= Hash.new { |found, path| found[path] = types.fetch(path, []).any? { hosted?(it) } }
 

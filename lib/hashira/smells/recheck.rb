@@ -6,19 +6,27 @@ require_relative "postfix"
 require_relative "scope"
 
 class Hashira::Smells::Recheck
-  Change =
-    Data.define(:call, :command) do
-      def settles?(atom, held, moment) = held.include?(call.receiver.slice) && (follows?(atom, moment) || locks?(atom))
-
-      def follows?(atom, moment)
-        command && call.location.start_offset < moment && !Hashira::Smells::Scope.new(call).covers?(atom)
-      end
-
-      def locks?(atom)
-        block = call.block
-        block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.new(block).covers?(atom)
-      end
+  class Change
+    def initialize(call:, command:)
+      @call = call
+      @command = command
     end
+
+    def settles?(atom, held, moment) = held.include?(call.receiver.slice) && (follows?(atom, moment) || locks?(atom))
+
+    def follows?(atom, moment)
+      command && call.location.start_offset < moment && !Hashira::Smells::Scope.new(call).covers?(atom)
+    end
+
+    def locks?(atom)
+      block = call.block
+      block.is_a?(Prism::BlockNode) && Hashira::Smells::Scope.new(block).covers?(atom)
+    end
+
+    private
+
+    attr_reader :call, :command
+  end
 
   def initialize(method)
     @method = method

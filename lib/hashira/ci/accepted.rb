@@ -5,20 +5,22 @@ require "json"
 class Hashira::CI::Accepted
   Screened = Data.define(:all, :accepted)
 
-  Entry =
-    Data.define(:kind, :package, :digest, :reason) do
-      def self.build(hash)
-        new(kind: hash["kind"], package: hash["package"], digest: hash["digest"], reason: hash["reason"])
-      end
+  class Entry
+    def self.build(hash) = new(hash["kind"], hash["package"], hash["digest"], hash["reason"])
 
-      def matches?(finding) = kind == finding.kind && identity == finding.identity
-
-      def identity = digest || package
-
-      def label = reason || "accepted (no reason recorded)"
-
-      def to_h = super.compact
+    def initialize(kind, package, digest, reason)
+      @kind = kind
+      @package = package
+      @digest = digest
+      @reason = reason
     end
+
+    def matches?(finding) = @kind == finding.kind && (@digest || @package) == finding.identity
+
+    def label = @reason || "accepted (no reason recorded)"
+
+    def to_h = { kind: @kind, package: @package, digest: @digest, reason: @reason }.compact
+  end
 
   def self.build(path) = new(Hashira::CI::Baseline.new(path).accepted)
 

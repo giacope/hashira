@@ -20,32 +20,43 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   QUERIES = %i[exists? exist? where find_by].freeze
 
-  Test =
-    Data.define(:atom, :region, :root) do
-      def text = atom.slice
-
-      def key = [text, (region if local?)]
-
-      def local? = ([atom] + Hashira::Smells::Scope.new(atom).inside).any? { LOCALS.include?(it.class) }
-
-      def chain = [atom] + receivers(atom)
-
-      def receivers(node) = lead(node).flat_map { [it] + receivers(it) }
-
-      def lead(node) = node.is_a?(Prism::CallNode) ? [node.receiver].compact : []
-
-      def held = receivers(atom).map(&:slice)
-
-      def dispatch? = atom.is_a?(Prism::CallNode) && (TYPES.include?(atom.name) || fixed?)
-
-      def fixed? = COMPARISONS.include?(atom.name) && sides.any? { Hashira::Analysis::Syntax.new(it).fixed? }
-
-      def sides = [atom.receiver, *atom.arguments&.arguments]
-
-      def queries? = chain.any? { it.is_a?(Prism::CallNode) && QUERIES.include?(it.name) }
-
-      def rechecked?(rechecks) = rechecks.any? { it.settled?(atom, held) }
+  class Test
+    def initialize(atom, region, root)
+      @atom = atom
+      @region = region
+      @root = root
     end
+
+    def key = [@atom.slice, (@region if local?)]
+
+    def counts?(cased, rechecks) = (dispatch? || cased.include?(@root)) && !queries? && !rechecked?(rechecks)
+
+    def origin = @root.object_id
+
+    def cue = [@atom.slice, @atom.location.start_line]
+
+    private
+
+    def local? = ([@atom] + Hashira::Smells::Scope.new(@atom).inside).any? { LOCALS.include?(it.class) }
+
+    def chain = [@atom] + receivers(@atom)
+
+    def receivers(node) = lead(node).flat_map { [it] + receivers(it) }
+
+    def lead(node) = node.is_a?(Prism::CallNode) ? [node.receiver].compact : []
+
+    def held = receivers(@atom).map(&:slice)
+
+    def dispatch? = @atom.is_a?(Prism::CallNode) && (TYPES.include?(@atom.name) || fixed?)
+
+    def fixed? = COMPARISONS.include?(@atom.name) && sides.any? { Hashira::Analysis::Syntax.new(it).fixed? }
+
+    def sides = [@atom.receiver, *@atom.arguments&.arguments]
+
+    def queries? = chain.any? { it.is_a?(Prism::CallNode) && QUERIES.include?(it.name) }
+
+    def rechecked?(rechecks) = rechecks.any? { it.settled?(@atom, held) }
+  end
 
   private
 
@@ -53,11 +64,11 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def repeats = @_repeats ||= groups.select { it.size > threshold(LIMIT) }.uniq { |tests| roots(tests) }
 
-  def roots(tests) = tests.map { it.root.object_id }
+  def roots(tests) = tests.map(&:origin)
 
   def groups = tests.group_by(&:key).values
 
-  def tests = found.select { it.dispatch? || cased.include?(it.root) }.reject { it.queries? || it.rechecked?(rechecks) }
+  def tests = found.select { it.counts?(cased, rechecks) }
 
   def cased = @_cased ||= Set.new.compare_by_identity.merge(subjects)
 
@@ -67,7 +78,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def found = regions.flat_map { |region| predicates(region).flat_map { |root| split(root, region) } }
 
-  def split(root, region) = atoms(root).map { Test.new(atom: it, region:, root:) }
+  def split(root, region) = atoms(root).map { Test.new(it, region, root) }
 
   def atoms(node)
     case node
@@ -97,9 +108,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def detail = { site:, count: repeats.map(&:size).max }
 
-  def evidence = repeats.map { |tests| row(tests.map(&:atom)) }
+  def evidence = repeats.map { |tests| row(tests.map(&:cue)) }
 
-  def row(nodes)
-    "#{nodes.first.slice} × #{nodes.size} (lines #{nodes.map { |node| node.location.start_line }.uniq.sort.join(", ")})"
-  end
+  def row(cues) = "#{cues.first.first} × #{cues.size} (lines #{cues.map(&:last).uniq.sort.join(", ")})"
 end

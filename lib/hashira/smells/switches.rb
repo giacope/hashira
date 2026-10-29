@@ -3,14 +3,37 @@
 require "prism"
 
 class Hashira::Smells::Switches
-  Arm = Data.define(:subject, :label, :line)
-
-  Switch =
-    Data.define(:subject, :arms) do
-      def labels = arms.map(&:label).uniq
-
-      def lines = arms.map(&:line).uniq.sort
+  class Arm
+    def initialize(subject, case_label)
+      @subject = subject
+      @case_label = case_label
     end
+
+    def topic = @subject.slice
+
+    def tested? = yield(@subject)
+
+    def label = @case_label.slice
+
+    def line = @case_label.location.start_line
+  end
+
+  class Switch
+    def initialize(topic, arms)
+      @topic = topic
+      @arms = arms
+    end
+
+    def wide?(least) = labels.size >= least
+
+    def lines = @arms.map(&:line).uniq.sort
+
+    def to_s = "#{@topic}: #{labels.join(", ")}"
+
+    private
+
+    def labels = @arms.map(&:label).uniq
+  end
 
   MIN_ARMS = 2
 
@@ -28,17 +51,24 @@ class Hashira::Smells::Switches
 
   def typed = @_typed ||= gathered(tests)
 
-  def held = tests.select { own?(it.subject) }
+  def held = tests.select { |arm| arm.tested? { own?(it) } }
 
-  def statuses = @_statuses ||= gathered(cased(dispatches) { VALUES.include?(it.class) }.select { status?(it.subject) })
+  def statuses
+    @_statuses ||= gathered(
+      cased(dispatches) { VALUES.include?(it.class) }.select do |arm|
+        arm.tested? do
+          status?(it)
+        end
+      end
+    )
+  end
 
   private
 
   def body = @_body ||= Hashira::Smells::Scope.new(@node).inside
 
   def gathered(arms)
-    arms.group_by { it.subject.slice }.map { |text, found| Switch.new(text, found) }
-      .select { it.labels.size >= MIN_ARMS }
+    arms.group_by(&:topic).map { |text, found| Switch.new(text, found) }.select { it.wide?(MIN_ARMS) }
   end
 
   def cased(cases = selected, &) = cases.flat_map { |node| arms(node, &) }
@@ -61,7 +91,7 @@ class Hashira::Smells::Switches
     arm(probed, tested) if Hashira::Analysis::Syntax.new(call).type_test? && probed && type?(tested)
   end
 
-  def arm(subject, label) = Arm.new(subject, label.slice, label.location.start_line)
+  def arm(subject, label) = Arm.new(subject, label)
 
   def type?(node)
     segments = Hashira::Analysis::Syntax.new(node).segments

@@ -3,7 +3,25 @@
 require "prism"
 
 class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
-  Envy = Data.define(:site, :names, :types, :count, :ego)
+  class Envy
+    def initialize(site:, names:, types:, balance:)
+      @site = site
+      @names = names
+      @types = types
+      @balance = balance
+    end
+
+    def to_h = { site: @site, names: @names, types: @types, **@balance.to_h }
+  end
+
+  class Balance
+    def initialize(count, ego)
+      @count = count
+      @ego = ego
+    end
+
+    def to_h = { count: @count, ego: @ego }
+  end
 
   private
 
@@ -36,7 +54,7 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
 
-  def detail = Envy.new(site:, names: envied.map(&:name).uniq, types:, count:, ego: refs.ego)
+  def detail = Envy.new(site:, names: envied.map(&:name).uniq, types:, balance: Balance.new(count, refs.ego))
 
   def count = refs.lines(envied.first).size
 

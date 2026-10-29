@@ -44,9 +44,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def detail = { site: "#{subject.file}:#{lines.join(", ")}", via: }
 
-  def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(switched(it), it.lines) }
-
-  def switched(switch) = "#{switch.subject}: #{switch.labels.join(", ")}"
+  def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(it.to_s, it.lines) }
 
   def rating = probes.any? && switches.none? && probes.all?(&:trusted?) ? { confidence: :high } : {}
 end

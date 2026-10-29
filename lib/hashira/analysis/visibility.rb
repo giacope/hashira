@@ -9,56 +9,59 @@ class Hashira::Analysis::Visibility
 
   private_constant :APART
 
-  Scan =
-    Data.define(:found, :overrides, :section, :host) do
-      def scan(nodes) = nodes.reject { apart?(it) }.each { classify(it) }
-      private
-      def classify(node)
-        case node
-        when Prism::DefNode then found << [node, section.last]
-        when Prism::CallNode then heed(node)
-        else descend(node)
-        end
-      end
+  class Scan
+    NONE = [[], {}].freeze
 
-      def descend(node) = node.is_a?(Prism::SingletonClassNode) ? shadow(node) : scan(node.compact_child_nodes)
+    def initialize(host)
+      @host = host
+    end
 
-      def apart?(node) = APART.any? { node.is_a?(it) }
-
-      def heed(node)
-        return shadow(node.block) if lift?(node)
-        return switch(node.name, node.arguments) if bare?(node)
-        block = Hashira::Analysis::Block.new(node, host)
-        enclose(node) unless block.dsl? || block.opening
-      end
-
-      def bare?(node) = Hashira::Analysis::TypeWalk.new(node).marker?
-
-      def lift?(node) = LIFTS.include?(node.name) && !node.receiver && node.block.is_a?(Prism::BlockNode)
-
-      def switch(name, arguments)
-        arguments ? tag(name, arguments.arguments) : section.push(name)
-      end
-
-      def tag(name, arguments) = arguments.each { note(it, name) }
-
-      def note(argument, name)
-        case argument
-        when Prism::DefNode then found << [argument, name]
-        when Prism::SymbolNode then overrides[Hashira::Analysis::Syntax.new(argument).symbol] = name
-        end
-      end
-
-      def enclose(node)
-        outer = section.size
-        scan(node.compact_child_nodes)
-        section.pop(section.size - outer)
-      end
-
-      def shadow(node)
-        found.concat(Hashira::Analysis::Visibility.new(node).entries.map { |definition, _| [definition, :singleton] })
+    def scan(nodes, section)
+      nodes.reject { apart?(it) }.reduce([[], {}, section]) do |(found, overrides, current), node|
+        more, also, after = classify(node, current)
+        [found + more, overrides.merge(also), after]
       end
     end
+
+    private
+
+    def classify(node, section)
+      case node
+      when Prism::DefNode then [[[node, section.last]], {}, section]
+      when Prism::CallNode then heed(node, section)
+      else descend(node, section)
+      end
+    end
+
+    def descend(node, section)
+      node.is_a?(Prism::SingletonClassNode) ? shadow(node, section) : scan(node.compact_child_nodes, section)
+    end
+
+    def apart?(node) = APART.any? { node.is_a?(it) }
+
+    def heed(node, section)
+      return shadow(node.block, section) if lift?(node)
+      return switch(node.name, node.arguments, section) if bare?(node)
+      block = Hashira::Analysis::Block.new(node, @host)
+      return [*NONE, section] if block.dsl? || block.opening
+      [*scan(node.compact_child_nodes, section).first(2), section]
+    end
+
+    def bare?(node) = Hashira::Analysis::TypeWalk.new(node).marker?
+
+    def lift?(node) = LIFTS.include?(node.name) && !node.receiver && node.block.is_a?(Prism::BlockNode)
+
+    def switch(name, arguments, section)
+      return [*NONE, section + [name]] unless arguments
+      given = arguments.arguments
+      overrides = given.grep(Prism::SymbolNode).to_h { [Hashira::Analysis::Syntax.new(it).symbol, name] }
+      [given.grep(Prism::DefNode).map { [it, name] }, overrides, section]
+    end
+
+    def shadow(node, section)
+      [Hashira::Analysis::Visibility.new(node).entries.map { |definition, _| [definition, :singleton] }, {}, section]
+    end
+  end
 
   def initialize(type)
     @node = type
@@ -67,8 +70,8 @@ class Hashira::Analysis::Visibility
   def entries = written.map { |node, section| [node, class_level? ? :singleton : section] }
 
   def written
-    scanned = Scan.new(found: [], overrides: {}, section: [:public], host: @node).tap { it.scan(statements(@node)) }
-    scanned.found.map { |node, section| [node, lifted(scanned.overrides.fetch(node.name, section))] }
+    found, overrides, _section = Scan.new(@node).scan(statements(@node), [:public])
+    found.map { |node, section| [node, lifted(overrides.fetch(node.name, section))] }
   end
 
   private

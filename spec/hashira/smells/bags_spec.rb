@@ -124,4 +124,9 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
     }
     smells(files, rules:) { |report| expect(report.findings.map(&:kind)).not_to(include("data_class")) }
   end
+
+  it "takes two bags of one name for one bag, and bags of two names, or a bag and a name, apart" do
+    one, twin, other = %w[A A B].map { described_class::Bag.new(name: it, site: "a.rb:1", fields: nil) }
+    expect([one == twin, one == other, one == "A", [one, twin].uniq.size]).to(eq([true, false, false, 1]))
+  end
 end

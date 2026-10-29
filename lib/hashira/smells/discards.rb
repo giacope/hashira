@@ -6,16 +6,16 @@ require_relative "tails"
 class Hashira::Smells::Discards
   Slots = Hashira::Smells::Tails::Slots
 
-  YIELDED = [Slots[Prism::CallNode, %i[block]], Slots[Prism::BlockNode, %i[body]]].freeze
+  YIELDED = [Slots.new(Prism::CallNode, %i[block]), Slots.new(Prism::BlockNode, %i[body])].freeze
 
   CARRIED = Hashira::Smells::Tails.new.widened(YIELDED)
 
   DROPPED = Hashira::Smells::Tails.new(
     [
-      Slots[Prism::WhileNode, %i[statements]],
-      Slots[Prism::UntilNode, %i[statements]],
-      Slots[Prism::ForNode, %i[statements]],
-      Slots[Prism::BeginNode, %i[ensure_clause]]
+      Slots.new(Prism::WhileNode, %i[statements]),
+      Slots.new(Prism::UntilNode, %i[statements]),
+      Slots.new(Prism::ForNode, %i[statements]),
+      Slots.new(Prism::BeginNode, %i[ensure_clause])
     ]
   )
 

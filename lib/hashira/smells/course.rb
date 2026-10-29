@@ -9,34 +9,53 @@ require_relative "scope"
 class Hashira::Smells::Course
   WRITES = [Prism::LocalVariableWriteNode, Prism::InstanceVariableWriteNode].freeze
 
-  Stretch =
-    Data.define(:first, :last, :held) do
-      def ends = [first, last]
-
-      def spans?(node) = first.location.end_offset <= node.location.end_offset && before?(node)
-
-      def before?(node) = node.location.end_offset < last.location.end_offset && !covers?(last, node)
-
-      def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
-
-      def aims?(call) = held.include?(call.receiver&.slice)
-
-      def hands?(call) = handed(call).any? { held.include?(it.slice) }
-
-      def handed(call) = Array(call.arguments&.arguments).flat_map { values(it) }.compact
-
-      def values(argument) = argument.is_a?(Prism::KeywordHashNode) ? argument.elements.map(&:value) : [argument]
-
-      def shifts?(node)
-        case node
-        when Prism::CallNode then aims?(node) && node.receiver.slice.start_with?("@") && moves?(node.name)
-        when Prism::InstanceVariableWriteNode then held.include?(node.name.to_s)
-        else false
-        end
-      end
-
-      def moves?(name) = !name.end_with?("?") && name != first.name
+  class Stretch
+    def initialize(first, last)
+      @first = first
+      @last = last
     end
+
+    def parted?(endings) = endings.parts?(@first, @last)
+
+    def disturbs?(calls, branches) = calls.any? { spans?(it) && met?(it, branches) && yield(it) }
+
+    private
+
+    def spans?(node) = @first.location.end_offset <= node.location.end_offset && before?(node)
+
+    def before?(node) = node.location.end_offset < @last.location.end_offset && !covers?(@last, node)
+
+    def covers?(outer, node) = Hashira::Smells::Scope.new(outer).covers?(node)
+
+    def met?(call, branches) = [@first, @last].all? { branches.together?([call, it]) }
+  end
+
+  class Holdings
+    def initialize(held, name)
+      @held = held
+      @name = name
+    end
+
+    def aims?(call) = @held.include?(call.receiver&.slice)
+
+    def hands?(call) = handed(call).any? { @held.include?(it.slice) }
+
+    def shifts?(node)
+      case node
+      when Prism::CallNode then aims?(node) && node.receiver.slice.start_with?("@") && moves?(node.name)
+      when Prism::InstanceVariableWriteNode then @held.include?(node.name.to_s)
+      else false
+      end
+    end
+
+    private
+
+    def handed(call) = Array(call.arguments&.arguments).flat_map { values(it) }.compact
+
+    def values(argument) = argument.is_a?(Prism::KeywordHashNode) ? argument.elements.map(&:value) : [argument]
+
+    def moves?(name) = !name.end_with?("?") && name != @name
+  end
 
   def initialize(method, calls, discards, branches)
     @method = method
@@ -48,27 +67,28 @@ class Hashira::Smells::Course
   def parted?(pair)
     first, last = pair
     held = [first, *Hashira::Smells::Scope.new(first).inside].grep(Prism::CallNode).filter_map { it.receiver&.slice }
-    stretch = Stretch.new(first:, last:, held:)
-    left?(stretch) || disturbed?(stretch)
+    stretch = Stretch.new(first, last)
+    left?(stretch) || disturbed?(stretch, Holdings.new(held, first.name))
   end
 
   private
 
   def left?(stretch)
     @_endings ||= Hashira::Smells::Endings.new(@method.node)
-    @_endings.parts?(stretch.first, stretch.last)
+    stretch.parted?(@_endings)
   end
 
-  def disturbed?(stretch)
-    disturbs?(stretch, moves) { stretch.aims?(it) } || disturbs?(stretch, steps) { stretch.hands?(it) } ||
-      disturbs?(stretch, @calls) { |call| errands.own?(call) && errands.of(call.name).any? { stretch.shifts?(it) } }
+  def disturbed?(stretch, holdings)
+    stretch.disturbs?(moves, @branches) { holdings.aims?(it) } ||
+      stretch.disturbs?(steps, @branches) { holdings.hands?(it) } ||
+      stretch.disturbs?(@calls, @branches) { |call| shifted?(call, holdings) }
   end
 
   def moves = @_moves ||= commands + @calls.select { Hashira::Smells::Message.new(it).changes? }
 
-  def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
+  def shifted?(call, holdings) = errands.own?(call) && errands.of(call.name).any? { holdings.shifts?(it) }
 
-  def disturbs?(stretch, calls) = calls.any? { stretch.spans?(it) && meets?(it, stretch) && yield(it) }
+  def errands = @_errands ||= Hashira::Smells::Errands.new(@method.home)
 
   def commands = @_commands ||= @calls.select { @discards.include?(it) }
 
@@ -77,6 +97,4 @@ class Hashira::Smells::Course
     lists = Hashira::Smells::Scope.new(@method.node).inside.grep(Prism::StatementsNode)
     @_steps = commands + lists.flat_map(&:body).select { WRITES.include?(it.class) }.map(&:value).grep(Prism::CallNode)
   end
-
-  def meets?(call, stretch) = stretch.ends.all? { @branches.together?([call, it]) }
 end

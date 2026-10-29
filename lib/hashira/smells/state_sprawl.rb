@@ -3,7 +3,20 @@
 require "prism"
 
 class Hashira::Smells::StateSprawl < Hashira::Smells::Check
-  Sprawl = Data.define(:site, :count, :weight, :limit)
+  class Sprawl
+    def initialize(site:, count:, weight:, limit:)
+      @site = site
+      @count = count
+      @weight = weight
+      @limit = limit
+    end
+
+    def to_h = { site: site, count: count, weight: weight, limit: limit }
+
+    private
+
+    attr_reader :site, :count, :weight, :limit
+  end
 
   LIMIT = 4
 

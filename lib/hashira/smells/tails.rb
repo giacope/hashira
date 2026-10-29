@@ -3,26 +3,34 @@
 require "prism"
 
 class Hashira::Smells::Tails
-  Slots =
-    Data.define(:type, :names) do
-      def of(node) = node.is_a?(type) ? names.flat_map { Array(node.public_send(it)) }.compact : []
+  class Slots
+    def initialize(type, names)
+      @type = type
+      @names = names
     end
 
+    def of(node) = node.is_a?(type) ? names.flat_map { Array(node.public_send(it)) }.compact : []
+
+    private
+
+    attr_reader :type, :names
+  end
+
   FLOW = [
-    Slots[Prism::IfNode, %i[statements subsequent]],
-    Slots[Prism::UnlessNode, %i[statements else_clause]],
-    Slots[Prism::ElseNode, %i[statements]],
-    Slots[Prism::CaseNode, %i[conditions else_clause]],
-    Slots[Prism::CaseMatchNode, %i[conditions else_clause]],
-    Slots[Prism::WhenNode, %i[statements]],
-    Slots[Prism::InNode, %i[statements]],
-    Slots[Prism::BeginNode, %i[statements rescue_clause else_clause]],
-    Slots[Prism::RescueNode, %i[statements subsequent]],
-    Slots[Prism::EnsureNode, %i[statements]],
-    Slots[Prism::ParenthesesNode, %i[body]],
-    Slots[Prism::RescueModifierNode, %i[expression rescue_expression]],
-    Slots[Prism::AndNode, %i[right]],
-    Slots[Prism::OrNode, %i[right]]
+    Slots.new(Prism::IfNode, %i[statements subsequent]),
+    Slots.new(Prism::UnlessNode, %i[statements else_clause]),
+    Slots.new(Prism::ElseNode, %i[statements]),
+    Slots.new(Prism::CaseNode, %i[conditions else_clause]),
+    Slots.new(Prism::CaseMatchNode, %i[conditions else_clause]),
+    Slots.new(Prism::WhenNode, %i[statements]),
+    Slots.new(Prism::InNode, %i[statements]),
+    Slots.new(Prism::BeginNode, %i[statements rescue_clause else_clause]),
+    Slots.new(Prism::RescueNode, %i[statements subsequent]),
+    Slots.new(Prism::EnsureNode, %i[statements]),
+    Slots.new(Prism::ParenthesesNode, %i[body]),
+    Slots.new(Prism::RescueModifierNode, %i[expression rescue_expression]),
+    Slots.new(Prism::AndNode, %i[right]),
+    Slots.new(Prism::OrNode, %i[right])
   ].freeze
 
   private_constant :FLOW

@@ -9,8 +9,6 @@ class Hashira::Smells::SpreadSwitch
 
   COMPARISONS = Hashira::Smells::Comparisons.new
 
-  Sighting = Data.define(:definition, :arm)
-
   def initialize(whole)
     @whole = whole
   end
@@ -21,7 +19,7 @@ class Hashira::Smells::SpreadSwitch
   end
 
   def detail
-    file = spread.first.definition.file
+    file = spread.fetch(0).first.file
     { site: "#{file}:#{lines(file).join(", ")}", via: ["a type check spread over #{methods} methods"] }
   end
 
@@ -35,22 +33,25 @@ class Hashira::Smells::SpreadSwitch
 
   def sightings
     @whole.owned.reject { COMPARISONS.include?(it.node.name) }.flat_map do |definition|
-      Hashira::Smells::Switches.new(definition.node, definition.ownership, definition.owner).held.map { Sighting.new(definition, it) }
+      Hashira::Smells::Switches.new(definition.node, definition.ownership, definition.owner).held.map { [definition, it] }
     end
   end
 
-  def key(sighting) = [sighting.arm.subject.slice, sighting.arm.label]
+  def key((_definition, arm)) = [arm.topic, arm.label]
 
-  def wide?(group) = group.uniq(&:definition).size >= SPREAD
+  def wide?(group) = group.uniq(&:first).size >= SPREAD
 
-  def methods = spread.uniq(&:definition).size
+  def methods = spread.uniq(&:first).size
 
-  def lines(file) = spread.select { it.definition.file == file }.map { it.arm.line }.uniq.sort
+  def lines(file)
+    held = spread.select { |definition, _arm| definition.file == file }
+    held.map { |_definition, arm| arm.line }.uniq.sort
+  end
 
-  def site(sighting) = "#{sighting.definition.file}:#{sighting.arm.line}"
+  def site((definition, arm)) = "#{definition.file}:#{arm.line}"
 
   def row(sighting)
-    arm = sighting.arm
-    "#{sighting.definition.subject}: #{arm.subject.slice} is #{arm.label} (#{site(sighting)})"
+    definition, arm = sighting
+    "#{definition.subject}: #{arm.topic} is #{arm.label} (#{site(sighting)})"
   end
 end

@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
-module Hashira
-  module CI
-    Scope =
-      Data.define(:analyzers, :targets) do
-        def to_h = { analyzers: analyzers.map(&:to_s).sort, targets: targets.sort }
-      end
+class Hashira::CI::Scope
+  def initialize(analyzers:, targets:)
+    @analyzers = analyzers
+    @targets = targets
   end
+
+  def to_h = { analyzers: @analyzers.map(&:to_s).sort, targets: @targets.sort }
 end

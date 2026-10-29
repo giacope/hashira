@@ -42,10 +42,6 @@ class Hashira::Complexity::Scores
   def recursion = @_recursion ||= Hashira::Complexity::Recursion.new(sites.map(&:last))
 
   def score(relative, site)
-    node = site.node
-    Hashira::Complexity::MethodScore.new(
-      subject: site.subject, file: relative, line: node.location.start_line,
-      **Hashira::Complexity::CognitiveScore.new(node).tallies(recursion.increments(site))
-    )
+    Hashira::Complexity::CognitiveScore.new(site.node).score(site.subject, relative, recursion.increments(site))
   end
 end

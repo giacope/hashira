@@ -9,7 +9,22 @@ class Hashira::Coupling::Associations
 
   CONSTANT = /\A(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*\z/
 
-  Target = Data.define(:name, :line, :guarantee, :macro)
+  class Target
+    def initialize(name:, line:, guarantee:, macro:)
+      @name = name
+      @line = line
+      @guarantee = guarantee
+      @macro = macro
+    end
+
+    def sighting(nesting, scope) = [segments, @line, (nesting unless @name.start_with?("::")), scope, @macro]
+
+    def pledges = @guarantee ? [["#{@line}: #{segments.join("::")}", "#{@line}: #{@guarantee}"]] : []
+
+    private
+
+    def segments = @name.delete_prefix("::").split("::")
+  end
 
   def initialize(inflection)
     @inflection = inflection

@@ -5,10 +5,23 @@ class Hashira::Smells::Heirs
 
   BUILT = :built
 
-  Kin =
-    Data.define(:site, :places, :parent, :mode) do
-      def to_h = mode == BUILT ? super.except(:mode) : super
+  class Kin
+    def initialize(site:, places:, parent:, mode:)
+      @site = site
+      @places = places
+      @parent = parent
+      @mode = mode
     end
+
+    def to_h
+      fields = { site:, places:, parent:, mode: }
+      mode == BUILT ? fields.except(:mode) : fields
+    end
+
+    private
+
+    attr_reader :site, :places, :parent, :mode
+  end
 
   def initialize(findings)
     @findings = findings

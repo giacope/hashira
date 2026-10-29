@@ -20,84 +20,100 @@ class Hashira::Smells::Bindings
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableOrWriteNode, Prism::InstanceVariableAndWriteNode
   ].freeze
 
-  Frame =
-    Data.define(:scopes, :loops, :moment) do
-      def enter(node)
-        scope = Hashira::Smells::Scope.new(node)
-        with(scopes: nested(node, scopes, scope.closure?), loops: nested(node, loops, scope.loop?))
-      end
-
-      def nested(node, stack, opened) = opened ? stack + [node] : stack
-
-      def sighting(node)
-        implicit = node.is_a?(Prism::ItLocalVariableReadNode)
-        location = node.location
-        Sighting.new(
-          node:, scope: holder(node, implicit), name: implicit ? :it : node.name, loops:,
-          span: moment ? [moment, moment] : [location.start_offset, location.end_offset]
-        )
-      end
-
-      def holder(node, implicit)
-        return scopes.fetch(0) if IVARS.include?(node.class)
-        scopes.fetch(-1 - (implicit ? 0 : node.depth))
-      end
+  class Frame
+    def initialize(scopes:, loops:, moment:)
+      @scopes = scopes
+      @loops = loops
+      @moment = moment
     end
 
-  Sighting =
-    Data.define(:node, :scope, :name, :loops, :span) do
-      def key = [scope.location.start_offset, name]
-
-      def within?(loop) = loops.any? { it.equal?(loop) }
-
-      def finish = span.fetch(1)
-
-      def version(writes)
-        loop = loops.reverse.find { |candidate| writes.any? { it.within?(candidate) } }
-        [*key, loop&.location&.start_offset, writes.map(&:finish).select { it <= span.first }.max]
-      end
+    def enter(node)
+      scope = Hashira::Smells::Scope.new(node)
+      loops = nested(node, @loops, scope.loop?)
+      Frame.new(scopes: nested(node, @scopes, scope.closure?), loops:, moment: @moment)
     end
 
-  Ledger =
-    Data.define(:reads, :written) do
-      def note(node, frame)
-        case node
-        when *READS then reads[node] = frame.sighting(node)
-        when *WRITES then record(frame.sighting(node))
-        end
-      end
+    def at(moment) = Frame.new(scopes: @scopes, loops: @loops, moment:)
 
-      def record(write) = (written[write.key] ||= []) << write
-
-      def writes(read) = written.fetch(read.key, [])
+    def sighting(node)
+      implicit = node.is_a?(Prism::ItLocalVariableReadNode)
+      location = node.location
+      Sighting.new(
+        scope: holder(node, implicit), name: implicit ? :it : node.name, loops: @loops,
+        span: @moment ? [@moment, @moment] : [location.start_offset, location.end_offset]
+      )
     end
+
+    private
+
+    def nested(node, stack, opened) = opened ? stack + [node] : stack
+
+    def holder(node, implicit)
+      return @scopes.fetch(0) if IVARS.include?(node.class)
+      @scopes.fetch(-1 - (implicit ? 0 : node.depth))
+    end
+  end
+
+  class Sighting
+    def initialize(scope:, name:, loops:, span:)
+      @scope = scope
+      @name = name
+      @loops = loops
+      @span = span
+    end
+
+    def key = [@scope.location.start_offset, @name]
+
+    def version(writes)
+      loop = @loops.reverse.find { |candidate| writes.any? { it.within?(candidate) } }
+      [*key, loop&.location&.start_offset, writes.map(&:finish).select { it <= @span.first }.max]
+    end
+
+    def bound?(call) = call.location.start_offset <= @scope.location.start_offset
+
+    def finish = @span.fetch(1)
+
+    protected
+
+    def within?(loop) = @loops.any? { it.equal?(loop) }
+  end
+
+  class Ledger
+    def initialize(notes)
+      @notes = notes
+    end
+
+    def writes(read) = written.fetch(read.key, [])
+
+    def sightings(nodes) = nodes.filter_map { reads[it] }
+
+    private
+
+    def reads = @_reads ||= noted(READS).to_h { |node, frame| [node, frame.sighting(node)] }.compare_by_identity
+
+    def written = @_written ||= noted(WRITES).map { |node, frame| frame.sighting(node) }.group_by(&:key)
+
+    def noted(kinds) = @notes.select { |node, _frame| kinds.include?(node.class) }
+  end
 
   def initialize(definition)
     @definition = definition
   end
 
-  def free(call) = sightings(call).reject { bound?(it, call) }.map { it.version(ledger.writes(it)) }
+  def free(call) = sightings(call).reject { it.bound?(call) }.map { it.version(ledger.writes(it)) }
 
   private
 
-  def sightings(call) = Hashira::Smells::Scope.new(call).inside.filter_map { ledger.reads[it] }
-
-  def bound?(read, call) = call.location.start_offset <= read.scope.location.start_offset
+  def sightings(call) = ledger.sightings(Hashira::Smells::Scope.new(call).inside)
 
   def ledger = @_ledger ||= survey
 
-  def survey
-    found = Ledger.new(reads: {}.compare_by_identity, written: {})
-    walk(@definition, Frame.new(scopes: [@definition], loops: [], moment: nil), found)
-    found
-  end
+  def survey = Ledger.new(notes(@definition, Frame.new(scopes: [@definition], loops: [], moment: nil)))
 
-  def walk(root, frame, ledger)
-    root.compact_child_nodes.each do |child|
-      next if Hashira::Smells::Scope.new(child).fence?
-      timed = asked?(root, child) ? frame.with(moment: root.location.start_offset) : frame
-      ledger.note(child, timed)
-      walk(child, timed.enter(child), ledger)
+  def notes(root, frame)
+    root.compact_child_nodes.reject { Hashira::Smells::Scope.new(it).fence? }.flat_map do |child|
+      timed = asked?(root, child) ? frame.at(root.location.start_offset) : frame
+      [[child, timed], *notes(child, timed.enter(child))]
     end
   end
 

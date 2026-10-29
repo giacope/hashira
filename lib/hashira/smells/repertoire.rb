@@ -3,10 +3,21 @@
 require "prism"
 
 class Hashira::Smells::Repertoire
-  Entry =
-    Data.define(:path, :names, :parents) do
-      def answers = parents.reduce(names) { |all, parent| all | yield(parent) }
+  class Entry
+    def initialize(path, names, parents)
+      @path = path
+      @names = names
+      @parents = parents
     end
+
+    def answers = @parents.reduce(@names) { |all, parent| all | yield(parent) }
+
+    def sealed?(&) = @parents.all?(&)
+
+    def home = [@path, self]
+
+    def suffixes = @path.each_index.map { [@path.drop(it).join("::"), self] }
+  end
 
   FACTORIES = { "Struct" => :new, "Data" => :define, "Class" => :new }.freeze
 
@@ -27,7 +38,7 @@ class Hashira::Smells::Repertoire
   def own(segments) = homes.fetch(segments) { index.fetch(segments.join("::"), []) }
 
   def sealed?(name, seen, found = index.fetch(name, []))
-    !seen.add?(name) || (found.any? && found.all? { |entry| entry.parents.all? { sealed?(it, seen) } })
+    !seen.add?(name) || (found.any? && found.all? { |entry| entry.sealed? { sealed?(it, seen) } })
   end
 
   def gathered(name, seen, found = index.fetch(name, []))
@@ -37,13 +48,11 @@ class Hashira::Smells::Repertoire
 
   def listed = @_listed ||= @trees.flat_map { entries(it) }
 
-  def homes = @_homes ||= listed.group_by(&:path)
+  def homes = @_homes ||= keyed(listed.map(&:home))
 
-  def index
-    @_index ||=
-      listed.flat_map { |entry| entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] } }
-        .group_by(&:first).transform_values { it.map(&:last) }
-  end
+  def index = @_index ||= keyed(listed.flat_map(&:suffixes))
+
+  def keyed(pairs) = pairs.group_by(&:first).transform_values { it.map(&:last) }
 
   def entries(tree)
     found = []

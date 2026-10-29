@@ -51,10 +51,8 @@ class Hashira::Coupling::References
   end
 
   def named(target, scope)
-    name, line, guarantee, macro = target.deconstruct
-    segments = name.delete_prefix("::").split("::")
-    (@_guarantees ||= {})["#{line}: #{segments.join("::")}"] = "#{line}: #{guarantee}" if guarantee
-    [segments, line, (nesting unless name.start_with?("::")), scope, macro]
+    target.pledges.each { |line, said| (@_guarantees ||= {})[line] = said }
+    target.sighting(nesting, scope)
   end
 
   def written(node)

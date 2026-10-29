@@ -12,12 +12,16 @@ module Hashira
         end
       end
 
-    Switch =
-      Data.define(:kind, :setting) do
-        def to_h
-          return { "enabled" => setting } if [true, false].include?(setting)
-          raise(Error, "checks: #{kind} takes true, false or { threshold: N }, not #{setting.inspect}")
-        end
+    class Switch
+      def initialize(kind, setting)
+        @kind = kind
+        @setting = setting
       end
+
+      def to_h
+        return { "enabled" => @setting } if [true, false].include?(@setting)
+        raise(Error, "checks: #{@kind} takes true, false or { threshold: N }, not #{@setting.inspect}")
+      end
+    end
   end
 end

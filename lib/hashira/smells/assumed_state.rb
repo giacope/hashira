@@ -10,14 +10,21 @@ class Hashira::Smells::AssumedState < Hashira::Smells::Check
     Prism::CallOrWriteNode, Prism::IndexOrWriteNode
   ].freeze
 
-  Harvest =
-    Data.define(:node) do
-      def reads
-        return [] if MAYBES.include?(node.class)
-        below = node.compact_child_nodes.grep_v(Prism::DefNode).flat_map { Harvest.new(it).reads }
-        node.is_a?(Prism::InstanceVariableReadNode) ? below + [node.name] : below
-      end
+  class Harvest
+    def initialize(node)
+      @node = node
     end
+
+    def reads
+      return [] if MAYBES.include?(node.class)
+      below = node.compact_child_nodes.grep_v(Prism::DefNode).flat_map { Harvest.new(it).reads }
+      node.is_a?(Prism::InstanceVariableReadNode) ? below + [node.name] : below
+    end
+
+    private
+
+    attr_reader :node
+  end
 
   private
 

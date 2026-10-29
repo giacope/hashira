@@ -16,23 +16,31 @@ class Hashira::Config::Layers
       def places = parts.map { File.expand_path(it, home) }
     end
 
-  Entry =
-    Data.define(:item, :home) do
-      def layer
-        name, parts = named
-        listed = Array(parts)
-        return Layer.new(name:, parts: listed, home:) if [name, *listed].all? { it.is_a?(String) && !it.empty? }
-        raise(Hashira::Error, "layers takes a list, outermost first, of names or name: [packages or paths]")
-      end
+  class Entry
+    def initialize(item:, home:)
+      @item = item
+      @home = home
+    end
 
-      def named
-        case item
-        when String then [item, [item]]
-        when Hash then item.one? ? item.to_a.fetch(0) : []
-        else Array(item)
-        end
+    def layer
+      name, parts = named
+      listed = Array(parts)
+      return Layer.new(name:, parts: listed, home:) if [name, *listed].all? { it.is_a?(String) && !it.empty? }
+      raise(Hashira::Error, "layers takes a list, outermost first, of names or name: [packages or paths]")
+    end
+
+    def named
+      case item
+      when String then [item, [item]]
+      when Hash then item.one? ? item.to_a.fetch(0) : []
+      else Array(item)
       end
     end
+
+    private
+
+    attr_reader :item, :home
+  end
 
   RAILS = [
     {
