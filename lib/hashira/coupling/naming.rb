@@ -9,7 +9,7 @@ class Hashira::Coupling::Naming
     @_segments ||= @definitions.engine.then { it.empty? ? Hashira::Coupling::NamespacePrefix.new(@definitions).infer : it }
   end
 
-  def rooted(path) = (strip(path) if path.first(segments.length) == segments || segments.first(path.length) == path)
+  def rooted(path) = path.first(segments.length) == segments || segments.first(path.length) == path ? [strip(path)] : []
 
   def strip(path)
     return [] if segments.first(path.length) == path

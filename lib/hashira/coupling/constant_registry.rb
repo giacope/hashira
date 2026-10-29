@@ -11,9 +11,9 @@ class Hashira::Coupling::ConstantRegistry
 
   def origins = @_origins ||= keyed.transform_values { settled(it) }
 
-  def exact(path) = origins[path.join("::")]
+  def claimed?(path) = origins[path.join("::")]
 
-  def owner(path) = exact(path).then { it unless it.equal?(AMBIGUOUS) }
+  def owner(path) = origins[path.join("::")].then { it unless it.equal?(AMBIGUOUS) }
 
   def packages = (origins.values.uniq - [AMBIGUOUS])
 
@@ -23,6 +23,6 @@ class Hashira::Coupling::ConstantRegistry
 
   def settled(claims)
     packages = claims.map(&:last).uniq
-    packages.one? ? packages.first : AMBIGUOUS
+    packages.one? ? packages.fetch(0) : AMBIGUOUS
   end
 end

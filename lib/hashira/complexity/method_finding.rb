@@ -29,6 +29,6 @@ class Hashira::Complexity::MethodFinding
   end
 
   def dominant
-    @score.increments.group_by(&:label).transform_values { it.sum(&:cost) }.max_by(&:last).first
+    @score.increments.group_by(&:label).transform_values { it.sum(&:cost) }.max_by(&:last).fetch(0)
   end
 end

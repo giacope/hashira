@@ -7,7 +7,7 @@ class Hashira::Coupling::Aliases
     @openings = openings
   end
 
-  def of(path) = values[path]
+  def of(path) = values.fetch(path, [])
 
   private
 

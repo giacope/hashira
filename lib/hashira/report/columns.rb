@@ -32,7 +32,7 @@ class Hashira::Report::Columns
 
   def located = @_located ||= @raw.first.map { LOCATIONS.include?(it) }
 
-  def headers = clipped.first
+  def headers = clipped.fetch(0)
 
   def rows = clipped.drop(1)
 

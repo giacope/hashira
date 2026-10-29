@@ -39,11 +39,13 @@ class Hashira::Complexity::Body
 
   def enter(child, &)
     case child
-    when Prism::SingletonClassNode then inner(child, @owner.lifted).each(&) if child.expression.is_a?(Prism::SelfNode)
-    when Prism::ClassNode, Prism::ModuleNode then nil
+    when Prism::SingletonClassNode then lifted?(child) ? inner(child, @owner.lifted).each(&) : []
+    when Prism::ClassNode, Prism::ModuleNode then []
     else inner(child, @owner.within(child)).each(&)
     end
   end
+
+  def lifted?(child) = child.expression.is_a?(Prism::SelfNode)
 
   def inner(child, owner) = Hashira::Complexity::Body.new(child, owner, @host)
 end

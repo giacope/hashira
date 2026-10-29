@@ -32,26 +32,30 @@ class Hashira::Sources
 
   def files = @_files ||= found - skipped.values.flatten
 
-  def skipped = @_skipped ||= found.group_by { reason(it) }.except(nil)
+  def skipped = @_skipped ||= marked.group_by(&:first).transform_values { it.map(&:last) }
 
   private
 
+  def marked = found.flat_map { |path| reasons(path).map { [it, path] } }
+
   def found = @_found ||= (@directories.flat_map { Dir["#{it}/**/*.rb"] } + @entries).uniq.grep_v(TEMPLATES).sort
 
-  def reason(path)
-    return :vendored if folders(path).include?(VENDOR)
-    return :template if template?(path)
-    :generated if generated?(path)
+  def reasons(path)
+    return [:vendored] if folders(path).include?(VENDOR)
+    return [:template] if template?(path)
+    generated?(path) ? [:generated] : []
   end
 
   def folders(path) = path.delete_prefix("#{home(path)}/").split("/")[...-1]
 
-  def home(path) = @directories.find { path.start_with?("#{it}/") }
+  def home(path) = @directories.find { inside?(path, it) }.to_s
+
+  def inside?(path, directory) = path.start_with?("#{directory}/")
 
   def template?(path)
     below = folders(path)
     index = below.index { it.match?(COPIED) } or return false
-    copied = [*home(path).to_s.split("/"), *below[..index]]
+    copied = [*home(path).split("/"), *below[..index]]
     copied.include?(LIB) && Dir.glob(PROJECT_FILES, base: copied.join("/")).any?
   end
 

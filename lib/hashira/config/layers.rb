@@ -28,7 +28,7 @@ class Hashira::Config::Layers
       def named
         case item
         when String then [item, [item]]
-        when Hash then item.one? ? item.first : []
+        when Hash then item.one? ? item.to_a.fetch(0) : []
         else Array(item)
         end
       end
@@ -75,8 +75,8 @@ class Hashira::Config::Layers
 
   def vet
     raise(Hashira::Error, "layers needs at least two layers to order") if @list.one?
-    twice = repeated(names) || repeated(@list.flat_map(&:parts))
-    raise(Hashira::Error, "layers names #{twice.inspect} more than once") if twice
+    twice = repeats(names) + repeats(@list.flat_map(&:parts))
+    raise(Hashira::Error, "layers names #{twice.first.inspect} more than once") unless twice.empty?
   end
 
   private
@@ -85,5 +85,5 @@ class Hashira::Config::Layers
 
   def ranked(path, package) = @list.index { it.holds?(path, package) } || @list.index { it.covers?(path) }
 
-  def repeated(words) = words.tally.find { |_, count| count > 1 }&.first
+  def repeats(words) = words.tally.select { |_, count| count > 1 }.keys
 end

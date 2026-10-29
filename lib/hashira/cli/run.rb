@@ -27,8 +27,7 @@ class Hashira::CLI::Run
   def update = shown(ratchet.update(@options.baseline))
 
   def check
-    stop = ratchet.blocker
-    raise(Hashira::Error, stop) if stop
+    ratchet.vet
     ratchet.check(sieve)
   end
 

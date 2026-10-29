@@ -19,7 +19,7 @@ class Hashira::Coupling::Ordering
   def choices
     @_choices ||= (1...(1 << @nodes.size)).each_with_object([[0], [nil]]) do |set, (costs, found)|
       costs[set], found[set] = cheapest(set, costs)
-    end.last
+    end.fetch(1)
   end
 
   def cheapest(set, costs)
@@ -28,7 +28,7 @@ class Hashira::Coupling::Ordering
         back = outgoing[index].sum { |bit, weight| set.anybits?(bit) ? weight : 0 }
         [costs[set ^ (1 << index)] + back, index] if set[index] == 1
       end
-    options.min
+    options.min(1).fetch(0)
   end
 
   def outgoing

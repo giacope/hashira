@@ -39,8 +39,8 @@ class Hashira::Smells::Bindings
       end
 
       def holder(node, implicit)
-        return scopes.first if IVARS.include?(node.class)
-        scopes[-1 - (implicit ? 0 : node.depth)]
+        return scopes.fetch(0) if IVARS.include?(node.class)
+        scopes.fetch(-1 - (implicit ? 0 : node.depth))
       end
     end
 
@@ -50,7 +50,7 @@ class Hashira::Smells::Bindings
 
       def within?(loop) = loops.any? { it.equal?(loop) }
 
-      def finish = span.last
+      def finish = span.fetch(1)
 
       def version(writes)
         loop = loops.reverse.find { |candidate| writes.any? { it.within?(candidate) } }

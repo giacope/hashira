@@ -63,11 +63,12 @@ class Hashira::Smells::Foreign
 
   def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
 
-  def tail = @_tail ||= Hashira::Analysis::Syntax.new(@subject.node).statements.compact.last
+  def tails = @_tails ||= Hashira::Analysis::Syntax.new(@subject.node).statements.compact.last(1)
 
-  def convert?
-    tail.is_a?(Prism::CallNode) && tail.name == :new &&
-      Hashira::Analysis::Syntax.new(tail.receiver).segments.any? && stateless?
+  def convert? = tails.any? { made?(it) } && stateless?
+
+  def made?(tail)
+    tail.is_a?(Prism::CallNode) && tail.name == :new && Hashira::Analysis::Syntax.new(tail.receiver).segments.any?
   end
 
   def stateless? = body.none? { STATE.include?(it.class) }

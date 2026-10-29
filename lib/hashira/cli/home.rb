@@ -30,11 +30,9 @@ class Hashira::CLI::Home
 
   def shared(paths) = paths.reduce { |common, path| common.take_while.with_index { |part, at| path[at] == part } }
 
-  def found = ancestors.find { rooted?(it) } || climb(LAYOUT) || start
+  def found = ancestors.find { rooted?(it) } || ancestors.find { holds?(it, LAYOUT) } || start
 
   def rooted?(directory) = directory == @here || holds?(directory, OWN + MARKERS)
-
-  def climb(names) = ancestors.find { holds?(it, names) }
 
   def holds?(directory, names) = names.any? { Dir.glob(it, base: directory).any? }
 

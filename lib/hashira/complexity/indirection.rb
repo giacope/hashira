@@ -51,9 +51,9 @@ class Hashira::Complexity::Indirection
 
   def borrowed = @_borrowed ||= families.keys.flat_map { |family| calls(family).keys - defined(family).keys }.to_set
 
-  def named = surveyed.first
+  def named = surveyed.fetch(0)
 
-  def received = surveyed.last
+  def received = surveyed.fetch(1)
 
   def surveyed = @_surveyed ||= @trees.each_with_object([Set.new, Set.new]) { |tree, sets| survey(tree, *sets) }
 

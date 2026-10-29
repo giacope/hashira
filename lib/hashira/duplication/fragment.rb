@@ -47,13 +47,13 @@ class Hashira::Duplication::Fragment
 
   def sink? = statements.one? && Hashira::Duplication::Sink.new(statements.first).sink?
 
-  def statements = body&.body || @roots
+  def statements = bodies.map(&:body).fetch(0, @roots)
 
   def sectioned? = bare?(@roots.first) && @roots[1].is_a?(Prism::DefNode)
 
   def line = @roots.first.location.start_line
 
-  def finish = @_finish ||= [@roots.last.location.end_line, *closings].max
+  def finish = @_finish ||= [@roots.last.location.end_line, *closings].max(1).fetch(0)
 
   def location = "#{file}:#{line}"
 
@@ -95,7 +95,7 @@ class Hashira::Duplication::Fragment
     WRITTEN.include?(node.class) ? Hashira::Analysis::Syntax.new(node).text.scan(/\w+/) : []
   end
 
-  def body = (@roots.first.compact_child_nodes.grep(Prism::StatementsNode).first if opened?)
+  def bodies = opened? ? @roots.first.compact_child_nodes.grep(Prism::StatementsNode).first(1) : []
 
   def pardoned = @_pardoned ||= macros.flat_map { Hashira::Duplication::Macro.new(it).pardoned }.to_set
 

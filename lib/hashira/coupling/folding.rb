@@ -31,11 +31,7 @@ class Hashira::Coupling::Folding
     @_parents ||= singles.select { |_name, one| one.superclass }.to_h { |name, one| [name, target(one)] }.compact
   end
 
-  def named
-    singles.keys.filter_map { |name| pair(name, crop(name)) }.to_h
-  end
-
-  def pair(name, stem) = ([name, stem] if stem && @census.packages.include?(stem))
+  def named = singles.keys.to_h { [it, crop(it)] }.select { |_name, stem| stem && @census.packages.include?(stem) }
 
   def suffixes = @rails ? SUFFIXES : []
 
@@ -52,13 +48,13 @@ class Hashira::Coupling::Folding
 
   def known = @_known ||= @census.packages.to_set
 
-  def mixins = badges.transform_values { adopted(it) }.compact
+  def mixins = badges.flat_map { |name, badge| adopted(badge).map { [name, it] } }.to_h
 
   def badges = lone.group_by(&:name).select { |_name, ones| ones.all? { badge?(it) } }.transform_values(&:first)
 
   def badge?(definition) = definition.module? && syntax(definition.node).statements.all? { syntax(it).macro?(MIXINS) }
 
-  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(syntax(it).segments) }.first
+  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(syntax(it).segments) }.first(1)
 
   def adoptions(badge) = syntax(badge.node).statements.flat_map { it.arguments.arguments }
 
@@ -79,6 +75,6 @@ class Hashira::Coupling::Folding
     while (target = links[name]) && !trail.include?(target)
       trail << (name = target)
     end
-    target ? trail.drop(trail.index(target)).min : name
+    target ? trail.drop(trail.index(target)).min(1).fetch(0) : name
   end
 end

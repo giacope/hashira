@@ -29,18 +29,20 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def list
     return [] unless project.history.deep?
-    pairs = together.filter_map { |files, shared| pair(files, shared) }
     pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
   end
 
   private
 
-  def pair(files, shared)
-    return if shared < limit("commits", COMMITS)
-    revisions = @_revisions ||= changesets.flatten.tally
-    found = Pair.new(files:, shared:, revisions: files.map { revisions[it] })
-    found if found.degree >= limit("degree", DEGREE) && apart?(files) && !registration?(files)
+  def pairs
+    frequent = together.select { |_files, shared| shared >= limit("commits", COMMITS) }
+    frequent.map { |files, shared| Pair.new(files:, shared:, revisions: files.map { revisions[it] }) }
+      .select { joint?(it) }
   end
+
+  def revisions = @_revisions ||= changesets.flatten.tally
+
+  def joint?(pair) = pair.degree >= limit("degree", DEGREE) && apart?(pair.files) && !registration?(pair.files)
 
   def registration?(files) = registered?(files) && !explicit?(files.map { sources.fetch(it) })
 

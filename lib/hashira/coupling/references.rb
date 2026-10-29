@@ -30,7 +30,7 @@ class Hashira::Coupling::References
 
   def scopes = @_scopes ||= [[]]
 
-  def nesting = scopes.last
+  def nesting = scopes.fetch(-1)
 
   def collect(node, home = nesting)
     return unless node

@@ -31,14 +31,14 @@ class Hashira::Smells::Forwards
   def handed = macros(HANDS).flat_map { handing(it) }
 
   def handing(call)
-    target = symbol(Hashira::Analysis::Syntax.new(call).option("to"))
+    target = symbol(Hashira::Analysis::Syntax.new(call).given("to").first)
     Hashira::Smells::Attributes.new([call]).declared(HANDS).map { ["#{prefix(call, target)}#{it}", target] }
   end
 
   def prefix(call, target)
-    given = Hashira::Analysis::Syntax.new(call).option("prefix")
-    return "#{target}_" if given.is_a?(Prism::TrueNode)
-    Hashira::Analysis::Syntax.new(given).word? ? "#{symbol(given)}_" : ""
+    given = Hashira::Analysis::Syntax.new(call).given("prefix")
+    return "#{target}_" if given.any?(Prism::TrueNode)
+    given.select { Hashira::Analysis::Syntax.new(it).word? }.map { "#{symbol(it)}_" }.join
   end
 
   def named?(target) = !target.empty? && !@stock.include?(target)

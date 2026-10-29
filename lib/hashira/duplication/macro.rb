@@ -17,14 +17,14 @@ class Hashira::Duplication::Macro
 
   def deferred
     options = Array(@call.arguments&.arguments).grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)
-    options.map(&:value).select { it.is_a?(Prism::LambdaNode) && DEFERRED.include?(lone(it).class) }
+    options.map(&:value).select { it.is_a?(Prism::LambdaNode) && lone(it).any? { DEFERRED.include?(it.class) } }
   end
 
   def block = [@call.block].select { passed?(it) || reader?(it) }
 
   def passed?(block) = (block in Prism::BlockArgumentNode[expression: Prism::SymbolNode])
 
-  def reader?(block) = block.is_a?(Prism::BlockNode) && chain?(links(lone(block)))
+  def reader?(block) = block.is_a?(Prism::BlockNode) && lone(block).any? { chain?(links(it)) }
 
   def chain?(links) = links.size <= LINKS && links.all? { plain?(it) }
 
@@ -37,6 +37,6 @@ class Hashira::Duplication::Macro
 
   def lone(node)
     statements = Array(node.body&.compact_child_nodes)
-    statements.first if statements.one?
+    statements.one? ? statements : []
   end
 end

@@ -5,7 +5,7 @@ class Hashira::Coupling::EdgeMap
     Data.define(:from, :to, :site, :macro) do
       def said = site.sub(": ", ": #{macro} ")
 
-      def anchor = site[/\A.+?:\d+/]
+      def anchor = site.scan(/\A.+?:\d+/).fetch(0)
 
       def line = site[/:(\d+):/, 1].to_i
     end

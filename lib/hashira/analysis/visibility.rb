@@ -5,9 +5,13 @@ require "prism"
 class Hashira::Analysis::Visibility
   LIFTS = %i[class_methods].freeze
 
+  APART = [Prism::ClassNode, Prism::ModuleNode, Prism::ConstantWriteNode].freeze
+
+  private_constant :APART
+
   Scan =
     Data.define(:found, :overrides, :section, :host) do
-      def scan(nodes) = nodes.each { classify(it) }
+      def scan(nodes) = nodes.reject { apart?(it) }.each { classify(it) }
       private
       def classify(node)
         case node
@@ -17,13 +21,9 @@ class Hashira::Analysis::Visibility
         end
       end
 
-      def descend(node)
-        case node
-        when Prism::SingletonClassNode then shadow(node)
-        when Prism::ClassNode, Prism::ModuleNode, Prism::ConstantWriteNode then nil
-        else scan(node.compact_child_nodes)
-        end
-      end
+      def descend(node) = node.is_a?(Prism::SingletonClassNode) ? shadow(node) : scan(node.compact_child_nodes)
+
+      def apart?(node) = APART.any? { node.is_a?(it) }
 
       def heed(node)
         return shadow(node.block) if lift?(node)

@@ -52,7 +52,7 @@ class Hashira::Coupling::Graph
     end
   end
 
-  def evidence(from, to) = map.evidence[[from, to]]
+  def evidence(from, to) = map.evidence.fetch([from, to]) { Set.new }
 
   def guarantees(from, to) = noted(from, to, map.pledges)
 

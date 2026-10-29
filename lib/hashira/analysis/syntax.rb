@@ -40,7 +40,9 @@ module Hashira
 
       def dynamic? = @node.is_a?(Prism::ConstantPathNode) && !static?
 
-      def origin = @node.is_a?(Prism::CallNode) && @node.receiver ? Syntax.new(@node.receiver).origin : segments.first
+      def origins
+        @node.is_a?(Prism::CallNode) && @node.receiver ? Syntax.new(@node.receiver).origins : segments.first(1)
+      end
 
       def rooted?
         return false unless @node.is_a?(Prism::ConstantPathNode)
@@ -60,7 +62,7 @@ module Hashira
 
       def keywords = Array(@node.arguments&.arguments).grep(Prism::KeywordHashNode)
 
-      def option(key) = options.find { Syntax.new(it.key).named?(key) }&.value
+      def given(key) = options.select { Syntax.new(it.key).named?(key) }.first(1).map(&:value)
 
       def text = @node.unescaped.scrub
 

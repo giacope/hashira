@@ -24,17 +24,17 @@ class Hashira::Coupling::Scope
 
   def bind(link, reach)
     segments, nesting = link.deconstruct
-    [*nesting.reverse, *ancestors(nesting.last)].lazy.filter_map { descend(it, segments, reach) }.first ||
-      top(segments, reach)
+    [*nesting.reverse, *ancestors(nesting.last)].lazy.flat_map { descend(it, segments, reach) }.first ||
+      top(segments, reach).first
   end
 
   def descend(entry, segments, reach)
-    cuts(segments, reach).filter_map { settle(@catalog.strip(entry + segments.first(it)), segments.drop(it)) }.first
+    cuts(segments, reach).filter_map { settle(@catalog.strip(entry + segments.first(it)), segments.drop(it)) }.first(1)
   end
 
-  def top(segments, reach)
-    cuts(segments, reach).filter_map { settle(@catalog.rooted(segments.first(it)), segments.drop(it)) }.first
-  end
+  def top(segments, reach) = cuts(segments, reach).flat_map { rooted(segments, it) }.first(1)
+
+  def rooted(segments, cut) = @catalog.rooted(segments.first(cut)).filter_map { settle(it, segments.drop(cut)) }
 
   def cuts(segments, reach) = segments.length.downto(reach).lazy
 
@@ -44,17 +44,17 @@ class Hashira::Coupling::Scope
   end
 
   def ancestral(path, rest)
-    found = lineage(path).lazy.filter_map { descend(it, rest, rest.length) }.first
+    found = lineage(path).lazy.flat_map { descend(it, rest, rest.length) }.first
     vias[found] << path
     found
   end
 
-  def known?(path) = @registry.exact(path) && @catalog.owned?(path)
+  def known?(path) = @registry.claimed?(path) && @catalog.owned?(path)
 
   def ancestors(innermost) = innermost ? lineage(@catalog.strip(innermost)) : []
 
   def lineage(path)
-    return ancestry[path] if ancestry.key?(path)
+    return ancestry.fetch(path) if ancestry.key?(path)
     ancestry[path] = []
     ancestry[path] = climb(path)
   end

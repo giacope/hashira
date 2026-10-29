@@ -44,14 +44,9 @@ class Hashira::Directories
   end
 
   def descend(directory)
-    child = sole(directory)
-    return directory unless child && Dir["#{child}/*/"].any? && (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty?
-    descend(child)
-  end
-
-  def sole(directory)
-    subdirectories = Dir["#{directory}/*/"]
-    subdirectories.size == 1 ? subdirectories.first.delete_suffix("/") : nil
+    child, *others = Dir["#{directory}/*/"].map { it.delete_suffix("/") }
+    return directory unless child && others.empty? && Dir["#{child}/*/"].any?
+    (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty? ? descend(child) : directory
   end
 
   def vet(directories)

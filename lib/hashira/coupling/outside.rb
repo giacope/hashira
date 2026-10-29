@@ -33,9 +33,9 @@ class Hashira::Coupling::Outside
     @project = project
   end
 
-  def words = scanned.first
+  def words = scanned.fetch(0)
 
-  def handed = scanned.last
+  def handed = scanned.fetch(1)
 
   private
 

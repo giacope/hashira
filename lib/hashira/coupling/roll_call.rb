@@ -34,23 +34,23 @@ class Hashira::Coupling::RollCall
 
   def candidates
     pairs = files.combination(2).flat_map { |one, two| lists[one].product(lists[two]) }
-    pairs.filter_map { |mine, theirs| shared(mine, theirs) }.uniq
+    pairs.flat_map { |mine, theirs| shared(mine, theirs) }.uniq
   end
 
   def shared(mine, theirs)
     words = mine.words & theirs.words
-    words if words.size >= MIN_WORDS && most?(words, mine) && most?(words, theirs)
+    words.size >= MIN_WORDS && most?(words, mine) && most?(words, theirs) ? [words] : []
   end
 
   def most?(words, literal) = words.size >= SHARE * literal.words.size
 
-  def holding(file, words) = lists[file].find { it.words >= words && most?(words, it) }
+  def holding(file, words) = lists[file].select { it.words >= words && most?(words, it) }
 
   def entry(words)
-    holders = files.select { holding(it, words) }
+    holders = files.select { holding(it, words).any? }
     spread = holders.map { @homes[it] }.uniq.sort
     return unless holders.size >= MIN_FILES && spread.size >= MIN_PACKAGES
-    sites = holders.map { "#{it}:#{holding(it, words).line}" }
+    sites = holders.map { "#{it}:#{holding(it, words).fetch(0).line}" }
     Roll.new(words: words.sort, files: holders, packages: spread, sites:)
   end
 

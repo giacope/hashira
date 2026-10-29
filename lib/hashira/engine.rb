@@ -15,7 +15,7 @@ class Hashira::Engine
   def namespaces
     shipped = @directories.flat_map { Dir["#{it}/**/*.rb"] }.select { "/#{it}".include?("/lib/") }
     scanned = (shipped + Dir[File.join(@home, "lib/**/*.rb")]).uniq.first(SCANNED)
-    scanned.select { File.binread(it).match?(MARK) }.filter_map { namespace(it) }.uniq
+    scanned.select { File.binread(it).match?(MARK) }.flat_map { namespace(it) }.uniq
   end
 
   private
@@ -26,7 +26,7 @@ class Hashira::Engine
       found.concat(isolated(node))
       found << full[0...-1] if engine?(node)
     end
-    found.first&.join("::")
+    found.first(1).map { it.join("::") }
   end
 
   def engine?(node) = node.is_a?(Prism::ClassNode) && PARENTS.include?(node.superclass&.slice)

@@ -10,13 +10,13 @@ class Hashira::Smells::Picks
     @calls = calls
   end
 
-  def picked?(name) = @calls.any? { FLAGS.include?(argument(it, name).class) }
+  def picked?(name) = @calls.any? { |call| handed(call, name).any? { FLAGS.include?(it.class) } }
 
   private
 
-  def argument(call, name)
-    return Hashira::Analysis::Syntax.new(call).option(name) unless positions.include?(name)
-    Array(call.arguments&.arguments).grep_v(Prism::KeywordHashNode)[positions.index(name)]
+  def handed(call, name)
+    return Hashira::Analysis::Syntax.new(call).given(name) unless positions.include?(name)
+    Array(call.arguments&.arguments).grep_v(Prism::KeywordHashNode).drop(positions.index(name)).first(1)
   end
 
   def positions

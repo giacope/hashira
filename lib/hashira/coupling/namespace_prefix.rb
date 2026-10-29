@@ -13,14 +13,13 @@ module Hashira
 
       def build(fulls, prefix)
         depth = prefix.length
-        wrapper = wrapper(fulls, depth)
-        return prefix unless wrapper
-        build(fulls.select { it[depth] == wrapper }, prefix + [wrapper])
+        wrappers(fulls, depth).map { |wrapper| build(fulls.select { it[depth] == wrapper }, prefix + [wrapper]) }
+          .fetch(0, prefix)
       end
 
-      def wrapper(fulls, depth)
+      def wrappers(fulls, depth)
         wrapper, count = fulls.filter_map { it[depth] if it[depth + 1] }.tally.max_by { |_wrapper, tally| tally }
-        wrapper if wrapper && count == peers(fulls, depth, wrapper)
+        wrapper && count == peers(fulls, depth, wrapper) ? [wrapper] : []
       end
 
       def peers(fulls, depth, wrapper)

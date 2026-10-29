@@ -94,7 +94,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def strays = methods.reject(&:receiver) - founders
 
-  def written(methods) = sweeps(methods).filter_map { fields.of(it) }
+  def written(methods) = sweeps(methods).flat_map { fields.of(it) }
 
   def founders = methods.select { founding.include?(it.name) }
 
@@ -133,17 +133,17 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
     apart + [joined.flatten]
   end
 
-  def names = @_names ||= (writes.map { fields.of(it) } + fields.minted).uniq.reject { cache?(it) }.sort
+  def names = @_names ||= (writes.flat_map { fields.of(it) } + fields.minted).uniq.reject { cache?(it) }.sort
 
   def cache?(name) = name.start_with?("@_") || memoized?(name)
 
   def fields = @_fields ||= Hashira::Smells::Fields.new(nodes)
 
-  def assigns(name) = writes.select { fields.of(it) == name }
+  def assigns(name) = writes.select { fields.of(it).include?(name) }
 
   def nodes = @_nodes ||= subject.sweep
 
-  def writes = @_writes ||= nodes.select { fields.of(it) }
+  def writes = @_writes ||= nodes.select { fields.of(it).any? }
 
   def memoized?(name) = lazy?(name) && assigns(name).all? { blank?(it) || guarded?(it) }
 

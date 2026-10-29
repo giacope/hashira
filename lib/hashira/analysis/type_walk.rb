@@ -43,7 +43,8 @@ module Hashira
       private
 
       def walker(child, stack)
-        (Block.new(child, @node).walker(stack) if child.is_a?(Prism::CallNode)) || TypeWalk.new(child)
+        plain = TypeWalk.new(child)
+        child.is_a?(Prism::CallNode) ? Block.new(child, @node).walker(stack, plain) : plain
       end
 
       def adopt(stack, roots, &)

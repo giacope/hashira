@@ -198,8 +198,9 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
 
     it "refuses to ratchet a folder-mode baseline against it" do
       seed(findings: [])
-      expect(ratchet.blocker).to(
-        eq(
+      expect { ratchet.vet }.to(
+        raise_error(
+          Hashira::Error,
           "baseline baseline.json was recorded with --package-by folder, but this run uses namespace — " \
             "rerun with --package-by folder, or refresh it with --update-baseline"
         )
@@ -214,27 +215,34 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
 
   it "refuses a run that analyzes less, or elsewhere, than the baseline recorded" do
     scoped(analyzers: %i[coupling smells], targets: ["lib/app"]).record
-    expect(scoped(analyzers: %i[coupling], targets: ["lib/app"]).blocker).to(
-      eq(
+    expect { scoped(analyzers: %i[coupling], targets: ["lib/app"]).vet }.to(
+      raise_error(
+        Hashira::Error,
         "baseline baseline.json was recorded with the analyzers coupling, smells, but this run uses " \
           "coupling — rerun the recorded way, or refresh it with --update-baseline"
       )
     )
-    expect(scoped(analyzers: %i[coupling smells], targets: ["app"]).blocker)
-      .to(include("recorded with the directories lib/app, but this run uses app"))
-    same = [%i[coupling smells], %i[smells coupling]].map { scoped(analyzers: it, targets: ["lib/app"]).blocker }
-    expect(same).to(eq([nil, nil]))
+    expect { scoped(analyzers: %i[coupling smells], targets: ["app"]).vet }
+      .to(raise_error(Hashira::Error, %r{recorded with the directories lib/app, but this run uses app}))
+  end
+
+  it "accepts a run that analyzes what the baseline recorded, in any order" do
+    scoped(analyzers: %i[coupling smells], targets: ["lib/app"]).record
+    %i[coupling smells].permutation.each do |analyzers|
+      expect { scoped(analyzers:, targets: ["lib/app"]).vet }.not_to(raise_error)
+    end
   end
 
   it "stands aside for a baseline recorded before the scope was written down" do
     seed(findings: [])
-    expect(scoped(analyzers: %i[coupling], targets: ["anywhere"]).blocker).to(be_nil)
+    expect { scoped(analyzers: %i[coupling], targets: ["anywhere"]).vet }.not_to(raise_error)
   end
 
   it "blocks without a baseline and stands aside with one" do
-    expect(ratchet([], "missing.json").blocker).to(eq("no baseline at missing.json — run --update-baseline first"))
+    expect { ratchet([], "missing.json").vet }
+      .to(raise_error(Hashira::Error, "no baseline at missing.json — run --update-baseline first"))
     seed(findings: [])
-    expect(ratchet.blocker).to(be_nil)
+    expect { ratchet.vet }.not_to(raise_error)
   end
 
   it "reads per-method repeated calls and per-pair associations a baseline recorded as the grouped findings now" do

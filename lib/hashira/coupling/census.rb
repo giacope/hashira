@@ -92,7 +92,7 @@ class Hashira::Coupling::Census
 
   def dominants(placed) = placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
 
-  def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).first
+  def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).fetch(0)
 
   def tally
     Hashira::Coupling::Roster.new(placement.placed.map { |definition, package| [definition, translate(package)] })

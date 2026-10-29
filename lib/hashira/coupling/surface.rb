@@ -15,7 +15,7 @@ class Hashira::Coupling::Surface
 
       def hosts = exposed ? [path[...-1]].reject(&:empty?) : []
 
-      def sign = name.delete_suffix(selector)[-1]
+      def sign = name.delete_suffix(selector).chars.fetch(-1)
     end
 
   def initialize(project, trees, census, builtins = Hashira::Runtime::Builtins.new)
@@ -136,5 +136,7 @@ class Hashira::Coupling::Surface
 
   def hosted?(opening) = resolved(opening).any? { |node, target| !target && foreign?(node) }
 
-  def foreign?(node) = !@builtins.core?(Hashira::Analysis::Syntax.new(node).origin)
+  def foreign?(node) = !core?(Hashira::Analysis::Syntax.new(node).origins)
+
+  def core?(names) = names.any? { @builtins.core?(it) }
 end

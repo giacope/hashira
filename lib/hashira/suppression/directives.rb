@@ -40,14 +40,15 @@ class Hashira::Suppression::Directives
     named
   end
 
-  def following(_comment, line) = next_code(line) || raise(Hashira::Error, "#{at(line)} has no line of code after it")
+  def following(_comment, line)
+    found = ((line + 1)..@lines.size).find { code?(@lines[it - 1]) }
+    found || raise(Hashira::Error, "#{at(line)} has no line of code after it")
+  end
 
   def trailing(comment, line)
     return line if comment.trailing?
     raise(Hashira::Error, "#{at(line)} disable sits on the line it silences; above a line, use disable-next-line")
   end
-
-  def next_code(line) = ((line + 1)..@lines.size).find { code?(@lines[it - 1]) }
 
   def code?(text) = !text.strip.empty? && !text.lstrip.start_with?("#")
 

@@ -25,7 +25,7 @@ module Hashira
           named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax.new(named).symbol : :"define_method(#{named.slice})"
         end
 
-        def named = call.arguments.arguments.first
+        def named = call.arguments.arguments.fetch(0)
 
         def body = call.block.body
 

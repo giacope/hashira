@@ -29,13 +29,14 @@ class Hashira::Smells::Fillings
     Hashira::Smells::Scope.new(type).sweep.grep(Prism::DefNode).flat_map do |definition|
       nodes = Hashira::Smells::Scope.new(definition).inside
       locals = nodes.grep(Prism::LocalVariableWriteNode)
-      nodes.select { WRITES.include?(it.class) }.filter_map { |write| built(write, locals, owner) }
+      nodes.select { WRITES.include?(it.class) }.flat_map { |write| built(write, locals, owner) }
     end
   end
 
   def built(write, locals, owner)
     value = write.value
     value = locals.find { it.name == value.name }&.value if value.is_a?(Prism::LocalVariableReadNode)
-    [owner, write.name, @ownership.placed(value.receiver, owner)] if value.is_a?(Prism::CallNode) && value.name == BUILD
+    return [] unless value.is_a?(Prism::CallNode) && value.name == BUILD
+    [[owner, write.name, @ownership.placed(value.receiver, owner)]]
   end
 end

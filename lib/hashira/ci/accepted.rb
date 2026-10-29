@@ -29,15 +29,13 @@ class Hashira::CI::Accepted
   def entries = records.map(&:to_h)
 
   def screen(findings)
-    accepted, live = findings.map { [it, reason(it)] }.partition(&:last)
-    Screened.new(all: live.map(&:first), accepted:)
+    accepted = findings.flat_map { |finding| reasons(finding).map { [finding, it] } }
+    Screened.new(all: findings - accepted.map(&:first), accepted:)
   end
 
   private
 
   def records = @_records ||= @list.map { Entry.build(it) }
 
-  def reason(finding)
-    records.find { it.matches?(finding) }&.label
-  end
+  def reasons(finding) = records.select { it.matches?(finding) }.first(1).map(&:label)
 end

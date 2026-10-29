@@ -139,7 +139,7 @@ class Hashira::Coupling::DeadCode < Hashira::Coupling::Rule
     path == place || path.start_with?("#{place}/")
   end
 
-  def entry?(file) = project.rails? && ENTRIES.include?(Hashira::Coupling::Stratum.new(absolute(file)).of)
+  def entry?(file) = project.rails? && Hashira::Coupling::Stratum.new(absolute(file)).within?(ENTRIES)
 
   def absolute(file) = project.located(file)
 

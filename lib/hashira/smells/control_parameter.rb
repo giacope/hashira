@@ -7,11 +7,11 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
 
   def smelly? = !HIDDEN.include?(subject.section) && culprits.any?
 
-  def culprits = @_culprits ||= subject.parameters.filter_map { |name| culprit(name) }
+  def culprits = @_culprits ||= subject.parameters.flat_map { |name| culprit(name) }
 
   def culprit(name)
     lines = spots(name).uniq.sort
-    [name, lines] unless lines.empty? || !picks.picked?(name)
+    lines.empty? || !picks.picked?(name) ? [] : [[name, lines]]
   end
 
   def picks = @_picks ||= Hashira::Smells::Picks.new(subject.node, subject.ownership.callers.of(subject))

@@ -33,13 +33,12 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def outward = crossings.select(&:outward?)
 
-  def crossings = @_crossings ||= graph.sightings.filter_map { crossing(it) }
+  def crossings = @_crossings ||= graph.sightings.flat_map { crossing(it) }
 
   def crossing(sighting)
     source = layers.rank(sighting.file, sighting.from)
-    return unless source
-    target, to = placed(sighting)
-    Crossing.new(sighting:, source:, target:, to:) if target
+    return [] unless source
+    placed(sighting).map { |target, to| Crossing.new(sighting:, source:, target:, to:) }
   end
 
   def placed(sighting) = (@_placed ||= {})[sighting.name] ||= place(sighting.path)
@@ -48,7 +47,7 @@ class Hashira::Coupling::Layering < Hashira::Coupling::Rule
 
   def place(path)
     ranks = census.files(path).filter_map { layers.rank(it, census.home(it)) }.uniq
-    [ranks.first, census.holder(path)] if ranks.one?
+    ranks.one? ? [[ranks.fetch(0), census.holder(path)]] : []
   end
 
   def entry(inner, outer, group)

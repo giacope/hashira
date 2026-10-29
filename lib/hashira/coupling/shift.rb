@@ -4,7 +4,7 @@ module Hashira
   module Coupling
     Shift =
       Data.define(:order, :from, :pairs) do
-        def best = [*rightward, *leftward].min
+        def best = [*rightward, *leftward].min(1).fetch(0)
 
         def rightward = scanned(((from + 1)...order.size).to_a) { |node, other| [node, other] }
 

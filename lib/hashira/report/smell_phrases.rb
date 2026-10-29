@@ -111,7 +111,7 @@ class Hashira::Report::Phrases
     "#{finding.package} holds #{detail[:count]} instance variables#{weighed(detail)} (#{detail[:site]}). #{SPRAWL}"
   end
 
-  def weighed(detail) = (", weighing #{detail[:weight]}, more than #{detail[:limit]}" if detail[:weight])
+  def weighed(detail) = detail[:weight] ? ", weighing #{detail[:weight]}, more than #{detail[:limit]}" : ""
 
   def on_utility_function(finding)
     detail = finding.detail

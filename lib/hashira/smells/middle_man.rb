@@ -28,9 +28,9 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def publics = @_publics ||= subject.owned.select(&:public?).reject { it.node.name == CONSTRUCTOR }
 
-  def relays = @_relays ||= publics.reject(&:polymorphic?).filter_map { relay(it) }.group_by(&:first)
+  def relays = @_relays ||= publics.reject(&:polymorphic?).flat_map { relay(it) }.group_by(&:first)
 
-  def delegate = @_delegate ||= relays.max_by { |_, found| found.size }.first
+  def delegate = @_delegate ||= relays.max_by { |_, found| found.size }.fetch(0)
 
   def heaviest = relays.fetch(delegate).map(&:last)
 
@@ -49,28 +49,30 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def wraps?(method)
     name = method.node.name
-    Hashira::Smells::Scope.new(method.node).sweep.grep(Prism::CallNode).any? { it.name == name && target(it.receiver) == delegate }
+    Hashira::Smells::Scope.new(method.node).sweep.grep(Prism::CallNode).any? { it.name == name && targets(it.receiver).include?(delegate) }
   end
 
   def wrapper?(node) = WRAPPERS.include?(node&.slice.to_s[/\A[\w:]+/].to_s.split("::").last)
 
   def relay(method)
-    call = sole(method.node)
-    return unless call && !COLLECTION.include?(call.name)
-    return unless [*call.arguments&.arguments, call.block].compact.flat_map { passed(it) } == method.parameters
-    target = target(call.receiver)
-    [target, method] if target
+    calls = sole(method.node).select { !COLLECTION.include?(it.name) && forwards?(it, method) }
+    calls.flat_map { |call| targets(call.receiver).map { [it, method] } }
+  end
+
+  def forwards?(call, method)
+    [*call.arguments&.arguments, call.block].compact.flat_map { passed(it) } == method.parameters
   end
 
   def sole(definition)
     held = Hashira::Analysis::Syntax.new(definition).statements
-    held.first if held.one? && held.first.is_a?(Prism::CallNode)
+    held.one? && held.first.is_a?(Prism::CallNode) ? held : []
   end
 
-  def target(receiver)
+  def targets(receiver)
     case receiver
-    when Prism::InstanceVariableReadNode then receiver.name.to_s
-    when Prism::CallNode then "@#{receiver.name}" if reader?(receiver)
+    when Prism::InstanceVariableReadNode then [receiver.name.to_s]
+    when Prism::CallNode then reader?(receiver) ? ["@#{receiver.name}"] : []
+    else []
     end
   end
 

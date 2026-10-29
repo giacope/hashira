@@ -21,7 +21,7 @@ class Hashira::Duplication::Delta
 
   def renamed? = variances.include?(:renamed)
 
-  def body = inner.one? ? inner.first : :mixed
+  def body = inner.one? ? inner.fetch(0) : :mixed
 
   def inner = variances - [:renamed]
 

@@ -13,11 +13,11 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def refs = @_refs ||= Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 
-  def envied = @_envied ||= refs.envious.select { type(it) }.reject { excused?(it) }
+  def envied = @_envied ||= refs.envious.select { served(it).any? }.reject { excused?(it) }
 
   def excused?(holder) = foreign.dismiss?(holder) || paired?(holder) || transit.passing?(holder)
 
-  def type(holder) = foreign.kinds(holder).find { serves?(it, holder) }&.last
+  def served(holder) = foreign.kinds(holder).select { serves?(it, holder) }
 
   def serves?(type, holder) = asked(holder, type).subset?(repertoire.of(type))
 
@@ -40,7 +40,7 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def count = refs.lines(envied.first).size
 
-  def types = envied.map { type(it) }.uniq
+  def types = envied.map { served(it).fetch(0).fetch(-1) }.uniq
 
   def evidence = envied.map { tally(it.name, refs.lines(it).uniq) } + [tally(:self, refs.ego_lines.uniq)]
 end

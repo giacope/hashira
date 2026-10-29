@@ -27,9 +27,10 @@ class Hashira::CI::Ratchet
 
   def update(path) = Hashira::CI::Update.new(self, path)
 
-  def blocker
-    return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?
-    drifted.first
+  def vet
+    raise(Hashira::Error, "no baseline at #{@baseline.path} — run --update-baseline first") unless @baseline.exist?
+    stop = drifted.first
+    raise(Hashira::Error, stop) if stop
   end
 
   private

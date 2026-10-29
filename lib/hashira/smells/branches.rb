@@ -43,18 +43,13 @@ class Hashira::Smells::Branches
     [[node, rescued.equal?(child) ? 1 : 0]]
   end
 
-  def arms(node) = (clauses(node) || conditions(node)).compact
+  def arms(node) = clauses(node).compact
 
   def clauses(node)
     case node
     when Prism::IfNode, Prism::RescueNode then [node.statements, node.subsequent]
     when Prism::UnlessNode then [node.statements, node.else_clause]
     when Prism::RescueModifierNode then [node.expression, node.rescue_expression]
-    end
-  end
-
-  def conditions(node)
-    case node
     when Prism::CaseNode, Prism::CaseMatchNode then node.conditions + [node.else_clause]
     else []
     end
