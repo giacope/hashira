@@ -18,13 +18,13 @@ class Hashira::Complexity::Scores
 
   def lists = { methods: ranked, classes: }
 
-  def findings = flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } + derived
+  def findings
+    flagged.map { Hashira::Complexity::MethodFinding.new(it).to_finding } +
+      Hashira::Complexity::Indirection.new(sites, @trees.values, @rules).findings +
+      Hashira::Complexity::Fragmentation.new(sites, notes, @trees.values, @rules).findings
+  end
 
-  def derived = indirection.findings + fragmentation.findings
-
-  def indirection = Hashira::Complexity::Indirection.new(sites, @trees.values, @rules)
-
-  def fragmentation = Hashira::Complexity::Fragmentation.new(sites, notes, @trees.values, @rules)
+  private
 
   def notes
     comments = @parsed.comments
@@ -32,8 +32,6 @@ class Hashira::Complexity::Scores
   end
 
   def sites = @_sites ||= @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
-
-  private
 
   def scores = @_scores ||= sites.map { |relative, site| score(relative, site) }
 

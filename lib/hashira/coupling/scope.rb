@@ -12,8 +12,6 @@ class Hashira::Coupling::Scope
     owner(found) if found && !@placement.skip?(found)
   end
 
-  def owner(path) = @registry.owner(path)
-
   def locate(segments, nesting) = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
 
   def pinpoint(segments) = resolve(segments, [])
@@ -21,6 +19,8 @@ class Hashira::Coupling::Scope
   def vias = @_vias ||= Hash.new { |hash, path| hash[path] = Set.new }
 
   private
+
+  def owner(path) = @registry.owner(path)
 
   def bind(link, reach)
     segments, nesting = link.deconstruct
