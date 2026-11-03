@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Check
-  def self.build(subject, rules) = new(subject, rules)
+  def self.build(subject, rules, _family) = new(subject, rules)
 
   def initialize(subject, rules)
     @subject = subject
@@ -34,11 +34,11 @@ class Hashira::Smells::Check
 
   def strict? = @rules.strict?
 
-  def label = subject.subject
+  def label = subject.to_s
 
-  def site = subject.site
+  def site = subject.spot.site
 
-  def spots(nodes) = "#{subject.file}:#{nodes.map { it.location.start_line }.uniq.join(", ")}"
+  def spots(nodes) = subject.spot.at(nodes.map { it.location.start_line })
 
   def evidence = []
 
@@ -49,7 +49,11 @@ class Hashira::Smells::Check
     [site, *lines.to_s.split(", ").map { "#{file}:#{it}" }].uniq
   end
 
-  def shapes = [Hashira::Smells::Shape.new(subject.content)]
+  def shapes = [subject.spot.shape]
+
+  def owned = subject.flat_map { |opening| opening.reject { it.standing.singleton? } }
+
+  def selector(method) = method.accept(Hashira::Smells::Signature).name
 
   def tally(name, lines) = "#{name} (line#{"s" if lines.size > 1} #{lines.join(", ")})"
 end

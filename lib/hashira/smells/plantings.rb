@@ -66,12 +66,12 @@ class Hashira::Smells::Plantings
   def built(type, definition, value)
     return [] unless value.is_a?(Prism::CallNode) && BUILDERS.include?(value.name)
     maker = value.receiver
-    return [type.name] if [nil, Prism::SelfNode].include?(maker&.class) && definition.receiver.is_a?(Prism::SelfNode)
+    return [type.to_s] if [nil, Prism::SelfNode].include?(maker&.class) && definition.receiver.is_a?(Prism::SelfNode)
     known(type, maker)
   end
 
   def known(type, maker)
-    candidates = @lineage.candidates(type.name, Hashira::Analysis::Syntax.new(maker).segments)
+    candidates = @lineage.candidates(type.to_s, Hashira::Analysis::Syntax.new(maker).segments)
     candidates.lazy.select { @lineage.known?(it) }.first(1)
   end
 end

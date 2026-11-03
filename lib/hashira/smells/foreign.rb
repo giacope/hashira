@@ -40,8 +40,8 @@ class Hashira::Smells::Foreign
 
   def kinds(local)
     known(local).flat_map do |path, rooted|
-      @names.place(path, @subject.owner, rooted:)
-    end.uniq.reject { it == @subject.owner }.map { it.split("::") }
+      @names.place(path, owner, rooted:)
+    end.uniq.reject { it == owner }.map { it.split("::") }
   end
 
   def guessed?(local) = evidence(local).empty?
@@ -50,9 +50,11 @@ class Hashira::Smells::Foreign
 
   def writes(name) = @writes.of(name)
 
-  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
+  def owner = @subject.home.to_s
 
-  def tails = @_tails ||= Hashira::Analysis::Syntax::Body.new(@subject.node).to_a.compact.last(1)
+  def body = @_body ||= @subject.accept(Hashira::Smells::Scope).inside
+
+  def tails = @_tails ||= @subject.accept(Hashira::Analysis::Syntax::Body).to_a.compact.last(1)
 
   def convert? = tails.any? { made?(it) } && stateless?
 
@@ -64,7 +66,7 @@ class Hashira::Smells::Foreign
 
   def fenced?(name)
     tested = tests { it == name }
-    tested.any? && (tested.none? { |path, rooted| @names.place(path, @subject.owner, rooted:).any? } || indexed?(name))
+    tested.any? && (tested.none? { |path, rooted| @names.place(path, owner, rooted:).any? } || indexed?(name))
   end
 
   def indexed?(name) = body.grep(Prism::CallNode).any? { local?(it.receiver) { it == name } && keyed?(it) }
@@ -105,7 +107,7 @@ class Hashira::Smells::Foreign
   end
 
   def offered(block)
-    given = block.parameters
+    given = block&.parameters
     given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.new(given).names : []
   end
 
@@ -122,7 +124,7 @@ class Hashira::Smells::Foreign
   def snares(name) = body.grep(Prism::RescueNode).select { it.reference&.name == name }
 
   def alien?(exceptions)
-    exceptions.none? { @names.owns?(it, @subject.owner) }
+    exceptions.none? { @names.owns?(it, owner) }
   end
 
   def spawned?(value) = value.is_a?(Prism::CallNode) && stranger?(value.receiver)
@@ -135,7 +137,7 @@ class Hashira::Smells::Foreign
     end
   end
 
-  def unowned?(node) = !@names.owns?(node, @subject.owner)
+  def unowned?(node) = !@names.owns?(node, owner)
 
   def tests(&) = Hashira::Smells::TypeTests.new(body, @names).of(&)
 end

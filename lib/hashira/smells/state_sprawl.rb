@@ -45,7 +45,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   GIVEN = " (given to the constructor)"
 
-  def initialize(subject, rules, nodes = subject.sweep, fields = Hashira::Smells::Fields.new(nodes))
+  def initialize(subject, rules, nodes = subject.bulk.sweep, fields = Hashira::Smells::Fields.new(nodes))
     super(subject, rules)
     @nodes = nodes
     @fields = fields
@@ -55,7 +55,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   attr_reader :nodes, :fields
 
-  def smelly? = subject.kind == :class && weight > limit && !cohesive?
+  def smelly? = subject.first.seat.class? && weight > limit && !cohesive?
 
   def limit = threshold(LIMIT)
 
@@ -128,7 +128,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def hooks = bodies.grep(Prism::CallNode).select { hook?(it) }
 
-  def bodies = subject.statements
+  def bodies = subject.bulk.statements
 
   def hook?(call) = !call.receiver && !Hashira::Analysis::Syntax::Call.new(call).marker?
 

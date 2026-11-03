@@ -24,19 +24,19 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
 
   private
 
-  def smelly? = !HIDDEN.include?(subject.section) && culprits.any?
+  def smelly? = !subject.standing.in?(HIDDEN) && culprits.any?
 
-  def culprits = @_culprits ||= subject.parameters.flat_map { |name| culprit(name) }
+  def culprits = @_culprits ||= subject.accept(Hashira::Smells::Parameters).names.flat_map { |name| culprit(name) }
 
   def culprit(name)
     lines = spots(name).uniq.sort
     lines.empty? || !picks.picked?(name) ? [] : [[name, lines]]
   end
 
-  def picks = Hashira::Smells::Picks.new(subject.node, @callers.of(subject))
+  def picks = subject.accept(Hashira::Smells::Picks, @callers.of(subject))
 
   def spots(name)
-    Hashira::Smells::ParamCheck.new(subject.node, name).matches.map { it.location.start_line }
+    subject.accept(Hashira::Smells::ParamCheck, name).matches.map { it.location.start_line }
   end
 
   def detail = Steering.new(site, culprits.map { |name, _lines| name })

@@ -38,16 +38,15 @@ class Hashira::Smells::RepeatedCall < Hashira::Smells::Check
   end
 
   def self.build(subject, rules, ties)
-    node = subject.node
-    every = Hashira::Smells::Scope.new(node).inside(Prism::DefinedNode).grep(Prism::CallNode)
-    discards = Hashira::Smells::Discards.new(node)
+    every = subject.accept(Hashira::Smells::Scope).inside(Prism::DefinedNode).grep(Prism::CallNode)
+    discards = subject.accept(Hashira::Smells::Discards)
     reach = Hashira::Smells::Reachability.build(subject, every, discards)
     pardons = Hashira::Smells::Pardons.new(
-      subject, reach, Hashira::Smells::Sampling.new(node, every), Hashira::Smells::Readers.new(subject, ties)
+      subject, reach, subject.accept(Hashira::Smells::Sampling, every), Hashira::Smells::Readers.new(subject, ties)
     )
     groups = Hashira::Smells::CallGroups.new(
-      every, Hashira::Smells::Steadiness.new(discards), Hashira::Smells::Bindings.new(node),
-      Hashira::Smells::Enclosures.new(node)
+      every, Hashira::Smells::Steadiness.new(discards), subject.accept(Hashira::Smells::Bindings),
+      subject.accept(Hashira::Smells::Enclosures)
     )
     new(subject, rules, groups, pardons)
   end

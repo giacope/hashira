@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lineal"
+
 require "prism"
 
-class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
+class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Lineal
   SHOWN = 3
 
   CORE = %w[Array Hash String Set].freeze
@@ -99,34 +101,31 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
 
   def grounds? = framed? ? strict? && overrides.any? : built.any?
 
-  def family = subject.family
-
-  def parent = @_parent ||= family.parent(subject.subject)
+  def parent = @_parent ||= family.parent(subject.to_s)
 
   def core? = strict? && !parent && CORE.include?(base)
 
   def base
-    written = subject.nodes.grep(Prism::ClassNode).filter_map(&:superclass).first
-    Hashira::Analysis::Syntax.new(written).segments.join("::")
+    Hashira::Smells::Descent.new(subject).parent.join("::")
   end
 
   def framed? = family.framed?(parent)
 
   def built = family.built(parent)
 
-  def overrides = @_overrides ||= subject.owned.select { working.include?(it.node.name) && !refusal?(it) }
+  def overrides = @_overrides ||= owned.select { working.include?(selector(it)) && !refusal?(it) }
 
-  def working = @_working ||= family.definitions(parent).reject { refusal?(it) }.to_set { it.node.name } - [CONSTRUCTOR]
+  def working = @_working ||= family.definitions(parent).reject { refusal?(it) }.to_set { selector(it) } - [CONSTRUCTOR]
 
-  def refusal?(method) = Hashira::Smells::Refusal.new(method.node).of.any?
+  def refusal?(method) = method.accept(Hashira::Smells::Refusal).of.any?
 
   def mode = framed? ? :overriding : :built
 
   def home = family.home(parent)
 
   def evidence
-    return ["#{subject.subject} < #{base} (#{site})"] if core?
-    return overrides.map { "#{it.subject} (#{it.site})" } if mode == :overriding
+    return ["#{subject} < #{base} (#{site})"] if core?
+    return overrides.map { "#{it} (#{it.spot.site})" } if mode == :overriding
     built.first(SHOWN).map { "#{parent}.new (#{it})" }
   end
 end

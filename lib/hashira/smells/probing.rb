@@ -35,7 +35,7 @@ class Hashira::Smells::Probing
     Hashira::Smells::FeatureEnvy.new(subject, rules, refs, Hashira::Smells::Patrons.new(foreign(subject), refs, @words))
   end
 
-  def manual_dispatch(subject, rules, switches = Hashira::Smells::Switches.new(subject.node, @names, subject.owner))
+  def manual_dispatch(subject, rules, switches = subject.accept(Hashira::Smells::Switches, @names, subject.home.to_s))
     probes = Hashira::Smells::Probes.new(subject, foreign(subject), @words)
     Hashira::Smells::ManualDispatch.new(subject, rules, probes, switches)
   end
@@ -56,9 +56,9 @@ class Hashira::Smells::Probing
 
   def utility_function(subject, rules) = Hashira::Smells::UtilityFunction.new(subject, rules, refs(subject))
 
-  def refs(subject) = Hashira::Smells::Refs.new(subject.node, @words)
+  def refs(subject) = subject.accept(Hashira::Smells::Refs, @words)
 
-  def writes(subject) = Hashira::Smells::Writes.new(subject.node)
+  def writes(subject) = subject.accept(Hashira::Smells::Writes)
 
   def foreign(subject, writes = writes(subject)) = Hashira::Smells::Foreign.new(subject, @names, writes)
 end

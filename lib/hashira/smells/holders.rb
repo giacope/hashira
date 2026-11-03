@@ -27,7 +27,7 @@ class Hashira::Smells::Holders
 
   private
 
-  def owner = @subject.owner
+  def owner = @subject.home.to_s
 
   def field(name)
     written = @ties.types(name, owner)
@@ -35,7 +35,7 @@ class Hashira::Smells::Holders
     sole(Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.flat_map { place(it) }.first(1) - [owner])
   end
 
-  def kinds(local) = @foreign.kinds(Hashira::Smells::Refs::Local.new(local, @subject.node)).map { it.join("::") }
+  def kinds(local) = @foreign.kinds(Hashira::Smells::Refs::Local.new(local, nil)).map { it.join("::") }
 
   def built(call) = call.name == :new ? place(Hashira::Analysis::Syntax.new(call.receiver).segments) : []
 

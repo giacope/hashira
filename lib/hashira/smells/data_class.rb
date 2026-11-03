@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lineal"
+
 require "prism"
 
-class Hashira::Smells::DataClass < Hashira::Smells::Check
+class Hashira::Smells::DataClass < Hashira::Smells::Lineal
   CONSTRUCTOR = :initialize
 
   MINIMUM = 2
@@ -31,13 +33,13 @@ class Hashira::Smells::DataClass < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && unrelated? && statements.all? { plain?(it) } && fields.size >= MINIMUM
+  def smelly? = subject.first.seat.class? && unrelated? && statements.all? { plain?(it) } && fields.size >= MINIMUM
 
   def unrelated?
-    subject.nodes.grep(Prism::ClassNode).none?(&:superclass) && subject.family.children(subject.subject).empty?
+    !Hashira::Smells::Descent.new(subject).parent? && family.children(subject.to_s).empty?
   end
 
-  def statements = @_statements ||= subject.statements
+  def statements = @_statements ||= subject.bulk.statements
 
   def plain?(node)
     case node

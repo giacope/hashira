@@ -3,7 +3,11 @@
 class Hashira::Smells::Kinds
   include Enumerable
 
-  def initialize(checks = [Hashira::Smells::BoundarySprawl, *Hashira::Smells::Check.subclasses])
+  def initialize(
+    checks = [
+      Hashira::Smells::BoundarySprawl, *Hashira::Smells::Check.subclasses, *Hashira::Smells::Lineal.subclasses
+    ] - [Hashira::Smells::Lineal]
+  )
     @checks = checks
   end
 

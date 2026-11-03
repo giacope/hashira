@@ -47,7 +47,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
   def chains
     @_chains ||=
       begin
-        found = Hashira::Smells::Scope.new(subject.node).inside.grep(Prism::CallNode).select { chained?(it) }
+        found = subject.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode).select { chained?(it) }
         found.reject { |call| found.any? { it.receiver.equal?(call) } }
       end
   end
@@ -83,7 +83,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
 
   def named(name)
     types = Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first)
-    types.lazy.select { @names.place([it], subject.owner).any? }.first(1)
+    types.lazy.select { @names.place([it], subject.home.to_s).any? }.first(1)
   end
 
   def path(node)

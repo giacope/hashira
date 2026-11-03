@@ -14,19 +14,19 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
 
   private
 
-  attr_reader :refs
+  def smelly? = subject.home.class? && standing.public? && !standing.polymorphic? && !protocol? && calls? && stateless?
 
-  def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && !protocol? && calls? && stateless?
+  def protocol? = PROTOCOL.fetch(signature.arity, []).include?(signature.name)
 
-  def protocol? = PROTOCOL.fetch(arity, []).include?(subject.node.name)
+  def standing = subject.standing
 
-  def arity = Array(subject.node.parameters&.requireds).size
+  def signature = subject.accept(Hashira::Smells::Signature)
 
-  def stateless? = refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
+  def stateless? = @refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
 
   def detail = Hashira::Smells::Spot.new(site, "touches no instance state", ADVICE)
 
   def calls? = body.any?(Prism::CallNode)
 
-  def body = @_body ||= Hashira::Smells::Scope.new(subject.node).inside
+  def body = @_body ||= subject.accept(Hashira::Smells::Scope).inside
 end

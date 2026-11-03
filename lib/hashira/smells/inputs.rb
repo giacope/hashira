@@ -5,18 +5,16 @@ require "prism"
 class Hashira::Smells::Inputs
   HIDDEN = %i[private protected].freeze
 
-  OPTIONAL = [Prism::OptionalParameterNode, Prism::OptionalKeywordParameterNode].freeze
-
-  private_constant :HIDDEN, :OPTIONAL
+  private_constant :HIDDEN
 
   def initialize(subject, rules)
     @subject = subject
     @rules = rules
   end
 
-  def parameter?(name) = @subject.parameters.include?(name)
+  def parameter?(name) = parameters.names.include?(name)
 
-  def handed?(name) = HIDDEN.include?(@subject.section) || defaulted.include?(name)
+  def handed?(name) = @subject.standing.in?(HIDDEN) || defaulted.include?(name)
 
   def optional?(node) = node.is_a?(Prism::LocalVariableReadNode) && defaulted.include?(node.name)
 
@@ -24,11 +22,7 @@ class Hashira::Smells::Inputs
 
   private
 
-  def defaulted = @_defaulted ||= strict? ? nils : []
+  def parameters = @subject.accept(Hashira::Smells::Parameters)
 
-  def nils
-    Hashira::Smells::Parameters.new(@subject.node).parts.filter_map do
-      it.name if OPTIONAL.include?(it.class) && it.value.is_a?(Prism::NilNode)
-    end
-  end
+  def defaulted = @_defaulted ||= strict? ? parameters.nils : []
 end

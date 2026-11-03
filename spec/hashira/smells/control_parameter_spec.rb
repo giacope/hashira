@@ -11,7 +11,13 @@ RSpec.describe(Hashira::Smells::ControlParameter, :aggregate_failures) do
 
   def called(definition) = "App::Zone::Thing.new.#{definition.name}(#{flags(definition)})"
 
-  def flags(definition) = Hashira::Smells::Parameters.new(definition).parts.map { flag(it) }.join(", ")
+  def flags(definition) = parts(definition.parameters).map { flag(it) }.join(", ")
+
+  def parts(given)
+    return [] unless given
+    positional = given.requireds + given.optionals + given.posts
+    positional + given.keywords + [given.rest, given.keyword_rest, given.block].compact
+  end
 
   def flag(part) = part.type.to_s.include?("keyword") ? "#{part.name}: true" : "true"
 

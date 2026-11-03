@@ -63,11 +63,11 @@ class Hashira::Smells::Probe
 
   def named? = NAMED.include?(receiver.class)
 
-  def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, @subject.node)
+  def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, nil)
 
   def injected? = receiver.is_a?(Prism::LocalVariableReadNode) && stored.include?(receiver.name)
 
   def stored = body.grep(Prism::InstanceVariableWriteNode).map(&:value).grep(Prism::LocalVariableReadNode).map(&:name)
 
-  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
+  def body = @_body ||= @subject.accept(Hashira::Smells::Scope).inside
 end

@@ -42,7 +42,7 @@ require_relative "stateful_mixin"
 require_relative "utility_function"
 
 class Hashira::Smells::Report
-  CHECKS = Hashira::Smells::Check.subclasses.sort_by(&:name).freeze
+  CHECKS = ([*Hashira::Smells::Check.subclasses, *Hashira::Smells::Lineal.subclasses] - [Hashira::Smells::Lineal]).sort_by(&:name).freeze
 
   JUDGES = [
     Hashira::Smells::DataClump, Hashira::Smells::AssumedState,
@@ -71,13 +71,13 @@ class Hashira::Smells::Report
 
   private
 
-  def wholes = @_wholes ||= @judging.wholes(@types)
+  def wholes = @_wholes ||= @types.group_by(&:to_s).values.map { Hashira::Smells::Whole.new(it) }
 
-  def methods = @types.flat_map(&:defs)
+  def methods = @types.flat_map(&:to_a)
 
   def spread
     return [] unless wants?(SPREAD)
-    wholes.select { it.kind == :class }.flat_map { @judging.spread(it) }
+    wholes.select { it.first.seat.class? }.flat_map { @judging.spread(it) }
   end
 
   def wanted(checks) = checks.select { wants?(Hashira::Smells::Kind.new(it).to_s) }
@@ -96,7 +96,7 @@ class Hashira::Smells::Report
 
   def checks = @_checks ||= judged(wanted(JUDGES)) + probed(wanted(PROBES))
 
-  def judged(kinds) = wholes.flat_map { |whole| kinds.map { it.build(whole, @rules) } }
+  def judged(kinds) = wholes.flat_map { @judging.checks(it, kinds, @rules) }
 
   def probed(kinds) = methods.flat_map { @probing.checks(it, kinds, @rules) }
 

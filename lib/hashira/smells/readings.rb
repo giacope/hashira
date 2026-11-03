@@ -14,9 +14,9 @@ class Hashira::Smells::Readings
 
     def fields = @names.map(&:to_s)
 
-    def spot = "#{@user.file}:#{@line}"
+    def spot = @user.spot.at([@line])
 
-    def to_s = "#{@user.subject} reads #{fields.map { "'#{it}'" }.join(", ")} (#{spot})"
+    def to_s = "#{@user} reads #{fields.map { "'#{it}'" }.join(", ")} (#{spot})"
   end
 
   def initialize(methods, names, common = Hashira::Smells::Common.new)
@@ -26,7 +26,7 @@ class Hashira::Smells::Readings
   end
 
   def of(bag)
-    @methods.select { bag.outside?(it.owner) }.flat_map { |method| readings(method, bag) }
+    @methods.select { bag.outside?(it.home.to_s) }.flat_map { |method| readings(method, bag) }
   end
 
   private
@@ -40,7 +40,7 @@ class Hashira::Smells::Readings
   end
 
   def held(method)
-    calls = Hashira::Smells::Scope.new(method.node).inside.grep(Prism::CallNode)
+    calls = method.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode)
     copied = copies(calls)
     calls.select { plain_read?(it) && copied.none?(it) }.group_by { holder(it.receiver) }.except(nil)
   end
@@ -57,6 +57,6 @@ class Hashira::Smells::Readings
   end
 
   def typed(holder, method)
-    Hashira::Smells::Naming.new(holder).types.flat_map { @names.place(it, method.owner) }.first(1)
+    Hashira::Smells::Naming.new(holder).types.flat_map { @names.place(it, method.home.to_s) }.first(1)
   end
 end

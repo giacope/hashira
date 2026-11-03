@@ -20,9 +20,9 @@ class Hashira::Smells::Reaches
   private
 
   def scoped(subject)
-    body = Hashira::Smells::Scope.new(subject.node).inside
+    body = subject.accept(Hashira::Smells::Scope).inside
     Hashira::Smells::TypeTests.new(body, @names).of { true }.map { |path, rooted| [path, scope(rooted, subject)] }
   end
 
-  def scope(rooted, subject) = rooted ? TOP : subject.owner
+  def scope(rooted, subject) = rooted ? TOP : subject.home.to_s
 end

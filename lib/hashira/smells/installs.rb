@@ -38,7 +38,7 @@ class Hashira::Smells::Installs
   def literal(sets) = sets.flat_map { named(it) }.select { word?(it) }.map { text(it).to_sym }
 
   def bodies
-    calls = Hashira::Analysis::Syntax::Body.new(@type.node).to_a.grep(Prism::CallNode).reject(&:receiver)
+    calls = @type.accept(Hashira::Analysis::Syntax::Body).to_a.grep(Prism::CallNode).reject(&:receiver)
     @swept.grep(Prism::DefNode).reject(&:receiver) + calls.filter_map(&:block).grep(Prism::BlockNode)
   end
 
@@ -72,7 +72,7 @@ class Hashira::Smells::Installs
 
   def declared(node)
     name = Hashira::Analysis::Syntax.new(node).segments.last
-    Hashira::Analysis::Syntax::Body.new(@type.node).constants.select { it.name.to_s == name }.first(1)
+    @type.accept(Hashira::Analysis::Syntax::Body).constants.select { it.name.to_s == name }.first(1)
   end
 
   def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s

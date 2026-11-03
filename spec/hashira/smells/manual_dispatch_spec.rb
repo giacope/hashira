@@ -82,6 +82,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
               def find_again(other) = other.is_a?(Event)
               def last(other) = other.is_a?(Event)
               def target = @target
+              def self.peek = @target.is_a?(Event)
             end
           end
         end

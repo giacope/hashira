@@ -13,27 +13,27 @@ class Hashira::Smells::Lineage
     @messages = messages
   end
 
-  def assigned(context) = learned.fetch(context.name) { learned[context.name] = ancestral(context) }
+  def assigned(context) = learned.fetch(context.to_s) { learned[context.to_s] = ancestral(context) }
 
-  def settle(sketch, **) = sketch.settle(assigned: assigned(sketch), heirs: heirs(sketch), **)
+  def settle(sketch, protocol) = sketch.settle(protocol, assigned(sketch), heirs(sketch))
 
   def heirs(context)
-    name = context.name
+    name = context.to_s
     bequeathed = @_bequeathed ||= {}
     bequeathed.fetch(name) do
       bequeathed[name] = descendants(name).flat_map { |heir| index.fetch(heir).flat_map { writes(it) } }.uniq
     end
   end
 
-  def pointed(type) = references(type).map { resolve(type.name, it) }
+  def pointed(type) = references(type).map { resolve(type.to_s, it) }
 
-  def abroad(type) = references(type).reject { resolve(type.name, it) }.map { it.join("::") }
+  def abroad(type) = references(type).reject { resolve(type.to_s, it) }.map { it.join("::") }
 
   def resolve(owner, segments) = candidates(owner, segments).find { it != owner && index.key?(it) }
 
   def definitions(type) = sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
-  def mixins(type) = named(type, MIXINS).filter_map { resolve(type.name, Hashira::Analysis::Syntax.new(it).segments) }
+  def mixins(type) = named(type, MIXINS).filter_map { resolve(type.to_s, Hashira::Analysis::Syntax.new(it).segments) }
 
   def messages(type)
     swept = sweep(type)
@@ -47,7 +47,7 @@ class Hashira::Smells::Lineage
 
   def known?(name) = index.key?(name)
 
-  def sweep(type) = swept.fetch(type.node) { swept[type.node] = Hashira::Smells::Scope.new(type.node).sweep }
+  def sweep(type) = swept.fetch(type) { swept[type] = type.accept(Hashira::Smells::Scope).sweep }
 
   private
 
@@ -59,10 +59,10 @@ class Hashira::Smells::Lineage
   end
 
   def addressee(type, receiver)
-    return type.name if Hashira::Smells::Origin.new(receiver).self?
+    return type.to_s if Hashira::Smells::Origin.new(receiver).self?
     built = receiver.is_a?(Prism::CallNode) && receiver.name == :new
     segments = Hashira::Analysis::Syntax.new(built ? receiver.receiver : receiver).segments
-    candidates(type.name, segments).find { index.key?(it) } || segments if segments.any?
+    candidates(type.to_s, segments).find { index.key?(it) } || segments if segments.any?
   end
 
   def descendants(name)
@@ -72,22 +72,22 @@ class Hashira::Smells::Lineage
   end
 
   def children
-    @_children ||= @types.map { [descent(it), it.name] }.uniq.group_by(&:first).transform_values { it.map(&:last) }
+    @_children ||= @types.map { [descent(it), it.to_s] }.uniq.group_by(&:first).transform_values { it.map(&:last) }
   end
 
-  def descent(type) = resolve(type.name, Hashira::Analysis::Syntax.new(parent(type)).segments)
+  def descent(type) = resolve(type.to_s, type.accept(Hashira::Smells::Heading).parent)
 
   def ancestral(context)
-    kin = kin(context.name)
+    kin = kin(context.to_s)
     return unless kin
     plantings = @_plantings ||= Hashira::Smells::Plantings.new(@types, self)
-    planted = kin.map(&:name).uniq.flat_map { plantings.of(it) }
+    planted = kin.map(&:to_s).uniq.flat_map { plantings.of(it) }
     (kin.flat_map { writes(it) } + planted + kin.flat_map { survey(it).computed }).uniq
   end
 
   def learned = @_learned ||= {}
 
-  def index = @_index ||= @types.group_by(&:name)
+  def index = @_index ||= @types.group_by(&:to_s)
 
   def kin(name) = walk([name], [])&.flat_map { index.fetch(it) }
 
@@ -107,27 +107,25 @@ class Hashira::Smells::Lineage
     found unless found.include?(nil) || kin.any? { opaque?(it) }
   end
 
-  def opaque?(type) = veiled?(type) || @foreign.include?(type.name) || extensions(type).any? { stray?(type, it) }
+  def opaque?(type) = veiled?(type) || @foreign.include?(type.to_s) || extensions(type).any? { stray?(type, it) }
 
-  def stray?(type, node) = !resolve(type.name, Hashira::Analysis::Syntax.new(node).segments)
+  def stray?(type, node) = !resolve(type.to_s, Hashira::Analysis::Syntax.new(node).segments)
 
-  def veiled?(type) = type.kind == :class && macros(type).map(&:name).any? { !native?(it) && !vocabulary.include?(it) }
+  def veiled?(type) = type.seat.class? && macros(type).map(&:name).any? { !native?(it) && !vocabulary.include?(it) }
 
   def native?(name) = @messages.macro?(name)
 
-  def macros(type) = Hashira::Analysis::Syntax::Body.new(type.node).to_a.grep(Prism::CallNode).reject(&:receiver)
+  def macros(type) = type.accept(Hashira::Analysis::Syntax::Body).to_a.grep(Prism::CallNode).reject(&:receiver)
 
   def vocabulary
-    @_vocabulary ||= @types.flat_map { Hashira::Analysis::TypeWalk.new(it.node).sections }.to_set { |definition, _| definition.name }
+    @_vocabulary ||= @types.flat_map { it.accept(Hashira::Analysis::TypeWalk).sections }.to_set { |definition, _| definition.name }
   end
 
   def extensions(type) = named(type, EXTENSIONS)
 
-  def references(type)
-    (named(type, MIXINS) + [parent(type)].compact).map { Hashira::Analysis::Syntax.new(it).segments }
-  end
+  def references(type) = named(type, MIXINS).map { Hashira::Analysis::Syntax.new(it).segments } + supers(type)
 
-  def parent(type) = (type.node.superclass if type.node.is_a?(Prism::ClassNode))
+  def supers(type) = type.accept(Hashira::Smells::Heading).then { it.written.empty? ? [] : [it.parent] }
 
   def scopes(owner)
     parts = owner.split("::")
@@ -136,7 +134,7 @@ class Hashira::Smells::Lineage
 
   def writes(type) = survey(type).names
 
-  def survey(type) = written.fetch(type.node) { written[type.node] = Hashira::Smells::Installs.new(type, sweep(type)) }
+  def survey(type) = written.fetch(type) { written[type] = Hashira::Smells::Installs.new(type, sweep(type)) }
 
   def written = @_written ||= {}.compare_by_identity
 

@@ -2,8 +2,9 @@
 
 require "prism"
 require_relative "common"
+require_relative "lineal"
 
-class Hashira::Smells::LowCohesion < Hashira::Smells::Check
+class Hashira::Smells::LowCohesion < Hashira::Smells::Lineal
   SIZE = 6
 
   MEMBERS = 2
@@ -48,22 +49,23 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
     end
   end
 
-  def self.build(subject, rules)
-    sweep = subject.sweep
-    new(subject, rules, sweep, Hashira::Smells::Forwards.new(sweep, Hashira::Smells::Bonds.new(sweep), STOCK))
+  def self.build(subject, rules, family)
+    sweep = subject.bulk.sweep
+    new(subject, rules, family, Hashira::Smells::Forwards.new(sweep, Hashira::Smells::Bonds.new(sweep), STOCK))
   end
 
-  def initialize(subject, rules, sweep, forwards)
-    super(subject, rules)
-    @sweep = sweep
+  def initialize(subject, rules, family, forwards)
+    super(subject, rules, family)
     @forwards = forwards
   end
 
   private
 
-  attr_reader :sweep, :forwards
+  attr_reader :forwards
 
-  def smelly? = subject.kind == :class && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
+  def sweep = @_sweep ||= subject.bulk.sweep
+
+  def smelly? = subject.first.seat.class? && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
 
   def framed? = strict? ? presented? : family.framed?(label)
 
@@ -71,43 +73,44 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Check
 
   def root = @_root ||= family.root(label)
 
-  def methods = @_methods ||= subject.owned.reject { constructor?(it) }
+  def methods = @_methods ||= owned.reject { constructor?(it) }
 
-  def constructor?(method) = method.node.name == CONSTRUCTOR
+  def constructor?(method) = selector(method) == CONSTRUCTOR
 
-  def names = @_names ||= methods.to_set { it.node.name }
+  def names = @_names ||= methods.to_set { selector(it) }
 
   def groups = @_groups ||= components.select { |members, fields| fields.any? && members.size >= MEMBERS }
 
   def components = pieces.reduce([]) { |found, piece| fuse(found, piece) }.map { it.kept(names, kept) }
 
-  def pieces = (methods + mixed).map { piece(it.node.name, hooked(it), []) } + setup.map { piece(nil, [it], inputs) }
+  def pieces = (methods + mixed).map { piece(selector(it), below(it), []) } + setup.map { piece(nil, it, inputs) }
 
-  def hooked(method) = abstract?(method) ? [method.node, *family.overrides(label, method.node.name)] : [method.node]
+  def below(method) = hooked(method).flat_map { it.accept(Hashira::Smells::Below).to_a }
 
-  def abstract?(method) = Hashira::Smells::Refusal.new(method.node).unimplemented?
+  def hooked(method) = [method, *(family.overrides(label, selector(method)) if abstract?(method))]
 
-  def mixed = @_mixed ||= family.mixed(subject.subject)
+  def every(node) = Hashira::Analysis::NodeWalk.new(node).collect
 
-  def known = @_known ||= names | mixed.to_set { it.node.name }
+  def abstract?(method) = method.accept(Hashira::Smells::Refusal).unimplemented?
 
-  def piece(name, nodes, given)
-    found = nodes.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
+  def mixed = @_mixed ||= family.mixed(subject.to_s)
+
+  def known = @_known ||= names | mixed.to_set { selector(it) }
+
+  def piece(name, found, given)
     shared = found.grep(Prism::LocalVariableReadNode).map(&:name) & given
     Hashira::Smells::Piece.new([name], fields(found) + shared.map { :"(#{it})" }, calls(found))
   end
 
-  def inputs = constructors.flat_map(&:parameters)
+  def inputs = constructors.flat_map { it.accept(Hashira::Smells::Parameters).names }
 
-  def setup = constructors.flat_map { Hashira::Analysis::Syntax::Body.new(it.node).to_a.compact }
+  def setup = constructors.flat_map { it.accept(Hashira::Analysis::Syntax::Body).to_a.compact }.map { every(it) }
 
-  def constructors = @_constructors ||= built(subject.owned).then { it.empty? ? bequeathed : it }
+  def constructors = @_constructors ||= built(owned).then { it.empty? ? bequeathed : it }
 
-  def bequeathed = family.ancestors(subject.subject).lazy.map { built(family.definitions(it)) }.find(&:any?) || []
+  def bequeathed = family.ancestors(subject.to_s).lazy.map { built(family.definitions(it)) }.find(&:any?) || []
 
   def built(methods) = methods.select { constructor?(it) }
-
-  def family = subject.family
 
   def fuse(found, piece)
     touching, apart = found.partition { it.linked?(piece) }

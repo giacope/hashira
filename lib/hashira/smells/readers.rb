@@ -17,9 +17,8 @@ class Hashira::Smells::Readers
 
   def names
     return @_names if @_names
-    swept = homes.flat_map { Hashira::Smells::Scope.new(it).sweep }
+    home = @method.home
+    swept = home.accept(Hashira::Smells::Scope).sweep + @ties.homes(home.to_s).flat_map { Hashira::Smells::Scope.new(it).sweep }
     @_names = Hashira::Smells::Attributes.new(swept).readers.to_set
   end
-
-  def homes = [@method.home, *@ties.homes(@method.owner)]
 end

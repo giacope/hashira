@@ -5,6 +5,8 @@ require "prism"
 class Hashira::Smells::Picks
   FLAGS = [Prism::TrueNode, Prism::FalseNode, Prism::SymbolNode].freeze
 
+  POSITIONAL = [Prism::RequiredParameterNode, Prism::OptionalParameterNode].freeze
+
   def initialize(definition, calls)
     @definition = definition
     @calls = calls
@@ -20,8 +22,6 @@ class Hashira::Smells::Picks
   end
 
   def positions
-    @_positions ||= Hashira::Smells::Parameters.new(@definition).parts.select { positional?(it) }.map(&:name)
+    @_positions ||= Hashira::Smells::Parameters.new(@definition).named(POSITIONAL)
   end
-
-  def positional?(part) = part.is_a?(Prism::RequiredParameterNode) || part.is_a?(Prism::OptionalParameterNode)
 end

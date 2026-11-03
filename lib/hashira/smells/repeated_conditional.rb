@@ -73,7 +73,7 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   private
 
-  def smelly? = subject.kind == :class && repeats.any?
+  def smelly? = subject.first.seat.class? && repeats.any?
 
   def repeats = @_repeats ||= groups.select { it.size > threshold(LIMIT) }.uniq { |tests| roots(tests) }
 
@@ -85,11 +85,11 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def cased = @_cased ||= Set.new.compare_by_identity.merge(subjects)
 
-  def subjects = regions.flat_map { cases(it).filter_map(&:predicate) }
+  def subjects = regions.flat_map { |_, scope| cases(scope).filter_map(&:predicate) }
 
-  def cases(region) = Hashira::Smells::Scope.new(region).bare.grep(Prism::CaseNode)
+  def cases(scope) = scope.bare.grep(Prism::CaseNode)
 
-  def found = regions.flat_map { |region| predicates(region).flat_map { |root| split(root, region) } }
+  def found = regions.flat_map { |region, scope| predicates(scope).flat_map { |root| split(root, region) } }
 
   def split(root, region) = atoms(root).map { Test.new(it, region, root) }
 
@@ -105,15 +105,18 @@ class Hashira::Smells::RepeatedConditional < Hashira::Smells::Check
 
   def negated?(node) = node.is_a?(Prism::CallNode) && node.name == :!
 
-  def rechecks = @_rechecks ||= subject.sweep.grep(Prism::DefNode).map { Hashira::Smells::Recheck.new(it) }
+  def rechecks = @_rechecks ||= subject.bulk.sweep.grep(Prism::DefNode).map { Hashira::Smells::Recheck.new(it) }
 
   def regions
-    subject.nodes.flat_map { [it] + Hashira::Smells::Scope.new(it).sweep.select { opens?(it) } }
+    subject.flat_map do |opening|
+      scope = opening.accept(Hashira::Smells::Scope)
+      [[opening, scope], *scope.sweep.select { opens?(it) }.map { [it, Hashira::Smells::Scope.new(it)] }]
+    end
   end
 
   def opens?(node) = Hashira::Smells::Border.new(node).then { it.fence? || it.closure? }
 
-  def predicates(region) = Hashira::Smells::Scope.new(region).bare.filter_map { predicate(it) }
+  def predicates(scope) = scope.bare.filter_map { predicate(it) }
 
   def predicate(node)
     node.predicate if node.is_a?(Prism::IfNode) || node.is_a?(Prism::UnlessNode) || node.is_a?(Prism::CaseNode)

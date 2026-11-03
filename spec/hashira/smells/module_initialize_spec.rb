@@ -108,4 +108,12 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
     }
     expect(sniffed(files, "module_initialize").map { it.to_h[:package] }).to(eq(["App::Zone::Mixin"]))
   end
+
+  it "traces a finding by the body of the module it names, so a rename still matches and another body does not" do
+    mixin = ->(name, value) { "module App\n  module #{name}\n    def initialize = @x = #{value}\n  end\nend\n" }
+    found = ->(name, value) { sniffed({ "lib/app/mixin.rb" => mixin[name, value] }, "module_initialize").first }
+    traced = ->(name, value) { mark_of(found[name, value]).trace }
+    first = traced["Mixin", 1]
+    expect([traced["Blend", 1], traced["Mixin", 2]].map { it == first }).to(eq([true, false]))
+  end
 end

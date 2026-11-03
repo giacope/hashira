@@ -7,7 +7,9 @@ class Hashira::Smells::ModuleInitialize < Hashira::Smells::Check
 
   def detail = Hashira::Smells::Spot.new(site, "defines initialize in a module", ADVICE)
 
-  def smelly? = subject.kind == :module && subject.nodes.any?(Prism::ModuleNode) && !subject.singular? && flagged
+  def smelly? = !subject.first.seat.class? && modular? && !subject.bulk.singular? && flagged
 
-  def flagged = subject.owned.any? { it.node.name == :initialize }
+  def modular? = subject.any? { it.accept(Hashira::Smells::Heading).module? }
+
+  def flagged = owned.any? { selector(it) == :initialize }
 end

@@ -29,17 +29,17 @@ class Hashira::Smells::Seats
   def wraps
     @types.flat_map do |type|
       handing = calls(type).select { sole(it).any?(Prism::SelfNode) }
-      handing.flat_map { wrappers(type, it) }.map { [type.name, it] }
+      handing.flat_map { wrappers(type, it) }.map { [type.to_s, it] }
     end
   end
 
-  def decorators = @_decorators ||= @types.select { decorator?(it) }.map(&:name).uniq
+  def decorators = @_decorators ||= @types.select { decorator?(it) }.map(&:to_s).uniq
 
   private
 
-  def calls(type) = Hashira::Smells::Scope.new(type.node).sweep.grep(Prism::CallNode)
+  def calls(type) = type.accept(Hashira::Smells::Scope).sweep.grep(Prism::CallNode)
 
-  def place(type, node) = @lineage.resolve(type.name, Hashira::Analysis::Syntax.new(node).segments)
+  def place(type, node) = @lineage.resolve(type.to_s, Hashira::Analysis::Syntax.new(node).segments)
 
   def filling(call)
     given = Array(call.arguments&.arguments)

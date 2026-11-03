@@ -185,6 +185,26 @@ RSpec.describe(Hashira::Smells::ConcreteInheritance, :aggregate_failures) do
     expect(concrete(reports, many).first.to_h[:evidence].drop(1).size).to(eq(3))
   end
 
+  def nested = <<~RUBY
+    module App
+      class Outer
+        def run = 1
+
+        class Inner
+          def self.make = new
+        end
+      end
+
+      class Child < Outer
+        def run = 2
+      end
+    end
+  RUBY
+
+  it "takes a bare new in a nested class for building that class, not the class around it" do
+    expect(concrete(nested, built("[Outer.make, Outer::Inner.make]"))).to(be_empty)
+  end
+
   it "survives classes that name each other as parents" do
     loop = "module App\n  class A < B\n    def go = 1\n  end\n\n  class B < A\n    def go = 2\n  end\nend\n"
     expect(concrete(loop, "module App\n  class C\n    def go = [A.new, B.new]\n  end\nend\n").size).to(eq(2))

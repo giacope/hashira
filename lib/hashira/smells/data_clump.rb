@@ -20,14 +20,14 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
   def detail = Hashira::Smells::Spot.new(site, "passes the same parameters between methods", ADVICE)
 
   def candidates
-    @_candidates ||= subject.owned.reject(&:polymorphic?).map { [it, carried(it).sort] }.select { clump?(it.last) }
+    @_candidates ||= owned.reject { it.standing.polymorphic? }.map { [it, carried(it).sort] }.select { clump?(it.last) }
   end
 
-  def carried(method) = method.arguments.reject { it.start_with?("_") } - defaulted(method.node)
-
-  def defaulted(node)
-    Hashira::Smells::Parameters.new(node).parts.filter_map { it.name if DEFAULTED.include?(it.class) }
+  def carried(method)
+    method.accept(Hashira::Smells::Parameters).arguments.reject { it.start_with?("_") } - defaulted(method)
   end
+
+  def defaulted(method) = method.accept(Hashira::Smells::Parameters).named(DEFAULTED)
 
   def clumps = @_clumps ||= maximal.map { |clump| [clump, holders(clump)] }
 
@@ -47,12 +47,12 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
 
   def relayed?(clump)
     found = holders(clump)
-    callees = found.map { it.node.name }
-    found.any? { |holder| relays?(holder, clump, callees - [holder.node.name]) }
+    callees = found.map { selector(it) }
+    found.any? { |holder| relays?(holder, clump, callees - [selector(holder)]) }
   end
 
   def relays?(holder, clump, callees)
-    Hashira::Smells::Scope.new(holder.node).inside.grep(Prism::CallNode).any? do |call|
+    holder.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode).any? do |call|
       callees.include?(call.name) && inward?(call.receiver) && (clump - handed(call)).empty?
     end
   end
@@ -67,6 +67,6 @@ class Hashira::Smells::DataClump < Hashira::Smells::Check
   def evidence = clumps.map { |clump, holders| row(clump, holders) }
 
   def row(clump, holders)
-    "(#{clump.join(", ")}) → #{holders.size} methods: #{holders.map { |holder| holder.node.name }.join(", ")}"
+    "(#{clump.join(", ")}) → #{holders.size} methods: #{holders.map { selector(it) }.join(", ")}"
   end
 end

@@ -49,10 +49,11 @@ class Hashira::Smells::BoundarySprawl
   def builtin?(root) = BUILTINS.core?(root)
 
   def finding(root, contexts)
-    files = contexts.map(&:file).uniq
-    return unless wide?(contexts.size, files.size)
-    proof = Hashira::Analysis::Finding::Proof.new(contexts.first(SHOWN).map(&:site))
-    reach = Reach.new(contexts.size, files.size)
+    spots = contexts.map(&:spot)
+    files = spots.map(&:to_s).uniq.size
+    return unless wide?(spots.size, files)
+    proof = Hashira::Analysis::Finding::Proof.new(spots.first(SHOWN).map(&:site))
+    reach = Reach.new(spots.size, files)
     Hashira::Analysis::Finding.new(KIND, Hashira::Analysis::Finding::Name.new(root), reach, proof)
   end
 

@@ -31,7 +31,7 @@ class Hashira::Smells::Rivals
 
   def sites
     @types.flat_map do |type|
-      places = Hashira::Smells::Scope.new(type.node).sweep.select { PLACES.include?(it.class) }
+      places = type.accept(Hashira::Smells::Scope).sweep.select { PLACES.include?(it.class) }
       places.map { |place| outcomes(place).filter_map { built(type, it) } }
     end
   end
@@ -51,7 +51,7 @@ class Hashira::Smells::Rivals
 
   def built(type, node)
     held = node.is_a?(Prism::CallNode) && node.name == :new ? node.receiver : node
-    @lineage.resolve(type.name, Hashira::Analysis::Syntax.new(held).segments)
+    @lineage.resolve(type.to_s, Hashira::Analysis::Syntax.new(held).segments)
   end
 
   def doubles
@@ -69,10 +69,10 @@ class Hashira::Smells::Rivals
 
   def publics(name) = surface.fetch(name)
 
-  def surface = @_surface ||= @types.group_by(&:name).transform_values { exposed(it) }
+  def surface = @_surface ||= @types.group_by(&:to_s).transform_values { exposed(it) }
 
   def exposed(kin)
-    kin.flat_map { Hashira::Analysis::TypeWalk.new(it.node).sections }
+    kin.flat_map { it.accept(Hashira::Analysis::TypeWalk).sections }
       .filter_map { |definition, section| definition.name if section == :public && !definition.receiver }
       .to_set - [:initialize]
   end

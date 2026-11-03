@@ -33,24 +33,26 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
     end
   end
 
+  private
+
   def initialize(subject, rules, probing, switchboard)
     super(subject, rules)
     @probing = probing
     @switchboard = switchboard
   end
 
-  private
-
-  def smelly? = !protocol?(subject.node.name) && (probes.any? || switches.any?)
+  def smelly? = !protocol?(name) && (probes.any? || switches.any?)
 
   def protocol?(name) = name == PROTOCOL || COMPARISONS.include?(name)
 
   def probes = @_probes ||= proxy? ? [] : @probing.of(sightings).reject(&:excused?)
 
-  def proxy? = subject.node.name == PROXY && subject.neighbors.include?(PROTOCOL)
+  def proxy? = name == PROXY && subject.home.neighbors.include?(PROTOCOL)
+
+  def name = subject.accept(Hashira::Smells::Signature).name
 
   def sightings
-    Hashira::Smells::Scope.new(subject.node).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
+    subject.accept(Hashira::Smells::Scope).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
   end
 
   attr_reader :switchboard
@@ -61,7 +63,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def lines = (probes.map(&:line) + switches.flat_map(&:lines)).uniq.sort
 
-  def detail = Dispatch.new("#{subject.file}:#{lines.join(", ")}", via)
+  def detail = Dispatch.new(subject.spot.at(lines), via)
 
   def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(it.to_s, it.lines) }
 

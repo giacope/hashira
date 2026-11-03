@@ -8,7 +8,7 @@ class Hashira::Smells::Judging
     @boundaries = boundaries
   end
 
-  def wholes(types) = types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it, family: @family) }
+  def checks(whole, kinds, rules) = kinds.map { it.build(whole, rules, @family) }
 
   def spread(whole) = Hashira::Smells::SpreadSwitch.new(whole, @names).findings
 

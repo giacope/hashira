@@ -20,7 +20,7 @@ class Hashira::Smells::Memo
   private
 
   def passed?(held, method)
-    given = Hashira::Smells::Parameters.new(method).names
+    given = method.accept(Hashira::Smells::Parameters).names
     held.any? { it.is_a?(Prism::LocalVariableReadNode) && given.include?(it.name) }
   end
 
@@ -45,7 +45,7 @@ class Hashira::Smells::Memo
 
   def guards?(kept, names, method)
     returned = kept&.one? && kept.first.is_a?(Prism::ReturnNode) && kept.first.arguments
-    returned && answers?(returned.arguments, names) && Hashira::Analysis::Syntax::Body.new(method).to_a.any? { writes?(it, names) }
+    returned && answers?(returned.arguments, names) && method.accept(Hashira::Analysis::Syntax::Body).to_a.any? { writes?(it, names) }
   end
 
   def answers?(found, names) = found.one? && names.include?(found.first.slice)

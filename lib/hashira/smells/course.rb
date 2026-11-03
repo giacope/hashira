@@ -55,7 +55,7 @@ class Hashira::Smells::Course
     def moves?(name) = !name.end_with?("?") && name != @name
   end
 
-  def initialize(method, calls, discards, errands = Hashira::Smells::Errands.new(method.home))
+  def initialize(method, calls, discards, errands = method.home.accept(Hashira::Smells::Errands))
     @method = method
     @calls = calls
     @discards = discards
@@ -84,7 +84,7 @@ class Hashira::Smells::Course
 
   def steps
     return @_steps if @_steps
-    lists = Hashira::Smells::Scope.new(@method.node).inside.grep(Prism::StatementsNode)
+    lists = @method.accept(Hashira::Smells::Scope).inside.grep(Prism::StatementsNode)
     @_steps = commands + lists.flat_map(&:body).select { WRITES.include?(it.class) }.map(&:value).grep(Prism::CallNode)
   end
 end

@@ -2,9 +2,11 @@
 
 class Hashira::Smells::Reachability
   def self.build(subject, every, discards)
-    node = subject.node
     course = Hashira::Smells::Course.new(subject, every, discards)
-    new(Hashira::Smells::Branches.new(node), course, Hashira::Smells::Retries.new(node), Hashira::Smells::Endings.new(node))
+    new(
+      subject.accept(Hashira::Smells::Branches), course, subject.accept(Hashira::Smells::Retries),
+      subject.accept(Hashira::Smells::Endings)
+    )
   end
 
   def initialize(branches, course, retries, endings)

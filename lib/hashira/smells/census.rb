@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "prism"
-
 class Hashira::Smells::Census
   def initialize(
     project, trees,
@@ -14,7 +12,7 @@ class Hashira::Smells::Census
     @kit = kit
   end
 
-  def types = @_types ||= settled(Hashira::Smells::Concerns.new(sketches).settled)
+  def types = @_types ||= settled(Hashira::Smells::Sketches.new(harvested, catalog).to_a)
 
   def report(boundaries, rules) = @kit.report(types, boundaries, rules)
 
@@ -22,31 +20,20 @@ class Hashira::Smells::Census
 
   attr_reader :catalog
 
-  def sketches
+  def harvested
     paths = @project.paths
-    found = @trees.flat_map { |path, tree| harvest(paths, path, tree) }
-    opened, defined = found.partition { it.node.is_a?(Prism::BlockNode) }
-    kinds = defined.to_h { [it.name, it.kind] }
-    defined + opened.map { it.with(kind: kinds.fetch(it.name, it.kind)) }
+    @trees.flat_map do |path, tree|
+      file = paths.relative(path)
+      walk = Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk, roots:)
+      walk.map { |node, full, _stack, lexical| [full.join("::"), node, file, lexical] }
+    end
   end
 
   def settled(found)
-    lineage = Hashira::Smells::Lineage.new(found, found.reject { claimed?(it) }.to_set(&:name))
+    lineage = Hashira::Smells::Lineage.new(found, found.reject { it.seat.claimed? }.to_set(&:to_s))
     kinship = Hashira::Smells::Kinship.new(found, lineage)
-    found.map { lineage.settle(it, protocol: kinship.protocol(it), claimed: claimed?(it)) }
+    found.map { lineage.settle(it, kinship.protocol(it)) }
   end
 
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
-
-  def harvest(paths, path, tree)
-    file = paths.relative(path)
-    found = []
-    Hashira::Analysis::TypeWalk.new(tree).walk(roots:) do |node, full, _stack, lexical|
-      kind = node.is_a?(Prism::ClassNode) ? :class : :module
-      found << Hashira::Smells::Sketch.new(full.join("::"), node, kind, file, lexical)
-    end
-    found
-  end
-
-  def claimed?(sketch) = catalog.claimed?(sketch.lexical)
 end

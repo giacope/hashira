@@ -13,7 +13,7 @@ class Hashira::Smells::Locals
   private
 
   def typed?(local, message)
-    holder = Hashira::Smells::Refs::Local.new(local, @subject.node)
+    holder = Hashira::Smells::Refs::Local.new(local, nil)
     @foreign.kinds(holder).any? { @words.of(it).include?(message.to_s.delete_suffix("=")) }
   end
 end

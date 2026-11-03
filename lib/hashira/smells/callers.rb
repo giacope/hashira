@@ -27,9 +27,11 @@ class Hashira::Smells::Callers
 
     def aimed?(subject, ownership)
       receiver = call.receiver
-      return home == subject.owner if receiver.nil? || receiver.is_a?(Prism::SelfNode)
-      owner = subject.owner
-      kinds(receiver, subject.singleton?).any? { |path, rooted| ownership.resolve(path, home, rooted:).include?(owner) }
+      owner = subject.home.to_s
+      return home == owner if receiver.nil? || receiver.is_a?(Prism::SelfNode)
+      kinds(receiver, subject.standing.singleton?).any? do |path, rooted|
+        ownership.resolve(path, home, rooted:).include?(owner)
+      end
     end
 
     def kinds(receiver, singleton)
@@ -64,7 +66,9 @@ class Hashira::Smells::Callers
     @ownership = ownership
   end
 
-  def of(subject) = sites.fetch(subject.node.name, []).flat_map { it.aimed(subject, @ownership) }
+  def of(subject)
+    sites.fetch(subject.accept(Hashira::Smells::Signature).name, []).flat_map { it.aimed(subject, @ownership) }
+  end
 
   private
 

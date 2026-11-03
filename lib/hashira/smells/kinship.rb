@@ -13,7 +13,7 @@ class Hashira::Smells::Kinship
   end
 
   def protocol(type)
-    name = type.name
+    name = type.to_s
     spoken = words(name)
     hooks = adopted?(name) ? spoken - (told(name) - heritage(name)) : Set.new
     (spoken & kindred(name)) | hooks
@@ -35,7 +35,7 @@ class Hashira::Smells::Kinship
     kin.map { words(it) }.reduce(Set.new, :|) + peers(name)
   end
 
-  def index = @_index ||= @types.group_by(&:name)
+  def index = @_index ||= @types.group_by(&:to_s)
 
   def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @lineage.pointed(it) }.compact.uniq }
 
@@ -62,8 +62,8 @@ class Hashira::Smells::Kinship
   end
 
   def brood(name)
-    node = index.fetch(name).filter_map(&:parent).first
-    @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments) || node.slice.delete_prefix("::") if node
+    heading = index.fetch(name).map { it.accept(Hashira::Smells::Heading) }.find { !it.written.empty? }
+    @lineage.resolve(name, heading.parent) || heading.written if heading
   end
 
   def words(name) = said[name] ||= defined(name)

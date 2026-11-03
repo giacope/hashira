@@ -38,12 +38,12 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   private
 
   def smelly?
-    subject.kind == :class && !declared? && relays.any? && heaviest.size >= threshold(LIMIT) && most? && !decorates?
+    subject.first.seat.class? && !declared? && relays.any? && heaviest.size >= threshold(LIMIT) && most? && !decorates?
   end
 
-  def publics = @_publics ||= subject.owned.select(&:public?).reject { it.node.name == CONSTRUCTOR }
+  def publics = @_publics ||= owned.select { it.standing.public? }.reject { selector(it) == CONSTRUCTOR }
 
-  def relays = @_relays ||= publics.reject(&:polymorphic?).flat_map { relay(it) }.group_by(&:first)
+  def relays = @_relays ||= publics.reject { it.standing.polymorphic? }.flat_map { relay(it) }.group_by(&:first)
 
   def delegate = @_delegate ||= relays.max_by { |_, found| found.size }.fetch(0)
 
@@ -51,10 +51,11 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def most? = heaviest.size * 2 > publics.size
 
-  def sweep = @_sweep ||= subject.sweep
+  def sweep = @_sweep ||= subject.bulk.sweep
 
   def declared?
-    sweep.grep(Prism::CallNode).any? { DECLARED.include?(it.name) } || subject.nodes.grep(Prism::ClassNode).any? { wrapper?(it.superclass) }
+    sweep.grep(Prism::CallNode).any? { DECLARED.include?(it.name) } ||
+      subject.any? { wrapper?(it.accept(Hashira::Smells::Heading).written) }
   end
 
   def decorates?
@@ -63,23 +64,25 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
   end
 
   def wraps?(method)
-    name = method.node.name
-    Hashira::Smells::Scope.new(method.node).sweep.grep(Prism::CallNode).any? { it.name == name && targets(it.receiver).include?(delegate) }
+    name = selector(method)
+    method.accept(Hashira::Smells::Scope).sweep.grep(Prism::CallNode).any? do
+      it.name == name && targets(it.receiver).include?(delegate)
+    end
   end
 
-  def wrapper?(node) = WRAPPERS.include?(node&.slice.to_s[/\A[\w:]+/].to_s.split("::").last)
+  def wrapper?(written) = WRAPPERS.include?(written[/\A[\w:]+/].to_s.split("::").last)
 
   def relay(method)
-    calls = sole(method.node).select { !COLLECTION.include?(it.name) && forwards?(it, method) }
+    calls = sole(method).select { !COLLECTION.include?(it.name) && forwards?(it, method) }
     calls.flat_map { |call| targets(call.receiver).map { [it, method] } }
   end
 
   def forwards?(call, method)
-    [*call.arguments&.arguments, call.block].compact.flat_map { passed(it) } == method.parameters
+    [*call.arguments&.arguments, call.block].compact.flat_map { passed(it) } == method.accept(Hashira::Smells::Parameters).names
   end
 
-  def sole(definition)
-    held = Hashira::Analysis::Syntax::Body.new(definition).to_a
+  def sole(method)
+    held = method.accept(Hashira::Analysis::Syntax::Body).to_a
     held.one? && held.first.is_a?(Prism::CallNode) ? held : []
   end
 
@@ -108,5 +111,5 @@ class Hashira::Smells::MiddleMan < Hashira::Smells::Check
 
   def detail = Relay.new(site, delegate, heaviest.size, publics.size)
 
-  def evidence = heaviest.map { "#{it.node.name} (line #{it.line})" }
+  def evidence = heaviest.map { "#{selector(it)} (line #{it.spot.line})" }
 end

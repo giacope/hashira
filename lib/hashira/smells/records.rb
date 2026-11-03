@@ -16,8 +16,8 @@ class Hashira::Smells::Records
   end
 
   def bags
-    @types.group_by(&:name).filter_map do |name, openings|
-      Hashira::Smells::Bags::Bag.new(name:, site: openings.first.site, fields: nil) if bare?(name, openings)
+    @types.group_by(&:to_s).filter_map do |name, openings|
+      Hashira::Smells::Bags::Bag.new(name:, site: openings.first.seat.at, fields: nil) if bare?(name, openings)
     end
   end
 
@@ -26,11 +26,10 @@ class Hashira::Smells::Records
   def bare?(name, openings) = openings.all? { plain?(it) } && [name, *@family.ancestors(name)].any? { record?(it) }
 
   def record?(name)
-    node = @types.select { it.name == name }.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
-    Hashira::Analysis::Syntax.new(node).segments.join("::").match?(RECORD)
+    Hashira::Smells::Descent.new(@types.select { it.to_s == name }).parent.join("::").match?(RECORD)
   end
 
-  def plain?(type) = Hashira::Analysis::Syntax::Body.new(type.node).to_a.compact.all? { shape?(it) }
+  def plain?(type) = type.accept(Hashira::Analysis::Syntax::Body).to_a.compact.all? { shape?(it) }
 
   def shape?(node)
     node.is_a?(Prism::CallNode) && !node.block && SHAPES.include?(node.receiver ? :"self.#{node.name}" : node.name)

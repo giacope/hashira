@@ -34,6 +34,10 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
     def phrase(names) = "#{@count}#{" each" unless names.one?} to #{@ego}"
   end
 
+  MIXINS = %i[module_function].freeze
+
+  private_constant :MIXINS
+
   def initialize(subject, rules, refs, patrons)
     super(subject, rules)
     @refs = refs
@@ -43,12 +47,13 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
   private
 
   def smelly?
-    !subject.singleton? && !subject.mixin? && !subject.polymorphic? && @refs.ego.positive? && envied.any?
+    standing = subject.standing
+    !standing.singleton? && !standing.in?(MIXINS) && !standing.polymorphic? && @refs.ego.positive? && envied.any?
   end
 
   def envied
     return @_envied if @_envied
-    transit = Hashira::Smells::Transit.new(subject.node, @refs)
+    transit = subject.accept(Hashira::Smells::Transit, @refs)
     @_envied = @refs.envious.select { served(it).any? }.reject { excused?(it, transit) }
   end
 

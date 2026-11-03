@@ -11,6 +11,7 @@ require "hashira"
 require "tmpdir"
 require_relative "support/fakes"
 require_relative "support/census"
+require_relative "support/readers"
 
 module Fixtures
   def within(files, &)
