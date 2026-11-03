@@ -67,11 +67,11 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Lineal
 
   def smelly? = subject.first.seat.class? && methods.size >= threshold(SIZE) && !framed? && groups.size > 1
 
-  def framed? = strict? ? presented? : family.framed?(label)
+  def framed? = strict? ? presented? : family.framing.framed?(label)
 
   def presented? = [label, root].any? { PRESENTATION.match?(it) }
 
-  def root = @_root ||= family.root(label)
+  def root = @_root ||= family.framing.root(label)
 
   def methods = @_methods ||= owned.reject { constructor?(it) }
 
@@ -87,13 +87,15 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Lineal
 
   def below(method) = hooked(method).flat_map { it.accept(Hashira::Smells::Below).to_a }
 
-  def hooked(method) = [method, *(family.overrides(label, selector(method)) if abstract?(method))]
+  def hooked(method) = [method, *(kin.overrides(label, selector(method)) if abstract?(method))]
 
   def every(node) = Hashira::Analysis::NodeWalk.new(node).collect
 
   def abstract?(method) = method.accept(Hashira::Smells::Refusal).unimplemented?
 
-  def mixed = @_mixed ||= family.mixed(subject.to_s)
+  def mixed = @_mixed ||= kin.mixed(subject.to_s)
+
+  def kin = family.inheritance
 
   def known = @_known ||= names | mixed.to_set { selector(it) }
 
@@ -108,7 +110,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Lineal
 
   def constructors = @_constructors ||= built(owned).then { it.empty? ? bequeathed : it }
 
-  def bequeathed = family.ancestors(subject.to_s).lazy.map { built(family.definitions(it)) }.find(&:any?) || []
+  def bequeathed = family.tree.ancestors(subject.to_s).lazy.map { built(kin.definitions(it)) }.find(&:any?) || []
 
   def built(methods) = methods.select { constructor?(it) }
 

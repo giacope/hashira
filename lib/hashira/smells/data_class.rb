@@ -36,7 +36,7 @@ class Hashira::Smells::DataClass < Hashira::Smells::Lineal
   def smelly? = subject.first.seat.class? && unrelated? && statements.all? { plain?(it) } && fields.size >= MINIMUM
 
   def unrelated?
-    !Hashira::Smells::Descent.new(subject).parent? && family.children(subject.to_s).empty?
+    !Hashira::Smells::Descent.new(subject).parent? && family.tree.children(subject.to_s).empty?
   end
 
   def statements = @_statements ||= subject.bulk.statements

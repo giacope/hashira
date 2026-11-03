@@ -95,33 +95,39 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Lineal
     member(:heir, parent, Heir.new(kind, parent, home, mode), told)
   end
 
-  def smelly? = core? || (parent && !abstract? && grounds?)
+  def smelly? = core? || (parented? && !abstract? && grounds?)
 
-  def abstract? = family.abstract?(parent) || (strict? && BASED.match?(parent.split("::").last))
+  def abstract? = family.inheritance.abstract?(parent) || (strict? && BASED.match?(parent.split("::").last))
 
   def grounds? = framed? ? strict? && overrides.any? : built.any?
 
-  def parent = @_parent ||= family.parent(subject.to_s)
+  def parent = @_parent ||= parents.fetch(0)
 
-  def core? = strict? && !parent && CORE.include?(base)
+  def parented? = parents.any?
+
+  def parents = family.tree.parent(subject.to_s)
+
+  def core? = strict? && !parented? && CORE.include?(base)
 
   def base
     Hashira::Smells::Descent.new(subject).parent.join("::")
   end
 
-  def framed? = family.framed?(parent)
+  def framed? = family.framing.framed?(parent)
 
-  def built = family.built(parent)
+  def built = family.births.built(parent)
 
   def overrides = @_overrides ||= owned.select { working.include?(selector(it)) && !refusal?(it) }
 
-  def working = @_working ||= family.definitions(parent).reject { refusal?(it) }.to_set { selector(it) } - [CONSTRUCTOR]
+  def working
+    @_working ||= family.inheritance.definitions(parent).reject { refusal?(it) }.to_set { selector(it) } - [CONSTRUCTOR]
+  end
 
   def refusal?(method) = method.accept(Hashira::Smells::Refusal).of.any?
 
   def mode = framed? ? :overriding : :built
 
-  def home = family.home(parent)
+  def home = family.births.home(parent)
 
   def evidence
     return ["#{subject} < #{base} (#{site})"] if core?

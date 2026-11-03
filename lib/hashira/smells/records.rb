@@ -23,7 +23,7 @@ class Hashira::Smells::Records
 
   private
 
-  def bare?(name, openings) = openings.all? { plain?(it) } && [name, *@family.ancestors(name)].any? { record?(it) }
+  def bare?(name, openings) = openings.all? { plain?(it) } && [name, *@family.tree.ancestors(name)].any? { record?(it) }
 
   def record?(name)
     Hashira::Smells::Descent.new(@types.select { it.to_s == name }).parent.join("::").match?(RECORD)

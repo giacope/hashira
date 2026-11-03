@@ -51,7 +51,7 @@ class Hashira::Smells::RefusedBequest < Hashira::Smells::Lineal
 
   def name = subject.to_s
 
-  def refused = @_refused ||= family.definitions(name).select { refuses?(it) }
+  def refused = @_refused ||= family.inheritance.definitions(name).select { refuses?(it) }
 
   def refuses?(method)
     granted = bequest[selector(method)]
@@ -61,7 +61,8 @@ class Hashira::Smells::RefusedBequest < Hashira::Smells::Lineal
   def refusal(method) = method.accept(Hashira::Smells::Refusal).of
 
   def bequest
-    @_bequest ||= family.ancestors(name).reverse.flat_map { family.definitions(it) }.to_h { [selector(it), it] }
+    @_bequest ||=
+      family.tree.ancestors(name).reverse.flat_map { family.inheritance.definitions(it) }.to_h { [selector(it), it] }
   end
 
   def verb(method) = VERBS.fetch(refusal(method).fetch(0))
