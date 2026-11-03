@@ -902,7 +902,9 @@ Findings (3):
   parameter the method defaults to nil, and the answer of another owned class's
   method that can answer nil (its body ends in `detect`, `find`, `first`,
   `last`, `[]`, `dig`, `min_by`, `&.`, a literal `nil`, an `if` or `case`
-  without `else`, or it returns early with nothing), reached through an
+  without `else`, or it returns early with nothing; a `[]` on a hash the
+  class only ever builds with a default, `Hash.new(0)` or `Hash.new { |memo,
+  key| memo[key] = scan?(key) }`, answers that default), reached through an
   instance variable or local named for that class or an object built on the
   spot (`Finder.new(rows).parent(id)`). An instance variable is typed by what
   its object's classes and mixins build into it first (`@socket = ::Socket.new`,

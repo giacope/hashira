@@ -984,6 +984,75 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     )
   end
 
+  it "takes, under strict, a lookup in a hash its type builds with a default for that default, not for a nil" do
+    files = {
+      "lib/app/gap.rb" => <<~RUBY,
+        module App
+          class Gap
+            def initialize(pairs)
+              @pairs = pairs
+              @memo = Hash.new { |memo, key| memo[key] = scan?(key) }
+              @counts = Hash.new(0)
+              @seen = {}
+              @blank = Hash.new(nil)
+              @found = Hash.new { |memo, key| memo[key] = @pairs.keys.find { it == key } }
+              @void = Hash.new {}
+              @sized = Hash.new(capacity: 4)
+              @reset = Hash.new(0)
+              @plain = Hash.new
+              @lists = Hash.new { |_, key| [key] }
+            end
+
+            def self.of(pairs) = @made = new(pairs)
+
+            def crossed?(key) = @memo[key]
+
+            def count(key) = @counts[key]
+
+            def seen?(key) = @seen[key]
+
+            def blank?(key) = @blank[key]
+
+            def found?(key) = @found[key]
+
+            def void?(key) = @void[key]
+
+            def sized?(key) = @sized[key]
+
+            def tally?(key) = @reset[key]
+
+            def plain?(key) = @plain[key]
+
+            def listed?(key) = @lists[key]
+
+            def clear = @reset = {}
+
+            private
+
+            def scan?(key) = @pairs.fetch(key).positive?
+          end
+        end
+      RUBY
+      "lib/app/audit.rb" => <<~RUBY
+        module App
+          class Audit
+            def initialize(io) = @io = io
+
+            def counted(pairs) = pairs.each_key { |key| @io.puts(key) if App::Gap.new(pairs).count(key).nil? }
+
+            #{%w[crossed seen blank found void sized tally plain listed].map { audit(it) }.join("\n  ")}
+          end
+        end
+      RUBY
+    }
+    gaps = %w[seen blank found void sized tally plain].to_h { ["App::Audit##{it}", ["App::Gap##{it}?"]] }
+    expect(sources_of(strictly(files, "nil_check"))).to(eq("App::Audit#counted" => [], **gaps))
+  end
+
+  def audit(name)
+    "def #{name}(pairs) = pairs.each_key { |key| @io.puts(key) unless App::Gap.new(pairs).#{name}?(key) }\n"
+  end
+
   it "types a field by what its object's classes and mixins build into it, and by its name only when nothing does" do
     files = {
       "lib/app/shop/socket.rb" => <<~RUBY

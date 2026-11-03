@@ -698,6 +698,16 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by `--strict` on rubocop-kata and on the round-7 twins (alba and
+  blueprinter rewritten to rubocop-kata's strict profile):
+  - `nil_check` (strict) takes a lookup in a hash the class only ever builds
+    with a default for that default: rubocop-kata's `Gap#crossed?` answers
+    `@memo[key]` from `Hash.new { |memo, key| memo[key] = scan?(key) }`, which
+    computes a boolean for every key, and `unless gap.crossed?(key)` was
+    reported as a nil check. A default value (`Hash.new(0)`) counts too. `{}`,
+    `Hash.new`, `Hash.new(nil)`, a block that answers nothing or a value that
+    can be nil (`memo[key] = rows.find { … }`), and a hash the class also sets
+    without a default can still answer nil and are still reported.
 - Found by the sixth field test's sixth batch (service-manual-publisher,
   state_machines, rubycritic, sshkit, acts-as-taggable-on):
   - `repeated_call` reads a call to any reader the class, a parent or a mixin
