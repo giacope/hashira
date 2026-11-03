@@ -22,7 +22,7 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
 
   def signature = subject.accept(Hashira::Smells::Signature)
 
-  def stateless? = @refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
+  def stateless? = @refs.lines.none? && Hashira::Smells::Opaque.new(body).none?
 
   def detail = Hashira::Smells::Spot.new(site, "touches no instance state", ADVICE)
 

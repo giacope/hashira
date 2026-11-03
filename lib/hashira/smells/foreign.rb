@@ -32,7 +32,7 @@ class Hashira::Smells::Foreign
   end
 
   def dismiss?(local)
-    name = local.name
+    name = local.to_sym
     convert? || fenced?(name) || wire?(name) || stock?(name) || derived?(local) || rescued?(name)
   end
 
@@ -82,15 +82,15 @@ class Hashira::Smells::Foreign
 
   def derived?(local) = sources(local).any? { spawned?(it) }
 
-  def sources(local) = writes(local.name).map(&:value) + yielders(local)
+  def sources(local) = writes(local.to_sym).map(&:value) + local.yielders(body.grep(Prism::CallNode))
 
   def known(local)
     tested = evidence(local)
-    tested.empty? ? Hashira::Smells::Naming.new(local.name).types.map { [it, false] } : tested
+    tested.empty? ? Hashira::Smells::Naming.new(local.to_sym).types.map { [it, false] } : tested
   end
 
   def evidence(local)
-    name = local.name
+    name = local.to_sym
     made = sources(local).grep(Prism::CallNode).map { path(it.receiver) }
     (made + caught(name) + tests { it == name }).reject { |segments, _| segments.empty? }
   end
@@ -99,16 +99,6 @@ class Hashira::Smells::Foreign
 
   def caught(name)
     snares(name).flat_map { |clause| clause.exceptions.map { path(it) } }
-  end
-
-  def yielders(local)
-    scope = local.scope
-    offered(scope).include?(local.name) ? body.grep(Prism::CallNode).select { it.block == scope } : []
-  end
-
-  def offered(block)
-    given = block&.parameters
-    given.is_a?(Prism::BlockParametersNode) ? Hashira::Smells::Parameters.new(given).names : []
   end
 
   def rescued?(name) = snares(name).any? { alien?(it.exceptions) }

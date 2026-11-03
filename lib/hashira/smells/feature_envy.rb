@@ -48,7 +48,7 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def smelly?
     standing = subject.standing
-    !standing.singleton? && !standing.in?(MIXINS) && !standing.polymorphic? && @refs.ego.positive? && envied.any?
+    !standing.singleton? && !standing.in?(MIXINS) && !standing.polymorphic? && @refs.lines.any? && envied.any?
   end
 
   def envied
@@ -61,15 +61,13 @@ class Hashira::Smells::FeatureEnvy < Hashira::Smells::Check
 
   def served(holder) = @patrons.of(holder)
 
-  def paired?(holder) = partners(holder.scope) > 1
+  def paired?(holder) = @refs.envious.count { holder.beside?(it) } > 1
 
-  def partners(scope) = scope.is_a?(Prism::BlockNode) ? @refs.envious.count { it.scope == scope } : 0
-
-  def detail = Envy.new(site, envied.map(&:name).uniq, types, Balance.new(count, @refs.ego))
+  def detail = Envy.new(site, envied.map(&:to_sym).uniq, types, Balance.new(count, @refs.lines.size))
 
   def count = @refs.lines(envied.first).size
 
   def types = envied.map { served(it).fetch(0).fetch(-1) }.uniq
 
-  def evidence = envied.map { tally(it.name, @refs.lines(it).uniq) } + [tally(:self, @refs.ego_lines.uniq)]
+  def evidence = envied.map { tally(it.to_sym, @refs.lines(it).uniq) } + [tally(:self, @refs.lines.uniq)]
 end

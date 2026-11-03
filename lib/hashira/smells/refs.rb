@@ -3,7 +3,37 @@
 require "prism"
 
 class Hashira::Smells::Refs
-  Local = Data.define(:name, :scope)
+  class Local
+    def initialize(name, scope)
+      @name = name
+      @scope = scope
+    end
+
+    def ==(other) = other.is_a?(self.class) && key == other.key
+
+    def eql?(other) = self == other
+
+    def hash = key.hash
+
+    def to_sym = @name
+
+    def beside?(other) = @scope.is_a?(Prism::BlockNode) && @scope.equal?(other.scope)
+
+    def yielders(calls) = bound? ? calls.select { it.block.equal?(@scope) } : []
+
+    protected
+
+    attr_reader :scope
+
+    def key = [@name, @scope]
+
+    private
+
+    def bound?
+      given = @scope&.parameters
+      given.is_a?(Prism::BlockParametersNode) && Hashira::Smells::Parameters.new(given).names.include?(@name)
+    end
+  end
 
   SELF = Local.new(:self, nil)
 
@@ -22,11 +52,7 @@ class Hashira::Smells::Refs
     @messages = messages
   end
 
-  def ego = reads(SELF).size
-
-  def ego_lines = lines(SELF)
-
-  def lines(holder) = reads(holder).map { it.location.start_line }
+  def lines(holder = SELF) = reads(holder).map { it.location.start_line }
 
   def reads(holder) = tallies.fetch(holder, [])
 
