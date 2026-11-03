@@ -366,6 +366,11 @@ things a baseline sees:
 
 ### Changed
 
+- hashira lints itself with rubocop-kata's strict profile and holds itself to
+  its own strict set (`strict: true` in `.hashira.yml`), and CI enforces both.
+  Behaviour is unchanged: on 52 projects in three modes (default, `--strict`,
+  and every check with `--strict`) hashira's JSON output is byte-identical
+  before and after.
 - Found by the round-6 conformance matrix (one Elegant Objects principle per
   case, a violating and a compliant project each) and the gaps the sixth
   field test listed (GH2–GH5):
