@@ -7,7 +7,14 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
 
   ADVICE = "Move it onto the object it serves, or make it private."
 
+  def initialize(subject, rules, refs)
+    super(subject, rules)
+    @refs = refs
+  end
+
   private
+
+  attr_reader :refs
 
   def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && !protocol? && calls? && stateless?
 
@@ -18,8 +25,6 @@ class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
   def stateless? = refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
 
   def detail = Hashira::Smells::Spot.new(site, "touches no instance state", ADVICE)
-
-  def refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
 
   def calls? = body.any?(Prism::CallNode)
 

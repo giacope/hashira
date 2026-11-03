@@ -9,8 +9,9 @@ class Hashira::Smells::SpreadSwitch
 
   COMPARISONS = Hashira::Smells::Comparisons.new
 
-  def initialize(whole)
+  def initialize(whole, names)
     @whole = whole
+    @names = names
   end
 
   def findings
@@ -36,7 +37,7 @@ class Hashira::Smells::SpreadSwitch
 
   def sightings
     @whole.owned.reject { COMPARISONS.include?(it.node.name) }.flat_map do |definition|
-      Hashira::Smells::Switches.new(definition.node, definition.ownership, definition.owner).held.map { [definition, it] }
+      Hashira::Smells::Switches.new(definition.node, @names, definition.owner).held.map { [definition, it] }
     end
   end
 

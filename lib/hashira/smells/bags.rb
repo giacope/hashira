@@ -37,13 +37,14 @@ class Hashira::Smells::Bags
     def named?(name) = @name == name
   end
 
-  def initialize(types, family, methods)
+  def initialize(types, family, methods, names)
     @types = types
     @family = family
     @methods = methods
+    @names = names
   end
 
-  def findings = bags.flat_map { it.finding(Hashira::Smells::Readings.new(@methods)) }
+  def findings = bags.flat_map { it.finding(Hashira::Smells::Readings.new(@methods, @names)) }
 
   private
 

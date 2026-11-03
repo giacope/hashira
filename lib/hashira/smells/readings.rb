@@ -19,8 +19,9 @@ class Hashira::Smells::Readings
     def to_s = "#{@user.subject} reads #{fields.map { "'#{it}'" }.join(", ")} (#{spot})"
   end
 
-  def initialize(methods, common = Hashira::Smells::Common.new)
+  def initialize(methods, names, common = Hashira::Smells::Common.new)
     @methods = methods
+    @names = names
     @common = common
   end
 
@@ -56,6 +57,6 @@ class Hashira::Smells::Readings
   end
 
   def typed(holder, method)
-    Hashira::Smells::Naming.new(holder).types.filter_map { method.ownership.place(it, method.owner) }.first(1)
+    Hashira::Smells::Naming.new(holder).types.flat_map { @names.place(it, method.owner) }.first(1)
   end
 end

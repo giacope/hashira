@@ -16,10 +16,11 @@ class Hashira::Smells::Probe
 
   NAMED = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 
-  def initialize(call, subject, foreign)
+  def initialize(call, subject, foreign, words)
     @call = call
     @subject = subject
     @foreign = foreign
+    @words = words
   end
 
   def line = @call.location.start_line
@@ -46,7 +47,7 @@ class Hashira::Smells::Probe
 
   def computed? = messages.any? { !LITERAL.include?(it.class) }
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(word.symbol)
+  def spoken? = @words.speaks?(word.symbol)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
@@ -58,7 +59,7 @@ class Hashira::Smells::Probe
 
   def unanswered? = @foreign.kinds(holder).none? { answers?(it) }
 
-  def answers?(kind) = @subject.ownership.repertoire.of(kind).include?(word.to_s)
+  def answers?(kind) = @words.of(kind).include?(word.to_s)
 
   def named? = NAMED.include?(receiver.class)
 

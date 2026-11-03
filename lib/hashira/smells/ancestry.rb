@@ -5,8 +5,8 @@ require "prism"
 class Hashira::Smells::Ancestry
   MIXINS = %i[include prepend].freeze
 
-  def initialize(walked, ownership)
-    @walked = walked
+  def initialize(walk, ownership)
+    @walk = walk
     @ownership = ownership
   end
 
@@ -35,13 +35,14 @@ class Hashira::Smells::Ancestry
 
   def downward = @_downward ||= ties.group_by(&:last).transform_values { it.map(&:first) }
 
-  def opened = @_opened ||= @walked.group_by { |_node, full| full.join("::") }.transform_values { it.map(&:first) }
+  def opened = @_opened ||= @walk.to_a.group_by { |_node, full| full.join("::") }.transform_values { it.map(&:first) }
 
   def ties
-    @_ties ||= @walked.flat_map do |node, full|
-      owner = full.join("::")
-      above(node).map { [owner, @ownership.placed(it, owner)] }
-    end.select(&:last)
+    @_ties ||=
+      @walk.to_a.flat_map do |node, full|
+        owner = full.join("::")
+        above(node).flat_map { |parent| @ownership.placed(parent, owner).map { [owner, it] } }
+      end
   end
 
   def above(node)

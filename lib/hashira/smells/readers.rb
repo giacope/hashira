@@ -4,8 +4,9 @@ require "prism"
 require_relative "origin"
 
 class Hashira::Smells::Readers
-  def initialize(method)
+  def initialize(method, ties)
     @method = method
+    @ties = ties
   end
 
   def reads?(node) = node.is_a?(Prism::CallNode) && plain?(node) && names.include?(node.name.to_s)
@@ -20,8 +21,5 @@ class Hashira::Smells::Readers
     @_names = Hashira::Smells::Attributes.new(swept).readers.to_set
   end
 
-  def homes
-    ancestry = @method.ownership.ancestry
-    [@method.home, *ancestry.up(@method.owner).flat_map { ancestry.openings(it) }]
-  end
+  def homes = [@method.home, *@ties.homes(@method.owner)]
 end

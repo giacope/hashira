@@ -17,10 +17,9 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   GUARDS = BRANCHES.first(2).freeze
 
-  def initialize(
-    subject, rules, foreign = Hashira::Smells::Foreign.new(subject, subject.ownership),
-    provenance = Hashira::Smells::Provenance.new(subject, foreign, rules)
-  )
+  ASSIGNS = [Prism::LocalVariableWriteNode, Prism::OptionalParameterNode, Prism::OptionalKeywordParameterNode].freeze
+
+  def initialize(subject, rules, foreign, provenance)
     super(subject, rules)
     @foreign = foreign
     @provenance = provenance
@@ -73,11 +72,13 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def assignments(node)
     case node
-    when Prism::LocalVariableReadNode then named(body.select { provenance.writes.include?(it.class) }, node.name)
+    when Prism::LocalVariableReadNode then named(body.select { writes.include?(it.class) }, node.name)
     when Prism::InstanceVariableReadNode then named(state.grep(Prism::InstanceVariableWriteNode), node.name)
     else []
     end
   end
+
+  def writes = strict? ? ASSIGNS : ASSIGNS.first(1)
 
   def named(nodes, name) = nodes.select { it.name == name }
 
@@ -158,7 +159,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def sightings = checks.flat_map { |check| tested(check).flat_map { origin_of(it) }.map { [it, check] } }
 
-  def origin_of(node) = Hashira::Smells::Origin.new(node).of(subject).then { it.empty? ? provenance.source(node) : it }
+  def origin_of(node) = provenance.origin(node)
 
   def evidence = checks.map { tally(tested(it).map { shown(it) }.join(", "), [it.location.start_line]) }
 

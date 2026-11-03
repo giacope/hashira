@@ -33,12 +33,9 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
     end
   end
 
-  def initialize(
-    subject, rules, foreign = Hashira::Smells::Foreign.new(subject, subject.ownership),
-    switchboard = Hashira::Smells::Switches.new(subject.node, subject.ownership, subject.owner)
-  )
+  def initialize(subject, rules, probing, switchboard)
     super(subject, rules)
-    @foreign = foreign
+    @probing = probing
     @switchboard = switchboard
   end
 
@@ -48,7 +45,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def protocol?(name) = name == PROTOCOL || COMPARISONS.include?(name)
 
-  def probes = @_probes ||= proxy? ? [] : sightings.map { probe(it) }.reject(&:excused?)
+  def probes = @_probes ||= proxy? ? [] : @probing.of(sightings).reject(&:excused?)
 
   def proxy? = subject.node.name == PROXY && subject.neighbors.include?(PROTOCOL)
 
@@ -56,9 +53,7 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
     Hashira::Smells::Scope.new(subject.node).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
   end
 
-  def probe(call) = Hashira::Smells::Probe.new(call, subject, foreign)
-
-  attr_reader :foreign, :switchboard
+  attr_reader :switchboard
 
   def switches = switchboard.typed + switchboard.statuses
 

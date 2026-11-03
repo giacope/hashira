@@ -1,112 +1,40 @@
 # frozen_string_literal: true
 
 class Hashira::Smells::Ownership
-  LITERALS = [
-    Prism::RegularExpressionNode, Prism::InterpolatedRegularExpressionNode, Prism::StringNode,
-    Prism::InterpolatedStringNode, Prism::SymbolNode, Prism::IntegerNode, Prism::FloatNode,
-    Prism::RangeNode, Prism::ArrayNode, Prism::HashNode
-  ].freeze
-
-  def initialize(trees, catalog)
-    @trees = trees
+  def initialize(walk, catalog)
+    @walk = walk
     @catalog = catalog
   end
 
-  def owned?(segments, owner = nil, rooted: false) = !place(segments, owner, rooted:).nil?
+  def place(segments, owner, rooted: false) = segments.empty? ? [] : among(defined, segments, owner, rooted)
 
-  def place(segments, owner, rooted: false) = (among(defined, segments, owner, rooted) unless segments.empty?)
+  def placed(node, owner)
+    place(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
+  end
+
+  def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
 
   def anchored(segments, owner)
     kept = -> { segments.join("::") }
     segments.empty? ? segments : lexical(segments, owner).find(kept) { defined.include?(it) }.split("::")
   end
 
-  def owns?(node, owner = nil) = !placed(node, owner).nil?
-
-  def answers?(node, owner) = owns?(node, owner) && !LITERALS.include?(held[placed(node, owner)].class)
-
-  def vocabulary = @_vocabulary ||= Hashira::Smells::Vocabulary.new(@trees)
-
-  def repertoire = @_repertoire ||= Hashira::Smells::Repertoire.new(@trees)
-
-  def values = @_values ||= Hashira::Smells::Values.new(@trees)
-
-  def nulls = @_nulls ||= Hashira::Smells::Nulls.new(@trees)
-
-  def fillings = @_fillings ||= Hashira::Smells::Fillings.new(walked, self)
-
-  def ancestry = @_ancestry ||= Hashira::Smells::Ancestry.new(walked, self)
-
-  def origin(segments, owner) = exports.origin(segments, owner)
-
-  def callers = @_callers ||= Hashira::Smells::Callers.new(@trees, self)
-
-  def resolve(segments, owner, rooted:) = among(written, segments, owner, rooted)
-
-  def keys(segments) = tables.fetch(segments.join("::"), [])
-
-  def placed(node, owner)
-    place(Hashira::Analysis::Syntax.new(node).segments, owner, rooted: Hashira::Analysis::Syntax.new(node).rooted?)
-  end
-
   private
 
-  def exports = @_exports ||= Hashira::Smells::Exports.new(@trees, self)
-
-  def held
-    @_held ||=
-      claimed.flat_map { |node, full| named(node, full).zip(Hashira::Analysis::Syntax::Body.new(node).constants) }
-        .to_h { |path, constant| [path.join("::"), Hashira::Analysis::Syntax::Value.new(constant.value).thaw] }
-  end
-
   def among(known, segments, owner, rooted)
-    (rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) }
+    (rooted ? [segments.join("::")] : lexical(segments, owner)).lazy.select { known.include?(it) }.first(1)
   end
 
-  def defined = @_defined ||= claimed.flat_map { |node, full| [full, *named(node, full)] }.to_set { it.join("::") }
-
-  def written = @_written ||= walked.to_set { |_node, full| full.join("::") }
-
-  def tables
-    @_tables ||= claimed.flat_map { |node, full| charted(node, full) }
-      .flat_map { |path, keys| suffixes(path).map { [it, keys] } }.to_h
+  def defined
+    @_defined ||= (claimed.map(&:last) + @walk.constants(@catalog).map(&:first)).to_set { it.join("::") }
   end
 
-  def walked
-    @_walked ||= @trees.flat_map { Hashira::Analysis::TypeWalk.new(it).to_enum(:walk).map { |node, full| [node, full] } }
-  end
+  def written = @_written ||= @walk.to_a.to_set { |_node, full| full.join("::") }
 
-  def claimed = @_claimed ||= walked.select { |_node, full| claimed?(full) }
-
-  def named(node, full) = Hashira::Analysis::Syntax::Body.new(node).constants.map { full + [it.name.to_s] }
-
-  def charted(node, full)
-    Hashira::Analysis::Syntax::Body.new(node).constants.filter_map do |constant|
-      keys = chart(Hashira::Analysis::Syntax::Value.new(constant.value).thaw)
-      [full + [constant.name.to_s], keys] if keys
-    end
-  end
+  def claimed = @_claimed ||= @walk.claimed(@catalog)
 
   def lexical(segments, owner)
     parts = owner.to_s.split("::")
     parts.size.downto(0).map { (parts.first(it) + segments).join("::") }
-  end
-
-  def chart(value)
-    return unless value.is_a?(Prism::HashNode)
-    keys = value.elements.map { spine(it) }
-    keys unless keys.empty? || keys.any?(&:nil?)
-  end
-
-  def spine(element)
-    return unless element.is_a?(Prism::AssocNode)
-    segments = Hashira::Analysis::Syntax.new(element.key).segments
-    segments unless segments.empty?
-  end
-
-  def claimed?(full) = @catalog.claimed?(full)
-
-  def suffixes(path)
-    path.each_index.map { path.drop(it).join("::") }
   end
 end

@@ -604,6 +604,28 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "reads a table by its short name though a later type holds a constant of that name that is no table" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            TABLE = { Prism::CallNode => :call, Prism::IfNode => :branch }.freeze
+
+            def pick(node)
+              @seen = true
+              TABLE[node.class] && node.name && node.receiver
+            end
+          end
+
+          class Other
+            TABLE = "other"
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "keeps flagging when the table's keys are owned, mixed, absent, or not a table at all" do
     findings = envy(<<~RUBY)
       module App

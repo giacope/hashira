@@ -6,19 +6,21 @@ class Hashira::Smells::Census
   def initialize(
     project, trees,
     catalog = Hashira::Coupling::Catalog.build(project, trees, Hashira::Coupling::Definitions.build(project, trees)),
-    ownership = Hashira::Smells::Ownership.new(trees.values, catalog)
+    kit = Hashira::Smells::Kit.new(trees.values, catalog)
   )
     @project = project
     @trees = trees
     @catalog = catalog
-    @ownership = ownership
+    @kit = kit
   end
 
   def types = @_types ||= settled(Hashira::Smells::Concerns.new(sketches).settled)
 
+  def report(boundaries, rules) = @kit.report(types, boundaries, rules)
+
   private
 
-  attr_reader :ownership, :catalog
+  attr_reader :catalog
 
   def sketches
     paths = @project.paths
@@ -31,7 +33,7 @@ class Hashira::Smells::Census
   def settled(found)
     lineage = Hashira::Smells::Lineage.new(found, found.reject { claimed?(it) }.to_set(&:name))
     kinship = Hashira::Smells::Kinship.new(found, lineage)
-    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
+    found.map { lineage.settle(it, protocol: kinship.protocol(it), claimed: claimed?(it)) }
   end
 
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots

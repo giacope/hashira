@@ -965,6 +965,11 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
               item = Shop::Catalog.new(@codes).fetch(1)
               item.nil? ? 0 : item.price
             end
+
+            def opened
+              item = Shop::Catalog.open(@codes).find(3)
+              item.nil? ? 0 : item.price
+            end
           end
         end
       RUBY

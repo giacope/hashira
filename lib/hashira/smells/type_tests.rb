@@ -12,9 +12,9 @@ class Hashira::Smells::TypeTests
 
   SHAPED = [Prism::ArrayPatternNode, Prism::FindPatternNode, Prism::HashPatternNode].freeze
 
-  def initialize(body, ownership)
+  def initialize(body, names)
     @body = body
-    @ownership = ownership
+    @names = names
   end
 
   def of(&)
@@ -41,7 +41,7 @@ class Hashira::Smells::TypeTests
 
   def lookups(&)
     calls.select { |call| LOOKUPS.include?(call.name) && keys(call).any? { sorts?(it, &) } }
-      .flat_map { @ownership.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
+      .flat_map { @names.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
   end
 
   def sorts?(argument, &) = argument.is_a?(Prism::CallNode) && argument.name == :class && local?(argument.receiver, &)

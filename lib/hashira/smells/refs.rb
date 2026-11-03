@@ -16,9 +16,9 @@ class Hashira::Smells::Refs
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
-  def initialize(definition, vocabulary, messages = Hashira::Runtime::Messages.new)
+  def initialize(definition, words, messages = Hashira::Runtime::Messages.new)
     @node = definition
-    @vocabulary = vocabulary
+    @words = words
     @messages = messages
   end
 
@@ -40,7 +40,7 @@ class Hashira::Smells::Refs
 
   private
 
-  def tallies = @_tallies ||= tally { @vocabulary.speaks?(it.name) }
+  def tallies = @_tallies ||= tally { @words.speaks?(it.name) }
 
   def sent = @_sent ||= tally { !@messages.universal?(it.name) }
 

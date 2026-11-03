@@ -29,7 +29,7 @@ class Hashira::Smells::Callers
       receiver = call.receiver
       return home == subject.owner if receiver.nil? || receiver.is_a?(Prism::SelfNode)
       owner = subject.owner
-      kinds(receiver, subject.singleton?).any? { |path, rooted| ownership.resolve(path, home, rooted:) == owner }
+      kinds(receiver, subject.singleton?).any? { |path, rooted| ownership.resolve(path, home, rooted:).include?(owner) }
     end
 
     def kinds(receiver, singleton)

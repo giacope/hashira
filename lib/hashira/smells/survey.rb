@@ -7,5 +7,5 @@ class Hashira::Smells::Survey
     @rules = rules
   end
 
-  def findings = @_findings ||= Hashira::Smells::Report.new(@census.types, @boundaries, @rules).findings
+  def findings = @_findings ||= @census.report(@boundaries, @rules).findings
 end

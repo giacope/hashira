@@ -43,9 +43,9 @@ class Hashira::Smells::Switches
 
   TYPE_NAME = /[a-z]/
 
-  def initialize(node, ownership, owner = nil)
+  def initialize(node, names, owner = nil)
     @node = node
-    @ownership = ownership
+    @names = names
     @owner = owner
   end
 
@@ -95,7 +95,7 @@ class Hashira::Smells::Switches
 
   def type?(node)
     segments = Hashira::Analysis::Syntax.new(node).segments
-    segments.any? && TYPE_NAME.match?(segments.last) && @ownership.owns?(node, @owner)
+    segments.any? && TYPE_NAME.match?(segments.last) && @names.owns?(node, @owner)
   end
 
   def tests = @_tests ||= cased { type?(it) } + probed

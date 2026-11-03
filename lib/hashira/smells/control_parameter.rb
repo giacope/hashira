@@ -17,6 +17,11 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     end
   end
 
+  def initialize(subject, rules, callers)
+    super(subject, rules)
+    @callers = callers
+  end
+
   private
 
   def smelly? = !HIDDEN.include?(subject.section) && culprits.any?
@@ -28,7 +33,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     lines.empty? || !picks.picked?(name) ? [] : [[name, lines]]
   end
 
-  def picks = Hashira::Smells::Picks.new(subject.node, subject.ownership.callers.of(subject))
+  def picks = Hashira::Smells::Picks.new(subject.node, @callers.of(subject))
 
   def spots(name)
     Hashira::Smells::ParamCheck.new(subject.node, name).matches.map { it.location.start_line }

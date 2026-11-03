@@ -60,28 +60,24 @@ class Hashira::Smells::Report
 
   SPRAWL = "boundary_sprawl"
 
-  def initialize(types, boundaries, rules, family = Hashira::Smells::Hierarchy.new(types))
+  def initialize(types, rules, probing, judging)
     @types = types
-    @boundaries = boundaries
     @rules = rules
-    @family = family
+    @probing = probing
+    @judging = judging
   end
 
   def findings = @_findings ||= checks.flat_map(&:findings) + spread + sprawl + bags + gathered
 
   private
 
-  attr_reader :types, :family
+  def wholes = @_wholes ||= @judging.wholes(@types)
 
-  def wholes
-    @_wholes ||= types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it, family:) }
-  end
-
-  def methods = types.flat_map(&:defs)
+  def methods = @types.flat_map(&:defs)
 
   def spread
     return [] unless wants?(SPREAD)
-    wholes.select { it.kind == :class }.flat_map { Hashira::Smells::SpreadSwitch.new(it).findings }
+    wholes.select { it.kind == :class }.flat_map { @judging.spread(it) }
   end
 
   def wanted(checks) = checks.select { wants?(Hashira::Smells::Kind.new(it).to_s) }
@@ -90,17 +86,19 @@ class Hashira::Smells::Report
 
   def bags
     return [] unless @rules.strict? && wants?(BAGS)
-    Hashira::Smells::Bags.new(types, family, methods).findings
+    @judging.bags(@types, methods)
   end
 
   def sprawl
     return [] unless wants?(SPRAWL)
-    Hashira::Smells::BoundarySprawl.new(methods, @boundaries.interpreted, @rules).findings
+    @judging.sprawl(methods, @rules)
   end
 
-  def checks = @_checks ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES))
+  def checks = @_checks ||= judged(wanted(JUDGES)) + probed(wanted(PROBES))
 
-  def sniff(subjects, kinds) = subjects.flat_map { |subject| kinds.map { it.build(subject, @rules) } }
+  def judged(kinds) = wholes.flat_map { |whole| kinds.map { it.build(whole, @rules) } }
+
+  def probed(kinds) = methods.flat_map { @probing.checks(it, kinds, @rules) }
 
   def gathered
     groups = checks.flat_map(&:members).reduce({}) { |found, member| member.gather(found) }

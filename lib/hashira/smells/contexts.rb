@@ -36,7 +36,7 @@ module Hashira
     end
 
     MethodContext =
-      Data.define(:owner, :node, :file, :section, :ownership, :host, :protocol, :home) do
+      Data.define(:owner, :node, :file, :section, :host, :protocol, :home) do
         def subject = "#{owner}#{singleton? ? "." : "#"}#{node.name}"
 
         def line = node.location.start_line
@@ -68,15 +68,15 @@ module Hashira
 
         def owner = kind == :module && handed ? name.delete_suffix("::ClassMethods") : name
 
-        def settle(protocol:, ownership:, **facts)
-          TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol, ownership), **facts)
+        def settle(protocol:, **facts)
+          TypeContext.new(name:, node:, kind:, file:, defs: defs(protocol), **facts)
         end
 
-        def defs(protocol, ownership)
+        def defs(protocol)
           walk = Hashira::Analysis::TypeWalk.new(node)
           (handed ? walk.sections : walk.written).map do |definition, section|
             MethodContext.new(
-              owner: definition.receiver ? name : owner, node: definition, file:, section:, ownership:, host: kind,
+              owner: definition.receiver ? name : owner, node: definition, file:, section:, host: kind,
               protocol:, home: node
             )
           end

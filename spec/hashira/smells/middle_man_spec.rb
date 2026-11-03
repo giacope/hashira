@@ -7,8 +7,8 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
     within("lib/app/cache.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
       trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
-      types = Hashira::Smells::Census.new(project, trees).types
-      return Hashira::Smells::Report.new(types, Hashira::Boundaries.new([], trees), rules).findings.select { it.to_h[:kind] == "middle_man" }
+      report = Hashira::Smells::Census.new(project, trees).report(Hashira::Boundaries.new([], trees), rules)
+      return report.findings.select { it.to_h[:kind] == "middle_man" }
     end
   end
 

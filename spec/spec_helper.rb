@@ -84,8 +84,7 @@ module Fixtures
     within(files) do
       project = Hashira::Project.new(directories)
       trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
-      types = Hashira::Smells::Census.new(project, trees).types
-      yield(Hashira::Smells::Report.new(types, Hashira::Boundaries.new([], trees), rules))
+      yield(Hashira::Smells::Census.new(project, trees).report(Hashira::Boundaries.new([], trees), rules))
     end
   end
 

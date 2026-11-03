@@ -25,10 +25,11 @@ class Hashira::Smells::BoundarySprawl
     end
   end
 
-  def initialize(subjects, interpreted, rules)
+  def initialize(subjects, interpreted, rules, reaches)
     @subjects = subjects
     @interpreted = interpreted
     @rules = rules
+    @reaches = reaches
   end
 
   def findings
@@ -39,7 +40,7 @@ class Hashira::Smells::BoundarySprawl
 
   def reaches
     @subjects.each_with_object({}) do |subject, map|
-      Hashira::Smells::Foreign.new(subject, subject.ownership).reaches.each { (map[it] ||= []) << subject }
+      @reaches.of(subject).each { (map[it] ||= []) << subject }
     end
   end
 

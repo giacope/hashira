@@ -19,9 +19,12 @@ class Hashira::Smells::Exports
   private
 
   def hop(path, owner)
-    size, home = path.size.downto(1).lazy.map { [it, @ownership.place(path.first(it), owner)] }.find(&:last)
-    source = table[home]
-    source ? source + path.drop(size) : path
+    copied = homes(path, owner).filter_map { |size, (home)| table.fetch(home) + path.drop(size) if table.key?(home) }
+    copied.fetch(0, path)
+  end
+
+  def homes(path, owner)
+    path.size.downto(1).lazy.map { [it, @ownership.place(path.first(it), owner)] }.select { it.last.any? }.first(1)
   end
 
   def table

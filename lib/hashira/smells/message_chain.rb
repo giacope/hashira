@@ -38,11 +38,11 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
 
   def smelly? = chains.any?
 
-  def ownership = subject.ownership
-
-  def repertoire = @_repertoire ||= ownership.repertoire
-
-  def values = @_values ||= ownership.values
+  def initialize(subject, rules, words, names)
+    super(subject, rules)
+    @words = words
+    @names = names
+  end
 
   def chains
     @_chains ||=
@@ -56,11 +56,11 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     hop = call.receiver
     return false unless hop.is_a?(Prism::CallNode) && !inward?(hop.receiver) && !hop.block
     far = type(hop)
-    far.any? && answers?(far.first, call.name) && !values.include?(far.first)
+    far.any? && answers?(far.first, call.name) && !@words.value?(far.first)
   end
 
   def answers?(type, message)
-    !MESSAGES.universal?(message) && repertoire.of([type]).include?(message.to_s.delete_suffix("="))
+    !MESSAGES.universal?(message) && @words.of([type]).include?(message.to_s.delete_suffix("="))
   end
 
   def type(node)
@@ -83,7 +83,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
 
   def named(name)
     types = Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first)
-    types.lazy.select { ownership.owned?([it], subject.owner) }.first(1)
+    types.lazy.select { @names.place([it], subject.owner).any? }.first(1)
   end
 
   def path(node)

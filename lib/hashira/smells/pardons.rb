@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Smells::Pardons
-  def initialize(subject, reach, sampling, readers = Hashira::Smells::Readers.new(subject))
+  def initialize(subject, reach, sampling, readers)
     @subject = subject
     @reach = reach
     @sampling = sampling
