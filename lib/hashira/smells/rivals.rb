@@ -7,9 +7,9 @@ class Hashira::Smells::Rivals
 
   PLACES = [Prism::IfNode, Prism::UnlessNode, Prism::OrNode, Prism::ArrayNode, Prism::HashNode].freeze
 
-  def initialize(types, lineage)
+  def initialize(types, typeset)
     @types = types
-    @lineage = lineage
+    @typeset = typeset
   end
 
   def of(name) = links.fetch(name, Set.new)
@@ -25,14 +25,14 @@ class Hashira::Smells::Rivals
   end
 
   def meetings
-    seats = Hashira::Smells::Seats.new(@types, @lineage)
+    seats = Hashira::Smells::Seats.new(@types, @typeset)
     sites + doubles + subsets + seats.slots + seats.wraps
   end
 
   def sites
     @types.flat_map do |type|
       places = type.accept(Hashira::Smells::Scope).sweep.select { PLACES.include?(it.class) }
-      places.map { |place| outcomes(place).filter_map { built(type, it) } }
+      places.map { |place| outcomes(place).flat_map { built(type, it) } }
     end
   end
 
@@ -51,7 +51,7 @@ class Hashira::Smells::Rivals
 
   def built(type, node)
     held = node.is_a?(Prism::CallNode) && node.name == :new ? node.receiver : node
-    @lineage.resolve(type.to_s, Hashira::Analysis::Syntax.new(held).segments)
+    @typeset.resolve(type.to_s, Hashira::Analysis::Syntax.new(held).segments)
   end
 
   def doubles

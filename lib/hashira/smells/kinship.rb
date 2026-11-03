@@ -3,13 +3,18 @@
 require "prism"
 
 class Hashira::Smells::Kinship
+  BUILTINS = Hashira::Runtime::Builtins.new
+
+  private_constant :BUILTINS
+
   def initialize(
-    types, lineage, builtins = Hashira::Runtime::Builtins.new, rivals = Hashira::Smells::Rivals.new(types, lineage)
+    types, typeset, links = Hashira::Smells::Links.new(typeset, Hashira::Smells::Bodies.new),
+    rivals = Hashira::Smells::Rivals.new(types, typeset)
   )
     @types = types
-    @lineage = lineage
+    @typeset = typeset
+    @links = links
     @rivals = rivals
-    @builtins = builtins
   end
 
   def protocol(type)
@@ -27,7 +32,7 @@ class Hashira::Smells::Kinship
   end
 
   def letters
-    @_letters ||= @types.flat_map { @lineage.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
+    @_letters ||= @types.flat_map { @links.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
   end
 
   def kindred(name)
@@ -37,7 +42,7 @@ class Hashira::Smells::Kinship
 
   def index = @_index ||= @types.group_by(&:to_s)
 
-  def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @lineage.pointed(it) }.compact.uniq }
+  def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @links.pointed(it) }.uniq }
 
   def descent
     @_descent ||=
@@ -57,31 +62,34 @@ class Hashira::Smells::Kinship
 
   def peers(name)
     @_broods ||=
-      index.keys.group_by { brood(it) }.except(nil).transform_values { |names| names.flat_map { words(it).to_a }.tally }
+      index.keys.group_by { brood(it) }.except([]).transform_values { |names| names.flat_map { words(it).to_a }.tally }
     @_broods.fetch(brood(name), {}).select { |_, count| count > 1 }.keys.to_set
   end
 
   def brood(name)
     heading = index.fetch(name).map { it.accept(Hashira::Smells::Heading) }.find { !it.written.empty? }
-    @lineage.resolve(name, heading.parent) || heading.written if heading
+    heading ? [@typeset.resolve(name, heading.parent).fetch(0, heading.written)] : []
   end
 
   def words(name) = said[name] ||= defined(name)
 
   def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
 
-  def foreign?(name) = index.fetch(name).any? { @lineage.pointed(it).include?(nil) }
+  def foreign?(name) = index.fetch(name).any? { @links.abroad(it).any? }
 
   def heritage(name)
-    parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @lineage.abroad(it) }
-    parents.reduce(Set.new) { |all, parent| all | @builtins.heritage(parent) }
+    parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @links.abroad(it) }
+    parents.reduce(Set.new) { |all, parent| all | BUILTINS.heritage(parent) }
   end
 
   def said = @_said ||= {}
 
   def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { named(it) }.to_set
 
-  def named(type) = @lineage.definitions(type).map(&:name) + declared(@lineage.sweep(type))
+  def named(type)
+    swept = type.accept(Hashira::Smells::Scope).sweep
+    swept.grep(Prism::DefNode).reject(&:receiver).map(&:name) + declared(swept)
+  end
 
   def declared(swept)
     attributes = Hashira::Smells::Attributes.new(swept)
@@ -89,5 +97,5 @@ class Hashira::Smells::Kinship
     attributes.readers.map(&:to_sym) + attributes.writers + forwards.names.to_a
   end
 
-  def carried(type) = [type, *@lineage.mixins(type).flat_map { index.fetch(it) }]
+  def carried(type) = [type, *@links.mixins(type).flat_map { index.fetch(it) }]
 end

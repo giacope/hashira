@@ -13,15 +13,15 @@ class Hashira::Smells::Seats
 
   BUILD = :new
 
-  def initialize(types, lineage)
+  def initialize(types, typeset)
     @types = types
-    @lineage = lineage
+    @typeset = typeset
   end
 
   def slots
     filled =
       @types.flat_map do |type|
-        calls(type).flat_map { filling(it) }.filter_map { |slot, value| place(type, value)&.then { [slot, it] } }
+        calls(type).flat_map { filling(it) }.flat_map { |slot, value| place(type, value).map { [slot, it] } }
       end
     filled.group_by(&:first).values.map { it.map(&:last) }
   end
@@ -39,7 +39,7 @@ class Hashira::Smells::Seats
 
   def calls(type) = type.accept(Hashira::Smells::Scope).sweep.grep(Prism::CallNode)
 
-  def place(type, node) = @lineage.resolve(type.to_s, Hashira::Analysis::Syntax.new(node).segments)
+  def place(type, node) = @typeset.resolve(type.to_s, Hashira::Analysis::Syntax.new(node).segments)
 
   def filling(call)
     given = Array(call.arguments&.arguments)
@@ -56,7 +56,7 @@ class Hashira::Smells::Seats
   end
 
   def wrappers(type, call)
-    return [place(type, call.receiver) || decorators].flatten if call.name == BUILD
+    return place(type, call.receiver).then { it.empty? ? decorators : it } if call.name == BUILD
     folds?(call) ? decorators : []
   end
 
@@ -67,12 +67,14 @@ class Hashira::Smells::Seats
   def sole(call) = call.arguments&.arguments&.one? ? call.arguments.arguments : []
 
   def decorator?(type)
-    found = @lineage.definitions(type)
+    found = definitions(type)
     start = found.find { it.name == :initialize } or return false
     held = held(start)
     sent = found.flat_map { Hashira::Smells::Scope.new(it).inside.grep(Prism::CallNode) }.select { aimed?(it, held) }
     found.map(&:name).intersect?(sent.map(&:name))
   end
+
+  def definitions(type) = type.accept(Hashira::Smells::Scope).sweep.grep(Prism::DefNode).reject(&:receiver)
 
   def held(start)
     given = Hashira::Smells::Parameters.new(start).names.then { it.one? ? it : [] }.map(&:to_s)

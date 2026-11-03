@@ -9,9 +9,9 @@ class Hashira::Smells::Plantings
 
   TAP = :tap
 
-  def initialize(types, lineage)
+  def initialize(types, typeset)
     @types = types
-    @lineage = lineage
+    @typeset = typeset
   end
 
   def of(name) = (@_found ||= found).fetch(name, [])
@@ -19,7 +19,7 @@ class Hashira::Smells::Plantings
   private
 
   def found
-    planted = @types.flat_map { |type| @lineage.sweep(type).grep(Prism::DefNode).flat_map { planted(type, it) } }
+    planted = @types.flat_map { |type| type.accept(Hashira::Smells::Scope).sweep.grep(Prism::DefNode).flat_map { planted(type, it) } }
     planted.group_by(&:first).transform_values { |pairs| pairs.map(&:last).uniq }
   end
 
@@ -71,7 +71,7 @@ class Hashira::Smells::Plantings
   end
 
   def known(type, maker)
-    candidates = @lineage.candidates(type.to_s, Hashira::Analysis::Syntax.new(maker).segments)
-    candidates.lazy.select { @lineage.known?(it) }.first(1)
+    candidates = @typeset.candidates(type.to_s, Hashira::Analysis::Syntax.new(maker).segments)
+    candidates.lazy.select { @typeset.known?(it) }.first(1)
   end
 end

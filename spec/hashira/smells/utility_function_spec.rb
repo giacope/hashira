@@ -414,6 +414,30 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     )
   end
 
+  it "pairs a class with the decorator it hands itself to, not with every decorator" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def call(datum) = @stack.call(datum)
+        end
+
+        class Shell
+          def initialize(inner) = @inner = inner
+          def call(datum) = @inner.call(datum)
+          def tag(datum) = datum.to_s
+        end
+
+        class Probe
+          def initialize(layers) = @layers = layers
+          def wrapped = Layer.new(self)
+          def tag(datum) = datum.to_s
+        end
+      end
+    RUBY
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Shell#tag App::Probe#tag]))
+  end
+
   it "reads a fold seeded with self that builds what it folds, in its block or its receiver, as a decorator chain" do
     findings = utility(<<~RUBY)
       module App

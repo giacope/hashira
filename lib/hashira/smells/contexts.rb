@@ -174,19 +174,21 @@ module Hashira
         @heirs = heirs
       end
 
-      def known? = !@assigned.nil?
+      def known? = @assigned.any?
 
-      def assumed(reads) = (reads - @assigned).uniq.sort.reject { cache?(it) || computed?(it) }
+      def assumed(reads) = (reads - fields).uniq.sort.reject { cache?(it) || computed?(it) }
 
       def installed(names) = names & @heirs
 
-      def assigned?(name) = (@assigned || yield).include?(name)
+      def assigned?(name, &) = @assigned.fetch(0, &).include?(name)
 
       private
 
+      def fields = @assigned.fetch(0, [])
+
       def cache?(name) = name.start_with?("@_")
 
-      def computed?(name) = @assigned.grep(String).any? { name.start_with?(it) }
+      def computed?(name) = fields.grep(String).any? { name.start_with?(it) }
     end
 
     class Sketch
