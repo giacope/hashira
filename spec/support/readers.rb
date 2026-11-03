@@ -92,4 +92,7 @@ module Fixtures
       value.is_a?(Prism::InstanceVariableReadNode) ? [value.name] : []
     end
   end
+
+  # The survey of hashira's own lib, parsed once for the whole suite.
+  LIBRARY = Readers.new
 end

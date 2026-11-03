@@ -3,7 +3,7 @@
 require "prism"
 
 RSpec.describe(Hashira::Smells::TypeContext, :aggregate_failures) do
-  let(:survey) { Fixtures::Readers.new }
+  let(:survey) { Fixtures::LIBRARY }
 
   let(:type) do
     Prism.parse(<<~RUBY).value.statements.body.first
