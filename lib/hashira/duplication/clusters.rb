@@ -13,7 +13,8 @@ class Hashira::Duplication::Clusters
 
   def sorted
     sized = sets.clusters.flat_map { admitted(it) }
-    Hashira::Duplication::Maximal.new(sized.reject { relay?(it) }, BASE_MASS).reduced.reject { inverse?(it) }.sort_by { -it.mass }
+    kept = sized.reject { relay?(it) || Hashira::Duplication::Protocol.new(it).protocol? }
+    Hashira::Duplication::Maximal.new(kept, BASE_MASS).reduced.reject { inverse?(it) }.sort_by { -it.mass }
   end
 
   private

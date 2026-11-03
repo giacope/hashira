@@ -430,6 +430,65 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
     expect([external, renamed, longer].map { clusters("c.rb" => it).first.count }).to(eq([2, 2, 2]))
   end
 
+  def attribute(name, held, fetch)
+    "class #{name}\n def initialize(#{held})\n  @#{held} = #{held}\n  @cache = {}\n end\n\n " \
+      "def fetch(scope, _lineage, object, _key)#{fetch}\n\n def view(fetched) = fetched\n\n " \
+      "def cascade(_type) = self\nend\n"
+  end
+
+  def implementations(named, computed = named.sub("answer(@name", "evaluated(@block"), held = "block")
+    { "n.rb" => attribute("Named", "name", named), "c.rb" => attribute("Computed", held, computed) }
+  end
+
+  def siblings(...) = clusters(implementations(...))
+
+  it "leaves alone sibling classes whose one-line methods answer the same messages, each its own way" do
+    expect([" = scope.answer(@name, object)", "\n  scope.answer(@name, object)\n end"].map { siblings(it) })
+      .to(all(be_empty))
+  end
+
+  it "still reports sibling classes that copy one another, share a method that computes, or differ only in data" do
+    named = " = scope.answer(@name, object)"
+    copied = siblings(named, named, "name")
+    computing = clusters(implementations(named).transform_values { it.sub("= fetched\n", "= fetched.strip\n") })
+    data = siblings(" = scope.answer(@name, :plain)", " = scope.answer(@name, :keyed)", "name")
+    expect([copied, computing, data].map { it.map { statements(it.canonical).to_a.size } }).to(eq([[4], [4], [4]]))
+  end
+
+  it "still reports two of three sibling classes that copy one another" do
+    sources = implementations(" = scope.answer(@name, object)")
+    expect(clusters(sources.merge("d.rb" => sources.fetch("n.rb").sub("Named", "Titled"))).map(&:count)).to(eq([3]))
+  end
+
+  def answering(name, extra = "")
+    "class #{name}\n def fetch(scope, object) = scope.answer(@name, object, cache: @cache.dup, at: clock.now.utc, " \
+      "by: user.name.strip, tag: tags.first.to_s, via: http.client(:get, path.join(\"x\")), size: limits.max.to_i, " \
+      "#{extra}strict: true)\nend\n"
+  end
+
+  it "still reports sibling classes whose one-line methods differ in shape" do
+    sources = { "n.rb" => answering("Named"), "c.rb" => answering("Computed", "retries: 3, ") }
+    expect(clusters(sources).map(&:count)).to(eq([2]))
+  end
+
+  it "still reports sibling classes that copy one another's methods that only answer values" do
+    table = " = [object, @name, :fetch, 1, 2.0, nil, true]"
+    expect(siblings(table, table, "name").map { statements(it.canonical).to_a.size }).to(eq([4]))
+  end
+
+  it "still reports sibling classes whose methods go by different names, or whose constructor does more than store" do
+    sources = implementations(" = scope.answer(@name, object)")
+    renamed = clusters(sources.merge("c.rb" => sources.fetch("c.rb").sub("cascade", "spread")))
+    frozen = clusters(sources.transform_values { it.sub(/(@\w+ = \w+)\n/, "\\1.freeze\n") })
+    expect([renamed, frozen].map { it.map { statements(it.canonical).to_a.size } }).to(eq([[4], [4]]))
+  end
+
+  it "still reports sibling classes whose shared methods do more than one line" do
+    defaulted = siblings("\n  value = scope.answer(@name, object)\n  value.nil? ? scope.default(object) : value\n end")
+    spread = siblings(*%w[answer(@name evaluated(@block].map { "\n  scope.#{it.sub("(", "(\n ")}, object\n )\n end" })
+    expect([defaulted, spread].map { it.map { statements(it.canonical).to_a.size } }).to(eq([[4], [4]]))
+  end
+
   def job(name, id)
     "def #{name}\n transaction do\n  order = load(:order, #{id})\n  order.check(:stock, limit: 5, warn: true)\n  " \
       "order.save(:order, status: \"ok\", at: clock.now)\n end\nend\n"

@@ -699,6 +699,13 @@ What is not counted:
   boost(message) }`). A test block (`test "..." do`, `it`, `specify`) counts
   as such a method, its name included in what may differ. What the block holds
   is still compared on its own, so copies inside it are a clone.
+- **Protocols.** Sibling classes that answer the same messages with one-line
+  methods, each its own way, are two implementations of one protocol: every
+  method sends a message its twin does not, or computes nothing (`def
+  fetch(scope) = scope.answer(@name)` beside `def fetch(scope) =
+  scope.evaluated(@block)`, both with `def view(value) = value`). Identical
+  copies, a shared method that computes, copies that differ only in data,
+  and methods that hold more are still compared.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
 - **Abstract hooks.** A method whose body only raises (`raise

@@ -714,6 +714,17 @@ From the third field test (thirty MIT-licensed codebases):
     slot, and `Rows#body`, which fills that role, was told to move. A bare
     `new` in a class's own choice (`key ? KeyedRows.new(key) : new`) builds
     that class. A default whose slot nothing else fills is still reported.
+  - `duplication` leaves alone sibling classes that answer the same messages
+    with one-line methods, each its own way: alba's `BlockAttribute` and
+    `MethodAttribute` (`fetch` as `scope.evaluated(@block, object)` beside
+    `scope.answer(@name, object)`, both `view(fetched) = fetched` and
+    `cascade(_type) = self`) are two implementations of one protocol, and
+    "extract a method taking the receiver" would merge them back into one
+    behind a switch. Each method must send a message its twin does not, or
+    compute nothing. Identical classes, a shared method that computes
+    (`Time.zone.now.iso8601` in two presenters), copies that differ only in
+    data (ruby-openai's resource paths), and methods that hold more than a
+    one-line statement are still clones.
 - Found by the sixth field test's sixth batch (service-manual-publisher,
   state_machines, rubycritic, sshkit, acts-as-taggable-on):
   - `repeated_call` reads a call to any reader the class, a parent or a mixin
