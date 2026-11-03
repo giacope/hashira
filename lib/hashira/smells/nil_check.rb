@@ -100,7 +100,7 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def raising?(check) = raises.any?(asserted(check).flat_map { Array(it.statements&.body) })
 
-  def raises = subject.home.accept(Hashira::Smells::Raises)
+  def raises = @_raises ||= subject.home.accept(Hashira::Smells::Raises)
 
   def asserted(check) = body.select { asserts?(it, check) }
 
@@ -114,15 +114,13 @@ class Hashira::Smells::NilCheck < Hashira::Smells::Check
 
   def name = subject.accept(Hashira::Smells::Signature).name
 
-  def guard?(check) = guarded?(check, subject.home.accept(Hashira::Smells::Validations)) && !reporting?(check)
+  def guard?(check) = guarded?(check) && !reporting?(check)
 
-  def guarded?(check, validations)
-    validations.validator?(name) && tested(check).all? { required?(it, validations) }
-  end
+  def validations = @_validations ||= subject.home.accept(Hashira::Smells::Validations)
 
-  def required?(node, validations)
-    node.is_a?(Prism::CallNode) && node.variable_call? && validations.required?(node.name)
-  end
+  def guarded?(check) = validations.validator?(name) && tested(check).all? { required?(it) }
+
+  def required?(node) = node.is_a?(Prism::CallNode) && node.variable_call? && validations.required?(node.name)
 
   def reporting?(check) = steering(check).any? { |branch| Hashira::Smells::Scope.new(branch).inside.any? { adds?(it) } }
 

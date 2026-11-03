@@ -82,7 +82,7 @@ class Hashira::Smells::Foreign
 
   def derived?(local) = sources(local).any? { spawned?(it) }
 
-  def sources(local) = writes(local.to_sym).map(&:value) + local.yielders(body.grep(Prism::CallNode))
+  def sources(local) = writes(local.to_sym).map(&:value) + local.yielders(body)
 
   def known(local)
     tested = evidence(local)

@@ -19,7 +19,7 @@ class Hashira::Smells::Refs
 
     def beside?(other) = @scope.is_a?(Prism::BlockNode) && @scope.equal?(other.scope)
 
-    def yielders(calls) = bound? ? calls.select { it.block.equal?(@scope) } : []
+    def yielders(nodes) = bound? ? nodes.grep(Prism::CallNode).select { it.block.equal?(@scope) } : []
 
     protected
 

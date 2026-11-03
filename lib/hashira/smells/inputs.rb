@@ -22,7 +22,7 @@ class Hashira::Smells::Inputs
 
   private
 
-  def parameters = @subject.accept(Hashira::Smells::Parameters)
+  def parameters = @_parameters ||= @subject.accept(Hashira::Smells::Parameters)
 
   def defaulted = @_defaulted ||= strict? ? parameters.nils : []
 end

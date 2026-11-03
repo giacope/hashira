@@ -33,7 +33,7 @@ class Hashira::Smells::ControlParameter < Hashira::Smells::Check
     lines.empty? || !picks.picked?(name) ? [] : [[name, lines]]
   end
 
-  def picks = subject.accept(Hashira::Smells::Picks, @callers.of(subject))
+  def picks = @_picks ||= subject.accept(Hashira::Smells::Picks, @callers.of(subject))
 
   def spots(name)
     subject.accept(Hashira::Smells::ParamCheck, name).matches.map { it.location.start_line }

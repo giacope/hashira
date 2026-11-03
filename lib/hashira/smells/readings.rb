@@ -26,7 +26,7 @@ class Hashira::Smells::Readings
   end
 
   def of(bag)
-    @methods.select { bag.outside?(it.home.to_s) }.flat_map { |method| readings(method, bag) }
+    @methods.select { bag.outside?(owner(it)) }.flat_map { |method| readings(method, bag) }
   end
 
   private
@@ -39,10 +39,15 @@ class Hashira::Smells::Readings
     end
   end
 
+  def owner(method) = (@_owners ||= {}.compare_by_identity)[method] ||= method.home.to_s
+
   def held(method)
-    calls = method.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode)
-    copied = copies(calls)
-    calls.select { plain_read?(it) && copied.none?(it) }.group_by { holder(it.receiver) }.except(nil)
+    known = @_held ||= {}.compare_by_identity
+    known.fetch(method) do
+      calls = method.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode)
+      copied = copies(calls)
+      known[method] = calls.select { plain_read?(it) && copied.none?(it) }.group_by { holder(it.receiver) }.except(nil)
+    end
   end
 
   def copies(calls) = calls.select { it.name == :new }.flat_map { Array(it.arguments&.arguments) }
@@ -57,6 +62,6 @@ class Hashira::Smells::Readings
   end
 
   def typed(holder, method)
-    Hashira::Smells::Naming.new(holder).types.flat_map { @names.place(it, method.home.to_s) }.first(1)
+    Hashira::Smells::Naming.new(holder).types.flat_map { @names.place(it, owner(method)) }.first(1)
   end
 end

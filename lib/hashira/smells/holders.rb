@@ -11,12 +11,8 @@ class Hashira::Smells::Holders
   end
 
   def of(receiver)
-    case receiver
-    when Prism::InstanceVariableReadNode then field(receiver.name)
-    when Prism::LocalVariableReadNode then sole(kinds(receiver.name))
-    when Prism::CallNode then built(receiver)
-    else []
-    end
+    held = @_held ||= {}.compare_by_identity
+    held.fetch(receiver) { held[receiver] = holding(receiver) }
   end
 
   def sprung(call) = of(call.receiver).select { @ties.null?(it, call.name) }.map { "#{it}##{call.name}" }
@@ -26,6 +22,15 @@ class Hashira::Smells::Holders
   def origin(node) = Hashira::Smells::Origin.new(node).of(@subject, @ties)
 
   private
+
+  def holding(receiver)
+    case receiver
+    when Prism::InstanceVariableReadNode then field(receiver.name)
+    when Prism::LocalVariableReadNode then sole(kinds(receiver.name))
+    when Prism::CallNode then built(receiver)
+    else []
+    end
+  end
 
   def owner = @subject.home.to_s
 
