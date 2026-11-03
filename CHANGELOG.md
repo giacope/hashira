@@ -725,6 +725,16 @@ From the third field test (thirty MIT-licensed codebases):
     (`Time.zone.now.iso8601` in two presenters), copies that differ only in
     data (ruby-openai's resource paths), and methods that hold more than a
     one-line statement are still clones.
+  - `duplication` takes a facade's delegations as calls into an abstraction
+    the project already has: blueprinter's `include_view`/`include_views`
+    beside `exclude`/`excludes`, each one call to a different method of the
+    current view, were told to keep each name calling one shared method that
+    takes the receiver, which only dispatch by message name could do.
+    mechanize's accessors handing each message on to `@agent`, and its
+    agent's handing the same ones on to `@http`, are the same case. Copies
+    that call the same method of the same object (a rename), the same
+    method of different classes (`Charge.sync` beside `Subscription.sync`),
+    a method outside the project, or do more than the call are still clones.
 - Found by the sixth field test's sixth batch (service-manual-publisher,
   state_machines, rubycritic, sshkit, acts-as-taggable-on):
   - `repeated_call` reads a call to any reader the class, a parent or a mixin
