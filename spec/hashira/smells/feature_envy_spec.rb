@@ -291,6 +291,22 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
+  it "stays quiet about the same three reads once every key is a literal" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def pick(row)
+              @seen = true
+              row.fetch("id") && row.fetch("kind") && row.fetch("name")
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "still flags hash-like access once a key is computed or the name is reassigned" do
     findings = envy(<<~RUBY)
       module App
@@ -731,6 +747,22 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     findings = sniffed(parcels.merge("lib/app/zone/thing.rb" => thing), "feature_envy")
     expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#muffle App::Zone::Thing#bundle]))
     expect(findings.last.evidence).to(eq(["order (lines 25, 26, 27, 28, 29)", "self (line 24)"]))
+  end
+
+  it "counts neither an operator nor what every object answers, even where the codebase defines them" do
+    thing = <<~RUBY
+      module App
+        module Zone
+          class Thing
+            def show(order)
+              @seen = true
+              order.to_s && (order + order) && order[:id] && order.to_s
+            end
+          end
+        end
+      end
+    RUBY
+    expect(sniffed(parcels.merge("lib/app/zone/thing.rb" => thing), "feature_envy")).to(be_empty)
   end
 
   def relation(parent = "", extra = "")
