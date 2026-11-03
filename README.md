@@ -858,7 +858,10 @@ Findings (3):
   holds as its values, built or as a table of classes to pick from,
   `FORMATS = { plain: Plain, json: Json }`; a class attribute's default and
   the classes assigned to it, `class_attribute :debouncer, default: Debouncer`
-  beside `Host.debouncer = ImmediateDebouncer`; a class that hands itself to
+  beside `Host.debouncer = ImmediateDebouncer`; a memoized default and the
+  classes later assigned to its instance variable, `@_rows ||= Rows.new`
+  beside `@_rows = KeyedRows.new(key)`; the classes one choice builds, a bare
+  `new` there building the class it sits in (`key ? Wide.new : new`); a class that hands itself to
   a decorator, `Layer.new(self)`, or seeds a chain of them,
   `layers.inject(self) { |stack, layer| layer.new(stack) }`, and the
   decorators that forward what they define to the object they wrap) is

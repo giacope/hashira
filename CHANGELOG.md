@@ -708,6 +708,12 @@ From the third field test (thirty MIT-licensed codebases):
     `Hash.new`, `Hash.new(nil)`, a block that answers nothing or a value that
     can be nil (`memo[key] = rows.find { … }`), and a hash the class also sets
     without a default can still answer nil and are still reported.
+  - `utility_function` pairs a memoized default with the classes later
+    assigned to the same instance variable: `@_rows ||= Rows.new` beside
+    `@_rows = KeyedRows.new(key)` makes `Rows` and `KeyedRows` rivals for one
+    slot, and `Rows#body`, which fills that role, was told to move. A bare
+    `new` in a class's own choice (`key ? KeyedRows.new(key) : new`) builds
+    that class. A default whose slot nothing else fills is still reported.
 - Found by the sixth field test's sixth batch (service-manual-publisher,
   state_machines, rubycritic, sshkit, acts-as-taggable-on):
   - `repeated_call` reads a call to any reader the class, a parent or a mixin

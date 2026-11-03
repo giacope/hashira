@@ -13,6 +13,8 @@ class Hashira::Smells::Seats
 
   BUILD = :new
 
+  KEPT = [Prism::InstanceVariableWriteNode, Prism::InstanceVariableOrWriteNode].freeze
+
   def initialize(types, typeset)
     @types = types
     @typeset = typeset
@@ -21,7 +23,8 @@ class Hashira::Smells::Seats
   def slots
     filled =
       @types.flat_map do |type|
-        calls(type).flat_map { filling(it) }.flat_map { |slot, value| place(type, value).map { [slot, it] } }
+        fills = calls(type).flat_map { filling(it) } + kept(type)
+        fills.flat_map { |slot, value| place(type, value).map { [slot, it] } }
       end
     filled.group_by(&:first).values.map { it.map(&:last) }
   end
@@ -49,6 +52,13 @@ class Hashira::Smells::Seats
   end
 
   def slot(call) = call.name.to_s.delete_suffix("=")
+
+  def kept(type)
+    writes = @typeset.sweep(type).select { KEPT.include?(it.class) && made?(it.value) }
+    writes.map { ["#{type}#{it.name}", it.value.receiver] }
+  end
+
+  def made?(value) = value.is_a?(Prism::CallNode) && value.name == BUILD && value.receiver
 
   def defaulted(given)
     pairs = given.grep(Prism::KeywordHashNode).flat_map(&:elements).grep(Prism::AssocNode)

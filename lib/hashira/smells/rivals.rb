@@ -50,8 +50,9 @@ class Hashira::Smells::Rivals
   def entries(node) = node.elements.map { it.is_a?(Prism::AssocNode) ? it.value : it }
 
   def built(type, node)
-    held = node.is_a?(Prism::CallNode) && node.name == :new ? node.receiver : node
-    @typeset.resolve(type.to_s, Hashira::Analysis::Syntax.new(held).segments)
+    made = node.is_a?(Prism::CallNode) && node.name == :new
+    return [type.to_s] if made && [nil, Prism::SelfNode].include?(node.receiver&.class)
+    @typeset.resolve(type.to_s, Hashira::Analysis::Syntax.new(made ? node.receiver : node).segments)
   end
 
   def doubles
