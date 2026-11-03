@@ -45,7 +45,7 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   GIVEN = " (given to the constructor)"
 
-  def initialize(subject, rules, nodes = subject.bulk.sweep, fields = Hashira::Smells::Fields.new(nodes))
+  def initialize(subject, rules, nodes = subject.bulk, fields = Hashira::Smells::Fields.new(nodes))
     super(subject, rules)
     @nodes = nodes
     @fields = fields
@@ -94,7 +94,11 @@ class Hashira::Smells::StateSprawl < Hashira::Smells::Check
 
   def inputs = @_inputs ||= constructors.flat_map { Hashira::Smells::Parameters.new(it).names }
 
-  def stray?(name) = (written(strays) + fields.minted).include?(name) && !written(founders).include?(name)
+  def stray?(name) = strayed.include?(name) && !founded.include?(name)
+
+  def strayed = @_strayed ||= written(strays) + fields.minted
+
+  def founded = @_founded ||= written(founders)
 
   def parked = @_parked ||= names.select { stray?(it) && carried?(it) }
 

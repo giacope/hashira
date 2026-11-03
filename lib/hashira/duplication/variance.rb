@@ -37,7 +37,9 @@ class Hashira::Duplication::Variance
 
   private
 
-  def pairs = @canonical.body.to_a.zip(@other.body.to_a)
+  def pairs = @_pairs ||= bodies.map(&:to_a).reduce(:zip)
+
+  def bodies = @_bodies ||= [@canonical.body, @other.body]
 
   def named = @_named ||= pairs.select { |left, _| spoken?(left) && !inner?(left) && !recurring?(left) }
 
@@ -45,11 +47,11 @@ class Hashira::Duplication::Variance
 
   def worded?(node) = WORD.match?(node.name.to_s)
 
-  def recurring?(node) = @canonical.body.recurs?(node.name) || @other.body.recurs?(node.name)
+  def recurring?(node) = bodies.any? { it.recurs?(node.name) }
 
   def inner?(node) = nested.any? { it.equal?(node) }
 
-  def nested = @_nested ||= @canonical.body.to_a.grep(Prism::ConstantPathNode).filter_map(&:parent)
+  def nested = @_nested ||= bodies.first.to_a.grep(Prism::ConstantPathNode).filter_map(&:parent)
 
   def differing = pairs.reject { |left, right| signature(left) == signature(right) }
 

@@ -5,7 +5,7 @@ require "prism"
 class Hashira::Smells::Hierarchy
   def initialize(
     types, builtins = Hashira::Runtime::Builtins.new, typeset = Hashira::Smells::Typeset.new(types),
-    links = Hashira::Smells::Links.new(typeset, Hashira::Smells::Bodies.new)
+    links = Hashira::Smells::Links.new(typeset)
   )
     @types = types
     @builtins = builtins
@@ -60,13 +60,13 @@ class Hashira::Smells::Hierarchy
   def invocations
     @_invocations ||=
       @types.flat_map do |type|
-        type.accept(Hashira::Smells::Scope).sweep.grep(Prism::CallNode).select(&:receiver).map { [type, it] }
+        @typeset.sweep(type).grep(Prism::CallNode).select(&:receiver).map { [type, it] }
       end
   end
 
   def born(type, call)
     return [type.to_s] unless call.receiver
     candidates = @typeset.candidates(type.to_s, Hashira::Analysis::Syntax.new(call.receiver).segments)
-    candidates.lazy.select { openings.key?(it) }.first(1)
+    Array(candidates.find { openings.key?(it) })
   end
 end

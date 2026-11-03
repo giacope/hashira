@@ -21,13 +21,17 @@ module Hashira
     end
 
     class Bulk
+      include Enumerable
+
       def initialize(openings)
         @openings = openings
       end
 
-      def sweep = @openings.flat_map { it.accept(Scope).sweep }
+      def each(&) = sweep.each(&)
 
-      def statements = @openings.flat_map { it.accept(Hashira::Analysis::Syntax::Body).to_a }.compact
+      def sweep = @_sweep ||= @openings.flat_map { it.accept(Scope).sweep }
+
+      def statements = @_statements ||= @openings.flat_map { it.accept(Hashira::Analysis::Syntax::Body).to_a }.compact
 
       def legible? = sweep.none? { Opaque.new([it]).any? }
 

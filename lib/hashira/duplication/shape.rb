@@ -5,15 +5,14 @@ require "digest"
 class Hashira::Duplication::Shape
   DIGEST_LENGTH = 12
 
-  def initialize(types, counts, muted)
+  def initialize(types, muted)
     @types = types
-    @counts = counts
     @muted = muted
   end
 
   def to_a = @types
 
-  def to_h = @counts
+  def to_h = @types.tally
 
   def mass = @types.size - @muted
 

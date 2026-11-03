@@ -35,7 +35,7 @@ module Hashira
 
       def mass = canonical.shape.mass
 
-      def form = Form.new(@sites.map { it.shape.to_a }.uniq.one?, structural?, @sites.size)
+      def form = Form.new(uniform?, structural?, @sites.size)
 
       private
 
@@ -47,6 +47,8 @@ module Hashira
       def others = @_others ||= @sites.reject { it.equal?(canonical) }
 
       def structural? = (@_structural ||= [variances.all?(&:structural?)]).first
+
+      def uniform? = (@_uniform ||= [@sites.map { it.shape.to_a }.uniq.one?]).first
     end
   end
 end

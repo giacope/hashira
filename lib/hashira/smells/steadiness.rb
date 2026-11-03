@@ -39,8 +39,8 @@ class Hashira::Smells::Steadiness
   def volatile?(node) = beneath(node).any? { matched?(it) }
 
   def matched?(node)
+    return true if MATCHES.include?(node.class)
     case node
-    when *MATCHES then true
     when Prism::GlobalVariableReadNode then MATCHED.include?(node.name)
     else node.is_a?(Prism::CallNode) && node.name == :last_match && node.receiver&.slice == "Regexp"
     end

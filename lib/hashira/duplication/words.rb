@@ -7,17 +7,14 @@ class Hashira::Duplication::Words
 
   SEEDS = (1..20).to_a.freeze
 
-  def initialize(vocabulary, spoken, nodes)
+  def initialize(vocabulary, spoken)
     @vocabulary = vocabulary
     @spoken = spoken
-    @nodes = nodes
   end
 
   def to_a = @vocabulary
 
   def to_h = @spoken
-
-  def identifiers = @nodes.filter_map { it.deconstruct_keys([:name])[:name] }
 
   def bands
     words = @vocabulary.uniq.map(&:to_s)

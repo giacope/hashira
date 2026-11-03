@@ -5,7 +5,7 @@ class Hashira::Smells::Enclosures
     @root = root
   end
 
-  def of(node) = blocks.reverse.lazy.select { Hashira::Smells::Extent.new(it).covers?(node) }.first(1).map { start(it) }
+  def of(node) = Array(blocks.reverse.find { Hashira::Smells::Extent.new(it).covers?(node) }).map { start(it) }
 
   private
 

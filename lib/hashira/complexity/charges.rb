@@ -14,7 +14,11 @@ class Hashira::Complexity::Charges
     @calls = calls
   end
 
-  def +(other) = Hashira::Complexity::Charges.new(@increments + other.increments, @calls + other.calls)
+  def +(other)
+    return other if blank?
+    return self if other.blank?
+    Hashira::Complexity::Charges.new(@increments + other.increments, @calls + other.calls)
+  end
 
   def total = rows.sum { |_label, _line, cost| cost }
 
@@ -34,6 +38,8 @@ class Hashira::Complexity::Charges
   protected
 
   attr_reader :increments, :calls
+
+  def blank? = @increments.empty? && @calls.zero?
 
   private
 

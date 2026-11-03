@@ -27,7 +27,7 @@ class Hashira::Smells::Probing
 
   private
 
-  def builder(kind) = BUILDERS.fetch(Hashira::Smells::Kind.new(kind).to_s)
+  def builder(kind) = (@_builders ||= {})[kind] ||= BUILDERS.fetch(Hashira::Smells::Kind.new(kind).to_s)
 
   def control_parameter(subject, rules) = Hashira::Smells::ControlParameter.new(subject, rules, @callers)
 

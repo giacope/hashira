@@ -20,15 +20,15 @@ class Hashira::Duplication::Fragment
 
   def span = Hashira::Duplication::Span.new(@file, line, finish)
 
-  def shape = Hashira::Duplication::Shape.new(types, counts, muted)
+  def shape = Hashira::Duplication::Shape.new(types, muted)
 
-  def words = Hashira::Duplication::Words.new(vocabulary, spoken, nodes)
+  def words = Hashira::Duplication::Words.new(vocabulary, spoken)
 
   def body = Hashira::Duplication::Body.new(nodes, @setting)
 
   private
 
-  def line = @roots.first.location.start_line
+  def line = @_line ||= @roots.first.location.start_line
 
   def finish = @_finish ||= [@roots.last.location.end_line, *closings].max(1).fetch(0)
 
@@ -39,8 +39,6 @@ class Hashira::Duplication::Fragment
   def nodes = @_nodes ||= @walks.nodes(@roots)
 
   def types = @_types ||= nodes.map(&:type)
-
-  def counts = @_counts ||= types.tally
 
   def muted = @_muted ||= @walks.muted(@roots).uniq.size
 

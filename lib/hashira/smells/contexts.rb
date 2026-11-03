@@ -129,7 +129,7 @@ module Hashira
 
       def to_s = @owner
 
-      def accept(reader, *) = reader.new(@node, *)
+      def accept(reader, ...) = reader.new(@node, ...)
 
       def class? = @sort.class?
 
@@ -159,7 +159,7 @@ module Hashira
 
       def to_s = "#{home}#{standing.singleton? ? "." : "#"}#{@node.name}"
 
-      def accept(reader, *) = reader.new(@node, *)
+      def accept(reader, ...) = reader.new(@node, ...)
 
       def spot = @place.spot(@node)
 
@@ -201,7 +201,7 @@ module Hashira
 
       def to_s = @name
 
-      def accept(reader, *) = reader.new(@node, *)
+      def accept(reader, ...) = reader.new(@node, ...)
 
       def seat = Seat.new(@name, @node, @file, @sort)
 
@@ -243,7 +243,7 @@ module Hashira
 
       def to_s = @frame.to_s
 
-      def accept(reader, *) = reader.new(@node, *)
+      def accept(reader, ...) = reader.new(@node, ...)
 
       def each(&) = routines.each(&)
 

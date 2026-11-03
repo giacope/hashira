@@ -6,8 +6,9 @@ class Hashira::Duplication::Clusters
   PAIR = 2
   PENALTY_PER_RECURRENCE = 2
 
-  def initialize(all)
+  def initialize(all, names = Hash.new { |known, site| known[site] = site.body.identifiers }.compare_by_identity)
     @all = all
+    @names = names
   end
 
   def sorted
@@ -34,9 +35,9 @@ class Hashira::Duplication::Clusters
   end
 
   def admitted(group)
-    whole = Hashira::Duplication::Grouping.new(group).cluster
+    whole = Hashira::Duplication::Grouping.new(group, @names).cluster
     return [whole] if fits?(whole)
-    group.group_by { it.shape.to_a }.values.map { Hashira::Duplication::Grouping.new(it).cluster }.select { fits?(it) }
+    group.group_by { it.shape.to_a }.values.map { Hashira::Duplication::Grouping.new(it, @names).cluster }.select { fits?(it) }
   end
 
   def fits?(cluster)

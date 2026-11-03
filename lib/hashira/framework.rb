@@ -29,5 +29,7 @@ class Hashira::Framework
     found.select { File.file?(it) }.first(1).map { Hashira::Trees::Source.new(it).tree }
   end
 
-  def application? = @directories.any? { |directory| CONFIGURED.any? { File.exist?(File.expand_path(it, directory)) } }
+  def application? = (@_application ||= [configured?]).first
+
+  def configured? = @directories.any? { |directory| CONFIGURED.any? { File.exist?(File.expand_path(it, directory)) } }
 end

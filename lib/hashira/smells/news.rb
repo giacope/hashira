@@ -11,14 +11,15 @@ class Hashira::Smells::News
     @node = type
   end
 
-  def each(&) = made(@node, nil).each(&)
+  def each(&) = made(@node, nil, &)
 
   private
 
-  def made(node, factory)
-    node.compact_child_nodes.reject { FENCES.include?(it.class) }.flat_map do |child|
-      built = child.is_a?(Prism::CallNode) && child.name == :new ? [[child, factory]] : []
-      built + made(child, child.is_a?(Prism::DefNode) ? child.name : factory)
+  def made(node, factory, &)
+    node.compact_child_nodes.each do |child|
+      next if FENCES.include?(child.class)
+      yield([child, factory]) if child.is_a?(Prism::CallNode) && child.name == :new
+      made(child, child.is_a?(Prism::DefNode) ? child.name : factory, &)
     end
   end
 end

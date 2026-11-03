@@ -31,7 +31,7 @@ class Hashira::Smells::Rivals
 
   def sites
     @types.flat_map do |type|
-      places = type.accept(Hashira::Smells::Scope).sweep.select { PLACES.include?(it.class) }
+      places = @typeset.sweep(type).select { PLACES.include?(it.class) }
       places.map { |place| outcomes(place).flat_map { built(type, it) } }
     end
   end

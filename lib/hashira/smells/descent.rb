@@ -11,5 +11,5 @@ class Hashira::Smells::Descent
 
   private
 
-  def first = @openings.lazy.map { it.accept(Hashira::Smells::Heading) }.reject { it.written.empty? }.first(1)
+  def first = Array(@openings.map { it.accept(Hashira::Smells::Heading) }.find { !it.written.empty? })
 end

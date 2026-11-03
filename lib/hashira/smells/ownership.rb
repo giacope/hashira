@@ -22,7 +22,7 @@ class Hashira::Smells::Ownership
   private
 
   def among(known, segments, owner, rooted)
-    (rooted ? [segments.join("::")] : lexical(segments, owner)).lazy.select { known.include?(it) }.first(1)
+    Array((rooted ? [segments.join("::")] : lexical(segments, owner)).find { known.include?(it) })
   end
 
   def defined

@@ -5,6 +5,10 @@ require "prism"
 class Hashira::Complexity::BooleanRun
   CONNECTIVES = [Prism::AndNode, Prism::OrNode].freeze
 
+  NOTHING = Hashira::Complexity::Charges.none
+
+  private_constant :NOTHING
+
   def initialize(walk)
     @walk = walk
   end
@@ -12,7 +16,7 @@ class Hashira::Complexity::BooleanRun
   def apply(node)
     operators, leaves = joined(node)
     runs = operators.chunk_while { |left, right| left == right }.count
-    Hashira::Complexity::Charges.mark(node, runs, "boolean") + leaves.sum(Hashira::Complexity::Charges.none) { @walk.visit(it) }
+    Hashira::Complexity::Charges.mark(node, runs, "boolean") + leaves.sum(NOTHING) { @walk.visit(it) }
   end
 
   private

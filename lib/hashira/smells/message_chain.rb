@@ -83,7 +83,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
 
   def named(name)
     types = Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first)
-    types.lazy.select { @names.place([it], subject.home.to_s).any? }.first(1)
+    Array(types.find { @names.place([it], subject.home.to_s).any? })
   end
 
   def path(node)

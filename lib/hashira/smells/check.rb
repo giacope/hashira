@@ -28,7 +28,7 @@ class Hashira::Smells::Check
 
   attr_reader :subject
 
-  def kind = Hashira::Smells::Kind.new(self.class).to_s
+  def kind = @_kind ||= Hashira::Smells::Kind.new(self.class).to_s
 
   def threshold(default) = @rules.limit(kind, "threshold", default)
 

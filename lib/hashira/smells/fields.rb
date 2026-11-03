@@ -8,6 +8,10 @@ class Hashira::Smells::Fields
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
+  NONE = [].freeze
+
+  private_constant :NONE
+
   def initialize(nodes)
     @nodes = nodes
   end
@@ -23,7 +27,7 @@ class Hashira::Smells::Fields
   private
 
   def setter(node)
-    return [] unless node.is_a?(Prism::CallNode) && node.attribute_write? && node.receiver.is_a?(Prism::SelfNode)
+    return NONE unless node.is_a?(Prism::CallNode) && node.attribute_write? && node.receiver.is_a?(Prism::SelfNode)
     [:"@#{node.name.to_s.delete_suffix("=")}"] & minted
   end
 end

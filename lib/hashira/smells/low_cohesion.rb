@@ -50,7 +50,7 @@ class Hashira::Smells::LowCohesion < Hashira::Smells::Lineal
   end
 
   def self.build(subject, rules, family)
-    sweep = subject.bulk.sweep
+    sweep = subject.bulk
     new(subject, rules, family, Hashira::Smells::Forwards.new(sweep, Hashira::Smells::Bonds.new(sweep), STOCK))
   end
 

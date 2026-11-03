@@ -533,12 +533,14 @@ RSpec.describe(Hashira::Duplication::Clusters, :aggregate_failures) do
 
   def head = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
 
+  def named(fragments) = fragments.to_h { [it, it.body.identifiers] }.compare_by_identity
+
   describe(Hashira::Duplication::Grouping) do
     it "breaks a tie between overlapping fragments in favour of the one another site shares names with" do
       body = ->(first, last) { "def m\n #{first}.go(1)\n mid.run\n #{last}.go(2)\nend\n" }
       all = fragments("a.rb" => body["alpha", "beta"], "b.rb" => body["gamma", "beta"])
       group = %w[a.rb:2-3 a.rb:3-4 b.rb:3-4].map { |range| all.find { it.span.range == range } }
-      sites = [group, group.reverse].map { site_ranges(described_class.new(it).cluster).sort }
+      sites = [group, group.reverse].map { site_ranges(described_class.new(it, named(all)).cluster).sort }
       expect(sites).to(eq([%w[a.rb:3-4 b.rb:3-4]] * 2))
     end
   end

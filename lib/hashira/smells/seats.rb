@@ -37,7 +37,7 @@ class Hashira::Smells::Seats
 
   private
 
-  def calls(type) = type.accept(Hashira::Smells::Scope).sweep.grep(Prism::CallNode)
+  def calls(type) = @typeset.sweep(type).grep(Prism::CallNode)
 
   def place(type, node) = @typeset.resolve(type.to_s, Hashira::Analysis::Syntax.new(node).segments)
 
@@ -74,7 +74,7 @@ class Hashira::Smells::Seats
     found.map(&:name).intersect?(sent.map(&:name))
   end
 
-  def definitions(type) = type.accept(Hashira::Smells::Scope).sweep.grep(Prism::DefNode).reject(&:receiver)
+  def definitions(type) = @typeset.sweep(type).grep(Prism::DefNode).reject(&:receiver)
 
   def held(start)
     given = Hashira::Smells::Parameters.new(start).names.then { it.one? ? it : [] }.map(&:to_s)

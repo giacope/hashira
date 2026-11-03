@@ -8,7 +8,7 @@ class Hashira::Smells::Kinship
   private_constant :BUILTINS
 
   def initialize(
-    types, typeset, links = Hashira::Smells::Links.new(typeset, Hashira::Smells::Bodies.new),
+    types, typeset, links = Hashira::Smells::Links.new(typeset),
     rivals = Hashira::Smells::Rivals.new(types, typeset)
   )
     @types = types
@@ -87,7 +87,7 @@ class Hashira::Smells::Kinship
   def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { named(it) }.to_set
 
   def named(type)
-    swept = type.accept(Hashira::Smells::Scope).sweep
+    swept = @typeset.sweep(type)
     swept.grep(Prism::DefNode).reject(&:receiver).map(&:name) + declared(swept)
   end
 

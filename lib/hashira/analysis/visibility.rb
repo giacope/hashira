@@ -17,10 +17,16 @@ class Hashira::Analysis::Visibility
     end
 
     def scan(nodes, section)
-      nodes.reject { apart?(it) }.reduce([[], {}, section]) do |(found, overrides, current), node|
-        more, also, after = classify(node, current)
-        [found + more, overrides.merge(also), after]
+      found = []
+      overrides = {}
+      current = section
+      nodes.each do |node|
+        next if apart?(node)
+        more, also, current = classify(node, current)
+        found.concat(more)
+        overrides.merge!(also)
       end
+      [found, overrides, current]
     end
 
     private

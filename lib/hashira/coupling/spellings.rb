@@ -23,7 +23,7 @@ class Hashira::Coupling::Spellings
 
   def read = @_read ||= nodes.grep(Prism::ConstantReadNode).to_set { it.name.to_s }
 
-  def nodes = @trees.values.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
+  def nodes = @_nodes ||= @trees.values.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
 
   def roots(node)
     return [] unless Hashira::Analysis::Syntax::Call.new(node).macro?(REQUIRE)

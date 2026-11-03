@@ -19,6 +19,8 @@ class Hashira::Duplication::Body
 
   def recurs?(name) = @setting.recurs?(name)
 
+  def identifiers = @nodes.filter_map { it.deconstruct_keys([:name])[:name] }
+
   def schema? = @nodes.all? { pardoned.include?(it) || directive?(it) }
 
   private

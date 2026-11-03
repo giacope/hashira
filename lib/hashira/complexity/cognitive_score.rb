@@ -14,13 +14,17 @@ class Hashira::Complexity::CognitiveScore
   LABELS = { Prism::WhileNode => "while", Prism::UntilNode => "until" }
     .merge(Prism::ForNode => "for", Prism::CaseNode => "case", Prism::CaseMatchNode => "case").freeze
 
+  NOTHING = Hashira::Complexity::Charges.none
+
+  private_constant :NOTHING
+
   class Walk
     def initialize(nesting = 0)
       @nesting = nesting
     end
 
     def visit(node)
-      node ? __send__(HANDLERS.fetch(node.class, :descend), node) : Hashira::Complexity::Charges.none
+      node ? __send__(HANDLERS.fetch(node.class, :descend), node) : NOTHING
     end
 
     def charge(node, label) = Hashira::Complexity::Charges.mark(node, 1 + @nesting, label)
@@ -29,11 +33,11 @@ class Hashira::Complexity::CognitiveScore
 
     private
 
-    def descend(node) = node.compact_child_nodes.sum(Hashira::Complexity::Charges.none) { visit(it) }
+    def descend(node) = node.compact_child_nodes.sum(NOTHING) { visit(it) }
 
     def inside(node)
       walk = deeper
-      node.compact_child_nodes.sum(Hashira::Complexity::Charges.none) { walk.visit(it) }
+      node.compact_child_nodes.sum(NOTHING) { walk.visit(it) }
     end
 
     def on_call(node) = Hashira::Complexity::Charges.call + descend(node)
