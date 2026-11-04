@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Trees, :aggregate_failures) do
+  def parsed = described_class.new(Hashira::Project.new(["lib/app"]).listing)
+
   it "lists the files Prism could not parse, even when asked before any tree" do
     within("lib/app/good.rb" => "class Good; end\n", "lib/app/bad.rb" => "class Bad\n") do
-      expect(described_class.new(Hashira::Project.new(["lib/app"])).unparsed).to(eq(["lib/app/bad.rb"]))
+      expect(described_class.new(Hashira::Project.new(["lib/app"]).listing).unparsed).to(eq(["lib/app/bad.rb"]))
     end
   end
 
@@ -11,13 +13,13 @@ RSpec.describe(Hashira::Trees, :aggregate_failures) do
     within("lib/app/good.rb" => "class Good; end\n") do
       Dir.mkdir("lib/app/odd.rb")
       failure = "cannot read lib/app/odd.rb (Is a directory - lib/app/odd.rb)"
-      expect { described_class.new(Hashira::Project.new(["lib/app"])).all }.to(raise_error(Hashira::Error, failure))
+      expect { parsed.all }.to(raise_error(Hashira::Error, failure))
     end
   end
 
   def read(source)
     within("lib/app/file.rb" => source) do
-      trees = described_class.new(Hashira::Project.new(["lib/app"]))
+      trees = described_class.new(Hashira::Project.new(["lib/app"]).listing)
       word = trees.all.fetch("lib/app/file.rb").statements.body.first.value.unescaped
       return [trees.lines("lib/app/file.rb"), word, trees.unparsed]
     end

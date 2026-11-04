@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 require "prism"
+require_relative "comparisons"
 
 class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
   PROTOCOL = :respond_to_missing?
 
-  COMPARISONS = %i[<=> == eql? === equal? coerce].freeze
+  COMPARISONS = Hashira::Smells::Comparisons.new
 
   PROXY = :method_missing
 
@@ -15,23 +16,46 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   STATUSED = "a status switch"
 
-  private
+  class Dispatch
+    DUCK = "Trust the duck type, or split the callers into two adapters."
 
-  def smelly? = ![PROTOCOL, *COMPARISONS].include?(subject.node.name) && (probes.any? || switches.any?)
+    SWITCH = "Move each branch onto the type or state it tests, and let polymorphism pick."
 
-  def probes = @_probes ||= proxy? ? [] : sightings.map { probe(it) }.reject(&:excused?)
+    def initialize(site, via)
+      @site = site
+      @via = via
+    end
 
-  def proxy? = subject.node.name == PROXY && subject.neighbors.include?(PROTOCOL)
+    def to_h = { site: @site, via: @via }
 
-  def sightings
-    Hashira::Smells::Scope.new(subject.node).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
+    def phrase(package)
+      "#{package} dispatches manually via #{@via.join(" and ")} (#{@site}). #{@via == [PROBE] ? DUCK : SWITCH}"
+    end
   end
 
-  def probe(call) = Hashira::Smells::Probe.new(call, subject, foreign)
+  private
 
-  def foreign = @_foreign ||= Hashira::Smells::Foreign.new(subject, subject.ownership)
+  def initialize(subject, rules, probing, switchboard)
+    super(subject, rules)
+    @probing = probing
+    @switchboard = switchboard
+  end
 
-  def switchboard = @_switchboard ||= Hashira::Smells::Switches.new(subject.node, subject.ownership, subject.owner)
+  def smelly? = !protocol?(name) && (probes.any? || switches.any?)
+
+  def protocol?(name) = name == PROTOCOL || COMPARISONS.include?(name)
+
+  def probes = @_probes ||= proxy? ? [] : @probing.of(sightings).reject(&:excused?)
+
+  def proxy? = name == PROXY && subject.home.neighbors.include?(PROTOCOL)
+
+  def name = subject.accept(Hashira::Smells::Signature).name
+
+  def sightings
+    subject.accept(Hashira::Smells::Scope).inside.select { it.is_a?(Prism::CallNode) && it.name == :respond_to? }
+  end
+
+  attr_reader :switchboard
 
   def switches = switchboard.typed + switchboard.statuses
 
@@ -39,11 +63,9 @@ class Hashira::Smells::ManualDispatch < Hashira::Smells::Check
 
   def lines = (probes.map(&:line) + switches.flat_map(&:lines)).uniq.sort
 
-  def detail = { site: "#{subject.file}:#{lines.join(", ")}", via: }
+  def detail = Dispatch.new(subject.spot.at(lines), via)
 
-  def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(switched(it), it.lines) }
+  def evidence = probes.map { tally(it.shown, [it.line]) } + switches.map { tally(it.to_s, it.lines) }
 
-  def switched(switch) = "#{switch.subject}: #{switch.labels.join(", ")}"
-
-  def rating = probes.any? && switches.none? && probes.all?(&:trusted?) ? { confidence: :high } : {}
+  def ratings = probes.any? && switches.none? && probes.all?(&:trusted?) ? [:high] : []
 end

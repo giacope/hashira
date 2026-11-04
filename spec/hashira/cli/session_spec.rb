@@ -87,7 +87,8 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     help = [
       "Usage: hashira", "Options:\n  --format FORMAT      text (default), json, dot, or mermaid\n",
       "  --compact            emit JSON on one line, without the indentation\n                       " \
-        "meant for reading\n"
+        "meant for reading\n",
+      "  -h, --help           print this help\n  --version            print the version\n"
     ]
     expect(ran(["--help"])).to(match([0, include(*help)]))
     expect(ran(["--version"])).to(eq([0, "hashira #{Hashira::VERSION}\n"]))
@@ -317,7 +318,7 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
     }
     said = "hashira: analysed 1 files in lib/app; skipped 1 in project templates and 1 vendored and 1 generated " \
       "(pass the directory, or --only a file, to analyse them)"
-    within(files) { expect_warning(["lib/app"], said) }
+    within(files) { [["lib/app"], %w[lib/app --json]].each { expect_warning(it, said) } }
   end
 
   it "says how many files sit in no declared layer, and in which folders" do

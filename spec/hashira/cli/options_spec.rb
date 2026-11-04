@@ -1,32 +1,34 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
+  def parsed(argv) = described_class.parse(argv).to_h
+
   describe ".parse" do
     it "defaults to text mode with the default baseline" do
-      options = described_class.parse(%w[lib])
-      expect(options.directories).to(eq(%w[lib]))
-      expect(options.mode).to(eq(:text))
-      expect(options.baseline).to(eq("hashira_baseline.json"))
-      expect(options.fail_on).to(eq([]))
+      options = parsed(%w[lib])
+      expect(options.fetch(:directories)).to(eq(%w[lib]))
+      expect(options.fetch(:mode)).to(eq(:text))
+      expect(options.fetch(:baseline)).to(eq("hashira_baseline.json"))
+      expect(options.fetch(:fail_on)).to(eq([]))
     end
 
     it "keeps multiple directories in order" do
-      expect(described_class.parse(%w[app lib]).directories).to(eq(%w[app lib]))
+      expect(parsed(%w[app lib]).fetch(:directories)).to(eq(%w[app lib]))
     end
 
     it "parses --update-baseline and --ratchet with a custom --baseline" do
-      options = described_class.parse(%w[lib --update-baseline --baseline custom.json])
-      expect(options.mode).to(eq(:update))
-      expect(options.baseline).to(eq("custom.json"))
-      expect(described_class.parse(%w[lib --ratchet]).mode).to(eq(:ratchet))
+      options = parsed(%w[lib --update-baseline --baseline custom.json])
+      expect(options.fetch(:mode)).to(eq(:update))
+      expect(options.fetch(:baseline)).to(eq("custom.json"))
+      expect(parsed(%w[lib --ratchet]).fetch(:mode)).to(eq(:ratchet))
     end
 
     it "parses --json and --format" do
-      expect(described_class.parse(%w[--json]).mode).to(eq(:json))
-      expect(described_class.parse(%w[--format json]).mode).to(eq(:json))
-      expect(described_class.parse(%w[--format dot]).mode).to(eq(:dot))
-      expect(described_class.parse(%w[--format mermaid]).mode).to(eq(:mermaid))
-      expect(described_class.parse(%w[--format text]).mode).to(eq(:text))
+      expect(parsed(%w[--json]).fetch(:mode)).to(eq(:json))
+      expect(parsed(%w[--format json]).fetch(:mode)).to(eq(:json))
+      expect(parsed(%w[--format dot]).fetch(:mode)).to(eq(:dot))
+      expect(parsed(%w[--format mermaid]).fetch(:mode)).to(eq(:mermaid))
+      expect(parsed(%w[--format text]).fetch(:mode)).to(eq(:text))
     end
 
     it "rejects an unknown format" do
@@ -35,33 +37,33 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     end
 
     it "maps --fail-on names to finding kinds, deduplicated" do
-      options = described_class.parse(%w[lib --fail-on cycles,sdp,cycle])
-      expect(options.mode).to(eq(:fail_on))
-      expect(options.fail_on).to(eq(%w[cycle unstable_dependency]))
+      options = parsed(%w[lib --fail-on cycles,sdp,cycle])
+      expect(options.fetch(:mode)).to(eq(:fail_on))
+      expect(options.fetch(:fail_on)).to(eq(%w[cycle unstable_dependency]))
     end
 
     it "reads --fail-on all as every kind the run checks, whatever else the list names" do
-      expect(described_class.parse(%w[lib --fail-on all]).fail_on).to(eq(%w[all]))
-      expect(described_class.parse(%w[lib --fail-on cycles,all]).fail_on).to(eq(%w[all]))
-      expect(described_class.parse(%w[lib --fail-on all --skip coupling --kind smells]).mode).to(eq(:fail_on))
+      expect(parsed(%w[lib --fail-on all]).fetch(:fail_on)).to(eq(%w[all]))
+      expect(parsed(%w[lib --fail-on cycles,all]).fetch(:fail_on)).to(eq(%w[all]))
+      expect(parsed(%w[lib --fail-on all --skip coupling --kind smells]).fetch(:mode)).to(eq(:fail_on))
       expect { described_class.parse(%w[lib --kind all]) }.to(raise_error(Hashira::Error, /unknown --kind "all"/))
     end
 
     it "accepts every friendly --fail-on alias" do
-      options = described_class.parse(%w[--fail-on cycle,unstable_dependency,sdp_violation])
-      expect(options.fail_on).to(eq(%w[cycle unstable_dependency]))
+      options = parsed(%w[--fail-on cycle,unstable_dependency,sdp_violation])
+      expect(options.fetch(:fail_on)).to(eq(%w[cycle unstable_dependency]))
     end
 
     it "rejects an unknown --fail-on kind, listing the valid ones" do
-      expected = "unknown --fail-on \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")}, all)"
+      expected = "unknown --fail-on \"typos\" (use: #{Hashira::Checks.new.names.keys.join(", ")}, all)"
       expect { described_class.parse(%w[--fail-on typos]) }.to(raise_error(Hashira::Error, expected))
     end
 
     it "parses --package-by, defaulting to auto-detection" do
-      expect(described_class.parse(%w[lib]).packaging).to(eq(:auto))
-      expect(described_class.parse(%w[lib --package-by auto]).packaging).to(eq(:auto))
-      expect(described_class.parse(%w[lib --package-by namespace]).packaging).to(eq(:namespace))
-      expect(described_class.parse(%w[lib --package-by folder]).packaging).to(eq(:folder))
+      expect(parsed(%w[lib]).fetch(:packaging)).to(eq(:auto))
+      expect(parsed(%w[lib --package-by auto]).fetch(:packaging)).to(eq(:auto))
+      expect(parsed(%w[lib --package-by namespace]).fetch(:packaging)).to(eq(:namespace))
+      expect(parsed(%w[lib --package-by folder]).fetch(:packaging)).to(eq(:folder))
     end
 
     it "rejects an unknown --package-by grouping" do
@@ -85,7 +87,7 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
         .to(raise_error(Hashira::Error, "--fail-on cycle needs the coupling analyzer, but --skip drops it"))
       expect { described_class.parse(%w[lib --fail-on feature_envy --skip smells]) }
         .to(raise_error(Hashira::Error, "--fail-on feature_envy needs the smells analyzer, but --skip drops it"))
-      expect(described_class.parse(%w[lib --fail-on cycles --skip complexity]).fail_on).to(eq(%w[cycle]))
+      expect(parsed(%w[lib --fail-on cycles --skip complexity]).fetch(:fail_on)).to(eq(%w[cycle]))
     end
 
     it "names a repeated value flag instead of calling it unknown" do
@@ -96,11 +98,11 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     it "refuses to draw a diagram whose analyzer is skipped" do
       expect { described_class.parse(%w[lib --format dot --skip coupling]) }
         .to(raise_error(Hashira::Error, "--format dot draws the coupling graph, but --skip coupling drops it"))
-      expect(described_class.parse(%w[lib --format dot --skip smells]).mode).to(eq(:dot))
+      expect(parsed(%w[lib --format dot --skip smells]).fetch(:mode)).to(eq(:dot))
     end
 
     it "refuses --compact for output that is not JSON" do
-      expect(described_class.parse(%w[lib --json --compact]).compact).to(be_truthy)
+      expect(parsed(%w[lib --json --compact]).fetch(:compact)).to(be_truthy)
       expect { described_class.parse(%w[lib --compact]) }
         .to(raise_error(Hashira::Error, "--compact shapes JSON, but this run emits text"))
       expect { described_class.parse(%w[lib --format dot --compact]) }
@@ -122,7 +124,7 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     end
 
     it "tolerates redundant format flags" do
-      expect(described_class.parse(%w[--json --format json]).mode).to(eq(:json))
+      expect(parsed(%w[--json --format json]).fetch(:mode)).to(eq(:json))
     end
 
     it "treats a missing list as nothing to gate or skip" do
@@ -131,19 +133,19 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     end
 
     it "expands --fail-on smells into every smell kind" do
-      parsed = described_class.parse(%w[lib --fail-on cycles,smells])
-      expect(parsed.fail_on).to(include("cycle", "feature_envy", "nil_check", "utility_function"))
-      expect(described_class.parse(%w[lib --fail-on feature_envy]).fail_on).to(eq(%w[feature_envy]))
+      given = parsed(%w[lib --fail-on cycles,smells])
+      expect(given.fetch(:fail_on)).to(include("cycle", "feature_envy", "nil_check", "utility_function"))
+      expect(parsed(%w[lib --fail-on feature_envy]).fetch(:fail_on)).to(eq(%w[feature_envy]))
     end
 
     it "defaults --skip to nothing and parses a comma-separated list" do
-      expect(described_class.parse(%w[lib]).skip).to(eq([]))
-      expect(described_class.parse(%w[lib --skip complexity]).skip).to(eq([:complexity]))
+      expect(parsed(%w[lib]).fetch(:skip)).to(eq([]))
+      expect(parsed(%w[lib --skip complexity]).fetch(:skip)).to(eq([:complexity]))
     end
 
     it "leaves --top unset so each table keeps its own default" do
-      expect(described_class.parse(%w[lib]).top).to(be_nil)
-      expect(described_class.parse(%w[lib --top 40]).top).to(eq(40))
+      expect(parsed(%w[lib]).fetch(:top)).to(be_nil)
+      expect(parsed(%w[lib --top 40]).fetch(:top)).to(eq(40))
     end
 
     it "rejects a --top that is not a positive whole number" do
@@ -160,9 +162,9 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
 
     it "defaults --only to nothing and reads a comma-separated list of files" do
       within("lib/app/x.rb" => "class X; def a = 1; end\n") do
-        expect(described_class.parse(%w[lib/app]).only).to(eq([]))
+        expect(parsed(%w[lib/app]).fetch(:only)).to(eq([]))
         lists = ["lib/app/x.rb", "./lib/app/x.rb, lib/app/x.rb", "#{Dir.pwd}/lib/app/x.rb"]
-        expect(lists.map { described_class.parse(["lib/app", "--only", it]).only })
+        expect(lists.map { parsed(["lib/app", "--only", it]).fetch(:only) })
           .to(eq([%w[lib/app/x.rb], %w[lib/app/x.rb lib/app/x.rb], %w[lib/app/x.rb]]))
       end
     end
@@ -174,9 +176,9 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
 
     it "expands an --only directory to every Ruby file under it" do
       within("lib/app/b/y.rb" => "", "lib/app/a/x.rb" => "", "lib/app/a/notes.md" => "", "top.rb" => "") do
-        expect(described_class.parse(%w[lib --only lib/app/,lib/app/b/y.rb]).only)
+        expect(parsed(%w[lib --only lib/app/,lib/app/b/y.rb]).fetch(:only))
           .to(eq(%w[lib/app/a/x.rb lib/app/b/y.rb lib/app/b/y.rb]))
-        expect(described_class.parse(%w[lib --only .]).only).to(eq(%w[lib/app/a/x.rb lib/app/b/y.rb top.rb]))
+        expect(parsed(%w[lib --only .]).fetch(:only)).to(eq(%w[lib/app/a/x.rb lib/app/b/y.rb top.rb]))
       end
     end
 
@@ -193,20 +195,20 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
           .to(raise_error(Hashira::Error, "--only narrows the findings, but --update-baseline records them all"))
         expect { described_class.parse(%w[lib/app --only lib/app/x.rb --format mermaid]) }
           .to(raise_error(Hashira::Error, "--format mermaid draws the coupling graph, which --only cannot narrow"))
-        expect(described_class.parse(%w[lib/app --only lib/app/x.rb --ratchet]).mode).to(eq(:ratchet))
+        expect(parsed(%w[lib/app --only lib/app/x.rb --ratchet]).fetch(:mode)).to(eq(:ratchet))
       end
     end
 
     it "reads --kind with the --fail-on vocabulary, defaulting to every kind" do
-      expect(described_class.parse(%w[lib]).kinds).to(eq([]))
-      expect(described_class.parse(%w[lib --kind cycles,dupe]).kinds).to(eq(%w[cycle duplication]))
-      expect(described_class.parse(%w[lib --kind smells]).kinds).to(eq(Hashira::Pipeline::SMELLS))
-      expect(described_class.parse(%w[lib --kind cycles --ratchet]).mode).to(eq(:ratchet))
-      expect(described_class.parse(%w[lib --kind cycles,sdp --fail-on sdp]).fail_on).to(eq(%w[unstable_dependency]))
+      expect(parsed(%w[lib]).fetch(:kinds)).to(eq([]))
+      expect(parsed(%w[lib --kind cycles,dupe]).fetch(:kinds)).to(eq(%w[cycle duplication]))
+      expect(parsed(%w[lib --kind smells]).fetch(:kinds)).to(eq(Fixtures::SMELLS))
+      expect(parsed(%w[lib --kind cycles --ratchet]).fetch(:mode)).to(eq(:ratchet))
+      expect(parsed(%w[lib --kind cycles,sdp --fail-on sdp]).fetch(:fail_on)).to(eq(%w[unstable_dependency]))
     end
 
     it "rejects an unknown --kind, listing the valid ones" do
-      expected = "unknown --kind \"typos\" (use: #{Hashira::CLI::FailOn::KINDS.keys.join(", ")})"
+      expected = "unknown --kind \"typos\" (use: #{Hashira::Checks.new.names.keys.join(", ")})"
       expect { described_class.parse(%w[--kind typos]) }.to(raise_error(Hashira::Error, expected))
       expect { described_class.parse(["lib", "--kind", ","]) }
         .to(raise_error(Hashira::Error, "--kind needs at least one kind"))
@@ -282,7 +284,7 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
 
     it "reads declared layers, outermost first, with paths from the project's root" do
       configured("layers:\n  - web: app/controllers\n  - domain\n") do
-        layers = described_class.parse([]).project.layers
+        layers = parsed([]).fetch(:layers)
         expect(
           [
             layers.names, layers.rank("app/controllers/a.rb", "x"),
@@ -292,13 +294,14 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
       end
     end
 
-    def strict(*argv) = described_class.parse(argv).project.rules.then { [it.strict?, it.enabled?("stateful_mixin")] }
+    def strict(*argv) = parsed(argv).fetch(:rules).then { [it.strict?, it.enabled?("stateful_mixin")] }
 
     it "turns the strict set on with strict: true or --strict, and leaves it off under checks: all" do
       files = ["strict: true\n", "checks: all\n", "checks: all\nstrict: false\n"]
       found = files.map { |yaml| configured(yaml) { strict } } + [configured("checks: all\n") { strict("--strict") }]
       on = [true, true]
-      expect(found + [strict, strict("--strict")]).to(eq([on, [false, false], [false, false], on, [false, false], on]))
+      bare = within({}) { [strict, strict("--strict")] }
+      expect(found + bare).to(eq([on, [false, false], [false, false], on, [false, false], on]))
     end
 
     it "reads another file with --config, and none with --no-config" do
@@ -352,7 +355,7 @@ RSpec.describe(Hashira::CLI::Options, :aggregate_failures) do
     end
 
     it "prints help even when the file is broken" do
-      configured("skipp: x\n") { expect(described_class.parse(%w[--help]).mode).to(eq(:help)) }
+      configured("skipp: x\n") { expect(parsed(%w[--help]).fetch(:mode)).to(eq(:help)) }
     end
   end
 end

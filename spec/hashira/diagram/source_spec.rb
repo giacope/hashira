@@ -53,7 +53,7 @@ RSpec.describe(Hashira::Diagram::Source, :aggregate_failures) do
       "lib/app/my_pkg/b.rb" => "module App; class B; def b = 1; end; end\n",
       "lib/app/end/c.rb" => "module App; class C; def c = 1; end; end\n"
     }
-    ids, packages = analyze(files) { |_project, _census, graph| [mermaid_ids(graph), graph.packages] }
+    ids, packages = analyze(files) { |_project, _census, graph| [mermaid_ids(graph), graph.packages.to_a] }
     expect([ids, ids.size]).to(eq([ids.uniq, packages.size]))
   end
 end

@@ -8,21 +8,26 @@ class Hashira::Smells::Fields
     Prism::InstanceVariableOperatorWriteNode, Prism::InstanceVariableTargetNode
   ].freeze
 
+  NONE = [].freeze
+
+  private_constant :NONE
+
   def initialize(nodes)
     @nodes = nodes
   end
 
   def minted
-    @_minted ||= Hashira::Smells::Attributes.new(@nodes).declared(Hashira::Smells::Attributes::WRITERS).map { :"@#{it}" }
+    @_minted ||= Hashira::Smells::Attributes.new(@nodes).writers.map { :"@#{it.to_s.delete_suffix("=")}" }
   end
 
-  def of(node) = WRITES.include?(node.class) ? node.name : setter(node)
+  def of(node) = WRITES.include?(node.class) ? [node.name] : setter(node)
+
+  def named(kinds) = @nodes.select { kinds.include?(it.class) }.map(&:name)
 
   private
 
   def setter(node)
-    return unless node.is_a?(Prism::CallNode) && node.attribute_write? && node.receiver.is_a?(Prism::SelfNode)
-    field = :"@#{node.name.to_s.delete_suffix("=")}"
-    field if minted.include?(field)
+    return NONE unless node.is_a?(Prism::CallNode) && node.attribute_write? && node.receiver.is_a?(Prism::SelfNode)
+    [:"@#{node.name.to_s.delete_suffix("=")}"] & minted
   end
 end

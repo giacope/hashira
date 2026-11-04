@@ -1,14 +1,18 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Suppression
-    Directive =
-      Data.define(:file, :line, :target, :kinds, :reason) do
-        def site = "#{file}:#{line}"
-
-        def covers?(kind, anchor) = kinds.include?(kind) && anchor == "#{file}:#{target}"
-
-        def to_h = { "site" => site, "kinds" => kinds, "reason" => reason }
-      end
+class Hashira::Suppression::Directive
+  def initialize(site, anchor, kinds, reason)
+    @site = site
+    @anchor = anchor
+    @kinds = kinds
+    @reason = reason
   end
+
+  def covers?(kind, anchor) = @kinds.include?(kind) && anchor == @anchor
+
+  def said = "#{@reason} (#{@site})"
+
+  def to_s = "#{@kinds.join(",")} at #{@site}"
+
+  def to_h = { "site" => @site, "kinds" => @kinds, "reason" => @reason }
 end

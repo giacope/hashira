@@ -6,15 +6,17 @@ class Hashira::CI::EdgeChanges
     @io = io
   end
 
-  def print(diff)
-    diff.added.each { emit(it) }
-    Hashira::CI::Improvement.new("Edges removed", io: @io).print(diff.removed)
+  def print(diff) = diff.told(self)
+
+  def list(added, _worsened, removed)
+    added.each { emit(it) }
+    Hashira::CI::Improvement.new("Edges removed", io: @io).print(removed)
   end
 
   private
 
   def emit(edge)
     @io.puts("NEW EDGE #{edge} — introduced by:")
-    @graph.evidence(edge.from, edge.to).to_a.sort.each { @io.puts("  · #{it}") }
+    edge.evidence.sort.each { @io.puts("  · #{it}") }
   end
 end

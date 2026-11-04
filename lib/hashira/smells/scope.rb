@@ -7,28 +7,27 @@ class Hashira::Smells::Scope
 
   FENCES = (TYPES + [Prism::DefNode]).freeze
 
+  CLOSURES = [Prism::BlockNode, Prism::LambdaNode].freeze
+
+  private_constant :TYPES, :FENCES, :CLOSURES
+
   def initialize(node)
     @node = node
   end
 
-  def inside = below(FENCES)
+  def inside(*fences) = below(FENCES + fences)
 
   def sweep = below(TYPES)
 
-  def covers?(node) = stretch.cover?(Hashira::Smells::Scope.new(node).stretch)
+  def bare = below(FENCES + CLOSURES)
 
-  def stretch
-    spot = @node.location
-    spot.start_offset..spot.end_offset
-  end
+  private
 
   def below(fences)
     found = []
     visit(@node, fences) { found << it }
     found
   end
-
-  private
 
   def visit(root, fences, &)
     root.compact_child_nodes.each do |child|

@@ -4,8 +4,8 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
   def traced(source, rules = Fixtures::NONE)
     within("lib/app/walk.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
-      parsed = Hashira::Trees.new(project)
-      return Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed).findings.select { it.kind == "indirection" }
+      parsed = Hashira::Trees.new(project.listing)
+      return Hashira::Complexity::Scores.new(project.paths, parsed.all, rules, parsed).findings.select { it.to_h[:kind] == "indirection" }
     end
   end
 
@@ -30,13 +30,13 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
     RUBY
   end
 
-  def chain(source) = traced(source).first.detail.chain
+  def chain(source) = traced(source).first.to_h[:detail][:chain]
 
   def first(body) = walk.sub("def first(rows) = second(rows.compact)", "def first(rows)#{body}")
 
   it "counts the hollow helpers on the longest path from an entry, and lets the meaningful ones through for free" do
     finding = traced(walk).first
-    expect([finding.package, finding.detail.to_h, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(["Walk#run", { site: "walk.rb:2", chain: 3 }, ["first (line 6)", "second (line 8)", "tail (line 15)"]])
     )
   end
@@ -59,7 +59,7 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
   end
 
   it "reports a chain once, from its entry, not again from the helpers inside it" do
-    expect(traced(walk).map(&:package)).to(eq(["Walk#run"]))
+    expect(traced(walk).map { it.to_h[:package] }).to(eq(["Walk#run"]))
   end
 
   it "takes a public method for an entry, which ends the chain" do
@@ -73,6 +73,11 @@ RSpec.describe(Hashira::Complexity::Indirection, :aggregate_failures) do
     named = walk("first(rows)", "before_action :second\n")
     received = walk("first(rows)", "def other(walk) = walk.second(1)\n")
     borrowed = "#{walk}class Other\n  include Walk\n  def go = second(1)\nend\n"
-    expect([twice, named, received, borrowed].map { traced(it).map(&:package) }).to(eq([[]] * 4))
+    expect([twice, named, received, borrowed].map { traced(it).map { it.to_h[:package] } }).to(eq([[]] * 4))
+  end
+
+  it "still takes a method for borrowed when the class that calls it only builds it with define_method" do
+    built = "#{walk}class Other\n  define_method(%(second)) { |rows| rows }\n  def go = second(1)\nend\n"
+    expect(traced(built)).to(eq([]))
   end
 end

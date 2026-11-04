@@ -10,7 +10,7 @@ class Hashira::Coupling::References
 
   DECLARATIONS = %i[private_constant public_constant include extend prepend].freeze
 
-  def initialize(roots = nil, associations = Hashira::Coupling::Associations::NONE)
+  def initialize(roots = nil, associations = Hashira::Coupling::Associations.new(nil))
     @roots = roots
     @associations = associations
   end
@@ -30,11 +30,11 @@ class Hashira::Coupling::References
 
   def scopes = @_scopes ||= [[]]
 
-  def nesting = scopes.last
+  def nesting = scopes.fetch(-1)
 
   def collect(node, home = nesting)
     return unless node
-    return collect(node.parent, home) if syntax(node).dynamic?
+    return collect(node.parent, home) if node.is_a?(Prism::ConstantPathNode) && !syntax(node).static?
     return found << sighting(node, home) if constant?(node)
     return enter(node) if definition?(node)
     spread(node, home + claimed(node))
@@ -51,10 +51,8 @@ class Hashira::Coupling::References
   end
 
   def named(target, scope)
-    name, line, guarantee, macro = target.deconstruct
-    segments = name.delete_prefix("::").split("::")
-    (@_guarantees ||= {})["#{line}: #{segments.join("::")}"] = "#{line}: #{guarantee}" if guarantee
-    [segments, line, (nesting unless name.start_with?("::")), scope, macro]
+    target.pledges.each { |line, said| (@_guarantees ||= {})[line] = said }
+    target.sighting(nesting, scope)
   end
 
   def written(node)

@@ -3,41 +3,55 @@
 require "json"
 
 class Hashira::CI::Accepted
-  Screened = Data.define(:all, :accepted)
-
-  Entry =
-    Data.define(:kind, :package, :digest, :reason) do
-      def self.build(hash)
-        new(kind: hash["kind"], package: hash["package"], digest: hash["digest"], reason: hash["reason"])
-      end
-
-      def matches?(finding) = kind == finding.kind && identity == finding.identity
-
-      def identity = digest || package
-
-      def label = reason || "accepted (no reason recorded)"
-
-      def to_h = super.compact
+  class Screened
+    def initialize(kept, waived)
+      @kept = kept
+      @waived = waived
     end
 
-  def self.build(path) = new(Hashira::CI::Baseline.new(path).accepted)
+    def to_a = @kept
 
-  def initialize(list)
-    @list = list
+    def to_h = @waived.to_h
   end
 
-  def entries = records.map(&:to_h)
+  class Entry
+    SIGNATURE = ->(signature, _magnitude, _traces) { signature }
+
+    def self.build(hash) = new(hash["kind"], hash["package"], hash["digest"], hash["reason"])
+
+    def initialize(kind, package, digest, reason)
+      @kind = kind
+      @package = package
+      @digest = digest
+      @reason = reason
+    end
+
+    def matches?(finding) = finding.of?([@kind]) && finding.scored(SIGNATURE) == "#{@kind}:#{@digest || @package}"
+
+    def label = @reason || "accepted (no reason recorded)"
+
+    def to_h = { kind: @kind, package: @package, digest: @digest, reason: @reason }.compact
+  end
+
+  def self.build(path) = Hashira::CI::Baseline.new(path).accepted
+
+  def initialize(list, boundaries = [])
+    @list = list
+    @boundaries = boundaries
+  end
 
   def screen(findings)
-    accepted, live = findings.map { [it, reason(it)] }.partition(&:last)
-    Screened.new(all: live.map(&:first), accepted:)
+    accepted = findings.flat_map { |finding| reasons(finding).map { [finding, it] } }
+    Screened.new(findings - accepted.map(&:first), accepted)
   end
+
+  def boundaries(declared) = @boundaries + declared
+
+  def to_h = { accepted: records.map(&:to_h), boundaries: @boundaries }.reject { |_name, values| values.empty? }
 
   private
 
   def records = @_records ||= @list.map { Entry.build(it) }
 
-  def reason(finding)
-    records.find { it.matches?(finding) }&.label
-  end
+  def reasons(finding) = records.select { it.matches?(finding) }.first(1).map(&:label)
 end

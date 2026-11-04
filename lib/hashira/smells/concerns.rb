@@ -3,7 +3,7 @@
 require "prism"
 
 class Hashira::Smells::Concerns
-  LEVEL = "::#{Hashira::Analysis::TypeWalk::CLASS_LEVEL}".freeze
+  LEVEL = "::ClassMethods"
 
   CONCERN = %w[ActiveSupport Concern].freeze
 
@@ -11,22 +11,17 @@ class Hashira::Smells::Concerns
 
   EXTEND = :extend
 
-  def initialize(sketches)
-    @sketches = sketches
+  def initialize(found)
+    @found = found
   end
 
-  def settled = @sketches.map { loose?(it) ? it.with(handed: false) : it }
+  def loose?(name) = name.end_with?(LEVEL) && !names.include?(name.delete_suffix(LEVEL))
 
   private
 
-  def loose?(sketch)
-    name = sketch.name
-    name.end_with?(LEVEL) && !names.include?(name.delete_suffix(LEVEL))
-  end
+  def names = @_names ||= @found.select { |_name, node| concern?(node) }.to_set(&:first)
 
-  def names = @_names ||= @sketches.select { concern?(it) }.to_set(&:name)
-
-  def concern?(sketch) = Hashira::Analysis::Syntax.new(sketch.node).statements.any? { hands?(it) }
+  def concern?(node) = Hashira::Analysis::Syntax::Body.new(node).to_a.any? { hands?(it) }
 
   def hands?(node)
     case node
@@ -37,7 +32,7 @@ class Hashira::Smells::Concerns
   end
 
   def concerned?(call)
-    return false unless Hashira::Analysis::Syntax.new(call).macro?([EXTEND])
+    return false unless Hashira::Analysis::Syntax::Call.new(call).macro?([EXTEND])
     segments = Hashira::Analysis::Syntax.new(call.arguments.arguments.first).segments
     segments == CONCERN || segments.last == LEVEL.delete_prefix("::")
   end

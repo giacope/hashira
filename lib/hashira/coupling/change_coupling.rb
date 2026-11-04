@@ -15,44 +15,90 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   SWEEP = 4
 
-  Pair =
-    Data.define(:files, :shared, :revisions) do
-      def degree = (200.0 * shared / revisions.sum).round
+  JOINT = " <-> "
 
-      def key = files.join(" <-> ")
+  class Bond
+    ADVICE = {
+      true => "and one refers to the other — every change crosses the package boundary. " \
+        "Narrow what one asks of the other, or move them into one package.",
+      false => "though neither refers to the other — the coupling is hidden. " \
+        "Name what they share in one place both can depend on."
+    }.freeze
+
+    def initialize(sides, shared, degree, explicit)
+      @sides = sides
+      @shared = shared
+      @degree = degree
+      @explicit = explicit
     end
 
-  Detail =
-    Data.define(:files, :packages, :shared, :degree, :explicit) do
-      def key = files.join(" <-> ")
+    def to_h
+      files, packages = @sides.transpose
+      { files:, packages:, shared: @shared, degree: @degree, explicit: @explicit }
     end
+
+    def phrase(_package)
+      first, second = @sides.map { |file, package| "#{file} (#{package})" }
+      "#{first} and #{second} changed together in #{@shared} commits, #{@degree}% of their changes, " \
+        "#{ADVICE.fetch(@explicit)}"
+    end
+  end
+
+  class Pair
+    def initialize(files, shared, revisions)
+      @files = files
+      @shared = shared
+      @revisions = revisions
+    end
+
+    def <=>(other) = rank <=> other.rank
+
+    def joint?(floor) = degree >= floor && yield(@files)
+
+    def finding(kind)
+      sides, explicit, anchors = yield(@files)
+      shown = sides.map(&:first)
+      evidence = shown.zip(@revisions).map { |file, count| "#{file}: #{count} commits" }
+      name = Hashira::Analysis::Finding::Name.new(sides.fetch(0).last, [shown.join(JOINT)])
+      bond = Bond.new(sides, @shared, degree, explicit)
+      Hashira::Analysis::Finding.new(kind, name, bond, Hashira::Analysis::Finding::Proof.new(evidence, anchors))
+    end
+
+    protected
+
+    def rank = [-degree, -@shared, @files.join(JOINT)]
+
+    private
+
+    def degree = (200.0 * @shared / @revisions.sum).round
+  end
 
   def list
-    return [] unless project.history.deep?
-    pairs = together.filter_map { |files, shared| pair(files, shared) }
-    pairs.sort_by { [-it.degree, -it.shared, it.key] }.map { entry(it) }
+    return [] unless @plan.traced(&:deep?)
+    pairs.sort.map { |pair| pair.finding(KIND) { |files| described(files) } }
   end
 
   private
 
-  def pair(files, shared)
-    return if shared < limit("commits", COMMITS)
-    revisions = @_revisions ||= changesets.flatten.tally
-    found = Pair.new(files:, shared:, revisions: files.map { revisions[it] })
-    found if found.degree >= limit("degree", DEGREE) && apart?(files) && !registration?(files)
+  def pairs
+    frequent = together.select { |_files, shared| shared >= limit("commits", COMMITS) }
+    frequent.map { |files, shared| Pair.new(files, shared, files.map { revisions[it] }) }
+      .select { |pair| pair.joint?(limit("degree", DEGREE)) { |files| apart?(files) && !registration?(files) } }
   end
+
+  def revisions = @_revisions ||= changesets.flatten.tally
 
   def registration?(files) = registered?(files) && !explicit?(files.map { sources.fetch(it) })
 
   def registered?(files)
     manifests =
-      @_manifests ||= Hash.new { |found, file| found[file] = Hashira::Coupling::Manifest.new(file, graph.trees.fetch(sources.fetch(file))) }
+      @_manifests ||= Hash.new { |found, file| found[file] = Hashira::Coupling::Manifest.new(file, code.to_h.fetch(sources.fetch(file))) }
     [files, files.reverse].any? { |from, to| manifests[from].names?(to) }
   end
 
   def limit(name, default) = @rules.limit(KIND, name, default)
 
-  def changesets = @_changesets ||= project.history.changesets.map { present(it) }.select { fits?(it) }
+  def changesets = @_changesets ||= @plan.traced(&:changesets).map { present(it) }.select { fits?(it) }
 
   def present(changeset) = changeset.select { sources.key?(it) }
 
@@ -60,7 +106,7 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def widest = @_widest ||= [FLOOR, sources.size / SWEEP].max.clamp(..limit("files", FILES))
 
-  def sources = @_sources ||= graph.trees.keys.to_h { [project.relative(it).b, it] }
+  def sources = @_sources ||= code.to_h.keys.to_h { [paths.relative(it).b, it] }
 
   def together
     changesets.each_with_object(Hash.new(0)) do |changeset, counts|
@@ -72,20 +118,10 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
     files.map { package(it) }.uniq.size == 2
   end
 
-  def package(file) = (@_packages ||= {})[file] ||= graph.home(sources.fetch(file))
+  def package(file) = (@_homes ||= {})[file] ||= code.home(sources.fetch(file))
 
-  def entry(pair)
-    detail = described(pair)
-    evidence = detail.files.zip(pair.revisions).map { |file, count| "#{file}: #{count} commits" }
-    finding(package: detail.packages.first, digest: detail.key, evidence:, detail:, anchors: anchors(pair))
-  end
-
-  def described(pair)
-    files = pair.files
-    Detail.new(
-      files: files.map { shown(it) }, packages: files.map { package(it) }, shared: pair.shared, degree: pair.degree,
-      explicit: explicit?(files.map { sources.fetch(it) })
-    )
+  def described(files)
+    [files.map { [shown(it), package(it)] }, explicit?(files.map { sources.fetch(it) }), anchors(files)]
   end
 
   def shown(file) = file.dup.force_encoding(Encoding::UTF_8)
@@ -94,14 +130,14 @@ class Hashira::Coupling::ChangeCoupling < Hashira::Coupling::Rule
 
   def links
     @_links ||=
-      graph.sightings.each_with_object(Set.new) do |sighting, found|
-        graph.files(sighting.path).each { found << [sighting.file, it] }
+      code.to_a.each_with_object(Set.new) do |sighting, found|
+        sighting.couples(code).each { found << it }
       end
   end
 
-  def anchors(pair)
-    pair.files.map do |file|
-      first = graph.trees.fetch(sources.fetch(file)).statements.body.first
+  def anchors(files)
+    files.map do |file|
+      first = code.to_h.fetch(sources.fetch(file)).statements.body.first
       "#{shown(file)}:#{first ? first.location.start_line : 1}"
     end
   end

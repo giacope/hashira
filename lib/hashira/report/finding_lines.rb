@@ -10,13 +10,18 @@ class Hashira::Report::FindingLines
   end
 
   def print
-    @io.puts("#{@indent}#{@finding.kind}: #{Hashira::Report::Phrases.new(@finding).message}")
-    @finding.evidence.first(SAMPLE).each { @io.puts("#{@indent}    · #{it}") }
+    headline, *evidence = lines
+    @io.puts("#{@indent}#{headline}")
+    evidence.first(SAMPLE).each { @io.puts("#{@indent}    · #{it}") }
   end
 
   def emit
     print
-    overflow = @finding.evidence.size - SAMPLE
+    overflow = lines.size - 1 - SAMPLE
     @io.puts("#{@indent}    · … (#{overflow} more)") if overflow.positive?
   end
+
+  private
+
+  def lines = @_lines ||= @finding.to_a
 end

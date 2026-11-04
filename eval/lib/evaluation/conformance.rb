@@ -7,7 +7,7 @@ class Evaluation::Conformance
 
   DEFINITION = /def (self\.)?([a-z_]\w*[?!]?)/
 
-  def self.build(tool) = new(tool, YAML.safe_load_file(File.join(Evaluation::CASES, "complexity.yml")))
+  def self.build(tool, cases = Evaluation::Home.new.cases("complexity.yml")) = new(tool, YAML.safe_load_file(cases))
 
   def initialize(tool, cases)
     @tool = tool
@@ -29,7 +29,7 @@ class Evaluation::Conformance
     "module Conformance\n  class Case#{index}\n#{@cases[index]["source"].lines.map { "    #{it}" }.join}  end\nend\n"
   end
 
-  def scores(outcome) = outcome.json.dig("complexity", "methods").to_h { [it["subject"], it["cognitive"]] }
+  def scores(outcome) = outcome.probe("complexity.methods").flatten(1).to_h { [it.fetch("subject"), it["cognitive"]] }
 
   def verdicts(item, index, scored)
     expected(item).map do |name, score|
@@ -44,8 +44,8 @@ class Evaluation::Conformance
   end
 
   def defined(source)
-    found = source.match(DEFINITION)
-    found[1] ? ".#{found[2]}" : found[2]
+    singleton, name = source.match(DEFINITION).captures
+    singleton ? ".#{name}" : name
   end
 
   def label(name) = name.start_with?(".") ? name : "##{name}"

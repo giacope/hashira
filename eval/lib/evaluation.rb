@@ -8,14 +8,15 @@ require "tmpdir"
 require "yaml"
 
 module Evaluation
-  ROOT = File.expand_path("..", __dir__)
-
-  CASES = File.join(ROOT, "cases")
 end
 
+require_relative "evaluation/home"
+require_relative "evaluation/shelves"
+require_relative "evaluation/peak"
 require_relative "evaluation/outcome"
 require_relative "evaluation/tool"
 require_relative "evaluation/sandbox"
+require_relative "evaluation/fixture"
 require_relative "evaluation/check"
 require_relative "evaluation/arcs"
 require_relative "evaluation/conformance"
@@ -33,7 +34,11 @@ require_relative "evaluation/draw"
 require_relative "evaluation/precision"
 require_relative "evaluation/run"
 require_relative "evaluation/corpus"
+require_relative "evaluation/no_corpus"
 require_relative "evaluation/board"
+require_relative "evaluation/record"
+require_relative "evaluation/page"
 require_relative "evaluation/comparison"
+require_relative "evaluation/accord"
 require_relative "evaluation/agreement"
 require_relative "evaluation/command"

@@ -4,13 +4,18 @@ require "prism"
 
 module Hashira
   module Duplication
-    Recovery =
-      Data.define(:clause) do
-        def self.of(nodes) = nodes.grep(Prism::RescueNode).map { new(it) }.select(&:reporting?)
+    class Recovery
+      def self.of(nodes) = nodes.grep(Prism::RescueNode).select { new(it).reporting? }
 
-        def reporting? = lone.one? && Sink.new(lone.first, clause.reference&.name).sink?
-
-        def lone = Array(clause.statements&.body)
+      def initialize(clause)
+        @clause = clause
       end
+
+      def reporting? = lone.one? && Sink.new(lone.first, @clause.reference&.name).sink?
+
+      private
+
+      def lone = Array(@clause.statements&.body)
+    end
   end
 end

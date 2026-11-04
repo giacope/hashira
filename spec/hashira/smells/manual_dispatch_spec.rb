@@ -56,7 +56,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[Shop::Runner#run]))
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }).to(eq(%w[Shop::Runner#run]))
   end
 
   it "lets a comparison protocol test what it was handed, and reads a test spread over methods as one switch" do
@@ -82,13 +82,14 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
               def find_again(other) = other.is_a?(Event)
               def last(other) = other.is_a?(Event)
               def target = @target
+              def self.peek = @target.is_a?(Event)
             end
           end
         end
       RUBY
     }
     found = sniffed(files, "manual_dispatch")
-    expect(found.map { [it.package, it.detail[:site], it.detail[:via], it.anchors] }).to(
+    expect(found.map { [it.to_h[:package], it.to_h[:detail][:site], it.to_h[:detail][:via], anchors_of(it)] }).to(
       eq(
         [
           [
@@ -98,7 +99,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         ]
       )
     )
-    expect(found.first.evidence).to(
+    expect(found.first.to_h[:evidence]).to(
       eq(
         [
           "App::Zone::CheckIns#path: @target is Event (zone/target.rb:12)",
@@ -132,7 +133,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Types::Pick#add]))
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }).to(eq(%w[App::Types::Pick#add]))
   end
 
   it "reads a ::-rooted constant a value is tested against at the root, beside an owned namesake" do
@@ -148,7 +149,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Mixin#blend]))
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }).to(eq(%w[App::Mixin#blend]))
   end
 
   it "takes a test against a computed class for no type evidence, leaving the name to type the value" do
@@ -165,7 +166,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Walker#computed]))
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }).to(eq(%w[App::Walker#computed]))
   end
 
   it "lets a rescued library exception be probed even where its name reads as an owned class" do
@@ -209,7 +210,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "manual_dispatch")
-    expect(findings.map { [it.package, it.evidence] }).to(
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq([["App::Zone::Thing#poke", ["duck.respond_to?(:honk) (line 7)", "duck.respond_to?(:moo) (line 8)"]]])
     )
     expect(message(findings.first)).to(include("dispatches manually via respond_to?", "zone/thing.rb:7, 8"))
@@ -245,7 +246,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "manual_dispatch").map(&:package)).to(eq(%w[App::Zone::Thing#probe]))
+    expect(sniffed(files, "manual_dispatch").map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#probe]))
   end
 
   def dispatched(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "manual_dispatch")
@@ -283,7 +284,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Handler#show App::Zone::Handler#page App::Zone::Handler#built]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Handler#show App::Zone::Handler#page App::Zone::Handler#built]))
   end
 
   it "lets Ruby's conversion, IO and enumeration protocols be probed" do
@@ -318,7 +319,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#blank]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#blank]))
   end
 
   it "lets a rescued library exception or another library object be probed, but not one the codebase raises" do
@@ -359,7 +360,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#ours]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#ours]))
   end
 
   it "leaves a probe for a message the codebase never defines, a core value's or a library's, to its owner" do
@@ -376,7 +377,7 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#size]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#size]))
   end
 
   it "trusts a probe on self or its own state, and leaves one on an object of no class it can name to its owner" do
@@ -409,8 +410,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.to_h { [it.package.split("#").last, it.confidence] }).to(
-      eq("mine" => :high, "held" => :high, "handed" => nil, "mixed" => nil)
+    expect(findings.to_h { [it.to_h[:package].split("#").last, it.to_h[:confidence]] }).to(
+      eq("mine" => "high", "held" => "high", "handed" => "medium", "mixed" => "medium")
     )
   end
 
@@ -460,8 +461,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#area App::Zone::Thing#edges]))
-    expect(findings.map(&:evidence)).to(
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#area App::Zone::Thing#edges]))
+    expect(findings.map { it.to_h[:evidence] }).to(
       eq([["shape: Circle, Square (lines 11, 12)"], ["shape: Circle, App::Zone::Square (lines 17, 19)"]])
     )
     expect(message(findings.first)).to(
@@ -540,8 +541,8 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Thing#step App::Zone::Thing#charge App::Zone::Thing#settle]))
-    expect(findings.last.evidence).to(eq(["self.status: :paid, :open, :held (lines 20, 21)"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Thing#step App::Zone::Thing#charge App::Zone::Thing#settle]))
+    expect(findings.last.to_h[:evidence]).to(eq(["self.status: :paid, :open, :held (lines 20, 21)"]))
     expect(message(findings.first)).to(include("dispatches manually via a status switch"))
   end
 
@@ -598,6 +599,6 @@ RSpec.describe(Hashira::Smells::ManualDispatch, :aggregate_failures) do
     expect(message(finding)).to(
       include("via respond_to? and a type check and a status switch (zone/thing.rb:8, 10, 11, 14, 15)")
     )
-    expect(finding.confidence).to(be_nil)
+    expect(finding.to_h[:confidence]).to(eq("medium"))
   end
 end

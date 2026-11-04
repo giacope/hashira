@@ -5,7 +5,37 @@ class Hashira::Coupling::Audiences
 
   FLOOR = 3
 
-  Part = Data.define(:users, :constants, :shared)
+  class Part
+    def initialize(users:, constants:, shared:)
+      @users = users
+      @constants = constants
+      @shared = shared
+    end
+
+    def to_h = { users: @users, constants: @constants, shared: @shared }
+
+    def to_s = "#{@users.join(", ")} #{verb} #{@constants.join(", ")}"
+
+    def shared? = @shared
+
+    def heavy?(sizes) = @constants.size >= MIN && @users.sum { sizes.fetch(it, FLOOR) } >= FLOOR
+
+    def sightings(package, edges)
+      @users.flat_map { |client| edges[client, package].evidence.select { mentions?(it) } }
+    end
+
+    private
+
+    def verb
+      return "share" if @shared
+      @users.one? ? "alone uses" : "use"
+    end
+
+    def mentions?(line)
+      reference = "::#{line.rpartition(": ").last}::"
+      @constants.any? { reference.include?("::#{it}::") }
+    end
+  end
 
   def initialize(usage, sizes = {})
     @usage = usage
@@ -14,12 +44,7 @@ class Hashira::Coupling::Audiences
 
   def split? = parts.size >= 2
 
-  def parts
-    @_parts ||=
-      [common, *slices].select do |part|
-        part.constants.size >= MIN && part.users.sum { @sizes.fetch(it, FLOOR) } >= FLOOR
-      end
-  end
+  def parts = @_parts ||= [common, *slices].select { it.heavy?(@sizes) }
 
   private
 

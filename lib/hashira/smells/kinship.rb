@@ -3,15 +3,22 @@
 require "prism"
 
 class Hashira::Smells::Kinship
-  READERS = Hashira::Smells::Attributes::READERS
+  BUILTINS = Hashira::Runtime::Builtins.new
 
-  def initialize(types, lineage)
+  private_constant :BUILTINS
+
+  def initialize(
+    types, typeset, links = Hashira::Smells::Links.new(typeset),
+    rivals = Hashira::Smells::Rivals.new(types, typeset)
+  )
     @types = types
-    @lineage = lineage
+    @typeset = typeset
+    @links = links
+    @rivals = rivals
   end
 
   def protocol(type)
-    name = type.name
+    name = type.to_s
     spoken = words(name)
     hooks = adopted?(name) ? spoken - (told(name) - heritage(name)) : Set.new
     (spoken & kindred(name)) | hooks
@@ -25,18 +32,17 @@ class Hashira::Smells::Kinship
   end
 
   def letters
-    @_letters ||= @types.flat_map { @lineage.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
+    @_letters ||= @types.flat_map { @links.messages(it) }.group_by(&:last).transform_values { it.to_set(&:first) }
   end
 
   def kindred(name)
-    rivals = @_rivals ||= Hashira::Smells::Rivals.new(@types, @lineage)
-    kin = reach(name, ancestry) + reach(name, descent) + rivals.of(name) + rivals.sides(name)
+    kin = reach(name, ancestry) + reach(name, descent) + @rivals.of(name) + @rivals.sides(name)
     kin.map { words(it) }.reduce(Set.new, :|) + peers(name)
   end
 
-  def index = @_index ||= @types.group_by(&:name)
+  def index = @_index ||= @types.group_by(&:to_s)
 
-  def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @lineage.pointed(it) }.compact.uniq }
+  def ancestry = @_ancestry ||= index.transform_values { |kin| kin.flat_map { @links.pointed(it) }.uniq }
 
   def descent
     @_descent ||=
@@ -56,37 +62,40 @@ class Hashira::Smells::Kinship
 
   def peers(name)
     @_broods ||=
-      index.keys.group_by { brood(it) }.except(nil).transform_values { |names| names.flat_map { words(it).to_a }.tally }
+      index.keys.group_by { brood(it) }.except([]).transform_values { |names| names.flat_map { words(it).to_a }.tally }
     @_broods.fetch(brood(name), {}).select { |_, count| count > 1 }.keys.to_set
   end
 
   def brood(name)
-    node = index.fetch(name).filter_map(&:parent).first
-    @lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments) || node.slice.delete_prefix("::") if node
+    heading = index.fetch(name).map { it.accept(Hashira::Smells::Heading) }.find { !it.written.empty? }
+    heading ? [@typeset.resolve(name, heading.parent).fetch(0, heading.written)] : []
   end
 
-  def words(name) = said[name]
+  def words(name) = said[name] ||= defined(name)
 
   def adopted?(name) = [name, *reach(name, ancestry)].any? { foreign?(it) }
 
-  def foreign?(name) = index.fetch(name).any? { @lineage.pointed(it).include?(nil) }
+  def foreign?(name) = index.fetch(name).any? { @links.abroad(it).any? }
 
   def heritage(name)
-    parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @lineage.abroad(it) }
-    parents.reduce(Set.new) { |all, parent| all | Hashira::Analysis::INHERITED.fetch(parent, Set.new) }
+    parents = [name, *reach(name, ancestry)].flat_map { index.fetch(it) }.flat_map { @links.abroad(it) }
+    parents.reduce(Set.new) { |all, parent| all | BUILTINS.heritage(parent) }
   end
 
-  def said = @_said ||= Hash.new { |memo, name| memo[name] = defined(name) }
+  def said = @_said ||= {}
 
   def defined(name) = index.fetch(name).flat_map { carried(it) }.flat_map { named(it) }.to_set
 
-  def named(type) = @lineage.definitions(type).map(&:name) + declared(@lineage.sweep(type))
+  def named(type)
+    swept = @typeset.sweep(type)
+    swept.grep(Prism::DefNode).reject(&:receiver).map(&:name) + declared(swept)
+  end
 
   def declared(swept)
     attributes = Hashira::Smells::Attributes.new(swept)
-    forwards = Hashira::Smells::Forwards.new(swept, Hashira::Smells::Bonds.new(swept), Set.new)
-    attributes.declared(READERS).map(&:to_sym) + attributes.writers + forwards.names.to_a
+    forwards = Hashira::Smells::Forwards.new(swept)
+    attributes.readers.map(&:to_sym) + attributes.writers + forwards.names.to_a
   end
 
-  def carried(type) = [type, *@lineage.mixins(type).flat_map { index.fetch(it) }]
+  def carried(type) = [type, *@links.mixins(type).flat_map { index.fetch(it) }]
 end

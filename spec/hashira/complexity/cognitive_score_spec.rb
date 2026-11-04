@@ -42,7 +42,7 @@ RSpec.describe(Hashira::Complexity::CognitiveScore, :aggregate_failures) do
 
   it "charges the else of an unless exactly as the else of an if" do
     expect(total("def m\n unless a\n  1\n else\n  2\n end\nend")).to(eq(2))
-    expect(score("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend").increments.map(&:label))
+    expect(score("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend").increments.map { it.to_a.first })
       .to(eq(%w[unless else if]))
     expect(total("def m\n unless a\n  1\n else\n  if b then 2 end\n end\nend")).to(eq(4))
   end
@@ -71,7 +71,7 @@ RSpec.describe(Hashira::Complexity::CognitiveScore, :aggregate_failures) do
     expect(total("def m\n if a\n  risky rescue nil\n end\nend")).to(eq(3))
     expect(total("def m = (a ? b : c) rescue d")).to(eq(2))
     expect(total("def m = risky rescue (a ? b : c)")).to(eq(3))
-    expect(score("def m = risky rescue nil").increments.map(&:label)).to(eq(["rescue"]))
+    expect(score("def m = risky rescue nil").increments.map { it.to_a.first }).to(eq(["rescue"]))
   end
 
   it "scores every loop and guard keyword" do
@@ -123,8 +123,7 @@ RSpec.describe(Hashira::Complexity::CognitiveScore, :aggregate_failures) do
 
   it "records where each increment landed" do
     increments = score("def m(a)\n x if a\nend").increments
-    expect(increments.map(&:label)).to(eq(["if"]))
-    expect(increments.first.line).to(eq(2))
+    expect(increments.map(&:to_a)).to(eq([["if", 2, 1]]))
   end
 
   it "nests a lambda literal the way it nests a block" do

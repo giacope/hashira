@@ -37,14 +37,14 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
     label = invoice("def label = @address.street + @address.city + Tag.new.to_s")
     files = { "lib/app/shop.rb" => shop, "lib/app/invoice.rb" => label }
     off = [Fixtures::NONE, Hashira::Config::Rules::ALL].map { sniffed(files, "data_class", rules: it) }
-    expect([off, bagged(files).map(&:package)]).to(eq([[[], []], ["Shop::Address"]]))
+    expect([off, bagged(files).map { it.to_h[:package] }]).to(eq([[[], []], ["Shop::Address"]]))
   end
 
   it "flags a Struct value and a behaviorless record whose readers another class combines" do
     body = "def total = (@order.quantity * @order.unit_cents) + @order.shipping_cents\n  " \
       "def label = \"\#{@address.street}, \#{@address.zip} \#{@address.city}\""
     findings = found(body)
-    expect(findings.to_h { [it.package, [it.detail[:fields], it.evidence]] }).to(
+    expect(findings.to_h { [it.to_h[:package], [it.to_h[:detail][:fields], it.to_h[:evidence]]] }).to(
       eq(
         "Shop::Address" => [%w[street zip city], ["Shop::Invoice#label reads 'street', 'zip', 'city' (invoice.rb:6)"]],
         "Shop::Order" => [
@@ -102,7 +102,7 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
   it "flags a class built on a bare Struct, and leaves the hand-written data class to its own rule" do
     shop = "module Shop\n  class Size < Struct.new(:width, :height)\n  end\nend\n"
     reader = "module Shop\n  class Box\n    def area(size) = size.width * size.height\n  end\nend\n"
-    expect(bagged("lib/app/shop.rb" => shop, "lib/app/box.rb" => reader).map(&:package)).to(eq(["Shop::Size"]))
+    expect(bagged("lib/app/shop.rb" => shop, "lib/app/box.rb" => reader).map { it.to_h[:package] }).to(eq(["Shop::Size"]))
   end
 
   it "counts a value's own members only, read plainly, and records only under a record base" do
@@ -117,11 +117,16 @@ RSpec.describe(Hashira::Smells::Bags, :aggregate_failures) do
   end
 
   it "computes nothing when data_class is off" do
-    rules = Hashira::Config::Rules.parse({ "all" => true, "data_class" => false }, Hashira::Pipeline::KINDS)
+    rules = Hashira::Config::Rules.parse({ "all" => true, "data_class" => false }, Fixtures::KINDS)
     files = {
       "lib/app/shop.rb" => shop,
       "lib/app/invoice.rb" => invoice("def label = @address.street + @address.city")
     }
-    smells(files, rules:) { |report| expect(report.findings.map(&:kind)).not_to(include("data_class")) }
+    smells(files, rules:) { |report| expect(report.findings.map { it.to_h[:kind] }).not_to(include("data_class")) }
+  end
+
+  it "takes two bags of one name for one bag, and bags of two names, or a bag and a name, apart" do
+    one, twin, other = %w[A A B].map { described_class::Bag.new(name: it, site: "a.rb:1", fields: nil) }
+    expect([one == twin, one == other, one == "A", [one, twin].uniq.size]).to(eq([true, false, false, 1]))
   end
 end

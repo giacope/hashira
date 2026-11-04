@@ -4,12 +4,12 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
   def split(files, rules = Fixtures::NONE)
     within(files) do
       project = Hashira::Project.new(["lib/app"])
-      parsed = Hashira::Trees.new(project)
-      return fragments(Hashira::Complexity::Scores.new(project, parsed.all, rules, parsed))
+      parsed = Hashira::Trees.new(project.listing)
+      return fragments(Hashira::Complexity::Scores.new(project.paths, parsed.all, rules, parsed))
     end
   end
 
-  def fragments(scores) = scores.findings.select { it.kind == "fragmentation" }
+  def fragments(scores) = scores.findings.select { it.to_h[:kind] == "fragmentation" }
 
   def walk(entry = "def run(rows) = first(rows)", extra = "")
     <<~RUBY
@@ -39,7 +39,9 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
     finding = found(walk).first
     detail = { site: "walk.rb:2", helpers: 4, lines: 1.0, depth: 3, path: %i[run first third fourth] }
     evidence = ["first (line 6)", "second (line 8)", "third (line 10)", "fourth (line 12)"]
-    expect([finding.package, finding.detail.to_h, finding.evidence]).to(eq(["Walk#run", detail, evidence]))
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
+      eq(["Walk#run", detail, evidence])
+    )
   end
 
   it "says how many helpers, how short, how deep, and what to do" do
@@ -58,7 +60,14 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
 
   it "names an object hiding in the class once more than fifteen private helpers carry one entry's work" do
     advice = [17, 15].map { message(found(deep(it)).first).split(". ").last }
-    expect(advice).to(eq([Hashira::Report::Phrases::EXTRACT, Hashira::Report::Phrases::MERGE]))
+    expect(advice).to(
+      eq(
+        [
+          "That many private steps are an object hiding inside the class: extract it and give it a name.",
+          "Merge the helpers that only move data into the entry; keep named predicates."
+        ]
+      )
+    )
   end
 
   it "moves both limits under checks, flagging from exactly each limit and not past it" do
@@ -77,7 +86,7 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
   it "counts a method's lines without comments or blank lines, and with the heredoc it opens" do
     padded = walk.sub("def second(rows) = rows.size", "def second(rows)\n=begin\nnote\n=end\n  rows.size # why\n\nend")
       .sub("def fourth(rows) = rows.last", "def fourth(rows) = <<TEXT\ndone\n# kept\nTEXT")
-    expect(found(padded).first.detail.lines).to(eq(2.0))
+    expect(found(padded).first.to_h[:detail][:lines]).to(eq(2.0))
   end
 
   it "takes only a public method for an entry, not initialize, and leaves helpers called by name in" do
@@ -85,7 +94,9 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
     built = walk("def initialize(rows) = first(rows)")
     named = walk("def run(rows) = send(:first, rows)")
     tagged = walk("def run(rows) = tag(:first)")
-    expect([hidden, built, named, tagged].map { found(it).map(&:package) }).to(eq([[], [], ["Walk#run"], []]))
+    expect([hidden, built, named, tagged].map { found(it).map { it.to_h[:package] } }).to(
+      eq([[], [], ["Walk#run"], []])
+    )
   end
 
   it "links instance methods to instance methods and class methods to class methods, across a reopened class" do
@@ -93,7 +104,9 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
     more = "class Walk\n  private\n\n  def fifth(rows) = rows\nend\n"
     longer = walk.sub("def fourth(rows) = rows.last", "def fourth(rows) = fifth(rows)")
     reopened = { "lib/app/walk.rb" => longer, "lib/app/walk/more.rb" => more }
-    expect([found(lifted).map(&:package), split(reopened).map { it.detail.helpers }]).to(eq([[], [5]]))
+    expect([found(lifted).map { it.to_h[:package] }, split(reopened).map { it.to_h[:detail][:helpers] }]).to(
+      eq([[], [5]])
+    )
   end
 
   it "ends the path at a helper two methods share or a public one, which are abstractions, not fragments" do
@@ -117,6 +130,8 @@ RSpec.describe(Hashira::Complexity::Fragmentation, :aggregate_failures) do
     fifth = asked.sub("def second(rows) = rows.size", "def second(rows) = fifth(rows)\n  def fifth(rows) = rows.size")
     evidence = ["first (line 6)", "second (line 8)", "fifth (line 9)", "third (line 11)"]
     evidence << "fourth? (line 13) (predicate, not counted)"
-    expect([found(asked), found(fifth).map { [it.detail.helpers, it.evidence] }]).to(eq([[], [[4, evidence]]]))
+    expect([found(asked), found(fifth).map { [it.to_h[:detail][:helpers], it.to_h[:evidence]] }]).to(
+      eq([[], [[4, evidence]]])
+    )
   end
 end

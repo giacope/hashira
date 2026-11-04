@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Coupling::Census, :aggregate_failures) do
     }
     analyze(files, directories: ["app"], packaging: :namespace) do |_project, census, graph|
       expect(census.packages).to(include("Billing", "User", "Order"))
-      expect(graph.edges.map(&:to_s)).to(eq(["User -> Billing"]))
+      expect(graph.edges.to_a.map(&:to_s)).to(eq(["User -> Billing"]))
     end
   end
 
@@ -177,8 +177,8 @@ RSpec.describe(Hashira::Coupling::Census, :aggregate_failures) do
 
       it "surfaces the reverse-layer edge instead of dropping it as a self-reference" do
         mirror do |_project, _census, graph|
-          expect(graph.outgoing("app/models/admin")).to(eq(["app/controllers/admin"]))
-          expect(graph.outgoing("app/controllers/agent")).to(eq(["app/models/agent"]))
+          expect(graph.edges.outgoing("app/models/admin")).to(eq(["app/controllers/admin"]))
+          expect(graph.edges.outgoing("app/controllers/agent")).to(eq(["app/models/agent"]))
         end
       end
     end

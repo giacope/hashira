@@ -1,81 +1,11 @@
 # frozen_string_literal: true
 
 class Hashira::Report::Text
-  def initialize(view, io: $stdout)
-    @view = view
-    @io = io
+  def initialize(sections)
+    @sections = sections
   end
 
-  def print
-    coupling if @view.graph
-    complexity if @view.complexity
-    hotspots if @view.hotspots
-    findings
-    0
-  end
+  def print = @sections.each(&:print)
 
-  private
-
-  def coupling
-    graph = @view.graph
-    header(graph)
-    table(Hashira::Report::MetricsTable, graph)
-    table(Hashira::Report::DependencyMap, graph)
-    folded(graph.folds)
-  end
-
-  def folded(folds)
-    return if folds.empty?
-    @io.puts("Folded (packages joined to the one they belong to):")
-    folds.each { @io.puts("  #{it[:from]} -> #{it[:to]} (#{it[:via]})") }
-    @io.puts
-  end
-
-  def table(kind, subject) = kind.new(subject, top: @view.top || kind::TOP, io: @io).print
-
-  def complexity = table(Hashira::Report::ComplexityTable, @view.complexity)
-
-  def hotspots = table(Hashira::Report::HotspotTable, @view.hotspots)
-
-  def header(graph)
-    packages = graph.packages.size
-    @io.puts(banner(graph.packaging, packages))
-    caveat if packages == 1
-  end
-
-  def banner(grouping, packages)
-    "Package (#{grouping}) metrics for #{@view.label}  " \
-      "(#{count(packages, "package")}, #{count(total, "file")})\n\n"
-  end
-
-  def count(number, noun) = Hashira::Report::Count.new(number, noun).to_s
-
-  def total = @view.size
-
-  def caveat
-    @io.puts(
-      "Only one package found — there are no boundaries to analyze. " \
-        "Pass subdirectories to set them (e.g. hashira lib/gem/*/).\n\n"
-    )
-  end
-
-  def findings
-    all = @view.findings.all
-    @io.puts("Findings (#{all.size}):")
-    list(all)
-    decided
-    @io.puts("\n  Full evidence + machine format: hashira --json") unless all.empty?
-  end
-
-  def list(all)
-    return @io.puts("  #{@view.unjudged.verdict}") if all.empty?
-    table(Hashira::Report::FindingList, all)
-  end
-
-  def decided
-    accepted
-    Hashira::Report::Silenced.new(@view.screened, io: @io).print
-  end
-
-  def accepted = Hashira::Report::Listing.new(@io).waived("Accepted", @view.findings.accepted)
+  def status = 0
 end

@@ -25,7 +25,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
+    expect(sniffed(files, "assumed_state").map { it.to_h[:evidence] }).to(eq([["@lost"]]))
   end
 
   it "counts a peer's instance_variable_set, a set a subclass's constructor reaches, and leaves eval'd state alone" do
@@ -91,7 +91,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([%w[@copied @crafted @far @plain @stray]]))
+    expect(sniffed(files, "assumed_state").map { it.to_h[:evidence] }).to(eq([%w[@copied @crafted @far @plain @stray]]))
   end
 
   it "counts a computed instance_variable_set anywhere in the class or its ancestors, whatever method reaches it" do
@@ -121,7 +121,9 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
       end
     RUBY
     found = sniffed({ "lib/app/core.rb" => core, "lib/app/classes.rb" => classes }, "assumed_state")
-    expect(found.to_h { [it.package, it.evidence] }).to(eq("Mock" => ["@shop_key"], "Hooked" => ["@other_key"]))
+    expect(found.to_h { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq("Mock" => ["@shop_key"], "Hooked" => ["@other_key"])
+    )
   end
 
   it "counts a literal instance_variable_set on an instance any method builds of the class, through a local or a tap" do
@@ -161,7 +163,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
       end
     RUBY
     found = assumed(source)
-    expect(found.to_h { [it.package, it.evidence] })
+    expect(found.to_h { [it.to_h[:package], it.to_h[:evidence]] })
       .to(eq("App::Zone::DSL" => ["@far"], "App::Zone::Builder" => %w[@gone @lost @peeked]))
   end
 
@@ -185,7 +187,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "assumed_state").map(&:evidence)).to(eq([["@lost"]]))
+    expect(sniffed(files, "assumed_state").map { it.to_h[:evidence] }).to(eq([["@lost"]]))
   end
 
   it "flags instance variables read but never assigned anywhere in the class" do
@@ -202,7 +204,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["App::Zone::Thing", ["@late"]]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(eq([["App::Zone::Thing", ["@late"]]]))
     expect(message(findings.first))
       .to(include("reads instance variables nothing in the class assigns", "zone/thing.rb:3"))
   end
@@ -217,7 +219,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["@late"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["@late"]))
   end
 
   it "excuses reads sheltered under any conditional assignment" do
@@ -315,7 +317,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["@seen"]]))
   end
 
   it "resolves a superclass named like the class itself to the outer class" do
@@ -334,7 +336,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["@seen"]]))
   end
 
   it "walks a mixin cycle once" do
@@ -359,7 +361,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["@seen"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["@seen"]]))
   end
 
   it "counts assignments made anywhere the object can reach" do
@@ -475,7 +477,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["@late"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["@late"]]))
   end
 
   it "says when the subclasses are the ones expected to install what the base class reads" do
@@ -495,8 +497,8 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([%w[@late @seen]]))
-    expect(findings.first.detail).to(include(installed: %w[@late], unassigned: %w[@seen]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([%w[@late @seen]]))
+    expect(findings.first.to_h[:detail]).to(include(installed: %w[@late], unassigned: %w[@seen]))
     expect(message(findings.first)).to(
       include(
         "subclasses are expected to install '@late'; pass it in instead",
@@ -520,7 +522,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
       end
     RUBY
     finding = findings.first
-    expect(finding.detail).to(include(installed: [], unassigned: %w[@hook]))
+    expect(finding.to_h[:detail]).to(include(installed: [], unassigned: %w[@hook]))
     expect(message(finding)).to(include("Nothing ever assigns '@hook'"))
     expect(message(finding)).not_to(include("subclasses"))
   end
@@ -542,7 +544,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["@state", "@token"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["@state", "@token"]))
   end
 
   it "counts the writers an attribute macro mints from a splatted list the class declares" do
@@ -562,7 +564,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["@limit"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["@limit"]))
   end
 
   it "takes a block the class body hands its own DSL for instance code, as a lexer or controller runs it" do
@@ -585,7 +587,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["@missing"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["@missing"]))
   end
 
   it "recognizes string-named attribute writers" do
@@ -610,9 +612,7 @@ RSpec.describe(Hashira::Smells::AssumedState, :aggregate_failures) do
   end
 
   it "reads a class name's ancestry once, however many files reopen it" do
-    swept = []
-    spy_on(Hashira::Smells::Scope, :sweep, swept)
-    smells(reopened, &:findings)
+    swept = observed(Hashira::Smells::Scope, :sweep) { smells(reopened, &:findings) }
     expect(swept.grep(Prism::DefNode).map(&:name).tally).to(eq(initialize: 1, report: 3))
   end
 end

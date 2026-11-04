@@ -13,6 +13,11 @@ class Hashira::CI::Baseline
 
   INTRODUCED = { "indirection" => 7, "fragmentation" => 7 }.freeze
 
+  UNUSABLE = "%s is not a usable baseline — %s. Re-record it with --update-baseline"
+
+  PACKAGING = "baseline %s was recorded with --package-by %s, but this run uses %s — rerun with --package-by %s, " \
+    "or refresh it with --update-baseline"
+
   def initialize(path, analyzers: [], targets: [], kinds: [])
     @path = path
     @analyzers = analyzers
@@ -20,39 +25,23 @@ class Hashira::CI::Baseline
     @kinds = kinds
   end
 
-  attr_reader :path
+  def to_s = @path.to_s
 
-  def exist? = File.exist?(@path)
-
-  def trouble
-    recorded && nil
-  rescue JSON::ParserError, SystemCallError => error
-    "#{@path} is not a usable baseline — #{error.message.lines.first.strip}. Re-record it with --update-baseline"
+  def accepted
+    entries = recorded.fetch("accepted", []).map { it.merge("kind" => current(it["kind"])) }
+    Hashira::CI::Accepted.new(entries, recorded.fetch("boundaries", []))
   end
 
-  def edges = recorded.fetch("edges", [])
+  def history
+    newer = @kinds.select { predates?(it) }
+    Hashira::CI::History.new(recorded.fetch("edges", []), recorded.key?("findings") ? [marks] : [], newer)
+  end
 
-  def marks = recorded.fetch("findings", {}).to_h { |key, magnitude| [renamed(key), mark(key, magnitude)] }
-
-  def predates?(kind) = recorded.key?("kinds") ? !recorded["kinds"].include?(kind) : INTRODUCED.fetch(kind, 0) > version
-
-  def version = recorded.fetch("version", SCHEMA_VERSION)
-
-  def traces = recorded.fetch("traces", {})
-
-  def findings? = recorded.key?("findings")
-
-  def accepted = recorded.fetch("accepted", []).map { it.merge("kind" => current(it["kind"])) }
-
-  def boundaries = recorded.fetch("boundaries", [])
-
-  def packaging = recorded.fetch("packaging", "folder")
-
-  def analyzers = recorded.fetch("analyzers", wanted[:analyzers])
-
-  def targets = recorded.fetch("targets", wanted[:targets])
-
-  def wanted = scope.to_h
+  def vet(packaging)
+    raise(Hashira::Error, "no baseline at #{@path} — run --update-baseline first") unless File.exist?(@path)
+    stop = [*mismatch(packaging), *scope.widened(recorded, self)].first
+    raise(Hashira::Error, stop) if stop
+  end
 
   def write(edges, marks, packaging:)
     File.write(@path, JSON.pretty_generate(payload(edges, marks, packaging)) << "\n", encoding: ENCODING)
@@ -68,6 +57,14 @@ class Hashira::CI::Baseline
     return {} unless @path && File.exist?(@path)
     stored = JSON.parse(File.read(@path, encoding: ENCODING))
     stored.is_a?(Hash) ? stored : raise(JSON::ParserError, "its top level is a list, not an object")
+  rescue JSON::ParserError, SystemCallError => error
+    raise(Hashira::Error, format(UNUSABLE, @path, error.message.lines.first.strip))
+  end
+
+  def marks
+    traces = recorded.fetch("traces", {})
+    named = recorded.fetch("findings", {}).to_h { |key, size| [renamed(key), [size, traces.fetch(key, nil)]] }
+    Hashira::CI::Marks.new(named.transform_values(&:first), named.transform_values(&:last).compact)
   end
 
   def renamed(key)
@@ -77,22 +74,20 @@ class Hashira::CI::Baseline
 
   def current(kind) = RENAMES.fetch(kind, kind)
 
-  def mark(key, magnitude) = Hashira::CI::Mark.new(magnitude:, trace: traces[key])
+  def predates?(kind) = recorded.key?("kinds") ? !recorded["kinds"].include?(kind) : INTRODUCED.fetch(kind, 0) > version
+
+  def version = recorded.fetch("version", SCHEMA_VERSION)
+
+  def mismatch(packaging)
+    was = recorded.fetch("packaging", "folder")
+    was == packaging ? [] : [format(PACKAGING, @path, was, packaging, was)]
+  end
 
   def scope = Hashira::CI::Scope.new(analyzers: @analyzers, targets: @targets)
 
   def payload(edges, marks, packaging)
     stem = { version: SCHEMA_VERSION, packaging: }.merge(scope.to_h).merge(optional(:kinds, @kinds.sort))
-    stem.merge(edges:, findings: marks.transform_values(&:magnitude)).merge(traced(marks)).merge(kept)
-  end
-
-  def traced(marks)
-    found = marks.transform_values(&:trace).compact
-    found.empty? ? {} : { traces: found }
-  end
-
-  def kept
-    optional(:accepted, Hashira::CI::Accepted.new(accepted).entries).merge(optional(:boundaries, boundaries))
+    stem.merge(edges:).merge(marks.to_h).merge(accepted.to_h)
   end
 
   def optional(name, values) = values.empty? ? {} : { name => values }

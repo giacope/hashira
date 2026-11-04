@@ -3,17 +3,22 @@
 RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
   def run(enabled, boundaries: [])
     within(Fixtures::CYCLIC_FILES) do
-      yield(described_class.new(Hashira::Project.new(["lib/app"], boundaries:), enabled:))
+      selection = Hashira::Selection.new(enabled)
+      project = Hashira::Project.new(["lib/app"], boundaries:)
+      yield(described_class.build(project, Hashira::Config::Rules.new({}), Fixtures::FLAT, selection))
     end
   end
 
-  def kinds(enabled) = run(enabled) { return it.findings.map(&:kind).uniq }
+  def kinds(enabled) = run(enabled) { return kept(it).map { it.to_h[:kind] }.uniq }
 
-  def hotspots(enabled) = run(enabled) { return it.hotspots }
+  def hotspots(enabled)
+    verdicts = Hashira::Report::View::Verdicts.new([], Fixtures::CLEAR, Fixtures::JUDGED)
+    run(enabled) { |pipeline| return JSON.parse(capture { outcome(pipeline).view(verdicts, Hashira::Report::View::Layout.new).json.print }) }
+  end
 
   def told
     io = StringIO.new
-    described_class.new(Hashira::Project.new(["lib/app"])).notify(Hashira::Report::Notices.new(io:))
+    outcome(described_class.build(Hashira::Project.new(["lib/app"]))).notify(Hashira::Report::Warnings.new(io:))
     io.string.lines.grep(/git history/)
   end
 
@@ -47,7 +52,7 @@ RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
   end
 
   it "rolls up hotspots when either cost analyzer runs, and not when neither does" do
-    rolled = [%i[complexity], %i[duplication], %i[coupling smells]].map { hotspots(it).class }
-    expect(rolled).to(eq([Hashira::Hotspots::Rollup, Hashira::Hotspots::Rollup, NilClass]))
+    rolled = [%i[complexity], %i[duplication], %i[coupling smells]].map { hotspots(it).key?("hotspots") }
+    expect(rolled).to(eq([true, true, false]))
   end
 end

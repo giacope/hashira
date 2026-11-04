@@ -5,23 +5,27 @@ require "prism"
 class Hashira::Complexity::BooleanRun
   CONNECTIVES = [Prism::AndNode, Prism::OrNode].freeze
 
-  def initialize(scorer)
-    @scorer = scorer
+  NOTHING = Hashira::Complexity::Charges.none
+
+  private_constant :NOTHING
+
+  def initialize(walk)
+    @walk = walk
   end
 
   def apply(node)
-    operators, leaves = walk(node)
-    @scorer.add(node, operators.chunk_while { |left, right| left == right }.count, "boolean")
-    leaves.each { @scorer.visit(it) }
+    operators, leaves = joined(node)
+    runs = operators.chunk_while { |left, right| left == right }.count
+    Hashira::Complexity::Charges.mark(node, runs, "boolean") + leaves.sum(NOTHING) { @walk.visit(it) }
   end
 
   private
 
-  def walk(node)
+  def joined(node)
     inner = bare(node)
     return [[], [node]] unless CONNECTIVES.include?(inner.class)
-    left_operators, left_leaves = walk(inner.left)
-    right_operators, right_leaves = walk(inner.right)
+    left_operators, left_leaves = joined(inner.left)
+    right_operators, right_leaves = joined(inner.right)
     [left_operators + [inner.class] + right_operators, left_leaves + right_leaves]
   end
 

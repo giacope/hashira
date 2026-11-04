@@ -13,7 +13,7 @@ class Hashira::Coupling::Spellings
     @trees = trees
   end
 
-  def required = @_required ||= (nodes.filter_map { root(it) }.to_set - shipped).to_set { camel(it) }
+  def required = @_required ||= (nodes.flat_map { roots(it) }.to_set - shipped).to_set { camel(it) }
 
   def twin?(root, opened)
     read.any? { it != root && it.match?(LOWER) && fold(it) == fold(root) && !opened.include?(it) }
@@ -23,11 +23,11 @@ class Hashira::Coupling::Spellings
 
   def read = @_read ||= nodes.grep(Prism::ConstantReadNode).to_set { it.name.to_s }
 
-  def nodes = @trees.values.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
+  def nodes = @_nodes ||= @trees.values.flat_map { Hashira::Analysis::NodeWalk.new(it).collect }
 
-  def root(node)
-    return unless Hashira::Analysis::Syntax.new(node).macro?(REQUIRE)
-    Hashira::Analysis::Syntax.new(node.arguments.arguments.first).literal.to_s[REQUIRED, 1]
+  def roots(node)
+    return [] unless Hashira::Analysis::Syntax::Call.new(node).macro?(REQUIRE)
+    Hashira::Analysis::Syntax::Word.new(node.arguments.arguments.first).to_a.first.to_s.scan(REQUIRED).flatten
   end
 
   def shipped = @trees.keys.flat_map { it.delete_suffix(".rb").split("/") }

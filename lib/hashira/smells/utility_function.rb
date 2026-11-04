@@ -5,21 +5,28 @@ require "prism"
 class Hashira::Smells::UtilityFunction < Hashira::Smells::Check
   PROTOCOL = { 0 => %i[hash inspect to_s], 1 => %i[== eql? equal? <=> === coerce] }.freeze
 
+  ADVICE = "Move it onto the object it serves, or make it private."
+
+  def initialize(subject, rules, refs)
+    super(subject, rules)
+    @refs = refs
+  end
+
   private
 
-  def smelly? = subject.host == :class && subject.public? && !subject.polymorphic? && !protocol? && calls? && stateless?
+  def smelly? = subject.home.class? && standing.public? && !standing.polymorphic? && !protocol? && calls? && stateless?
 
-  def protocol? = PROTOCOL.fetch(arity, []).include?(subject.node.name)
+  def protocol? = PROTOCOL.fetch(signature.arity, []).include?(signature.name)
 
-  def arity = Array(subject.node.parameters&.requireds).size
+  def standing = subject.standing
 
-  def stateless? = refs.ego.zero? && Hashira::Smells::Opaque.new(body).none?
+  def signature = subject.accept(Hashira::Smells::Signature)
 
-  def detail = { site: }
+  def stateless? = @refs.lines.none? && Hashira::Smells::Opaque.new(body).none?
 
-  def refs = Hashira::Smells::Refs.new(subject.node, subject.ownership.vocabulary)
+  def detail = Hashira::Smells::Spot.new(site, "touches no instance state", ADVICE)
 
   def calls? = body.any?(Prism::CallNode)
 
-  def body = @_body ||= Hashira::Smells::Scope.new(subject.node).inside
+  def body = @_body ||= subject.accept(Hashira::Smells::Scope).inside
 end

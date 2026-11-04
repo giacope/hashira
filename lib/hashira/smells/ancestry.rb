@@ -5,8 +5,8 @@ require "prism"
 class Hashira::Smells::Ancestry
   MIXINS = %i[include prepend].freeze
 
-  def initialize(walked, ownership)
-    @walked = walked
+  def initialize(walk, ownership)
+    @walk = walk
     @ownership = ownership
   end
 
@@ -16,7 +16,7 @@ class Hashira::Smells::Ancestry
 
   def openings(name) = opened.fetch(name, [])
 
-  def owner(name, selector) = up(name).find { |type| openings(type).any? { defines?(it, selector) } }
+  def owner(name, selector) = Array(up(name).find { |type| openings(type).any? { defines?(it, selector) } })
 
   private
 
@@ -35,18 +35,19 @@ class Hashira::Smells::Ancestry
 
   def downward = @_downward ||= ties.group_by(&:last).transform_values { it.map(&:first) }
 
-  def opened = @_opened ||= @walked.group_by { |_node, full| full.join("::") }.transform_values { it.map(&:first) }
+  def opened = @_opened ||= @walk.to_a.group_by { |_node, full| full.join("::") }.transform_values { it.map(&:first) }
 
   def ties
-    @_ties ||= @walked.flat_map do |node, full|
-      owner = full.join("::")
-      above(node).map { [owner, @ownership.placed(it, owner)] }
-    end.select(&:last)
+    @_ties ||=
+      @walk.to_a.flat_map do |node, full|
+        owner = full.join("::")
+        above(node).flat_map { |parent| @ownership.placed(parent, owner).map { [owner, it] } }
+      end
   end
 
   def above(node)
     calls = Hashira::Smells::Scope.new(node).sweep.grep(Prism::CallNode)
-    mixed = calls.select { Hashira::Analysis::Syntax.new(it).macro?(MIXINS) }.flat_map { it.arguments.arguments }
+    mixed = calls.select { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }.flat_map { it.arguments.arguments }
     [*(node.superclass if node.is_a?(Prism::ClassNode)), *mixed]
   end
 end

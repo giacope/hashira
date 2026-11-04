@@ -7,7 +7,8 @@ class Hashira::Complexity::Sites
 
   def each(&)
     Hashira::Analysis::TypeWalk.new(@tree).walk do |type, full|
-      Hashira::Complexity::Body.new(type.body, Hashira::Complexity::Owner.new(segments: full), type).each(&)
+      owner = Hashira::Complexity::Owner.new(full)
+      Hashira::Complexity::Body.new(type.body, owner, type).each(&)
     end
   end
 end

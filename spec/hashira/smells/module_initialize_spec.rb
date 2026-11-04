@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "module_initialize")
-    expect(findings.map(&:package)).to(eq(["App::Zone::Mixin"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Mixin"]))
     expect(message(findings.first)).to(include("defines initialize in a module", "zone/thing.rb:3"))
   end
 
@@ -74,7 +74,7 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
       RUBY
     }
     findings = sniffed(files, "module_initialize")
-    expect(findings.map(&:package)).to(eq(["App::Zone::Mixin"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Mixin"]))
   end
 
   it "leaves alone a library class a block reopens, and judges a module it reopens" do
@@ -82,7 +82,7 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
       "lib/app/patch.rb" => "Samovar::Output::Formatter.class_eval do\n  def initialize(rows) = @rows = rows\nend\n",
       "lib/app/mixin.rb" => "module App\n  module Mixin; end\n\n  Mixin.module_eval { def initialize = @x = 1 }\nend\n"
     }
-    expect(sniffed(files, "module_initialize").map(&:package)).to(eq(["App::Mixin"]))
+    expect(sniffed(files, "module_initialize").map { it.to_h[:package] }).to(eq(["App::Mixin"]))
   end
 
   it "leaves alone a module that extends itself: no mixin, its initialize an ordinary method" do
@@ -106,6 +106,14 @@ RSpec.describe(Hashira::Smells::ModuleInitialize, :aggregate_failures) do
         end
       RUBY
     }
-    expect(sniffed(files, "module_initialize").map(&:package)).to(eq(["App::Zone::Mixin"]))
+    expect(sniffed(files, "module_initialize").map { it.to_h[:package] }).to(eq(["App::Zone::Mixin"]))
+  end
+
+  it "traces a finding by the body of the module it names, so a rename still matches and another body does not" do
+    mixin = ->(name, value) { "module App\n  module #{name}\n    def initialize = @x = #{value}\n  end\nend\n" }
+    found = ->(name, value) { sniffed({ "lib/app/mixin.rb" => mixin[name, value] }, "module_initialize").first }
+    traced = ->(name, value) { mark_of(found[name, value]).trace }
+    first = traced["Mixin", 1]
+    expect([traced["Blend", 1], traced["Mixin", 2]].map { it == first }).to(eq([true, false]))
   end
 end

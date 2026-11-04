@@ -9,5 +9,5 @@ class Hashira::Smells::Exits
     @node = node
   end
 
-  def raise? = @node.is_a?(Prism::CallNode) && !@node.receiver && RAISES.include?(@node.name)
+  def raise? = Hashira::Analysis::Syntax::Call.new(@node).command?(RAISES)
 end

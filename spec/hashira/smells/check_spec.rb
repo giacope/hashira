@@ -12,6 +12,7 @@ RSpec.describe(Hashira::Smells::Check, :aggregate_failures) do
     RUBY
     files = { "lib/app/cart.rb" => cart, "lib/app/till.rb" => "class Till\n  def run = App::Cart.new.total(true)\nend\n" }
     found = %w[utility_function control_parameter].map { sniffed(files, it).first }
-    expect(found.map { [it.evidence.empty?, it.shape.class] }).to(eq([[true, String], [false, NilClass]]))
+    told = found.map { [it.to_h[:evidence].empty?, mark_of(it).trace.split("|").last] }
+    expect(told).to(match([[true, match(/\A\h{12}\z/)], [false, "quick"]]))
   end
 end

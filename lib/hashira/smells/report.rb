@@ -6,15 +6,14 @@ require_relative "records"
 require_relative "tuples"
 require_relative "boundary_sprawl"
 require_relative "check"
+require_relative "member"
+require_relative "testimony"
 require_relative "concrete_inheritance"
 require_relative "data_class"
 require_relative "exports"
-require_relative "heirs"
-require_relative "bequests"
 require_relative "hierarchy"
 require_relative "attributes"
 require_relative "factory"
-require_relative "grouping"
 require_relative "naming"
 require_relative "refusal"
 require_relative "values"
@@ -33,6 +32,7 @@ require_relative "manual_dispatch"
 require_relative "module_initialize"
 require_relative "opaque"
 require_relative "origin"
+require_relative "doubt"
 require_relative "nil_check"
 require_relative "ownership"
 require_relative "repeated_conditional"
@@ -42,7 +42,7 @@ require_relative "stateful_mixin"
 require_relative "utility_function"
 
 class Hashira::Smells::Report
-  CHECKS = Hashira::Smells::Check.subclasses.sort_by(&:name).freeze
+  CHECKS = ([*Hashira::Smells::Check.subclasses, *Hashira::Smells::Lineal.subclasses] - [Hashira::Smells::Lineal]).sort_by(&:name).freeze
 
   JUDGES = [
     Hashira::Smells::DataClump, Hashira::Smells::AssumedState,
@@ -54,32 +54,30 @@ class Hashira::Smells::Report
 
   PROBES = (CHECKS - JUDGES).freeze
 
-  def initialize(project, trees, boundaries, rules)
-    @project = project
-    @trees = trees
-    @boundaries = boundaries
+  SPREAD = "manual_dispatch"
+
+  BAGS = "data_class"
+
+  SPRAWL = "boundary_sprawl"
+
+  def initialize(types, rules, probing, judging)
+    @types = types
     @rules = rules
+    @probing = probing
+    @judging = judging
   end
 
-  def findings = @_findings ||= sniff(wholes, wanted(JUDGES)) + sniff(methods, wanted(PROBES)) + spread + sprawl + bags
+  def findings = @_findings ||= checks.flat_map(&:findings) + spread + sprawl + bags + gathered
 
   private
 
-  def census = @_census ||= Hashira::Smells::Census.new(@project, @trees)
+  def wholes = @_wholes ||= @types.group_by(&:to_s).values.map { Hashira::Smells::Whole.new(it) }
 
-  def types = @_types ||= census.types
-
-  def wholes
-    @_wholes ||= types.group_by(&:name).values.map { Hashira::Smells::Whole.new(openings: it, family:) }
-  end
-
-  def family = @_family ||= Hashira::Smells::Hierarchy.new(types)
-
-  def methods = types.flat_map(&:defs)
+  def methods = @types.flat_map(&:to_a)
 
   def spread
-    return [] unless wants?(Hashira::Smells::SpreadSwitch::KIND)
-    wholes.select { it.kind == :class }.filter_map { Hashira::Smells::SpreadSwitch.new(it).finding }
+    return [] unless wants?(SPREAD)
+    wholes.select { it.first.seat.class? }.flat_map { @judging.spread(it) }
   end
 
   def wanted(checks) = checks.select { wants?(Hashira::Smells::Kind.new(it).to_s) }
@@ -87,16 +85,24 @@ class Hashira::Smells::Report
   def wants?(kind) = @rules.enabled?(kind)
 
   def bags
-    return [] unless @rules.strict? && wants?(Hashira::Smells::Bags::KIND)
-    Hashira::Smells::Bags.new(types, family, methods).findings
+    return [] unless @rules.strict? && wants?(BAGS)
+    @judging.bags(@types, methods)
   end
 
   def sprawl
-    return [] unless wants?(Hashira::Smells::BoundarySprawl::KIND)
-    Hashira::Smells::BoundarySprawl.new(methods, census.ownership, @boundaries.interpreted, @rules).findings
+    return [] unless wants?(SPRAWL)
+    @judging.sprawl(methods, @rules)
   end
 
-  def sniff(subjects, checks)
-    subjects.flat_map { |subject| checks.filter_map { |check| check.new(subject, @rules).finding } }
+  def checks = @_checks ||= judged(wanted(JUDGES)) + probed(wanted(PROBES))
+
+  def judged(kinds) = wholes.flat_map { @judging.checks(it, kinds, @rules) }
+
+  def probed(kinds) = methods.flat_map { @probing.checks(it, kinds, @rules) }
+
+  def gathered
+    groups = checks.flat_map(&:members).reduce({}) { |found, member| member.gather(found) }
+    groups.each_with_index.sort_by { |((section, _key), _member), index| [section, index] }
+      .map { |(_key, member), _index| member.finding }
   end
 end

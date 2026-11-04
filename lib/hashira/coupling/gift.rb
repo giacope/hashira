@@ -11,14 +11,14 @@ class Hashira::Coupling::Gift
 
   def to_a
     host = root(@host)
-    Array(@call.arguments&.arguments).filter_map { offered(it) }.map { [*lexical(host), *it] }
+    Array(@call.arguments&.arguments).flat_map { offered(it) }.map { [*lexical(host), *it] }
   end
 
   private
 
   def offered(given)
-    return ([@nesting.last, []] if @nesting.any?) if given.is_a?(Prism::SelfNode)
-    lexical(given)
+    return @nesting.last(1).map { [it, []] } if given.is_a?(Prism::SelfNode)
+    [lexical(given)]
   end
 
   def lexical(node)

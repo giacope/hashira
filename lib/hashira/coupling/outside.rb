@@ -33,11 +33,15 @@ class Hashira::Coupling::Outside
     @project = project
   end
 
-  def words = scanned.first
+  def words = scanned.fetch(0)
 
-  def handed = scanned.last
+  def handed = scanned.fetch(1)
 
   private
+
+  def paths = @_paths ||= @project.paths
+
+  def listing = @_listing ||= @project.listing
 
   def scanned = @_scanned ||= gathered
 
@@ -52,7 +56,7 @@ class Hashira::Coupling::Outside
     [words, handed]
   end
 
-  def home = File.expand_path(@project.home)
+  def home = paths.expand(".")
 
   def files = listed.map { File.join(home, it) }.select { wanted?(it) }.reject { analyzed?(it) }
 
@@ -82,11 +86,11 @@ class Hashira::Coupling::Outside
 
   def analyzed?(path) = analyzed.include?(path)
 
-  def analyzed = @_analyzed ||= @project.files.to_set { File.expand_path(it) }
+  def analyzed = @_analyzed ||= listing.to_a.to_set { File.expand_path(it) }
 
   def read(path)
     text = File.binread(path)
-    tree = (@project.tree(path) if path.end_with?(RUBY))
+    tree = (paths.parse(path) if path.end_with?(RUBY))
     [spec?(path) ? Hashira::Coupling::SpecWords.new(tree).to_a : said(text), given(text) + hooks(tree)]
   end
 

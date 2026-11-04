@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
+require_relative "lineal"
+
 require "prism"
 
-class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
+class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Lineal
   SHOWN = 3
 
   CORE = %w[Array Hash String Set].freeze
@@ -11,51 +13,125 @@ class Hashira::Smells::ConcreteInheritance < Hashira::Smells::Check
 
   CONSTRUCTOR = :initialize
 
-  Lineage = Data.define(:site, :parent, :home, :mode)
+  CONCRETE = "Extract what they share into an abstract base both extend, or compose instead."
+
+  class Core
+    def initialize(site, parent)
+      @site = site
+      @parent = parent
+    end
+
+    def to_h = { site: @site, parent: @parent, home: @site, mode: :core }
+
+    def phrase(package)
+      "#{package} extends #{@parent}, a concrete core class (#{@site}). Keep one in a field and give the class " \
+        "methods of its own: what it inherits (map, select, merge) answers a plain #{@parent}, not this class."
+    end
+  end
+
+  class Lone
+    def initialize(kind, package, core)
+      @kind = kind
+      @package = package
+      @core = core
+    end
+
+    def finding(_parts, testimony) = testimony.finding(@kind, @package, @core)
+  end
+
+  class Kin
+    def initialize(site, places, parent, mode)
+      @site = site
+      @places = places
+      @parent = parent
+      @mode = mode
+    end
+
+    def to_h
+      fields = { site: @site, places: @places, parent: @parent, mode: @mode }
+      @mode == :built ? fields.except(:mode) : fields
+    end
+
+    def phrase(package) = "#{package} #{said} (#{@site}). #{CONCRETE}"
+
+    private
+
+    def said
+      one = @places == 1
+      subclasses = one ? "a subclass" : "#{@places} subclasses"
+      return "is a concrete class, and #{subclasses} override#{"s" if one} its working methods" if @mode == :overriding
+      "is a concrete class the project also builds, and #{one ? "a subclass extends" : "#{subclasses} extend"} it"
+    end
+  end
+
+  class Heir
+    def initialize(kind, parent, home, mode)
+      @kind = kind
+      @parent = parent
+      @home = home
+      @mode = mode
+    end
+
+    def finding(parts, testimony)
+      testimony.finding(@kind, @parent, Kin.new(@home, parts.size, @parent, @mode))
+    end
+  end
+
+  def findings = []
+
+  def members
+    return [] unless smelly?
+    core? ? [lone] : [heir]
+  end
 
   private
 
-  def smelly? = core? || (parent && !abstract? && grounds?)
+  def lone
+    member(:core, [label, site], Lone.new(kind, label, Core.new(site, base)), cited(evidence, site))
+  end
 
-  def abstract? = family.abstract?(parent) || (strict? && BASED.match?(parent.split("::").last))
+  def heir
+    told = testimony(["#{label} (#{site})"], evidence, [home, *anchors(site)])
+    member(:heir, parent, Heir.new(kind, parent, home, mode), told)
+  end
+
+  def smelly? = core? || (parented? && !abstract? && grounds?)
+
+  def abstract? = family.inheritance.abstract?(parent) || (strict? && BASED.match?(parent.split("::").last))
 
   def grounds? = framed? ? strict? && overrides.any? : built.any?
 
-  def family = subject.family
+  def parent = @_parent ||= parents.fetch(0)
 
-  def parent = @_parent ||= family.parent(subject.subject)
+  def parented? = parents.any?
 
-  def core? = strict? && !parent && CORE.include?(base)
+  def parents = family.tree.parent(subject.to_s)
+
+  def core? = strict? && !parented? && CORE.include?(base)
 
   def base
-    written = subject.nodes.grep(Prism::ClassNode).filter_map(&:superclass).first
-    Hashira::Analysis::Syntax.new(written).segments.join("::")
+    Hashira::Smells::Descent.new(subject).parent.join("::")
   end
 
-  def framed? = family.framed?(parent)
+  def framed? = family.framing.framed?(parent)
 
-  def built = family.built(parent)
+  def built = family.births.built(parent)
 
-  def overrides = @_overrides ||= subject.owned.select { working.include?(it.node.name) && !refusal?(it) }
+  def overrides = @_overrides ||= owned.select { working.include?(selector(it)) && !refusal?(it) }
 
-  def working = @_working ||= family.definitions(parent).reject { refusal?(it) }.to_set { it.node.name } - [CONSTRUCTOR]
-
-  def refusal?(method) = !Hashira::Smells::Refusal.new(method.node).of.nil?
-
-  def mode
-    return :core if core?
-    framed? ? :overriding : :built
+  def working
+    @_working ||= family.inheritance.definitions(parent).reject { refusal?(it) }.to_set { selector(it) } - [CONSTRUCTOR]
   end
 
-  def detail = core? ? Lineage.new(site:, parent: base, home: site, mode:) : Lineage.new(site:, parent:, home:, mode:)
+  def refusal?(method) = method.accept(Hashira::Smells::Refusal).of.any?
 
-  def home = family.home(parent)
+  def mode = framed? ? :overriding : :built
+
+  def home = family.births.home(parent)
 
   def evidence
-    case mode
-    when :core then ["#{subject.subject} < #{base} (#{site})"]
-    when :overriding then overrides.map { "#{it.subject} (#{it.site})" }
-    else built.first(SHOWN).map { "#{parent}.new (#{it})" }
-    end
+    return ["#{subject} < #{base} (#{site})"] if core?
+    return overrides.map { "#{it} (#{it.spot.site})" } if mode == :overriding
+    built.first(SHOWN).map { "#{parent}.new (#{it})" }
   end
 end

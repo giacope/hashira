@@ -20,7 +20,7 @@ class Hashira::Coupling::SdpCheck
 
   def against?(from, to) = measured?(from) && measured?(to) && gap(from, to) >= MIN_GAP
 
-  def measured?(package) = @metrics[package].degree >= MIN_EDGES
+  def measured?(package) = @metrics[package].measured?(MIN_EDGES)
 
-  def gap(from, to) = (@metrics[to].level - @metrics[from].level).round(2)
+  def gap(from, to) = @metrics[to] - @metrics[from]
 end

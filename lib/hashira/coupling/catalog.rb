@@ -3,43 +3,29 @@
 class Hashira::Coupling::Catalog
   include Enumerable
 
-  def initialize(definitions)
-    @definitions = definitions
+  def self.build(project, trees, definitions)
+    paths = project.paths
+    naming = Hashira::Coupling::Naming.new(definitions, project.framework)
+    entries = Hashira::Coupling::Entries.new(definitions, naming)
+    opened = Hashira::Coupling::Opened.new(entries, definitions, naming)
+    dependencies = Hashira::Coupling::Dependencies.new(paths.expand("."))
+    claims = Hashira::Coupling::Claims.new(opened, dependencies, Hashira::Coupling::Spellings.new(trees))
+    new(entries, naming, Hashira::Coupling::Territory.new(entries, claims))
   end
 
-  def each(&) = entries.each(&)
+  def initialize(entries, naming, territory)
+    @entries = entries
+    @naming = naming
+    @territory = territory
+  end
 
-  def prefix = naming.segments
+  def each(&) = @entries.each(&)
 
-  def strip(path) = naming.strip(path)
+  def strip(path) = @naming.strip(path)
 
-  def rooted(path) = naming.rooted(path)
+  def rooted(path) = @naming.rooted(path)
 
-  def roots = @definitions.roots
+  def owned?(path) = @territory.owned?(path)
 
-  def implied = @definitions.implied
-
-  def dependencies = @definitions.dependencies
-
-  def spellings = @definitions.spellings
-
-  def folders = @definitions.packages
-
-  def lineage = @_lineage ||= Hashira::Coupling::Lineage.new(self)
-
-  def territory = @_territory ||= Hashira::Coupling::Territory.new(self)
-
-  def claimed?(full) = strip(full).then { it.empty? || territory.owned?(it) }
-
-  def owned?(path) = territory.owned?(path)
-
-  def parents(path) = lineage.parents(path)
-
-  private
-
-  def naming = @_naming ||= Hashira::Coupling::Naming.new(@definitions)
-
-  def entries = @_entries ||= @definitions.map { |node, full, *placing| entry(node, naming.strip(full), placing) }
-
-  def entry(node, path, (folder, scope, file)) = Hashira::Coupling::Definition.new(node:, path:, folder:, scope:, file:)
+  def claimed?(full) = strip(full).then { it.empty? || owned?(it) }
 end

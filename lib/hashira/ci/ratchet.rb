@@ -10,74 +10,42 @@ class Hashira::CI::Ratchet
     @io = io
   end
 
-  def update
+  def record
     @baseline.write(edges, scored(@findings), packaging:)
     @io.puts("Baseline updated: #{edges.size} edges, #{recorded}.")
-    Hashira::CI::Status::CLEAN
   end
 
   def check(focus)
-    newer
-    compared = focus.narrowing? ? Hashira::CI::Slice.new(@baseline) : Hashira::CI::Sweep.new(@baseline)
-    delta = compared.findings(scored(judged)) if @baseline.findings?
-    Hashira::CI::RatchetReport.new(@graph, @findings, io: @io).print(compared.edges(drift), delta, tally(compared))
+    history = @baseline.history
+    newer(history)
+    compared = focus.narrowing? ? Hashira::CI::Slice.new : Hashira::CI::Sweep.new
+    deltas = history.findings(compared, scored(history.judged(@findings)))
+    edges = compared.edges(history.drift(@graph.edges.to_a))
+    report = Hashira::CI::RatchetReport.new(@graph, @findings, io: @io)
+    report.print(edges, deltas, tally(compared))
+    report.status(edges, deltas)
   end
 
-  def blocker
-    return "no baseline at #{@baseline.path} — run --update-baseline first" unless @baseline.exist?
-    drifted.first
-  end
+  def update = Hashira::CI::Update.new(self, @baseline)
+
+  def vet = @baseline.vet(packaging)
 
   private
 
-  def drifted = [(mismatch unless @baseline.packaging == packaging), *narrowed(@baseline.wanted)].compact
-
-  def narrowed(wanted)
-    [
-      widened("the analyzers", @baseline.analyzers, wanted[:analyzers]),
-      widened("the directories", @baseline.targets, wanted[:targets])
-    ]
-  end
-
-  def widened(flag, was, now)
-    return if was.sort == now.sort
-    phrase(flag, was, now)
-  end
-
-  def phrase(flag, was, now)
-    "baseline #{@baseline.path} was recorded with #{flag} #{was.join(", ")}, but this run " \
-      "uses #{now.join(", ")} — rerun the recorded way, or refresh it with --update-baseline"
-  end
-
-  def packaging = @graph.packaging.to_s
+  def packaging = @graph.packages.to_s
 
   def recorded = collapsed(@findings.size, scored(@findings).size)
 
-  def judged = @_judged ||= @findings.reject { @baseline.predates?(it.kind) }
-
-  def newer
-    unseen = (@findings - judged).map(&:kind).tally
-    @io.puts(NEWER % unseen.map { |kind, count| "#{count} #{kind}" }.join(", ")) unless unseen.empty?
+  def newer(history)
+    left = history.unjudged(@findings)
+    @io.puts(NEWER % left.join(", ")) unless left.empty?
   end
 
   def collapsed(total, keys) = keys == total ? "#{total} findings" : "#{total} findings (#{keys} distinct)"
 
-  def mismatch
-    recorded = @baseline.packaging
-    "baseline #{@baseline.path} was recorded with --package-by #{recorded}, but this run " \
-      "uses #{packaging} — rerun with --package-by #{recorded}, or refresh it with --update-baseline"
-  end
+  def edges = @graph.edges.to_a.map(&:to_s)
 
-  def edges = @graph.edges.map(&:to_s)
+  def tally(compared) = compared.counts("#{@graph.edges.to_a.size} edges", "#{@findings.size} findings").join(", ")
 
-  def tally(compared) = compared.counts("#{@graph.edges.size} edges", "#{@findings.size} findings").join(", ")
-
-  def scored(findings) = findings.group_by(&:signature).sort.to_h { |key, group| [key, mark(group)] }
-
-  def mark(group) = Hashira::CI::Mark.new(magnitude: group.filter_map(&:magnitude).max, trace: group.first.trace)
-
-  def drift
-    added = @graph.edges.reject { @baseline.edges.include?(it.to_s) }
-    Hashira::CI::Diff.new(added:, removed: @baseline.edges - edges)
-  end
+  def scored(findings) = findings.reduce(Hashira::CI::Marks.new) { |marks, finding| finding.scored(marks) }
 end

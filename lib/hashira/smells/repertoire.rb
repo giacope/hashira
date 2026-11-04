@@ -3,10 +3,21 @@
 require "prism"
 
 class Hashira::Smells::Repertoire
-  Entry =
-    Data.define(:path, :names, :parents) do
-      def answers = parents.reduce(names) { |all, parent| all | yield(parent) }
+  class Entry
+    def initialize(path, names, parents)
+      @path = path
+      @names = names
+      @parents = parents
     end
+
+    def answers = @parents.reduce(@names) { |all, parent| all | yield(parent) }
+
+    def sealed?(&) = @parents.all?(&)
+
+    def home = [@path, self]
+
+    def suffixes = @path.each_index.map { [@path.drop(it).join("::"), self] }
+  end
 
   FACTORIES = { "Struct" => :new, "Data" => :define, "Class" => :new }.freeze
 
@@ -27,7 +38,7 @@ class Hashira::Smells::Repertoire
   def own(segments) = homes.fetch(segments) { index.fetch(segments.join("::"), []) }
 
   def sealed?(name, seen, found = index.fetch(name, []))
-    !seen.add?(name) || (found.any? && found.all? { |entry| entry.parents.all? { sealed?(it, seen) } })
+    !seen.add?(name) || (found.any? && found.all? { |entry| entry.sealed? { sealed?(it, seen) } })
   end
 
   def gathered(name, seen, found = index.fetch(name, []))
@@ -37,20 +48,18 @@ class Hashira::Smells::Repertoire
 
   def listed = @_listed ||= @trees.flat_map { entries(it) }
 
-  def homes = @_homes ||= listed.group_by(&:path)
+  def homes = @_homes ||= keyed(listed.map(&:home))
 
-  def index
-    @_index ||=
-      listed.flat_map { |entry| entry.path.each_index.map { [entry.path.drop(it).join("::"), entry] } }
-        .group_by(&:first).transform_values { it.map(&:last) }
-  end
+  def index = @_index ||= keyed(listed.flat_map(&:suffixes))
+
+  def keyed(pairs) = pairs.group_by(&:first).transform_values { it.map(&:last) }
 
   def entries(tree)
     found = []
     Hashira::Analysis::TypeWalk.new(tree).walk do |node, full|
-      syntax = Hashira::Analysis::Syntax.new(node)
-      found << entry(full, syntax.statements, heritage(node), instance(node))
-      found.concat(syntax.constants.filter_map { built(full, it) if factory?(it.value) })
+      body = Hashira::Analysis::Syntax::Body.new(node)
+      found << entry(full, body.to_a, heritage(node), instance(node))
+      found.concat(body.constants.filter_map { built(full, it) if factory?(it.value) })
     end
     found
   end
@@ -72,21 +81,23 @@ class Hashira::Smells::Repertoire
   end
 
   def heritage(type)
-    mixed = Hashira::Analysis::Syntax.new(type).statements.grep(Prism::CallNode).select { MIXINS.include?(it.name) }
+    mixed = Hashira::Analysis::Syntax::Body.new(type).to_a.grep(Prism::CallNode).select { MIXINS.include?(it.name) }
     [*(type.superclass if type.is_a?(Prism::ClassNode)), *mixed.flat_map { it.arguments.arguments }]
   end
 
   def declared(node)
     return [node.name] if node.is_a?(Prism::DefNode) && !node.receiver
-    return [Hashira::Analysis::Syntax.new(node.new_name).text] if node.is_a?(Prism::AliasMethodNode)
+    return [Hashira::Analysis::Syntax::Word.new(node.new_name).to_s] if node.is_a?(Prism::AliasMethodNode)
     macro?(node) ? offered(node) : []
   end
 
   def macro?(node) = node.is_a?(Prism::CallNode) && (!node.receiver || factory?(node))
 
-  def offered(call) = Array(call.arguments&.arguments).flat_map { symbol(it) || declared(it) }
+  def offered(call) = Array(call.arguments&.arguments).flat_map { symbol?(it) ? [text(it)] : declared(it) }
 
-  def symbol(node) = ([Hashira::Analysis::Syntax.new(node).text] if node.is_a?(Prism::SymbolNode))
+  def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
+
+  def symbol?(node) = node.is_a?(Prism::SymbolNode)
 
   def factory?(value) = Hashira::Smells::Factory.new(value).made?(FACTORIES)
 end

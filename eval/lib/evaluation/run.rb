@@ -1,38 +1,30 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Metrics =
-    Data.define(:status, :files, :thousands, :seconds, :megabytes, :kinds) do
-      def to_h = super.transform_keys(&:to_s).merge("kloc" => thousands).except("thousands")
-    end
-end
-
 class Evaluation::Run
+  SUITE = "corpus"
+
   def initialize(home, outcome)
     @home = home
     @outcome = outcome
   end
 
-  def metrics
-    peak = @outcome.peak
-    Evaluation::Metrics.new(
-      status: @outcome.status, files: json["files"], thousands:, seconds: peak.seconds.round(2),
-      megabytes: peak.megabytes, kinds:
-    ).to_h
+  def to_h
+    _, status, peak = @outcome.to_a
+    told = { "status" => status, "files" => @outcome.probe("files").first }.merge(peak.to_h)
+    told.merge("kinds" => kinds, "kloc" => thousands)
   end
 
   def checks(name)
+    _, status = @outcome.to_a
     cycles = @outcome.kinds("cycle").filter_map { cut(name, it.fetch("detail")) }
-    [Evaluation::Check.of(Evaluation::Corpus::SUITE, "#{name}: hashira exits 0", 0, @outcome.status), *cycles]
+    [Evaluation::Check.of(SUITE, "#{name}: hashira exits 0", 0, status), *cycles]
   end
 
-  def sightings(name) = @outcome.findings.map { Evaluation::Sighting.new(corpus: name, finding: it, home: base) }
+  def sightings(name) = @outcome.findings.map { Evaluation::Sighting.new(name, it, base) }
 
   private
 
-  def json = @outcome.json
-
-  def targets = json.fetch("targets")
+  def targets = @outcome.probe("targets").fetch(0)
 
   def base = targets.one? ? File.join(@home, targets.first) : @home
 
@@ -50,7 +42,7 @@ class Evaluation::Run
     members = detail.fetch("members")
     optimum = Evaluation::Arcs.new(inside(members)).minimum
     label = "#{name}: cut of #{members.size}-package knot is minimum"
-    Evaluation::Check.of(Evaluation::Corpus::SUITE, label, optimum, detail.fetch("cut").sum { it["weight"] }) if optimum
+    Evaluation::Check.of(SUITE, label, optimum, detail.fetch("cut").sum { it["weight"] }) if optimum
   end
 
   def inside(members)

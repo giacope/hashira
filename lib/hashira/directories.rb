@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
 class Hashira::Directories
-  def initialize(requested)
+  def initialize(requested, here = Dir.pwd, layout = Hashira::Layout.new)
     @requested = requested
+    @here = here
+    @layout = layout
   end
 
   def entries(directories)
@@ -31,25 +33,20 @@ class Hashira::Directories
     chosen
   end
 
-  def tidy(path) = path.delete_suffix("/").delete_prefix("#{Dir.pwd}/").delete_prefix("./")
+  def tidy(path) = path.delete_suffix("/").delete_prefix("#{@here}/").delete_prefix("./")
 
   def bare?(survivors) = survivors.flat_map { Dir["#{it}/**/*.rb"] }.empty?
 
   def defaults
-    found = Hashira::Layout.new.targets
+    found = @layout.targets
     raise(Hashira::Error, "no lib/ directory here — pass the source directory explicitly") if found.empty?
     found
   end
 
   def descend(directory)
-    child = sole(directory)
-    return directory unless child && Dir["#{child}/*/"].any? && (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty?
-    descend(child)
-  end
-
-  def sole(directory)
-    subdirectories = Dir["#{directory}/*/"]
-    subdirectories.size == 1 ? subdirectories.first.delete_suffix("/") : nil
+    child, *others = Dir["#{directory}/*/"].map { it.delete_suffix("/") }
+    return directory unless child && others.empty? && Dir["#{child}/*/"].any?
+    (Dir["#{directory}/*.rb"] - ["#{child}.rb"]).empty? ? descend(child) : directory
   end
 
   def vet(directories)
@@ -59,7 +56,7 @@ class Hashira::Directories
     raise(Hashira::Error, "no such directory: #{missing.join(", ")}") unless missing.empty?
   end
 
-  def hint(files) = Hashira::Layout.new.suggestion(files)
+  def hint(files) = @layout.suggestion(files)
 
   def distinct(directories)
     pairs = directories.map { [it, File.realpath(it)] }.uniq(&:last)

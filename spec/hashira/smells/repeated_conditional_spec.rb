@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] })
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] })
       .to(eq([["App::Zone::Thing", ["@mode == :x × 3 (lines 4, 7, 12)"]]]))
     expect(message(findings.first)).to(include("branches on the same test 3 times", "zone/thing.rb:3"))
   end
@@ -127,7 +127,9 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["all == 1 × 3 (lines 5, 6)", "@mode == 1 × 3 (lines 10, 11)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
+      eq(["all == 1 × 3 (lines 5, 6)", "@mode == 1 × 3 (lines 10, 11)"])
+    )
   end
 
   it "counts a test on the object's own state across blocks too, lines in order" do
@@ -144,7 +146,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@mode == :on × 3 (lines 5, 6, 7)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@mode == :on × 3 (lines 5, 6, 7)"]))
   end
 
   it "judges a reopened class once, across every file that opens it" do
@@ -156,8 +158,8 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
       "repeated_conditional"
     )
     expect(findings.size).to(eq(1))
-    expect(findings.first.detail[:site]).to(eq("thing.rb:1"))
-    expect(findings.first.evidence).to(eq(["@m == 1 × 3 (lines 2, 4)"]))
+    expect(findings.first.to_h[:detail][:site]).to(eq("thing.rb:1"))
+    expect(findings.first.to_h[:evidence]).to(eq(["@m == 1 × 3 (lines 2, 4)"]))
   end
 
   it "splits compound tests into their parts, so a flag tested alone and inside an || counts each time" do
@@ -191,7 +193,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["@state == :closed × 3 (lines 4, 7, 11)", "@kind == :open × 3 (lines 17, 19, 21)"])
     )
   end
@@ -279,7 +281,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["@job.state == :open × 3 (lines 5, 10, 14)"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["@job.state == :open × 3 (lines 5, 10, 14)"]))
   end
 
   it "still counts a recheck when nothing on the receiver changed before it in that method" do
@@ -319,7 +321,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["@job.state == :claimed × 4 (lines 9, 13, 15, 28)", "state == :claimed × 3 (lines 20, 23, 25)"])
     )
   end
@@ -340,7 +342,7 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
         def tax = case @plan when Plan::FREE then 0 else 1 end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(["@owner.is_a?(Org) × 3 (lines 2, 4, 6)", "@plan × 3 (lines 8, 10, 12)"])
     )
   end

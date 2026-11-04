@@ -1,12 +1,20 @@
 # frozen_string_literal: true
 
 class Hashira::Suppression::Suppressions
-  Screened = Data.define(:kept, :suppressed, :unused)
+  class Screened
+    def initialize(kept, suppressed, unused)
+      @kept = kept
+      @suppressed = suppressed
+      @unused = unused
+    end
 
-  CLEAR = Screened.new(kept: [], suppressed: [], unused: [])
+    def to_a = [@kept, @suppressed, @unused]
+  end
 
-  def initialize(project, trees, kinds)
-    @project = project
+  CLEAR = Screened.new([], [], [])
+
+  def initialize(paths, trees, kinds)
+    @paths = paths
     @trees = trees
     @kinds = kinds
   end
@@ -14,12 +22,12 @@ class Hashira::Suppression::Suppressions
   def directives = @_directives ||= @trees.comments.flat_map { |path, comments| read(path, comments) }
 
   def read(path, comments)
-    Hashira::Suppression::Directives.new(@project.relative(path), comments, @trees.lines(path), @kinds).to_a
+    Hashira::Suppression::Directives.new(@paths.relative(path), comments, @trees.lines(path), @kinds).to_a
   end
 
   def screen(findings)
-    judged = findings.map { Hashira::Suppression::Silence.new(it, directives).verdict }
+    judged = findings.map { it.silenced(directives) }
     used = judged.flat_map(&:last)
-    Screened.new(kept: judged.filter_map(&:first), suppressed: judged.flat_map { it[1] }, unused: directives - used)
+    Screened.new(judged.flat_map(&:first), judged.flat_map { it[1] }, directives - used)
   end
 end

@@ -1,42 +1,22 @@
 # frozen_string_literal: true
 
-module Hashira::CLI
-  BASELINE = "hashira_baseline.json"
+class Hashira::CLI::Options
+  def self.parse(argv) = Hashira::CLI::Settings.new(argv).options
 
-  Options =
-    Data.define(
-      :directories, :mode, :baseline, :fail_on, :skip, :only, :kinds, :packaging, :top, :compact, :strict, :home, :rules
-    ) do
-      def initialize(home: Hashira::CLI::Home::HERE, rules: Hashira::Config::Rules::NONE, strict: nil, **) = super
+  def initialize(output, scope, judgement, record)
+    @output = output
+    @scope = scope
+    @judgement = judgement
+    @record = record
+  end
 
-      def self.parse(argv) = Settings.new(argv).options
-
-      def self.build(mode)
-        new(
-          directories: [], baseline: "", fail_on: [], skip: [], only: [], kinds: [],
-          packaging: :auto, top: nil, compact: nil, mode:
-        )
-      end
-
-      def pipeline
-        chosen = project
-        Hashira::Report::Notices.new.scanning(chosen.files.size, chosen.label)
-        Hashira::Pipeline.new(chosen, enabled: analyzers, packaging:, only:).verify
-      end
-
-      def project
-        named = ruled.naming(kinds + fail_on).narrowed(kinds, Hashira::Pipeline::KINDS)
-        boundaries = decisions.boundaries + rules.boundaries
-        Hashira::Project.new(directories, boundaries:, home: home.path, rules: named)
-      end
-
-      def analyzers = Hashira::Pipeline::ANALYZERS - skip
-      private
-      def ruled = strict ? rules.tightened : rules
-      def decisions
-        recorded = Hashira::CI::Baseline.new(baseline)
-        raise(Hashira::Error, recorded.trouble) if recorded.trouble
-        recorded
-      end
+  def status(_usage, notices, clock = Process)
+    started = clock.clock_gettime(Process::CLOCK_MONOTONIC)
+    pipeline = @judgement.pipeline(@scope, @record, notices)
+    pipeline.call(Hashira::CLI::Run.new(@output, @judgement.sieve(@scope), @record)).tap do
+      pipeline.finished(notices, format("%.1f", clock.clock_gettime(Process::CLOCK_MONOTONIC) - started))
     end
+  end
+
+  def to_h = [@output, @scope, @judgement, @record].map(&:to_h).reduce(:merge)
 end

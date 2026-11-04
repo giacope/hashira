@@ -17,7 +17,7 @@ class Hashira::Report::HotspotTable
   def print
     return if ranked.empty?
     @io.puts("Hotspots — #{weighed? ? WEIGHED : UNWEIGHED} (where refactoring pays the most):\n\n")
-    Hashira::Report::Columns.new(HEADERS, ranked.map(&:cells), io: @io).print
+    Hashira::Report::Columns.new(HEADERS, ranked.map(&:to_a), io: @io).print
     withheld
     legend
   end

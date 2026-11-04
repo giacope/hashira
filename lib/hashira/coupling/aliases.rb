@@ -7,12 +7,12 @@ class Hashira::Coupling::Aliases
     @openings = openings
   end
 
-  def of(path) = values[path]
+  def of(path) = values.fetch(path, [])
 
   private
 
   def values
-    @_values ||= @openings.flat_map(&:assignments).reject { built?(it[1]) }.to_h { |path, *value| [path, value] }
+    @_values ||= @openings.to_a.flat_map(&:assignments).reject { built?(it[1]) }.to_h { |path, *value| [path, value] }
   end
 
   def built?(value) = Hashira::Coupling::Body.new(value).built?

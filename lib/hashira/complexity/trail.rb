@@ -1,18 +1,31 @@
 # frozen_string_literal: true
 
 class Hashira::Complexity::Trail
-  Trace = Data.define(:site, :chain)
+  class Trace
+    def initialize(site:, chain:)
+      @site = site
+      @chain = chain
+    end
 
-  def initialize(entry, helpers)
+    def to_h = { site: @site, chain: @chain }
+
+    def phrase(package)
+      "#{package} reaches its work through #{Hashira::Prose::Count.new(@chain, "hollow helper")}, " \
+        "private one-liners called once that only pass a call on (#{@site}). Inline them into their callers."
+    end
+  end
+
+  def initialize(entry, helpers, node)
     @entry = entry
     @helpers = helpers
+    @node = node
   end
 
   def finding(limit) = (build if path.size >= limit)
 
   private
 
-  def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@entry.site.node)
+  def path = @_path ||= Hashira::Complexity::Hops.new(@helpers).longest(@node)
 
-  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path.map { @entry.cite(it) })
+  def build = @entry.finding(Trace.new(site: @entry.spot, chain: path.size), path.zip)
 end

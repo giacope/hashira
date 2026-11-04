@@ -1,26 +1,22 @@
 # frozen_string_literal: true
 
-require_relative "../pipeline"
-require_relative "kinds"
+require_relative "../checks"
 
-module Hashira::CLI::FailOn
-  MEASURES = (Hashira::Pipeline::ANALYZERS - %i[coupling smells]).map(&:to_s).freeze
-
+class Hashira::CLI::FailOn
   EVERY = "all"
 
-  KINDS = { "cycles" => "cycle", "sdp" => "unstable_dependency", "sdp_violation" => "unstable_dependency" }
-    .merge("dupe" => "duplication")
-    .merge(Hashira::Pipeline::STRUCTURAL.to_h { [it, it] })
-    .merge(MEASURES.to_h { [it, it] })
-    .merge(%w[fragmentation indirection].to_h { [it, it] })
-    .merge("smells" => Hashira::Pipeline::SMELLS)
-    .merge(Hashira::Pipeline::SMELLS.to_h { [it, it] })
-    .freeze
+  private_constant :EVERY
 
-  OWNERS = {
-    **Hashira::Pipeline::STRUCTURAL.to_h { [it, :coupling] },
-    **MEASURES.to_h { [it, it.to_sym] },
-    **%w[fragmentation indirection].to_h { [it, :complexity] },
-    **Hashira::Pipeline::SMELLS.to_h { [it, :smells] }
-  }.freeze
+  def initialize(kinds = [], checks = Hashira::Checks.new)
+    @kinds = kinds
+    @checks = checks
+  end
+
+  def every? = @kinds.include?(EVERY)
+
+  def named = @kinds - [EVERY]
+
+  def names = @checks.names.merge(EVERY => EVERY)
+
+  def to_a = every? ? [EVERY] : @kinds
 end

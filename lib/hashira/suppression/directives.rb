@@ -21,16 +21,16 @@ class Hashira::Suppression::Directives
   def read(comment)
     line = comment.location.start_line
     parts = SHAPE.match(comment.slice) || refuse(line, "reads hashira:VERB KIND[,KIND] -- REASON")
-    kinds = vetted(line, parts)
-    target = __send__(VERBS.fetch(parts[:verb]), comment, line)
-    Hashira::Suppression::Directive.new(file: @file, line:, target:, kinds:, reason: parts[:reason])
+    verb, named, reason = parts.captures
+    kinds = vetted(line, verb, named, reason)
+    target = __send__(VERBS.fetch(verb), comment, line)
+    Hashira::Suppression::Directive.new("#{@file}:#{line}", "#{@file}:#{target}", kinds, reason)
   end
 
-  def vetted(line, parts)
-    verb = parts[:verb]
+  def vetted(line, verb, named, reason)
     refuse(line, "#{verb} is not a directive (use: #{VERBS.keys.join(", ")})") unless VERBS.key?(verb)
-    refuse(line, "needs a reason after --") if parts[:reason].to_s.empty?
-    kinds(line, parts[:kinds].split(/[\s,]+/))
+    refuse(line, "needs a reason after --") if reason.to_s.empty?
+    kinds(line, named.split(/[\s,]+/))
   end
 
   def kinds(line, named)
@@ -40,14 +40,15 @@ class Hashira::Suppression::Directives
     named
   end
 
-  def following(_comment, line) = next_code(line) || raise(Hashira::Error, "#{at(line)} has no line of code after it")
+  def following(_comment, line)
+    found = ((line + 1)..@lines.size).find { code?(@lines[it - 1]) }
+    found || raise(Hashira::Error, "#{at(line)} has no line of code after it")
+  end
 
   def trailing(comment, line)
     return line if comment.trailing?
     raise(Hashira::Error, "#{at(line)} disable sits on the line it silences; above a line, use disable-next-line")
   end
-
-  def next_code(line) = ((line + 1)..@lines.size).find { code?(@lines[it - 1]) }
 
   def code?(text) = !text.strip.empty? && !text.lstrip.start_with?("#")
 

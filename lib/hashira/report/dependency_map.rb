@@ -19,7 +19,7 @@ class Hashira::Report::DependencyMap
 
   private
 
-  def split = @_split ||= @graph.packages.partition { degree(it).positive? }
+  def split = @_split ||= packages.to_a.partition { degree(it).positive? }
 
   def ranked = split.first.sort_by { [-degree(it), it] }
 
@@ -27,17 +27,11 @@ class Hashira::Report::DependencyMap
 
   def over = split.first.size - kept.size
 
-  def loners = @io.puts("  + #{Hashira::Report::Count.new(split.last.size, "package")} with no edges either way")
+  def loners = @io.puts("  + #{Hashira::Prose::Count.new(split.last.size, "package")} with no edges either way")
 
-  def degree(package) = @graph.outgoing(package).size + @graph.incoming(package).size
+  def degree(package) = edges.outgoing(package).size + edges.incoming(package).size
+
+  def packages = @graph.packages
+
+  def edges = @_edges ||= @graph.edges
 end
-
-Hashira::Report::DependencyRow =
-  Data.define(:graph, :package) do
-    def to_s
-      outgoing = graph.outgoing(package).map { "#{it}(#{graph.weight(package, it)})" }
-      format("  %-12s -> %-32s <- %s", package, listed(outgoing), listed(graph.incoming(package)))
-    end
-    private
-    def listed(items) = items.empty? ? "(none)" : items.join(", ")
-  end

@@ -1,34 +1,38 @@
 # frozen_string_literal: true
 
 class Evaluation::Tool
-  PEAK = File.join(Evaluation::ROOT, "probe", "peak.rb")
+  HOME = Evaluation::Home.new
 
-  EVERY = File.join(Evaluation::ROOT, "probe", "every.yml")
+  PEAK = HOME.join("probe", "peak.rb")
+
+  EVERY = HOME.join("probe", "every.yml")
 
   QUIET = %w[BUNDLE_GEMFILE BUNDLE_BIN_PATH RUBYOPT RUBYLIB].to_h { [it, nil] }.freeze
 
   def self.build(root) = new(File.expand_path(root))
 
-  def initialize(root)
+  def initialize(root, scratch = Dir)
     @root = root
+    @scratch = scratch
   end
 
   def call(directory, arguments)
-    Dir.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
+    @scratch.mktmpdir("peak") { |scratch| run(directory, arguments, File.join(scratch, "peak")) }
   end
 
-  def every = @_every ||= opting? ? ["--config", EVERY] : []
-
-  def configured(settings, path)
-    return every unless settings
+  def configure(settings, path)
+    return unless settings
     FileUtils.mkdir_p(File.dirname(path))
     File.write(path, YAML.dump({ "checks" => "all" }.merge(settings)))
-    ["--config", path]
   end
+
+  def arguments(settings, path) = settings ? ["--config", path] : every
 
   def commit = Open3.capture2e("git", "-C", @root, "rev-parse", "--short", "HEAD").first.strip
 
   private
+
+  def every = @_every ||= opting? ? ["--config", EVERY] : []
 
   def run(directory, arguments, report)
     output, error, status = Open3.capture3(
@@ -36,7 +40,7 @@ class Evaluation::Tool
       chdir: directory
     )
     peak = Evaluation::Peak.of(report)
-    Evaluation::Outcome.new(status: status.exitstatus, output:, error:, peak:, json: Evaluation::Outcome.parse(output))
+    Evaluation::Outcome.new("#{output}#{error}", status.exitstatus, peak, Evaluation::Outcome.parse(output))
   end
 
   def opting? = Open3.capture2e(*command, "--help").first.include?("checks: all")

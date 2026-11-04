@@ -23,12 +23,14 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
 
   def layered(declared, extra = {}, base = files)
     within(base.merge(extra)) do
-      rules = Hashira::Config::Rules::NONE.layered(Hashira::Config::Layers.parse(declared))
-      return Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules:)).screened.kept.select { it.kind == "layer_violation" }
+      pipeline = Hashira::Pipeline.build(Hashira::Project.new(["lib/app"]), Hashira::Config::Rules.new({}), Hashira::Config::Layers.parse(declared))
+      return kept(pipeline).select { it.to_h[:kind] == "layer_violation" }
     end
   end
 
-  def summary(findings) = findings.map { [it.digest, it.detail.refs, it.detail.cut, it.evidence.size] }
+  def summary(findings)
+    findings.map { [it.to_h[:digest], it.to_h[:detail][:refs], it.to_h[:detail][:cut], it.to_h[:evidence].size] }
+  end
 
   def edge(from, to, weight) = { from:, to:, weight: }
 
@@ -57,13 +59,14 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
   it "places a constant by the paths that define it, and skips one defined in two layers" do
     reopened = { "lib/app/jobs/page.rb" => type("Web", "Page", "def x = 1") }
     paths = [{ "outer" => "lib/app/web" }, { "middle" => "lib/app/jobs" }, { "inner" => "lib/app/domain" }]
-    expect([layered(paths), layered(paths, reopened)].map { |found| found.map { [it.digest, it.detail.refs] } })
+    found = [layered(paths), layered(paths, reopened)]
+    expect(found.map { |all| all.map { [it.to_h[:digest], it.to_h[:detail][:refs]] } })
       .to(eq([[["inner -> outer", 2], ["inner -> middle", 1]], [["inner -> middle", 1]]]))
   end
 
   it "lists a pair's edges by weight" do
     linked = { "lib/app/jobs/link.rb" => type("Jobs", "Link", "def x = Web::Page") }
-    expect(layered(["web", { "inner" => %w[domain jobs] }], linked).first.detail.cut)
+    expect(layered(["web", { "inner" => %w[domain jobs] }], linked).first.to_h[:detail][:cut])
       .to(eq([edge("Jobs::Link", "Web::Page", 1), edge("Domain::Order", "Web::Page", 2)]))
   end
 
@@ -74,7 +77,7 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
       "lib/app/domain/wiring.rb" => "module App\n  PAGE = Web::Page\nend\n"
     }
     layers = [{ "outer" => %w[lib/app/web/page.rb] }, { "inner" => %w[lib/app/web/core.rb lib/app/domain] }]
-    expect(layered(layers, split).first.detail.cut).to(
+    expect(layered(layers, split).first.to_h[:detail][:cut]).to(
       eq(
         [
           edge("App", "Web::Page", 1), edge("Web::Core", "Web::Page", 1), edge("domain/boot.rb", "Web::Page", 1),
@@ -95,20 +98,20 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
 
   def namespaced
     within(rails) do
-      rules = Hashira::Config::Rules::NONE.layered(Hashira::Config::Layers.parse([{ "domain" => "Invoice" }, "(web)"]))
-      return Hashira::Pipeline.new(Hashira::Project.new(["app"], rules:)).findings.select { it.kind == "layer_violation" }
+      layers = Hashira::Config::Layers.parse([{ "domain" => "Invoice" }, "(web)"])
+      return kept(Hashira::Pipeline.build(Hashira::Project.new(["app"]), Hashira::Config::Rules.new({}), layers)).select { it.to_h[:kind] == "layer_violation" }
     end
   end
 
   it "places a type by the namespace package it joins in a Rails app, folds included" do
-    expect(namespaced.map { it.detail.cut })
+    expect(namespaced.map { it.to_h[:detail][:cut] })
       .to(eq([[edge("InvoicesController", "Invoice", 1), edge("InvoicesController", "InvoicePolicy", 1)]]))
   end
 
   it "names a constant two packages claim by its class" do
     shared = { "lib/app/extra/page.rb" => type("Web", "Page", "def y = 2") }
     layers = [{ "outer" => %w[web extra] }, { "inner" => %w[domain jobs] }]
-    expect(layered(layers, shared).first.detail.cut).to(eq([edge("Domain::Order", "Web::Page", 2)]))
+    expect(layered(layers, shared).first.to_h[:detail][:cut]).to(eq([edge("Domain::Order", "Web::Page", 2)]))
   end
 
   def more = { "lib/app/domain/more.rb" => type("Domain", "More", "def x = [Web::Page, Web::Page]") }
@@ -133,10 +136,8 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
   end
 
   def long
-    edges = (1..7).map { edge("p#{it}", "web", it) }
-    detail = described_class::Detail.new(inner: "core", outer: "web", cut: edges, refs: 28, leaning: %w[core web])
-      .with(against: 0)
-    message(Hashira::Analysis::Finding.new(kind: "layer_violation", package: "core", evidence: [], detail:))
+    ties = Hashira::Coupling::Ties.new((1..7).map { ["p#{it}", "web", it] })
+    message(handmade("layer_violation", "core", described_class::Breach.new("core", "web", ties, [[%w[core web], 0]])))
   end
 
   it "lists the edges to cut, the cheapest first, past a long list" do
@@ -147,11 +148,11 @@ RSpec.describe(Hashira::Coupling::Layering, :aggregate_failures) do
   def silenced
     order = "lib/app/domain/order.rb"
     quiet = "Page.new # hashira:disable layer_violation -- old"
-    layered(%w[web jobs domain], { order => files[order].sub("Page.new", quiet) }).map(&:digest)
+    layered(%w[web jobs domain], { order => files[order].sub("Page.new", quiet) }).map { it.to_h[:digest] }
   end
 
   it "is silenced on the line that makes the reference, and ratcheted by its refs" do
-    found = layered(%w[web jobs domain]).map { [it.anchors, it.magnitude] }
+    found = layered(%w[web jobs domain]).map { [anchors_of(it), mark_of(it).magnitude] }
     expect([found, silenced]).to(
       eq([[[%w[domain/order.rb:4 domain/order.rb:5], 2], [%w[domain/order.rb:6], 1]], ["domain -> jobs"]])
     )

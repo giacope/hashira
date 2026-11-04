@@ -1,60 +1,61 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Scope
-  def initialize(registry, catalog, placement)
-    @registry = registry
+  def initialize(roster, catalog, layout, lineage = Hashira::Coupling::Lineage.new(catalog))
+    @roster = roster
     @catalog = catalog
-    @placement = placement
+    @layout = layout
+    @lineage = lineage
   end
 
   def resolve(segments, nesting)
     found = locate(segments, nesting)
-    owner(found) if found && !@placement.skip?(found)
+    owner(found) if found && !@layout.skip?(found)
   end
 
-  def owner(path) = qualify(@registry.exact(path))
-
-  def locate(segments, nesting) = bind(Hashira::Coupling::Lineage::Link.new(segments:, nesting:), 1)
+  def locate(segments, nesting) = bind(Hashira::Coupling::Ancestor.new(segments, nesting), 1)
 
   def pinpoint(segments) = resolve(segments, [])
 
-  def vias = @_vias ||= Hash.new { |hash, path| hash[path] = Set.new }
+  def vias(path) = settled.filter_map { |(via, _rest), found| via if found == [path] }
 
   private
 
+  def owner(path) = @roster.owner(path)
+
   def bind(link, reach)
-    segments, nesting = link.deconstruct
-    [*nesting.reverse, *ancestors(nesting.last)].lazy.filter_map { descend(it, segments, reach) }.first ||
-      top(segments, reach)
+    segments, nesting = link.to_a
+    [*nesting.reverse, *ancestors(nesting.last)].lazy.flat_map { descend(it, segments, reach) }.first ||
+      top(segments, reach).first
   end
 
   def descend(entry, segments, reach)
-    cuts(segments, reach).filter_map { settle(@catalog.strip(entry + segments.first(it)), segments.drop(it)) }.first
+    cuts(segments, reach).filter_map { settle(@catalog.strip(entry + segments.first(it)), segments.drop(it)) }.first(1)
   end
 
-  def top(segments, reach)
-    cuts(segments, reach).filter_map { settle(@catalog.rooted(segments.first(it)), segments.drop(it)) }.first
-  end
+  def top(segments, reach) = cuts(segments, reach).flat_map { rooted(segments, it) }.first(1)
+
+  def rooted(segments, cut) = @catalog.rooted(segments.first(cut)).filter_map { settle(it, segments.drop(cut)) }
 
   def cuts(segments, reach) = segments.length.downto(reach).lazy
 
   def settle(path, rest)
     return unless path && known?(path)
-    rest.empty? ? path : ancestral(path, rest) || path
+    rest.empty? ? path : ancestral(path, rest).fetch(0, path)
   end
 
   def ancestral(path, rest)
-    found = lineage(path).lazy.filter_map { descend(it, rest, rest.length) }.first
-    vias[found] << path
-    found
+    settled[[path, rest]] ||= lineage(path).lazy.flat_map { descend(it, rest, rest.length) }.first(1)
   end
 
-  def known?(path) = @registry.exact(path) && @catalog.owned?(path)
+  def settled = @_settled ||= {}
+
+  def known?(path) = @roster.claimed?(path) && @catalog.owned?(path)
 
   def ancestors(innermost) = innermost ? lineage(@catalog.strip(innermost)) : []
 
   def lineage(path)
-    return ancestry[path] if ancestry.key?(path)
+    return ancestry.fetch(path) if ancestry.key?(path)
     ancestry[path] = []
     ancestry[path] = climb(path)
   end
@@ -63,7 +64,5 @@ class Hashira::Coupling::Scope
 
   def climb(path) = parents(path).flat_map { [it, *lineage(it)] }.uniq
 
-  def parents(path) = @catalog.parents(path).filter_map { bind(it, it.reach) }
-
-  def qualify(found) = (found unless found == Hashira::Coupling::ConstantRegistry::AMBIGUOUS)
+  def parents(path) = @lineage.parents(path).filter_map { bind(it, it.reach) }
 end

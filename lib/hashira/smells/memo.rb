@@ -3,6 +3,8 @@
 require "prism"
 
 class Hashira::Smells::Memo
+  WRITES = [Prism::LocalVariableWriteNode, Prism::InstanceVariableWriteNode].freeze
+
   def initialize(branch, check)
     @branch = branch
     @check = check
@@ -18,7 +20,7 @@ class Hashira::Smells::Memo
   private
 
   def passed?(held, method)
-    given = Hashira::Smells::Parameters.new(method).names
+    given = method.accept(Hashira::Smells::Parameters).names
     held.any? { it.is_a?(Prism::LocalVariableReadNode) && given.include?(it.name) }
   end
 
@@ -38,15 +40,15 @@ class Hashira::Smells::Memo
   def tested? = @branch.predicate.equal?(@check)
 
   def lines(side)
-    Array(side.statements&.body).flat_map { it.is_a?(Prism::ParenthesesNode) ? Hashira::Analysis::Syntax.new(it).statements : [it] }
+    Array(side.statements&.body).flat_map { it.is_a?(Prism::ParenthesesNode) ? Hashira::Analysis::Syntax::Body.new(it).to_a : [it] }
   end
 
   def guards?(kept, names, method)
     returned = kept&.one? && kept.first.is_a?(Prism::ReturnNode) && kept.first.arguments
-    returned && answers?(returned.arguments, names) && Hashira::Analysis::Syntax.new(method).statements.any? { writes?(it, names) }
+    returned && answers?(returned.arguments, names) && method.accept(Hashira::Analysis::Syntax::Body).to_a.any? { writes?(it, names) }
   end
 
   def answers?(found, names) = found.one? && names.include?(found.first.slice)
 
-  def writes?(node, names) = Hashira::Smells::Course::WRITES.include?(node.class) && names.include?(node.name.to_s)
+  def writes?(node, names) = WRITES.include?(node.class) && names.include?(node.name.to_s)
 end

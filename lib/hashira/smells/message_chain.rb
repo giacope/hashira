@@ -3,20 +3,51 @@
 require "prism"
 
 class Hashira::Smells::MessageChain < Hashira::Smells::Check
+  MESSAGES = Hashira::Runtime::Messages.new
+
+  class Chain
+    def initialize(kind, site, through, places)
+      @kind = kind
+      @site = site
+      @through = through
+      @places = places
+    end
+
+    def to_h = { site: @site, places: @places, through: @through }
+
+    def phrase(package)
+      near, far = @through
+      reaching = "#{Hashira::Prose::Count.new(@places, "method")} reach#{"es" if @places == 1} through"
+      "#{package} — #{reaching} #{near} into #{far} (#{@site}). Ask #{near} for what you need, or hand the #{far} in."
+    end
+
+    def finding(parts, testimony)
+      testimony.finding(@kind, @through.join(" → "), Chain.new(@kind, @site, @through, parts.size))
+    end
+  end
+
+  def findings = []
+
+  def members
+    return [] unless smelly?
+    through = path(chains.first.receiver).first(2)
+    [member(:chain, through, Chain.new(kind, site, through, 1), cited(["#{label} (#{site})"], site))]
+  end
+
   private
 
   def smelly? = chains.any?
 
-  def ownership = subject.ownership
-
-  def repertoire = @_repertoire ||= ownership.repertoire
-
-  def values = @_values ||= ownership.values
+  def initialize(subject, rules, words, names)
+    super(subject, rules)
+    @words = words
+    @names = names
+  end
 
   def chains
     @_chains ||=
       begin
-        found = Hashira::Smells::Scope.new(subject.node).inside.grep(Prism::CallNode).select { chained?(it) }
+        found = subject.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode).select { chained?(it) }
         found.reject { |call| found.any? { it.receiver.equal?(call) } }
       end
   end
@@ -25,17 +56,18 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     hop = call.receiver
     return false unless hop.is_a?(Prism::CallNode) && !inward?(hop.receiver) && !hop.block
     far = type(hop)
-    far && answers?(far, call.name) && !values.include?(far)
+    far.any? && answers?(far.first, call.name) && !@words.value?(far.first)
   end
 
   def answers?(type, message)
-    !Hashira::Analysis::UNIVERSAL.include?(message) && repertoire.of([type]).include?(message.to_s.delete_suffix("="))
+    !MESSAGES.universal?(message) && @words.of([type]).include?(message.to_s.delete_suffix("="))
   end
 
   def type(node)
     case node
     when Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode then named(node.name)
-    when Prism::CallNode then step(node) unless node.arguments
+    when Prism::CallNode then node.arguments ? [] : step(node)
+    else []
     end
   end
 
@@ -44,22 +76,17 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     return named(message) if inward?(call.receiver)
     near = type(call.receiver)
     far = named(message)
-    far if near && near != far && answers?(near, message)
+    near.any? && near != far && answers?(near.first, message) ? far : []
   end
 
   def inward?(receiver) = receiver.nil? || receiver.is_a?(Prism::SelfNode)
 
   def named(name)
-    Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first).find { ownership.owned?([it], subject.owner) }
+    types = Hashira::Smells::Naming.new(name.to_s.delete_prefix("@")).types.map(&:first)
+    Array(types.find { @names.place([it], subject.home.to_s).any? })
   end
 
   def path(node)
-    node.is_a?(Prism::CallNode) && !inward?(node.receiver) ? path(node.receiver) + [type(node)] : [type(node)]
-  end
-
-  def detail = { site:, through: path(chains.first.receiver).first(2) }
-
-  def evidence
-    chains.map { "#{it.slice.lines.first.strip} (line #{it.location.start_line}: #{path(it.receiver).join(" → ")})" }
+    node.is_a?(Prism::CallNode) && !inward?(node.receiver) ? path(node.receiver) + type(node) : type(node)
   end
 end

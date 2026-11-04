@@ -11,5 +11,5 @@ class Hashira::Report::Listing
     items.each { |item| @io.puts("  #{yield(item)}") }
   end
 
-  def waived(title, pairs) = print(title, pairs) { |finding, why| "~ #{finding.heading} — #{why}" }
+  def waived(title, pairs) = print(title, pairs) { |finding, why| "~ #{finding} — #{why}" }
 end

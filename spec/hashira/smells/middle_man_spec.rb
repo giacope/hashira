@@ -6,8 +6,9 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
   def relayed(source, rules = Hashira::Config::Rules::ALL)
     within("lib/app/cache.rb" => source) do
       project = Hashira::Project.new(["lib/app"])
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      return Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules).findings.select { it.kind == "middle_man" }
+      trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
+      report = Hashira::Smells::Census.new(project, trees).report(Hashira::Boundaries.new([], trees), rules)
+      return report.findings.select { it.to_h[:kind] == "middle_man" }
     end
   end
 
@@ -25,7 +26,7 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
 
   it "flags a class whose public methods mostly only forward to one field, naming them" do
     finding = relayed(cache).first
-    expect([finding.package, finding.detail.to_h, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(
         [
           "Cache", { site: "cache.rb:1", delegate: "@store", count: 3, total: 4 },
@@ -47,7 +48,7 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
       "def touch(*, **) = @store.touch(*, **)"
     ]
     readers += ["def clear(...) = @store.clear_all(...)", "def scan(key, &) = @store.scan(key, &)"]
-    expect(readers.map { relayed(cache(it)).first.detail.count }).to(eq([4, 4, 4, 4]))
+    expect(readers.map { relayed(cache(it)).first.to_h[:detail][:count] }).to(eq([4, 4, 4, 4]))
   end
 
   it "leaves alone a class where forwarders are not most of its public methods" do
@@ -98,7 +99,7 @@ RSpec.describe(Hashira::Smells::MiddleMan, :aggregate_failures) do
 
   it "names the delegate most methods forward to, wherever it comes in the class" do
     source = cache.sub("  def read(key)", "  def log(line) = @log.write(line)\n  def read(key)")
-    expect(relayed(source).first.detail.delegate).to(eq("@store"))
+    expect(relayed(source).first.to_h[:detail][:delegate]).to(eq("@store"))
   end
 
   it "does not count calls on a constant, through a method that is not a reader, or through another's reader" do

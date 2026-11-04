@@ -7,6 +7,11 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
     body = ->(recv) { "def run\n #{recv}\n #{recv}\n #{recv}\nend\n" }
     { "a.rb" => body.call(first), "b.rb" => body.call(second) }
   end
+  it "lists the ranges of its sites in file order" do
+    sites = clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))").to_a.reverse.to_h
+    expect(described_class.new(cluster(sites)).to_h[:locations]).to(eq(%w[a.rb:1-5 b.rb:1-5]))
+  end
+
   it "reports :identical when the sites are byte-for-byte the same" do
     expect(kind(clone("g.emit(fetch(:h), fetch(:p))", "g.emit(fetch(:h), fetch(:p))"))).to(eq(:identical))
   end
@@ -85,13 +90,14 @@ RSpec.describe(Hashira::Duplication::Delta, :aggregate_failures) do
 
   it "reports :structure over a literal drift, measured by the shape most sites share" do
     sources = { "a.rb" => settling(30), "b.rb" => settling(60), "c.rb" => settling(30, " gateway.log(:slow)\n") }
-    expect(cluster(sources)).to(have_attributes(size: 3, mass: 47))
+    expect(cluster(sources)).to(have_attributes(count: 3, mass: 47))
     expect(kind(sources)).to(eq(:structure))
   end
 
   it "serializes to a hash whose kind selects the refactoring advice" do
     delta = described_class.new(cluster(clone("emit(fetch(:h), 1)", "emit(fetch(:h), 9)")))
     expect(delta.to_h).to(include(sites: 2, kind: :literal))
-    expect(Hashira::Report::Phrases::DUPLICATION_ADVICE.fetch(delta.kind)).to(include("extract a method"))
+    overlap = Hashira::Duplication::DuplicationFinding::Overlap.new(2, 10, delta.kind, false)
+    expect(overlap.phrase("a.rb:1")).to(include("extract a method"))
   end
 end

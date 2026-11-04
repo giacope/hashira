@@ -5,66 +5,56 @@ class Evaluation::Command
     Evaluation::Conformance, Evaluation::Graphs, Evaluation::Clones, Evaluation::Smells, Evaluation::Behaviour
   ].freeze
 
-  RESULTS = File.join(Evaluation::ROOT, "results")
+  HOME = Evaluation::Home.new
 
-  CORPUS = File.join(Evaluation::ROOT, "tmp", "corpus")
+  RESULTS = HOME.join("results")
 
-  def initialize(argv)
+  CORPUS = HOME.join("tmp", "corpus")
+
+  USAGE = "eval/run --hashira PATH"
+
+  def initialize(argv, io: $stdout)
     @argv = argv
+    @io = io
   end
 
   def status
-    return compare if option("--compare")
-    return agree if option("--agree")
-    board = recorded
-    report([board])
-    board["suites"].values.all? { it["passed"] == it["total"] } ? 0 : 1
+    return shown(Evaluation::Page.new(compared)) if option("--compare").any?
+    return shown(Evaluation::Page.new(agreed)) if option("--agree").any?
+    shown(Evaluation::Record.new(board, RESULTS, corpus))
   end
 
   private
 
-  def recorded
-    board = Evaluation::Board.new(option("--label") || "run", tool, checks, corpus).write(RESULTS)
-    queue
-    board
+  def shown(page)
+    page.print(@io)
+    page.status
   end
 
-  def compare = report(option("--compare").split(",").map { JSON.parse(File.read(it)) })
+  def board = Evaluation::Board.new(option("--label").fetch(0, "run"), tool, checks, corpus)
 
-  def report(boards) = show(Evaluation::Comparison.new(boards).markdown)
+  def compared = report(option("--compare").fetch(0).split(",").map { JSON.parse(File.read(it)) })
 
-  def agree = show(Evaluation::Agreement.build(option("--agree"), option("--raters")&.split(",")).markdown)
+  def report(boards) = Evaluation::Comparison.new(boards).markdown
 
-  def show(text)
-    $stdout.puts(text)
-    0
-  end
+  def agreed = Evaluation::Agreement.build(option("--agree").fetch(0), *raters).markdown
 
-  def option(flag)
-    index = @argv.index(flag)
-    @argv[index + 1] if index
-  end
+  def raters = option("--raters").map { it.split(",") }
 
-  def tool = @_tool ||= Evaluation::Tool.build(option("--hashira") || raise(ArgumentError, "eval/run --hashira PATH"))
+  def option(flag) = @argv.each_cons(2).select { |name, _value| name == flag }.first(1).map(&:last)
 
-  def chosen = (option("--suites") || [*SUITES.map { it::SUITE }, "corpus"].join(",")).split(",")
+  def tool = @_tool ||= Evaluation::Tool.build(option("--hashira").fetch(0) { raise(ArgumentError, USAGE) })
 
-  def checks = SUITES.select { chosen.include?(it::SUITE) }.flat_map { it.build(tool).checks } + (corpus&.checks || [])
+  def chosen = option("--suites").fetch(0) { [*SUITES.map { it::SUITE }, "corpus"].join(",") }.split(",")
+
+  def checks = SUITES.select { chosen.include?(it::SUITE) }.flat_map { it.build(tool).checks } + corpus.checks
 
   def corpus
-    return unless chosen.include?(Evaluation::Corpus::SUITE)
-    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus") || CORPUS, draw, sizes)
+    return Evaluation::NoCorpus.new unless chosen.include?("corpus")
+    @_corpus ||= Evaluation::Corpus.build(tool, option("--corpus").fetch(0, CORPUS), draw, sizes)
   end
 
-  def sizes = option("--samples")&.split(",")&.to_h { it.split("=") }&.transform_values { Integer(it) }
-
-  def queue
-    return unless corpus
-    FileUtils.mkdir_p(draw.pending)
-    corpus.precision.pending.group_by(&:kind).each { |kind, list| park(kind, list) }
-  end
-
-  def park(kind, list) = File.write(File.join(draw.pending, "#{kind}.yml"), YAML.dump(list.map(&:entry)))
+  def sizes = option("--samples").fetch(0, "").split(",").to_h { it.split("=") }.transform_values { Integer(it) }
 
   def draw = @_draw ||= Evaluation::Draw.build(option("--seed"))
 end

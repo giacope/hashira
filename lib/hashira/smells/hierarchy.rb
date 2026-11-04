@@ -3,117 +3,70 @@
 require "prism"
 
 class Hashira::Smells::Hierarchy
-  Kin = Data.define(:parent, :foreign, :openings)
-
-  FENCES = [Prism::ClassNode, Prism::ModuleNode].freeze
-
-  ABSTRACT = /\AAbstract|Base\z/
-
-  MARKS = %i[abstract_class= abstract_class primary_abstract_class abstract!].freeze
-
-  NONE = Kin.new(parent: nil, foreign: false, openings: [])
-
-  def initialize(types)
+  def initialize(
+    types, builtins = Hashira::Runtime::Builtins.new, typeset = Hashira::Smells::Typeset.new(types),
+    links = Hashira::Smells::Links.new(typeset)
+  )
     @types = types
+    @builtins = builtins
+    @typeset = typeset
+    @links = links
   end
 
-  def parent(name) = table.fetch(name, NONE).parent
+  def inheritance = Hashira::Smells::Inheritance.new(openings, tree, @links)
 
-  def ancestors(name)
-    found = [name]
-    while (above = table.fetch(found.last, NONE).parent) && !found.include?(above)
-      found << above
-    end
-    found.drop(1)
-  end
+  def tree = Hashira::Smells::Tree.new(parents)
 
-  def children(name) = table.filter_map { |child, kin| child if kin.parent == name }
+  def births = Hashira::Smells::Births.new(openings, sites)
 
-  def overrides(name, selector)
-    found = [name]
-    found.each { found.concat(children(it) - found) }
-    found.drop(1).flat_map { definitions(it) }.filter_map { it.node if it.node.name == selector }
-  end
-
-  def framed?(name) = [name, *ancestors(name)].any? { table.fetch(it, NONE).foreign }
-
-  def root(name)
-    framed = [name, *ancestors(name)].find { table.fetch(it, NONE).foreign }
-    written = table.fetch(framed, NONE).openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
-    Hashira::Analysis::Syntax.new(written).segments.join("::")
-  end
-
-  def definitions(name) = table.fetch(name, NONE).openings.flat_map(&:owned)
-
-  def mixed(name) = table.fetch(name, NONE).openings.flat_map { lineage.mixins(it) }.flat_map { definitions(it) }
-
-  def abstract?(name)
-    return true if ABSTRACT.match?(name.split("::").last)
-    table.fetch(name, NONE).openings.any? do |type|
-      type.owned.any? { Hashira::Smells::Refusal.new(it.node).unimplemented? } || marked?(type)
-    end
-  end
-
-  def built(name) = births.fetch(name, [])
-
-  def home(name) = Hashira::Smells::Whole.new(openings: table.fetch(name).openings).site
+  def framing = Hashira::Smells::Framing.new(foreign, openings, tree)
 
   private
 
-  def table
-    @_table ||=
-      @types.group_by(&:name).to_h do |name, openings|
-        node = openings.map(&:node).grep(Prism::ClassNode).filter_map(&:superclass).first
-        parent = ancestor(name, node)
-        [name, Kin.new(parent:, foreign: !node.nil? && !claimed.include?(parent), openings:)]
-      end
+  def openings = @_openings ||= @types.group_by(&:to_s)
+
+  def parents
+    @_parents ||= openings.to_h { |name, opened| [name, ancestor(name, Hashira::Smells::Descent.new(opened).parent)] }
   end
 
-  def ancestor(name, node)
-    found = lineage.resolve(name, Hashira::Analysis::Syntax.new(node).segments)
-    found unless Hashira::Analysis::CORE.include?(found)
+  def foreign = @_foreign ||= openings.filter_map { |name, opened| name if unclaimed?(name, opened) }.to_set
+
+  def unclaimed?(name, opened)
+    Hashira::Smells::Descent.new(opened).parent? && parents.fetch(name).none? { claimed.include?(it) }
   end
 
-  def lineage = @_lineage ||= Hashira::Smells::Lineage.new(@types)
+  def ancestor(name, segments) = @typeset.resolve(name, segments).reject { @builtins.core?(it) }
 
-  def claimed = @_claimed ||= @types.select(&:claimed).to_set(&:name)
+  def claimed = @_claimed ||= @types.select { it.seat.claimed? }.to_set(&:to_s)
 
-  def marked?(type)
-    Hashira::Analysis::Syntax.new(type.node).statements.any? { it.is_a?(Prism::CallNode) && MARKS.include?(it.name) }
-  end
-
-  def births
-    @_births ||=
+  def sites
+    @_sites ||=
       {}.tap do |found|
         @types.each do |type|
-          news(type.node).each do |call, factory|
+          type.accept(Hashira::Smells::News).each do |call, factory|
             next if relayed?(type, call, factory)
-            (found[born(type, call)] ||= []) << "#{type.file}:#{call.location.start_line}"
+            born(type, call).each { (found[it] ||= []) << type.seat.at(call.location.start_line) }
           end
         end
       end
   end
 
-  def news(node, factory = nil)
-    node.compact_child_nodes.reject { FENCES.include?(it.class) }.flat_map do |child|
-      made = child.is_a?(Prism::CallNode) && child.name == :new ? [[child, factory]] : []
-      made + news(child, child.is_a?(Prism::DefNode) ? child.name : factory)
-    end
+  def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.to_s, factory)
+
+  def summoned?(name, selector)
+    invocations.any? { |owner, call| call.name == selector && born(owner, call).include?(name) }
   end
-
-  def relayed?(type, call, factory) = !call.receiver && factory.is_a?(Symbol) && !summoned?(type.name, factory)
-
-  def summoned?(name, selector) = invocations.any? { |owner, call| call.name == selector && born(owner, call) == name }
 
   def invocations
     @_invocations ||=
       @types.flat_map do |type|
-        Hashira::Smells::Scope.new(type.node).sweep.grep(Prism::CallNode).select(&:receiver).map { [type, it] }
+        @typeset.sweep(type).grep(Prism::CallNode).select(&:receiver).map { [type, it] }
       end
   end
 
   def born(type, call)
-    return type.name unless call.receiver
-    lineage.candidates(type.name, Hashira::Analysis::Syntax.new(call.receiver).segments).find { table.key?(it) }
+    return [type.to_s] unless call.receiver
+    candidates = @typeset.candidates(type.to_s, Hashira::Analysis::Syntax.new(call.receiver).segments)
+    Array(candidates.find { openings.key?(it) })
   end
 end

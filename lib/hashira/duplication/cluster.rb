@@ -5,27 +5,50 @@ module Hashira
     CONVENTION = 10
 
     class Cluster
+      class Form
+        def initialize(uniform, structural, size)
+          @uniform = uniform
+          @structural = structural
+          @size = size
+        end
+
+        def uniform? = @uniform
+
+        def structural? = @structural
+
+        def convention? = @size >= CONVENTION && @uniform && !@structural
+      end
+
+      include Enumerable
+
       def initialize(sites)
         @sites = sites
       end
 
-      attr_reader :sites
+      def each(&) = @sites.each(&)
 
       def canonical
-        @_canonical ||= sites.map(&:types).tally.then { |shapes| sites.max_by { [shapes[it.types], it.mass] } }
+        @_canonical ||= @sites.map { it.shape.to_a }.tally.then { |shapes| @sites.max_by { shaped(it, shapes) } }
       end
 
-      def others = @_others ||= sites.reject { it.equal?(canonical) }
+      def variances = others.map { Variance.new(canonical, it) }
 
-      def mass = canonical.mass
+      def mass = canonical.shape.mass
 
-      def size = sites.size
+      def form = Form.new(uniform?, structural?, @sites.size)
 
-      def structural? = (@_structural ||= [others.all? { Variance.new(canonical, it).structural? }]).first
+      private
 
-      def uniform? = sites.map(&:types).uniq.one?
+      def shaped(site, shapes)
+        shape = site.shape
+        [shapes[shape.to_a], shape.mass]
+      end
 
-      def convention? = size >= CONVENTION && uniform? && !structural?
+      def others = @_others ||= @sites.reject { it.equal?(canonical) }
+
+      def structural? = (@_structural ||= [variances.all?(&:structural?)]).first
+
+      def uniform? = (@_uniform ||= [@sites.map { it.shape.to_a }.uniq.one?]).first
     end
   end
 end

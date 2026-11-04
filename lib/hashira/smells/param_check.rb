@@ -6,8 +6,6 @@ require_relative "mapping"
 class Hashira::Smells::ParamCheck
   COMPARISONS = %i[== != =~].freeze
 
-  FIXED = Hashira::Smells::Mapping::FIXED
-
   def initialize(node, name)
     @node = node
     @name = name
@@ -25,7 +23,7 @@ class Hashira::Smells::ParamCheck
   private
 
   def nested
-    @_nested ||= Hashira::Smells::Conditions.new(branches).nested.map { self.class.new(it, @name) }
+    @_nested ||= Hashira::Smells::Conditionals.new(branches).nested.map { self.class.new(it, @name) }
   end
 
   def branches = Hashira::Smells::Conditions.new(@node).branches
@@ -39,7 +37,7 @@ class Hashira::Smells::ParamCheck
   def tested = reads(predicate)
 
   def working?
-    reads(branches.compact.flat_map { Hashira::Smells::Conditions.new(it).plain }).any?
+    reads(Hashira::Smells::Conditionals.new(branches.compact).plain).any?
   end
 
   def absolved?
@@ -54,7 +52,7 @@ class Hashira::Smells::ParamCheck
   def measured?(call)
     sides = [call.receiver, *call.arguments&.arguments]
     others = sides - reads(sides)
-    others.size < sides.size && others.any? { !FIXED.include?(it.class) }
+    others.size < sides.size && others.any? { !Hashira::Analysis::Syntax::Value.new(it).fixed? }
   end
 
   def mapped? = tested.any? && !Hashira::Smells::Conditions.new(@node).couple? && branches.compact.all? { literal?(it) }

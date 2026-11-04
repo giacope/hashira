@@ -16,17 +16,18 @@ class Hashira::Smells::Probe
 
   NAMED = [Prism::LocalVariableReadNode, Prism::InstanceVariableReadNode].freeze
 
-  def initialize(call, subject, foreign)
+  def initialize(call, subject, foreign, words)
     @call = call
     @subject = subject
     @foreign = foreign
+    @words = words
   end
 
   def line = @call.location.start_line
 
   def excused? = asked?(PROTOCOLS) || unspoken? || computed? || foreign? || unknown? || stranger?
 
-  def shown = "#{receiver&.slice || "self"}.respond_to?(#{message&.slice})"
+  def shown = "#{receiver&.slice || "self"}.respond_to?(#{messages.map(&:slice).join})"
 
   def trusted? = HELD.include?(receiver.class) || injected?
 
@@ -34,15 +35,19 @@ class Hashira::Smells::Probe
 
   def receiver = @call.receiver
 
-  def message = Array(@call.arguments&.arguments).first
+  def messages = Array(@call.arguments&.arguments).first(1)
 
-  def asked?(names) = message.is_a?(Prism::SymbolNode) && names.include?(Hashira::Analysis::Syntax.new(message).symbol)
+  def word = Hashira::Analysis::Syntax::Word.new(messages.fetch(0))
 
-  def unspoken? = message.is_a?(Prism::SymbolNode) && !spoken?
+  def symbol? = messages.any?(Prism::SymbolNode)
 
-  def computed? = !message.nil? && !LITERAL.include?(message.class)
+  def asked?(names) = symbol? && names.include?(word.symbol)
 
-  def spoken? = @subject.ownership.vocabulary.speaks?(Hashira::Analysis::Syntax.new(message).symbol)
+  def unspoken? = symbol? && !spoken?
+
+  def computed? = messages.any? { !LITERAL.include?(it.class) }
+
+  def spoken? = @words.speaks?(word.symbol)
 
   def foreign? = receiver.is_a?(Prism::LocalVariableReadNode) && @foreign.external?(receiver.name)
 
@@ -50,19 +55,19 @@ class Hashira::Smells::Probe
 
   def typed? = @foreign.kinds(holder).any?
 
-  def stranger? = named? && LITERAL.include?(message.class) && @foreign.guessed?(holder) && unanswered?
+  def stranger? = named? && messages.any? { LITERAL.include?(it.class) } && @foreign.guessed?(holder) && unanswered?
 
   def unanswered? = @foreign.kinds(holder).none? { answers?(it) }
 
-  def answers?(kind) = @subject.ownership.repertoire.of(kind).include?(Hashira::Analysis::Syntax.new(message).text)
+  def answers?(kind) = @words.of(kind).include?(word.to_s)
 
   def named? = NAMED.include?(receiver.class)
 
-  def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, @subject.node)
+  def holder = Hashira::Smells::Refs::Local.new(receiver.slice.delete_prefix("@").to_sym, nil)
 
   def injected? = receiver.is_a?(Prism::LocalVariableReadNode) && stored.include?(receiver.name)
 
   def stored = body.grep(Prism::InstanceVariableWriteNode).map(&:value).grep(Prism::LocalVariableReadNode).map(&:name)
 
-  def body = @_body ||= Hashira::Smells::Scope.new(@subject.node).inside
+  def body = @_body ||= @subject.accept(Hashira::Smells::Scope).inside
 end

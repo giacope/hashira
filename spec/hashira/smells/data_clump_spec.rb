@@ -17,7 +17,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["(alfa, bravo, charlie, delta) → 3 methods: one, two, four"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["(alfa, bravo, charlie, delta) → 3 methods: one, two, four"]]))
   end
 
   it "finds a group three methods share that is narrower than what any two of them share" do
@@ -28,7 +28,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         def three(alfa, bravo, charlie, echo, fox) = @a.use(echo, fox)
       end
     RUBY
-    expect(findings.map(&:evidence)).to(eq([["(alfa, bravo, charlie) → 3 methods: one, two, three"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["(alfa, bravo, charlie) → 3 methods: one, two, three"]]))
   end
 
   it "flags a parameter group that travels through three or more methods" do
@@ -47,7 +47,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] })
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] })
       .to(eq([["App::Zone::Thing", ["(alfa, bravo, charlie) → 3 methods: one, two, three"]]]))
     expect(message(findings.first)).to(include("passes the same parameters", "zone/thing.rb:3"))
   end
@@ -68,7 +68,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.first.evidence).to(eq(["(alfa, bravo, charlie) → 3 methods: one, two, three"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["(alfa, bravo, charlie) → 3 methods: one, two, three"]))
   end
 
   it "ignores block parameters but counts destructured components" do
@@ -91,7 +91,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(eq(["(echo, foxtrot, golf) → 3 methods: four, five, six"]))
+    expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["(echo, foxtrot, golf) → 3 methods: four, five, six"]))
   end
 
   it "needs at least three shared names in at least three methods, so a pair handed on is no clump" do
@@ -133,7 +133,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.flat_map(&:evidence)).to(
+    expect(findings.flat_map { it.to_h[:evidence] }).to(
       eq(
         [
           "(alfa, bravo, charlie, delta) → 3 methods: one, two, three",
@@ -154,7 +154,7 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
       "data_clump"
     )
     expect(findings.size).to(eq(1))
-    expect(findings.first.evidence).to(eq(["(alfa, bravo, charlie) → 3 methods: one, three, two"]))
+    expect(findings.first.to_h[:evidence]).to(eq(["(alfa, bravo, charlie) → 3 methods: one, three, two"]))
   end
 
   it "drops underscore-prefixed and defaulted parameters from the group" do
@@ -224,6 +224,6 @@ RSpec.describe(Hashira::Smells::DataClump, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(["App::Zone::Relay"]))
+    expect(findings.map { it.to_h[:package] }).to(eq(["App::Zone::Relay"]))
   end
 end

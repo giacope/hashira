@@ -1,38 +1,67 @@
 # frozen_string_literal: true
 
 class Hashira::Config::Layers
-  Layer =
-    Data.define(:name, :parts, :home, :marks, :rest) do
-      def initialize(marks: [], rest: [], **) = super
-
-      def holds?(file, package)
-        parts.include?(package) || places.any? { file == it || file.start_with?("#{it}/") } || marks.any? do
-          file.match?(it)
-        end
-      end
-
-      def covers?(file) = rest.any? { file.start_with?("#{File.expand_path(it, home)}/") }
-
-      def places = parts.map { File.expand_path(it, home) }
+  class Reach
+    def initialize(marks = [], rest = [])
+      @marks = marks
+      @rest = rest
     end
 
-  Entry =
-    Data.define(:item, :home) do
-      def layer
-        name, parts = named
-        listed = Array(parts)
-        return Layer.new(name:, parts: listed, home:) if [name, *listed].all? { it.is_a?(String) && !it.empty? }
-        raise(Hashira::Error, "layers takes a list, outermost first, of names or name: [packages or paths]")
-      end
+    def marked?(file) = @marks.any? { file.match?(it) }
 
-      def named
-        case item
-        when String then [item, [item]]
-        when Hash then item.one? ? item.first : []
-        else Array(item)
-        end
+    def covers?(file, home) = @rest.any? { file.start_with?("#{File.expand_path(it, home)}/") }
+  end
+
+  class Layer
+    def initialize(name, parts, home, reach = Hashira::Config::Layers::Reach.new)
+      @name = name
+      @parts = parts
+      @home = home
+      @reach = reach
+    end
+
+    def holds?(file, package)
+      @parts.include?(package) || places.any? { file == it || file.start_with?("#{it}/") } || @reach.marked?(file)
+    end
+
+    def covers?(file) = @reach.covers?(file, @home)
+
+    def preset(reaches) = Hashira::Config::Layers::Layer.new(@name, @parts, @home, reaches.fetch(@name, @reach))
+
+    def to_s = @name
+
+    def to_a = @parts
+
+    private
+
+    def places = @parts.map { File.expand_path(it, @home) }
+  end
+
+  class Entry
+    def initialize(item:, home:)
+      @item = item
+      @home = home
+    end
+
+    def layer
+      name, parts = named
+      listed = Array(parts)
+      return Layer.new(name, listed, home) if [name, *listed].all? { it.is_a?(String) && !it.empty? }
+      raise(Hashira::Error, "layers takes a list, outermost first, of names or name: [packages or paths]")
+    end
+
+    def named
+      case item
+      when String then [item, [item]]
+      when Hash then item.one? ? item.to_a.fetch(0) : []
+      else Array(item)
       end
     end
+
+    private
+
+    attr_reader :item, :home
+  end
 
   RAILS = [
     {
@@ -47,14 +76,14 @@ class Hashira::Config::Layers
 
   PREVIEWS = [%r{/mailers/previews/}, /_preview\.rb\z/].freeze
 
-  PRESET = { "web" => { marks: PREVIEWS }, "app" => { rest: ["app"] } }.freeze
+  PRESET = { "web" => Reach.new(PREVIEWS), "app" => Reach.new([], ["app"]) }.freeze
 
   INNER = %w[app domain].freeze
 
   def self.parse(raw, home = ".")
     preset = raw == "rails"
     layers = Array(preset ? RAILS : raw).map { Entry.new(item: it, home:).layer }
-    new(preset ? layers.map { it.with(**PRESET.fetch(it.name, {})) } : layers, preset:).tap(&:vet)
+    new(preset ? layers.map { it.preset(PRESET) } : layers, preset:).tap(&:vet)
   end
 
   def initialize(list, preset: false)
@@ -62,9 +91,7 @@ class Hashira::Config::Layers
     @preset = preset
   end
 
-  def any? = @list.any?
-
-  def names = @list.map(&:name)
+  def names = @list.map(&:to_s)
 
   def allows?(order) = !@preset || order.intersection(INNER) == INNER
 
@@ -75,8 +102,8 @@ class Hashira::Config::Layers
 
   def vet
     raise(Hashira::Error, "layers needs at least two layers to order") if @list.one?
-    twice = repeated(names) || repeated(@list.flat_map(&:parts))
-    raise(Hashira::Error, "layers names #{twice.inspect} more than once") if twice
+    twice = repeats(names) + repeats(@list.flat_map(&:to_a))
+    raise(Hashira::Error, "layers names #{twice.first.inspect} more than once") unless twice.empty?
   end
 
   private
@@ -85,7 +112,5 @@ class Hashira::Config::Layers
 
   def ranked(path, package) = @list.index { it.holds?(path, package) } || @list.index { it.covers?(path) }
 
-  def repeated(words) = words.tally.find { |_, count| count > 1 }&.first
+  def repeats(words) = words.tally.select { |_, count| count > 1 }.keys
 end
-
-Hashira::Config::Layers::NONE = Hashira::Config::Layers.new([])

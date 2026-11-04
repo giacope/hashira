@@ -43,11 +43,12 @@ class Evaluation::Arcs
   def orderings
     table = { 0 => 0 }
     (1...(1 << nodes.size)).each { |set| table[set] = placed(set, table) }
-    table[(1 << nodes.size) - 1]
+    table.fetch((1 << nodes.size) - 1)
   end
 
   def placed(set, table)
-    nodes.each_index.filter_map { |index| table[set ^ (1 << index)] + back(index, set) if set[index] == 1 }.min
+    costs = nodes.each_index.filter_map { |index| table[set ^ (1 << index)] + back(index, set) if set[index] == 1 }
+    costs.min(1).fetch(0)
   end
 
   def back(index, set) = outgoing[index].sum { |bit, weight| set.nobits?(bit) ? 0 : weight }

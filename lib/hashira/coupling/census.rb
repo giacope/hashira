@@ -1,107 +1,31 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Census
-  def initialize(project, trees, packaging: :folder, folded: true)
-    @project = project
-    @trees = trees
-    @packaging = packaging
-    @folded = folded
+  def initialize(placement, catalog, reading, none = Hashira::Coupling::NoFolding.new)
+    @placement = placement
+    @catalog = catalog
+    @reading = reading
+    @none = none
   end
 
-  def unfolded = @_unfolded ||= self.class.new(@project, @trees, packaging: @packaging, folded: false)
-
-  def packaging = placement.mode
-
-  def types = roster.types
-
-  def prefix = catalog.prefix
-
-  def origins = roster.origins
-
-  def roots = catalog.roots
-
-  def packages = roster.packages | placement.baseline
-
-  def folds = folding.disclosed
-
-  def strip(segments) = catalog.strip(segments)
-
-  def holder(segments)
-    path = strip(segments)
-    (path.length.downto(1).map { path.first(it) }.find { type?(it) } || path).join("::")
+  def graph
+    loose = Hashira::Coupling::Roster.new(@placement, @none)
+    bare = Hashira::Coupling::Scope.new(loose, @catalog, layout)
+    unfolded = Hashira::Coupling::Lazy.new { graphed(loose, bare, @none, unfolded) }
+    folding = @placement.folding(loose, bare)
+    roster = Hashira::Coupling::Roster.new(@placement, folding)
+    graphed(roster, Hashira::Coupling::Scope.new(roster, @catalog, layout), folding, unfolded)
   end
-
-  def resolve(segments, nesting = []) = scope.resolve(segments, nesting)
-
-  def pinpoint(segments) = scope.pinpoint(segments)
-
-  def locate(segments, nesting) = scope.locate(segments, nesting)
-
-  def vias(path) = scope.vias.fetch(path, [])
-
-  def files(path) = (@_files ||= catalog.group_by(&:path).transform_values { it.map(&:file).uniq }).fetch(path, [])
-
-  def charge(file, nesting, target)
-    return placed(file, nesting) unless nesting.empty?
-    (homes[file] if own?(file, target)) || tops[file] || placed(file, nesting)
-  end
-
-  def aside?(package) = placement.aside?(package)
-
-  def test?(package) = placement.test?(package)
-
-  def home(file) = homes[file] || placed(file, [])
-
-  def classes = @_classes ||= catalog.select(&:klass?).to_set { it.path.join("::") }
-
-  def owned?(path) = territory.owned?(path)
-
-  def abroad?(path) = territory.outside?(path)
-
-  def unlayered(layers, files) = files.reject { layers.rank(it, home(it)) }
-
-  def plural(word) = inflection.plural(word)
-
-  def inflection
-    @_inflection ||= Hashira::Coupling::Inflection.new(Hashira::Coupling::Inflections.of(@project.inflections))
-  end
-
-  def associations = @_associations ||= Hashira::Coupling::Associations.new(inflection)
 
   private
 
-  def territory = catalog.territory
+  def layout = @placement.layout
 
-  def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
-
-  def placement = @_placement ||= Hashira::Coupling::Placement.build(@packaging, @project, catalog)
-
-  def roster = @_roster ||= tally
-
-  def folding = @_folding ||= @folded ? placement.folding(unfolded) : Hashira::Coupling::NoFolding.new
-
-  def type?(segments) = roster.type?(segments)
-
-  def placed(file, nesting) = translate(placement.charge(file, nesting))
-
-  def own?(file, target) = !Array(target).empty? && files(target).include?(file)
-
-  def homes = @_homes ||= dominants(placement.placed)
-
-  def tops = @_tops ||= dominants(placement.placed.select { |definition, _| definition.scope.one? })
-
-  def dominants(placed) = placed.select(&:last).group_by { it.first.file }.transform_values { dominant(it) }
-
-  def dominant(placed) = placed.map { translate(it.last) }.tally.max_by(&:last).first
-
-  def tally
-    Hashira::Coupling::Roster.new(placement.placed.map { |definition, package| [definition, translate(package)] })
-  end
-
-  def translate(package) = folding.map.fetch(package, package)
-
-  def scope
-    current = roster
-    (@_scopes ||= {})[current] ||= Hashira::Coupling::Scope.new(current.registry, catalog, placement)
+  def graphed(roster, scope, folding, unfolded)
+    ledger = Hashira::Coupling::Ledger.new(@placement, folding, @catalog, roster)
+    tally = Hashira::Coupling::Tally.new(roster, layout, folding)
+    map = Hashira::Coupling::EdgeMap.new(scope, ledger, @catalog, @reading)
+    sightings = Hashira::Coupling::Sightings.new(@reading, scope, ledger, @catalog)
+    Hashira::Coupling::Graph.new(map, tally, sightings, unfolded)
   end
 end

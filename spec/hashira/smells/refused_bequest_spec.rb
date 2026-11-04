@@ -17,35 +17,29 @@ RSpec.describe(Hashira::Smells::RefusedBequest, :aggregate_failures) do
     end
   RUBY
 
-  it "flags a subclass that overrides an inherited method only to raise, naming the method and its owner" do
+  it "flags the inherited method a subclass overrides only to raise, naming the subclass and where" do
     finding = refused(stores("def save(row) = raise(NotImplementedError)")).first
-    expect([finding.package, finding.detail, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(
         [
-          "App::Archive",
-          {
-            site: "store.rb:8", parent: "App::Store",
-            refusals: [
-              described_class::Refused.new(
-                bequest: "App::Store#save", name: "save", home: "store.rb:5", verb: "raises", site: "store.rb:9"
-              )
-            ]
-          },
-          ["save raises (line 9, over App::Store)"]
+          "App::Store#save", { site: "store.rb:5", places: 1, parent: "App::Store" },
+          ["App::Archive raises (store.rb:9)"]
         ]
       )
     )
   end
 
   it "says what was refused and what to do" do
-    said = "App::Archive overrides 'save' of App::Store only to raise or do nothing (store.rb:8). " \
+    said = "App::Store#save is overridden by a subclass only to raise or do nothing (store.rb:5). " \
       "Compose the parent instead of extending it, or move the refused methods to the subclasses that want them."
     expect(message(refused(stores("def save(row) = fail('read only')")).first)).to(eq(said))
   end
 
   it "flags an override that does nothing, whether empty or a bare nil" do
     bodies = ["def save(row); end", "def save(row) = nil", "def save(row)\n    nil\n  end"]
-    expect(bodies.map { refused(stores(it)).first.evidence.first }).to(all(start_with("save does nothing (line 9")))
+    expect(bodies.map { refused(stores(it)).first.to_h[:evidence] }).to(
+      all(eq(["App::Archive does nothing (store.rb:9)"]))
+    )
   end
 
   it "leaves an override alone that does something, or raises after doing something" do
@@ -71,12 +65,16 @@ RSpec.describe(Hashira::Smells::RefusedBequest, :aggregate_failures) do
     grand = "module App\n  class Base\n    def save(row) = @rows << row\n  end\nend\n"
     source = stores("def save(row) = nil", "def save(row) = nil").sub("class Store\n", "class Store < Base\n")
     deep = stores("def load = nil").sub("class Store\n", "class Store < Base\n")
-    expect([refused(grand + source), refused(grand + deep)].map { it.map(&:package) }).to(eq([["App::Store"], []]))
+    expect([refused(grand + source), refused(grand + deep)].map { it.map { it.to_h[:evidence] } }).to(
+      eq([[["App::Store does nothing (store.rb:10)"]], []])
+    )
   end
 
   it "reaches past a parent to a grandparent's behavior" do
     grand = "module App\n  class Base\n    def drop(row) = @rows.delete(row)\n  end\nend\n"
     source = stores("def drop(row) = nil").sub("class Store\n", "class Store < Base\n")
-    expect(refused(grand + source).first.evidence).to(eq(["drop does nothing (line 14, over App::Base)"]))
+    expect(refused(grand + source).map { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq([["App::Base#drop", ["App::Archive does nothing (store.rb:14)"]]])
+    )
   end
 end

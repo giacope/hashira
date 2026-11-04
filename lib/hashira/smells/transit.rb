@@ -13,7 +13,7 @@ class Hashira::Smells::Transit
   end
 
   def passing?(local)
-    outlets = projections + forwards(local.name)
+    outlets = projections + forwards(local.to_sym)
     @refs.reads(local).all? { |read| outlets.any? { fed?(it, read) } }
   end
 

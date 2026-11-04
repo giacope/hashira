@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
+RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
   def ring(size, extra)
     (1..size).to_h do |n|
       uses = "[C#{(n % size) + 1}::X, #{extra}]"
@@ -13,18 +13,18 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   def padded(files) = files.merge(%w[main/E main/F one/E].to_h { ["lib/app/#{it.downcase}.rb", stub(*it.split("/"))] })
 
   def verdicts(files, directories: ["lib/app"])
-    within(files) { Hashira::Pipeline.new(Hashira::Project.new(directories, rules: Hashira::Config::Rules::ALL)).findings }
+    within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(directories), Hashira::Config::Rules::ALL)) }
   end
 
-  def found(files, kind, **) = verdicts(files, **).select { it.kind == kind }
+  def found(files, kind, **) = verdicts(files, **).select { it.to_h[:kind] == kind }
 
   def first(files, kind, **) = found(files, kind, **).first
 
-  def kinds(files, **) = verdicts(files, **).map(&:kind)
+  def kinds(files, **) = verdicts(files, **).map { it.to_h[:kind] }
 
   it "reports cycles with members, a sample path, the cheapest cut, and its evidence" do
     cycles = found(Fixtures::CYCLIC_FILES, "cycle")
-    expect(cycles.map { [it.package, it.cycle, it.evidence] }).to(
+    expect(cycles.map { [it.to_h[:package], it.to_h[:cycle], it.to_h[:evidence]] }).to(
       eq([["alpha", %w[alpha beta alpha], ["alpha/one.rb:4: Beta::Two"]]])
     )
     expect(message(cycles.first)).to(
@@ -33,7 +33,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   end
 
   it "reports each distinct loop once, from its smallest member" do
-    expect(found(Fixtures::CYCLIC_FILES, "cycle").map(&:package)).to(eq(%w[alpha]))
+    expect(found(Fixtures::CYCLIC_FILES, "cycle").map { it.to_h[:package] }).to(eq(%w[alpha]))
   end
 
   it "reports every distinct loop, one finding each" do
@@ -43,7 +43,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
       "lib/app/c/x.rb" => "module App; module C; class X; def c = D::X; end; end; end\n",
       "lib/app/d/x.rb" => "module App; module D; class X; def c = C::X; end; end; end\n"
     }
-    expect(found(files, "cycle").map(&:cycle)).to(eq([%w[a b a], %w[c d c]]))
+    expect(found(files, "cycle").map { it.to_h[:cycle] }).to(eq([%w[a b a], %w[c d c]]))
   end
 
   it "names the cheapest cut wherever it sits on the cycle" do
@@ -78,7 +78,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   it "names the dependent: option an edge to cut carries, since cutting it drops what deleting the owner does" do
     cycle = carried(cascade("has_many :posts, dependent: :destroy"))
     pledge = "models/user.rb:2: has_many :posts, dependent: :destroy"
-    expect(cycle.detail[:cut]).to(eq([{ from: "User", to: "Post", weight: 1, guarantees: [pledge] }]))
+    expect(cycle.to_h[:detail][:cut]).to(eq([{ from: "User", to: "Post", weight: 1, guarantees: [pledge] }]))
     expect(message(cycle)).to(end_with(<<~TEXT.tr("\n", " ").strip))
       The cheapest cut is User -> Post (1 ref). User -> Post carries a dependent: option (has_many :posts,
       dependent: :destroy at models/user.rb:2) — cutting it drops what deleting the owner does to its records,
@@ -90,7 +90,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
     user = "has_many :posts, dependent: :destroy\n  has_many :notes, dependent: :nullify"
     notes = { "app/models/note.rb" => "class Note\n  def owner = User\nend\n" }
     cycle = carried(cascade(user, "def owner = User\n  def n = Note").merge(notes))
-    expect(cycle.detail[:cut].map { [it[:from], it[:to], it[:guarantees].size] }).to(
+    expect(cycle.to_h[:detail][:cut].map { [it[:from], it[:to], it[:guarantees].size] }).to(
       eq([["User", "Note", 1], ["User", "Post", 1]])
     )
     expect(message(cycle)).to(include(<<~TEXT.tr("\n", " ").strip))
@@ -109,14 +109,14 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
 
   it "takes dependent: nil for no option at all" do
     cycle = carried(cascade("has_many :posts, dependent: nil"))
-    expect([cycle.detail[:cut], message(cycle)[/cut is .*/]]).to(
+    expect([cycle.to_h[:detail][:cut], message(cycle)[/cut is .*/]]).to(
       eq([[{ from: "User", to: "Post", weight: 1 }], "cut is User -> Post (1 ref)."])
     )
   end
 
   it "reports a knot of packages once, from its smallest member, whatever loops run through it" do
     cycles = found(ring(8, "C1::X"), "cycle")
-    expect(cycles.map { [it.package, it.detail[:members].size] }).to(eq([["c1", 8]]))
+    expect(cycles.map { [it.to_h[:package], it.to_h[:detail][:members].size] }).to(eq([["c1", 8]]))
     expect(message(cycles.first)).to(start_with("c1, c2, c3, c4, c5, c6 and 2 more depend on each other in a cycle"))
   end
 
@@ -135,7 +135,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   it "names the members that are in a cycle only through what was folded into them" do
     alert = { "app/models/billing/alert.rb" => "module Billing\n  class Alert\n    def a = Notification\n  end\nend\n" }
     cycle = carried(Fixtures::RAILS_FILES.merge(Fixtures::NOTIFY_FILES, alert))
-    expect(cycle.detail).to(include(members: %w[Billing Notification], folded: %w[Notification]))
+    expect(cycle.to_h[:detail]).to(include(members: %w[Billing Notification], folded: %w[Notification]))
     expect(message(cycle)).to(
       start_with("Billing and Notification depend on each other in a cycle (Notification is in it only through")
     )
@@ -149,12 +149,12 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
       "app/models/billing/alert.rb" => "module Billing; class Alert; def a = Notification; end; end\n"
     )
     expect(message(carried(files))).to(include("(Billing and Notification are in it only through"))
-    expect(carried(loop).detail[:folded]).to(eq([]))
+    expect(carried(loop).to_h[:detail][:folded]).to(eq([]))
   end
 
   it "reports SDP violations with instabilities and evidence" do
     violations = found(Fixtures::UNSTABLE_FILES, "unstable_dependency")
-    expect(violations.map { [it.package, it.evidence] }).to(eq([["stock", ["stock/x.rb:1: Pricing::X"]]]))
+    expect(violations.map { [it.to_h[:package], it.to_h[:evidence]] }).to(eq([["stock", ["stock/x.rb:1: Pricing::X"]]]))
     expect(message(violations.first)).to(include("stock (I=0.33) depends on the LESS stable pricing (I=0.67)"))
   end
 
@@ -197,13 +197,13 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   it "reports a package whose clients split into audiences, naming the seam" do
     uses = %w[one/a.rb two/b.rb three/c.rb].to_h { [it, "Core::Walk, Core::Score"] }
     files = core.merge(clients(uses.merge("main/d.rb" => "App::Core::Graph, Core::Chart, Core::Score")))
-    finding = first(padded(files), "mixed_audience")
-    expect([finding.package, message(finding), finding.evidence.size]).to(eq(["core", <<~TEXT.tr("\n", " ").strip, 4]))
+    told = first(padded(files), "mixed_audience").to_h
+    expect([told[:package], told[:message], told[:evidence].size]).to(eq(["core", <<~TEXT.tr("\n", " ").strip, 4]))
       core splits 2 ways: main, one, three, two share Core::Score, Core::Walk; main alone uses Core::Chart,
       Core::Graph — parts with separate client bases are separate packages in disguise. Split core along that
       seam, keeping the shared constants as the base layer the rest builds on.
     TEXT
-    expect(finding.evidence).to(include("main/d.rb:1: App::Core::Graph"))
+    expect(told[:evidence]).to(include("main/d.rb:1: App::Core::Graph"))
   end
 
   # Two clients use the constants given, two others Core::Graph and Core::Chart.
@@ -232,7 +232,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
 
   it "backs an audience with evidence when its clients reach only nested constants" do
     files = core.merge(core(%w[Walk Score], "LIMIT = 1"), split("Core::Walk::LIMIT, Core::Score::LIMIT"))
-    expect(first(padded(files), "mixed_audience").evidence).to(
+    expect(first(padded(files), "mixed_audience").to_h[:evidence]).to(
       eq(
         [
           "main/d.rb:1: Core::Graph", "main/d.rb:1: Core::Chart",
@@ -245,7 +245,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
   it "reports an edge too wide for one interface" do
     files = core(%w[A B C D E]).merge(clients("main/uses.rb" => "Core::A, Core::B, Core::C, Core::D, Core::E"))
     finding = first(files, "wide_edge")
-    expect([finding.package, finding.digest, message(finding), finding.evidence.size]).to(
+    expect([finding.to_h[:package], finding.to_h[:digest], message(finding), finding.to_h[:evidence].size]).to(
       eq(["main", "main -> core", <<~TEXT.tr("\n", " ").strip, 4])
         main -> core is 5 constants wide (Core::A, Core::B, Core::C, Core::D, Core::E) — every one is a reason for
         main to change. Front core with one facade.
@@ -260,7 +260,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
       .merge("lib/app/helpers.rb" => "module AppHelpers; end\n")
     spelled = "Error, App::Error, Blob, ::App::Blob, Clock, App::Clock"
     expect(kinds(files.merge(adapter(spelled)))).not_to(include("wide_edge"))
-    expect(first(files.merge(adapter("#{spelled}, Opts, App::More")), "wide_edge").detail[:constants])
+    expect(first(files.merge(adapter("#{spelled}, Opts, App::More")), "wide_edge").to_h[:detail][:constants])
       .to(eq(%w[App::Blob App::Clock App::Error App::More App::Opts]))
   end
 
@@ -278,7 +278,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
     expect(kinds(nested("Core::Gate, Core::Gate::Policy, Core::Gate::Exceeded"))).not_to(include("wide_edge"))
     loose = nested("Core::Gate::Policy, Core::Gate::Exceeded, Core::C")
     kits = nested("Core::Kit, Core::Kit::One, Core::Kit::Two")
-    expect([loose, kits].map { first(it, "wide_edge").detail[:constants] }).to(
+    expect([loose, kits].map { first(it, "wide_edge").to_h[:detail][:constants] }).to(
       match([eq(%w[Core::A Core::B Core::C Core::Gate::Exceeded Core::Gate::Policy]), have_attributes(size: 5)])
     )
   end
@@ -291,7 +291,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
       "app/models/order.rb" => "class Order\n  def bill = #{reach}\nend\n",
       "app/controllers/bills_controller.rb" => "class BillsController\n  def index = #{reach}\nend\n"
     )
-    expect(found(files, "wide_edge", directories: ["app"]).map(&:digest)).to(eq(["Order -> Billing"]))
+    expect(found(files, "wide_edge", directories: ["app"]).map { it.to_h[:digest] }).to(eq(["Order -> Billing"]))
   end
 
   it "reports a roll-call of words kept in sync across packages" do
@@ -302,7 +302,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
         "module App; module Three; class C; MAP = { \"red\" => 1, blue: 2, lime: 3 }; def a = MAP; end; end; end\n"
     }
     finding = first(files, "roll_call")
-    expect([finding.digest, message(finding), finding.evidence]).to(
+    expect([finding.to_h[:digest], message(finding), finding.to_h[:evidence]]).to(
       eq(["blue,lime,red", <<~TEXT.tr("\n", " ").strip, ["one/a.rb:1", "three/c.rb:1", "two/b.rb:1"]])
         the words blue, lime, red are listed together in one/a.rb, three/c.rb, two/b.rb — 3 packages keep one
         roll-call in sync by hand. Make the list data with a single owner.
@@ -318,7 +318,7 @@ RSpec.describe(Hashira::Pipeline, "#findings", :aggregate_failures) do
       "app/controllers/application_controller.rb" => "class ApplicationController; end\n"
     }
     files = %w[One Two Three].to_h { listing(it, first) }
-    found(app.merge(files), "roll_call", directories: ["app"]).map(&:digest)
+    found(app.merge(files), "roll_call", directories: ["app"]).map { it.to_h[:digest] }
   end
 
   it "leaves a Rails app's lists of REST actions out of roll-calls, since Rails owns those words" do

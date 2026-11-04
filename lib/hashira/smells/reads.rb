@@ -7,5 +7,5 @@ module Hashira::Smells::Reads
 
   def local?(node, &) = node.is_a?(Prism::LocalVariableReadNode) && yield(node.name)
 
-  def key(call) = call.arguments&.arguments&.first
+  def keys(call) = Array(call.arguments&.arguments).first(1)
 end

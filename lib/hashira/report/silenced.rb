@@ -9,13 +9,12 @@ class Hashira::Report::Silenced
   end
 
   def print
-    listing.waived("Suppressed", @screened.suppressed.map { |finding, directive| [finding, said(directive)] })
-    listing.print("Unused suppressions", @screened.unused) { "? #{it.kinds.join(",")} at #{it.site} — #{STALE}" }
+    _, suppressed, unused = @screened.to_a
+    listing.waived("Suppressed", suppressed.map { |finding, directive| [finding, directive.said] })
+    listing.print("Unused suppressions", unused) { "? #{it} — #{STALE}" }
   end
 
   private
 
   def listing = Hashira::Report::Listing.new(@io)
-
-  def said(directive) = "#{directive.reason} (#{directive.site})"
 end

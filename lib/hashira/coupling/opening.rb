@@ -2,49 +2,53 @@
 
 require "prism"
 
-module Hashira
-  module Coupling
-    Opening =
-      Data.define(:node, :full, :path, :stack, :file) do
-        def klass? = node.is_a?(Prism::ClassNode)
+class Hashira::Coupling::Opening
+  def initialize(node, nesting, path, file)
+    @node = node
+    @nesting = nesting
+    @path = path
+    @file = file
+  end
 
-        def class_level? = node.is_a?(Prism::ModuleNode) && full.last == Hashira::Analysis::TypeWalk::CLASS_LEVEL.to_s
+  def declared(lookup)
+    [[@node, full, true], *written].map { |node, name, exposed| constant(lookup, node, name, exposed) }
+      .select { lookup.owned?(it.to_a) }
+  end
 
-        def owner = class_level? ? path[...-1] : path
+  def defined
+    Hashira::Analysis::TypeWalk.new(@node).sections.map do |node, section|
+      singleton = node.receiver || section == :singleton
+      label = Hashira::Coupling::Label.new("#{shown}#{singleton ? "." : "#"}#{node.name}", @file, line(node))
+      Hashira::Coupling::Routine.new(label, owner, node, section)
+    end
+  end
 
-        def shown = (class_level? ? full[...-1] : full).join("::")
+  private
 
-        def statements = Hashira::Analysis::Syntax.new(node).statements.compact
+  def body = Hashira::Analysis::Syntax::Body.new(@node)
 
-        def hidden = calls(:private_constant).flat_map { symbols(it) }.to_set
+  def full = @nesting.fetch(-1)
 
-        def calls(name)
-          statements.grep(Prism::CallNode).select { it.name == name && it.receiver.nil? && it.arguments }
-        end
+  def owner = body.class_level? ? @path[...-1] : @path
 
-        def symbols(call)
-          call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
-        end
+  def shown = (body.class_level? ? full[...-1] : full).join("::")
 
-        def mixins = %i[include prepend].flat_map { calls(it) }.flat_map { it.arguments.arguments }
+  def line(node) = node.location.start_line
 
-        def assignments
-          Hashira::Analysis::Syntax.new(node).constants.map { [path + [it.name.to_s], it.value, stack + [full]] }
-        end
+  def written
+    hidden = body.calls(:private_constant).flat_map { symbols(it) }.to_set
+    body.constants.map do |node|
+      name = node.name.to_s
+      [node, [*full, name], !hidden.include?(name)]
+    end
+  end
 
-        def loads? = statements.grep(Prism::CallNode).any? { outward?(it.receiver) }
+  def symbols(call)
+    call.arguments.arguments.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
+  end
 
-        def outward?(receiver)
-          receiver.is_a?(Prism::CallNode) ? outward?(receiver.receiver) : Hashira::Analysis::Syntax.new(receiver).static?
-        end
-
-        def site(node) = "#{file}:#{node.location.start_line}"
-
-        def links = supers + included
-
-        def supers = klass? && node.superclass ? [[node.superclass, stack]] : []
-
-        def included = mixins.map { [it, stack + [full]] }
-      end
+  def constant(lookup, node, name, exposed)
+    label = Hashira::Coupling::Label.new(name.join("::"), @file, line(node))
+    Hashira::Coupling::Constant.new(label, lookup.strip(name), exposed)
   end
 end

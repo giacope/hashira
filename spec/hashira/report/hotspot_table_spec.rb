@@ -2,11 +2,11 @@
 
 RSpec.describe(Hashira::Report::HotspotTable, :aggregate_failures) do
   def cost(file, cognitive, duplication, churn)
-    Hashira::Hotspots::FileCost.new(file:, cognitive:, duplication:, churn:)
+    Hashira::Hotspots::FileCost.new(file, cognitive, duplication, churn)
   end
 
   def render(files, top: described_class::TOP, weighed: true)
-    capture { described_class.new(instance_double(Hashira::Hotspots::Rollup, files:, weighed?: weighed), top:).print }
+    capture { described_class.new(Fakes::Hotspots.new(files:, weighed:), top:).print }
   end
   it "prints a ranked row per file, with a legend" do
     output = render([cost("orders/checkout.rb", 12, 40, 6), cost("billing/refund.rb", 3, 0, 2)])

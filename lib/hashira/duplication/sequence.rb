@@ -36,7 +36,13 @@ class Hashira::Duplication::Sequence
 
   def windows(segment) = (MIN_STATEMENTS..[segment.size, MAX_STATEMENTS].min).flat_map { slide(segment, it) }
 
-  def slide(segment, length) = (0..(segment.size - length)).map { fragment(segment[it, length]) }.reject(&:sectioned?)
+  def slide(segment, length)
+    (0..(segment.size - length)).map { segment[it, length] }.reject { sectioned?(it) }.map { fragment(it) }
+  end
+
+  def sectioned?(roots) = bare?(roots.first) && roots[1].is_a?(Prism::DefNode)
+
+  def bare?(node) = node.is_a?(Prism::CallNode) && [node.receiver, node.arguments, node.block].none?
 
   def fragment(roots) = Hashira::Duplication::Fragment.new(@file, roots, @walks, @setting)
 end

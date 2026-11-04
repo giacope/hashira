@@ -8,7 +8,7 @@ class Hashira::Smells::Nulls
 
   OPEN = { Prism::IfNode => :subsequent, Prism::UnlessNode => :else_clause, Prism::CaseNode => :else_clause }.freeze
 
-  FLOW = Hashira::Smells::Tails.new(Hashira::Smells::Tails::FLOW)
+  FLOW = Hashira::Smells::Tails.new
 
   def initialize(trees)
     @trees = trees
@@ -34,7 +34,7 @@ class Hashira::Smells::Nulls
   end
 
   def nullable?(definition)
-    held = Hashira::Analysis::Syntax.new(definition).statements.compact
+    held = Hashira::Analysis::Syntax::Body.new(definition).to_a.compact
     held.empty? || returns?(definition) || FLOW.reach(held.last(1)).any? { open?(it) }
   end
 

@@ -1,3 +1,6 @@
+# The strict set too (stateful_mixin and the stricter readings): hashira holds
+# itself to the profile it offers.
+strict: true
 checks:
   all: true
   # Change coupling reads git history, and CI checks out a single commit, so a
@@ -8,7 +11,7 @@ layers:
   - gates: [ci, diagram]
   - pipeline: ["(root)", report]
   - analyzers: [complexity, coupling, duplication, hotspots, smells, suppression]
-  - foundation: [analysis, config]
+  - foundation: [analysis, config, prose, runtime]
 boundaries:
   - root: Prism
     role: interpreted_model

@@ -19,7 +19,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         "module App\n  class Thing\n    def initialize = @x = 1\n    def shout(word) = word.to_s\n  end\nend\n"
     }
     later = files.transform_keys { it.sub("a_ext", "z_ext") }
-    found = [files, later].map { sniffed(it, "utility_function").map(&:package) }
+    found = [files, later].map { sniffed(it, "utility_function").map { it.to_h[:package] } }
     expect(found).to(eq([%w[App::Thing#shout App::Thing#extra]] * 2))
   end
 
@@ -37,7 +37,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     RUBY
     finding = findings.first
     expect(findings.size).to(eq(1))
-    expect(finding.package).to(eq("App::Zone::Thing#shout"))
+    expect(finding.to_h[:package]).to(eq("App::Zone::Thing#shout"))
     expect(message(finding)).to(end_with("(zone/thing.rb:4). Move it onto the object it serves, or make it private."))
   end
 
@@ -183,7 +183,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       end
     RUBY
     findings = sniffed({ "lib/app/zone/jobs.rb" => jobs, "lib/app/zone/speech.rb" => speech }, "utility_function")
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Fetch#tidy App::Zone::Pull#lonely App::Zone::Solo#perform]))
   end
 
   it "reads an override of what a parent declares by a delegation or attribute macro as that role, not a utility" do
@@ -221,7 +221,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Plain#hue App::Zone::Plain#tidy]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Plain#hue App::Zone::Plain#tidy]))
   end
 
   it "takes the subclasses of one class for kin however each spells its parent" do
@@ -246,7 +246,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Zone::Solo#handle]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Zone::Solo#handle]))
   end
 
   it "takes the classes built on one computed parent, or on one library class however rooted, for kin" do
@@ -281,7 +281,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Stray#perform]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Stray#perform]))
   end
 
   it "takes the classes one array literal builds side by side for peers, so their shared methods are protocol" do
@@ -303,7 +303,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::HelpEntry#note]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::HelpEntry#note]))
   end
 
   it "takes a class attribute's default and the classes assigned to it for peers that share a protocol" do
@@ -339,7 +339,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::ImmediateDebouncer#pause App::Lone#debounce]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::ImmediateDebouncer#pause App::Lone#debounce]))
   end
 
   it "takes a class that hands itself to a decorator, or seeds a chain of them, for the peer of what wraps it" do
@@ -404,7 +404,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(
         %w[
           App::Connection#label App::Spawn#scheduled? App::Spawn#format App::Formatter#format App::Loose#response_call
@@ -412,6 +412,30 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         ]
       )
     )
+  end
+
+  it "pairs a class with the decorator it hands itself to, not with every decorator" do
+    findings = utility(<<~RUBY)
+      module App
+        class Layer
+          def initialize(stack) = @stack = stack
+          def call(datum) = @stack.call(datum)
+        end
+
+        class Shell
+          def initialize(inner) = @inner = inner
+          def call(datum) = @inner.call(datum)
+          def tag(datum) = datum.to_s
+        end
+
+        class Probe
+          def initialize(layers) = @layers = layers
+          def wrapped = Layer.new(self)
+          def tag(datum) = datum.to_s
+        end
+      end
+    RUBY
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Shell#tag App::Probe#tag]))
   end
 
   it "reads a fold seeded with self that builds what it folds, in its block or its receiver, as a decorator chain" do
@@ -464,7 +488,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Json#received App::Xml#shown]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Json#received App::Xml#shown]))
   end
 
   it "keeps an override of a core ancestor's method a hook, though the project sends that message too" do
@@ -491,7 +515,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::AuthError#hint App::Tags#add]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::AuthError#hint App::Tags#add]))
   end
 
   it "leaves the equality, ordering and printing Ruby asks of every object to it, at the arity Ruby calls them" do
@@ -515,7 +539,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(eq(%w[App::Nothing#digest App::Nothing#display App::Vault#hash App::Vault#==]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Nothing#digest App::Nothing#display App::Vault#hash App::Vault#==]))
   end
 
   it "reads what nothing here calls on a class built on a library's ancestor as a hook the library calls" do
@@ -554,7 +578,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       end
     RUBY
     findings = sniffed({ "lib/app/plugin.rb" => plugin }, "utility_function")
-    expect(findings.map(&:package)).to(eq(%w[App::Plugin#label App::Plugin#badge App::Plain#orphan]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Plugin#label App::Plugin#badge App::Plain#orphan]))
   end
 
   it "keeps a library hook a hook when the project only sends its name to a class, as a macro" do
@@ -580,7 +604,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       end
     RUBY
     findings = sniffed({ "lib/app/place.rb" => validator }, "utility_function")
-    expect(findings.map(&:package)).to(eq(%w[App::NewestOnly#check App::Audit#run]))
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::NewestOnly#check App::Audit#run]))
   end
 
   def jobs(extra, head = "PublishJob") = <<~RUBY
@@ -621,7 +645,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
   RUBY
 
   def performs?(source)
-    sniffed({ "lib/app/jobs.rb" => source }, "utility_function").map(&:package).include?("App::PublishJob#perform")
+    sniffed({ "lib/app/jobs.rb" => source }, "utility_function").map { it.to_h[:package] }.include?("App::PublishJob#perform")
   end
 
   it "keeps a library hook a hook unless the project sends its name to an object of the class's own lineage" do
@@ -656,13 +680,15 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
       end
     RUBY
     told = validator.sub("def check(record) = validate(record)", "def check(checker) = checker.validate(self)")
-    flagged = [validator, told].map { sniffed({ "lib/app/page.rb" => it }, "utility_function").map(&:package) }
+    flagged = [validator, told].map { packages_in(sniffed({ "lib/app/page.rb" => it }, "utility_function")) }
     expect(flagged.map { it.include?("App::SlugValidator#validate") }).to(eq([false, true]))
   end
 
+  def trace_of(source) = mark_of(sniffed({ "lib/app/shop.rb" => source }, "utility_function").first).trace
+
   it "traces a finding by the code it names, so a rename still matches and a different method does not" do
     shop = ->(name, body) { "module App\n  class Shop\n    def #{name}(price) = #{body}\n  end\nend\n" }
-    traced = ->(name, body) { sniffed({ "lib/app/shop.rb" => shop[name, body] }, "utility_function").first.trace }
+    traced = ->(name, body) { trace_of(shop[name, body]) }
     tax = traced["tax", "price.round(2)"]
     alike = [traced["levy", "price.round(2)"], traced["discount", "price.floor(9)"]].map { it == tax }
     expect(alike).to(eq([true, false]))
@@ -744,7 +770,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(%w[App::Zone::Launcher#halt App::Zone::FakeLauncher#note App::Zone::Loose#launch])
     )
   end
@@ -781,7 +807,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(%w[Courier#hand App::Zone::Courier#hand App::Zone::Fakes::Mailer#peek App::Zone::Admin::Mailer#deliver])
     )
   end
@@ -834,7 +860,7 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.map(&:package)).to(
+    expect(findings.map { it.to_h[:package] }).to(
       eq(%w[App::Zone::Logger#tidy App::Zone::FakeClock#info App::Zone::FakeClock#travel App::Zone::Quiet#warn])
     )
   end

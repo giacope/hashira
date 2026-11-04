@@ -19,19 +19,17 @@ class Hashira::Complexity::Body
 
   def visit(child, &)
     case child
-    when Prism::DefNode then yield(site(child))
+    when Prism::DefNode then yield(@owner, child)
     when Prism::CallNode then call(child, &)
     else enter(child, &)
     end
   end
 
   def call(child, &)
-    return yield(site(Hashira::Complexity::Defined.new(child))) if defines?(child)
-    return if Hashira::Analysis::TypeWalk.new(child).dsl?(@host)
+    return yield(@owner, Hashira::Complexity::Defined.new(child)) if defines?(child)
+    return if Hashira::Analysis::Syntax::Call.new(child).dsl?(@host)
     inner(child, LIFTING_BLOCKS.include?(child.name) ? @owner.lifted : @owner).each(&)
   end
-
-  def site(node) = Hashira::Complexity::Site.new(owner: @owner, node:)
 
   def defines?(call) = DEFINERS.include?(call.name) && !call.receiver && call.arguments && block?(call)
 
@@ -39,11 +37,13 @@ class Hashira::Complexity::Body
 
   def enter(child, &)
     case child
-    when Prism::SingletonClassNode then inner(child, @owner.lifted).each(&) if child.expression.is_a?(Prism::SelfNode)
-    when Prism::ClassNode, Prism::ModuleNode then nil
+    when Prism::SingletonClassNode then lifted?(child) ? inner(child, @owner.lifted).each(&) : []
+    when Prism::ClassNode, Prism::ModuleNode then []
     else inner(child, @owner.within(child)).each(&)
     end
   end
+
+  def lifted?(child) = child.expression.is_a?(Prism::SelfNode)
 
   def inner(child, owner) = Hashira::Complexity::Body.new(child, owner, @host)
 end

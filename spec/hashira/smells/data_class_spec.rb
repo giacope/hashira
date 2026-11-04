@@ -21,8 +21,8 @@ RSpec.describe(Hashira::Smells::DataClass, :aggregate_failures) do
     finding = bags(point).first
     expect(
       [
-        finding.package, finding.detail,
-        finding.evidence
+        finding.to_h[:package], finding.to_h[:detail],
+        finding.to_h[:evidence]
       ]
     ).to(eq(["App::Point", { site: "point.rb:2", fields: %w[x y] }, %w[x y]]))
   end
@@ -38,7 +38,9 @@ RSpec.describe(Hashira::Smells::DataClass, :aggregate_failures) do
       "def z = @z", "def z=(value)\n    @z = value\n  end", "private\n  def w = @w",
       "def initialize = @z = nil"
     ]
-    expect(accessors.map { bags(point(it)).first.detail[:fields] }).to(eq([%w[x y], %w[x y z], %w[x y], %w[x y z]]))
+    expect(accessors.map { bags(point(it)).first.to_h[:detail][:fields] }).to(
+      eq([%w[x y], %w[x y z], %w[x y], %w[x y z]])
+    )
   end
 
   it "leaves alone a class with behavior, a class method, a mixin, a constant, or a constructor that computes" do
@@ -53,7 +55,7 @@ RSpec.describe(Hashira::Smells::DataClass, :aggregate_failures) do
   end
 
   it "reads a bare attribute macro as declaring nothing" do
-    expect(bags(point("attr_reader")).first.detail[:fields]).to(eq(%w[x y]))
+    expect(bags(point("attr_reader")).first.to_h[:detail][:fields]).to(eq(%w[x y]))
   end
 
   it "leaves alone a class with fewer than two fields" do

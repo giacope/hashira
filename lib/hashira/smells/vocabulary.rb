@@ -7,11 +7,12 @@ class Hashira::Smells::Vocabulary
 
   WORD = /\A[[:alpha:]_]/
 
-  def initialize(trees)
+  def initialize(trees, messages = Hashira::Runtime::Messages.new)
     @trees = trees
+    @messages = messages
   end
 
-  def speaks?(message) = WORD.match?(message) && !Hashira::Analysis::UNIVERSAL.include?(message) && spoken?(message)
+  def speaks?(message) = WORD.match?(message) && !@messages.universal?(message) && spoken?(message)
 
   private
 
@@ -42,7 +43,7 @@ class Hashira::Smells::Vocabulary
       when Prism::CallNode then node.arguments&.arguments.to_a
       else []
       end
-    offered.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+    offered.grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
   end
 
   def stem(name) = name.to_s.delete_suffix("=")

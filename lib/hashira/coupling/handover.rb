@@ -1,29 +1,32 @@
 # frozen_string_literal: true
 
 class Hashira::Coupling::Handover
-  FOREIGN = :foreign
-
-  def initialize(handed, census, told)
+  def initialize(handed, lookup, told, foreign = :foreign)
     @handed = handed
-    @census = census
+    @lookup = lookup
     @told = told
+    @foreign = foreign
   end
 
   def hosts(path) = gifts.fetch(path, [])
 
   def told?(path) = @told.any? { path.last(it.size) == it || it.last(path.size) == path }
 
+  def foreign?(host) = host == @foreign
+
   private
 
   def gifts
     @_gifts ||=
       @handed.each_with_object(Hash.new { |hash, key| hash[key] = [] }) do |(host, hosting, given, nesting), found|
-        found[exact(given, nesting)] << (exact(host, hosting) || FOREIGN)
+        targets = exact(given, nesting)
+        holder = exact(host, hosting).fetch(0, @foreign)
+        targets.each { found[it] << holder }
       end
   end
 
   def exact(segments, nesting)
-    found = @census.locate(segments, nesting)
-    found if found&.last == segments.last
+    found = @lookup.locate(segments, nesting)
+    found && found.last == segments.last ? [found] : []
   end
 end

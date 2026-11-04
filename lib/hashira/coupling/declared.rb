@@ -3,8 +3,11 @@
 require "prism"
 
 class Hashira::Coupling::Declared
-  HANDLERS = { irregular: [:irregular, nil], plural: %i[ruled plurals], singular: %i[ruled singulars] }
-    .merge(uncountable: %i[added uncountables], acronym: %i[added acronyms]).freeze
+  HANDLERS = %i[irregular plural singular uncountable acronym].to_set.freeze
+
+  NONE = Hashira::Coupling::Inflections.new([], [], [], [])
+
+  private_constant :NONE
 
   def initialize(tree)
     @tree = tree
@@ -17,34 +20,43 @@ class Hashira::Coupling::Declared
 
   private
 
-  def declares?(call) = HANDLERS.key?(call.name) && call.receiver
+  def declares?(call) = HANDLERS.include?(call.name) && call.receiver
 
-  def handled(table, call)
-    handler, list = HANDLERS.fetch(call.name)
-    __send__(handler, table, list, Array(call.arguments&.arguments).flat_map { value(it) })
-  end
+  def handled(table, call) = table + __send__(call.name, Array(call.arguments&.arguments).flat_map { value(it) })
 
   def value(node)
     case node
     when Prism::ArrayNode then node.elements.flat_map { value(it) }
-    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax.new(node).text]
-    else Array(expression(node))
+    when Prism::StringNode, Prism::SymbolNode then [Hashira::Analysis::Syntax::Word.new(node).to_s]
+    when Prism::RegularExpressionNode then compiles?(node) ? [expression(node)] : []
+    else []
     end
   end
 
-  def expression(node)
-    Regexp.new(node.unescaped, node.ignore_case? ? Regexp::IGNORECASE : 0) if node.is_a?(Prism::RegularExpressionNode)
+  def expression(node) = Regexp.new(node.unescaped, node.ignore_case? ? Regexp::IGNORECASE : 0)
+
+  def compiles?(node)
+    expression(node)
+    true
   rescue RegexpError
-    nil
+    false
   end
 
-  def irregular(table, _list, (one, many)) = many ? table.irregular(one, many) : table
+  def irregular((one, many)) = many ? Hashira::Coupling::Irregular.new(one, many).to_table : NONE
 
-  def ruled(table, list, (rule, replacement))
-    replacement ? table.with(list => [[pattern(rule), replacement]] + table.public_send(list)) : table
+  def plural((rule, replacement))
+    replacement ? Hashira::Coupling::Inflections.new(ruled(rule, replacement), [], [], []) : NONE
   end
 
-  def added(table, list, words) = table.with(list => table.public_send(list) + words.grep(String))
+  def singular((rule, replacement))
+    replacement ? Hashira::Coupling::Inflections.new([], ruled(rule, replacement), [], []) : NONE
+  end
+
+  def uncountable(words) = Hashira::Coupling::Inflections.new([], [], words.grep(String), [])
+
+  def acronym(words) = Hashira::Coupling::Inflections.new([], [], [], words.grep(String))
+
+  def ruled(rule, replacement) = [[pattern(rule), replacement]]
 
   def pattern(rule) = rule.is_a?(Regexp) ? rule : /#{Regexp.escape(rule)}$/i
 end

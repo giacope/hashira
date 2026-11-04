@@ -9,17 +9,16 @@ class Hashira::Coupling::Folding
 
   KINDS = %w[base mixin suffix plural].freeze
 
-  def initialize(definitions, census, suffixes: [])
+  def initialize(definitions, roster, scope, framework)
     @definitions = definitions
-    @census = census
-    @suffixes = suffixes
+    @roster = roster
+    @scope = scope
+    @framework = framework
   end
 
   def map = @_map ||= links.keys.to_h { [it, settle(it, links)] }.reject { |from, to| from == to }
 
-  def disclosed
-    map.map { |from, to| { from:, to:, via: KINDS[kinds.index { it.key?(from) }] } }
-  end
+  def disclosed = map.map { |from, to| Hashira::Coupling::Fold.new(from, to, KINDS[kinds.index { it.key?(from) }]) }
 
   private
 
@@ -28,55 +27,63 @@ class Hashira::Coupling::Folding
   def links = @_links ||= kinds.reverse.reduce(:merge)
 
   def parents
-    @_parents ||= singles.select { |_name, one| one.superclass }.to_h { |name, one| [name, target(one)] }.compact
+    @_parents ||= singles.select { |_name, kin| kin.parent.any? }.to_h { |name, kin| [name, target(kin)] }.compact
   end
 
-  def named
-    singles.keys.filter_map { |name| pair(name, crop(name)) }.to_h
-  end
+  def named = singles.keys.to_h { [it, crop(it)] }.select { |_name, stem| stem && packages.include?(stem) }
 
-  def pair(name, stem) = ([name, stem] if stem && @census.packages.include?(stem))
+  def packages = @_packages ||= @roster.to_a
+
+  def suffixes = @framework.rails? ? SUFFIXES : []
 
   def crop(name)
-    suffix = @suffixes.find { trims?(name, it) }
+    suffix = suffixes.find { trims?(name, it) }
     suffix && name.delete_suffix(suffix)
   end
 
   def trims?(name, suffix) = name.end_with?(suffix) && name != suffix
 
-  def plurals = known.map { [@census.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
+  def plurals = known.map { [inflection.plural(it), it] }.select { |many, one| plural?(many, one) }.to_h
+
+  def inflection = @_inflection ||= @framework.inflection
 
   def plural?(many, one) = many != one && known.include?(many)
 
-  def known = @_known ||= @census.packages.to_set
+  def known = @_known ||= packages.to_set
 
-  def mixins = badges.transform_values { adopted(it) }.compact
+  def mixins = badges.flat_map { |name, badge| adopted(badge).map { [name, it] } }.to_h
 
-  def badges = lone.group_by(&:name).select { |_name, ones| ones.all? { badge?(it) } }.transform_values(&:first)
-
-  def badge?(definition) = definition.module? && syntax(definition.node).statements.all? { syntax(it).macro?(MIXINS) }
-
-  def adopted(badge) = adoptions(badge).lazy.filter_map { @census.pinpoint(syntax(it).segments) }.first
-
-  def adoptions(badge) = syntax(badge.node).statements.flat_map { it.arguments.arguments }
-
-  def singles
-    @_singles ||= lone.select(&:klass?).group_by(&:name).transform_values { it.find(&:superclass) || it.last }
+  def badges
+    named = lone.group_by { it.to_a.first }
+    named.select { |_name, ones| ones.all? { badge?(it.form) } }.transform_values { it.first.form }
   end
 
-  def lone = @_lone ||= @definitions.reject { it.nested? || it.path.empty? || anchored.include?(it.name) }
+  def badge?(form)
+    form.type? && !form.klass? && form.to_a.all? { Hashira::Analysis::Syntax::Call.new(it).macro?(MIXINS) }
+  end
 
-  def anchored = @_anchored ||= @definitions.select(&:nested?).to_set(&:name)
+  def adopted(badge) = badge.to_a.flat_map { it.arguments.arguments }.lazy.filter_map { pinpoint(it) }.first(1)
 
-  def target(one) = @census.pinpoint(syntax(one.superclass).segments)
+  def singles
+    @_singles ||=
+      lone.select { it.form.klass? }.group_by { it.to_a.first }.transform_values do |ones|
+        (ones.find { it.kin.parent.any? } || ones.last).kin
+      end
+  end
 
-  def syntax(node) = Hashira::Analysis::Syntax.new(node)
+  def lone = @_lone ||= @definitions.reject { it.site.nested? || it.to_a.empty? || anchored.include?(it.to_a.first) }
+
+  def anchored = @_anchored ||= @definitions.select { it.site.nested? }.to_set { it.to_a.first }
+
+  def target(kin) = pinpoint(kin.parent.first)
+
+  def pinpoint(node) = @scope.pinpoint(Hashira::Analysis::Syntax.new(node).segments)
 
   def settle(name, links)
     trail = [name]
     while (target = links[name]) && !trail.include?(target)
       trail << (name = target)
     end
-    target ? trail.drop(trail.index(target)).min : name
+    target ? trail.drop(trail.index(target)).min(1).fetch(0) : name
   end
 end

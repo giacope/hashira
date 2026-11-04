@@ -1,29 +1,33 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Draw =
-    Data.define(:salt) do
-      def self.build(seed) = seed ? new(salt: "#{seed}|") : Draw::DEV
+class Evaluation::Draw
+  def self.build(seeds) = new(seeds.map { "#{it}|" }.join)
 
-      def labels = Labels.new(salt.empty? ? Labels::ROOT : File.join(Labels::ROOT, "holdout", seed))
+  def initialize(salt, shelves = Evaluation::Shelves.new)
+    @salt = salt
+    @shelves = shelves
+  end
 
-      def seed = salt.delete_suffix("|")
+  def labels = Evaluation::Labels.new(@shelves.labels(seed))
 
-      def pending = salt.empty? ? File.join(ROOT, "tmp", "pending") : File.join(ROOT, "tmp", "holdout", seed)
+  def pending = @shelves.pending(seed)
 
-      def pick(sightings, size)
-        known = seen
-        sightings.reject { known.include?(it.key) }.sort_by { rank(it) }.first(size)
-      end
+  def pick(sightings, size)
+    known = seen
+    sightings.reject { known.include?(it.key) }.sort_by { rank(it) }.first(size)
+  end
 
-      def seen = salt.empty? ? Set.new : [*Labels::DEV.flat_map { Labels.new(it).entries.keys }, *drawn].to_set
+  private
 
-      def drawn = earlier.flat_map { Labels.new(it).listed }.map { it["key"] }
+  def seed = @salt.delete_suffix("|")
 
-      def earlier = Dir[Labels::DRAWN].reject { File.basename(it) == seed }
+  def seen = @salt.empty? ? Set.new : [*known, *drawn].to_set
 
-      def rank(sighting) = Digest::SHA256.hexdigest("#{salt}#{sighting.key}")
-    end
+  def known = [@shelves.labels(""), *@shelves.raters].flat_map { Evaluation::Labels.new(it).entries.keys }
 
-  Draw::DEV = Draw.new(salt: "")
+  def drawn = earlier.flat_map { Evaluation::Labels.new(it).listed }.map { it["key"] }
+
+  def earlier = @shelves.drawn.reject { File.basename(it) == seed }
+
+  def rank(sighting) = Digest::SHA256.hexdigest("#{@salt}#{sighting.key}")
 end

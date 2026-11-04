@@ -35,22 +35,22 @@ module Hashira
 
       def dsl? = @call.block.is_a?(Prism::BlockNode) && !reopening? && !built? && defines?(@call.block)
 
-      def walker(stack)
+      def walker(stack, plain)
         opened = opening
-        return TypeWalk.new(opened, opens: @call.receiver) if opened
-        TypeWalk.new(@call.block, block: owner(stack.last)) if stack.any? && dsl?
+        return Reopen.new(opened, @call.receiver) if opened
+        stack.any? && dsl? ? TypeWalk.new(@call.block, block: owner(stack.last)) : plain
       end
 
       def opening = (mixed if Syntax.new(@call.receiver).static?)
 
-      def apart? = @call.block.is_a?(Prism::BlockNode) && (built? || Syntax.new(@call).macro?([REFINE]))
+      def apart? = @call.block.is_a?(Prism::BlockNode) && (built? || Syntax::Call.new(@call).macro?([REFINE]))
 
       private
 
       def owner(enclosing)
         target = refined
         return [*enclosing[...-1], "#{enclosing.last} refine #{target}"] if target
-        enclosing + [named || "(#{@call.name} block, line #{@call.location.start_line})"]
+        enclosing + [names.fetch(0) { "(#{@call.name} block, line #{@call.location.start_line})" }]
       end
 
       def reopening? = (REOPENERS.include?(@call.name) || evaluated?) && inward?
@@ -61,7 +61,7 @@ module Hashira
 
       def app? = @host.is_a?(Prism::ClassNode) && APPS.match?(@host.superclass&.slice.to_s)
 
-      def refined = (@call.arguments.arguments.first.slice if Syntax.new(@call).macro?([REFINE]))
+      def refined = (@call.arguments.arguments.first.slice if Syntax::Call.new(@call).macro?([REFINE]))
 
       def built? = FACTORIES[Syntax.new(@call.receiver).segments.join("::")] == @call.name
 
@@ -79,7 +79,7 @@ module Hashira
         node.compact_child_nodes.any? { it.is_a?(Prism::DefNode) || (!FENCES.include?(it.class) && defines?(it)) }
       end
 
-      def named = Array(@call.arguments&.arguments).filter_map { Syntax.new(it).literal }.find { CAMEL.match?(it) }
+      def names = Array(@call.arguments&.arguments).flat_map { Syntax::Word.new(it).to_a.map(&:to_s) }.grep(CAMEL)
     end
   end
 end

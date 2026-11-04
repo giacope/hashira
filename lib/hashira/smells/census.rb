@@ -1,44 +1,40 @@
 # frozen_string_literal: true
 
-require "prism"
-
 class Hashira::Smells::Census
-  def initialize(project, trees)
+  def initialize(
+    project, trees,
+    catalog = Hashira::Coupling::Catalog.build(project, trees, Hashira::Coupling::Definitions.build(project, trees)),
+    kit = Hashira::Smells::Kit.new(trees.values, catalog)
+  )
     @project = project
     @trees = trees
+    @catalog = catalog
+    @kit = kit
   end
 
-  def ownership = @_ownership ||= Hashira::Smells::Ownership.new(@trees.values, catalog)
+  def types = @_types ||= settled(Hashira::Smells::Sketches.new(harvested, catalog).to_a)
 
-  def catalog = @_catalog ||= Hashira::Coupling::Catalog.new(Hashira::Coupling::Definitions.new(@project, @trees))
-
-  def types = @_types ||= settled(Hashira::Smells::Concerns.new(sketches).settled)
-
-  def sketches
-    found = @trees.flat_map { |path, tree| harvest(@project.relative(path), tree) }
-    opened, defined = found.partition { it.node.is_a?(Prism::BlockNode) }
-    kinds = defined.to_h { [it.name, it.kind] }
-    defined + opened.map { it.with(kind: kinds.fetch(it.name, it.kind)) }
-  end
+  def report(boundaries, rules) = @kit.report(types, boundaries, rules)
 
   private
 
+  attr_reader :catalog
+
+  def harvested
+    paths = @project.paths
+    @trees.flat_map do |path, tree|
+      file = paths.relative(path)
+      walk = Hashira::Analysis::TypeWalk.new(tree).to_enum(:walk, roots:)
+      walk.map { |node, full, _stack, lexical| [full.join("::"), node, file, lexical] }
+    end
+  end
+
   def settled(found)
-    lineage = Hashira::Smells::Lineage.new(found, found.reject { claimed?(it) }.to_set(&:name))
-    kinship = Hashira::Smells::Kinship.new(found, lineage)
-    found.map { lineage.settle(it, protocol: kinship.protocol(it), ownership:, claimed: claimed?(it)) }
+    typeset = Hashira::Smells::Typeset.new(found)
+    lineage = Hashira::Smells::Lineage.new(found, typeset)
+    kinship = Hashira::Smells::Kinship.new(found, typeset)
+    found.map { lineage.settle(it, kinship.protocol(it)) }
   end
 
   def roots = @_roots ||= Hashira::Coupling::Autoload.new(@project, @trees).roots
-
-  def harvest(file, tree)
-    found = []
-    Hashira::Analysis::TypeWalk.new(tree).walk(roots:) do |node, full, _stack, lexical|
-      kind = node.is_a?(Prism::ClassNode) ? :class : :module
-      found << Hashira::Smells::Sketch.new(full.join("::"), node, kind, file, lexical)
-    end
-    found
-  end
-
-  def claimed?(sketch) = catalog.claimed?(sketch.lexical)
 end

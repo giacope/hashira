@@ -20,7 +20,7 @@ class Hashira::Smells::Values
   end
 
   def harvest(node, full)
-    made = Hashira::Analysis::Syntax.new(node).constants.select { factory?(it.value) }.map { it.name.to_s }
+    made = Hashira::Analysis::Syntax::Body.new(node).constants.select { factory?(it.value) }.map { it.name.to_s }
     node.is_a?(Prism::ClassNode) && factory?(node.superclass) ? made + [full.last] : made
   end
 

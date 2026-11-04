@@ -7,7 +7,7 @@ class Evaluation::Comparison
     @boards = boards
   end
 
-  def markdown = [suites, failures, corpus, precision].compact.join("\n")
+  def markdown = [suites, *failures, *corpus, *precision].join("\n")
 
   private
 
@@ -31,7 +31,7 @@ class Evaluation::Comparison
 
   def failures
     rows = @boards.last["suites"].flat_map { |name, suite| failed(name, suite) }
-    rows.empty? ? nil : "## Failing checks (#{labels.last})\n\n#{table(%w[suite check expected actual], rows)}\n"
+    rows.empty? ? [] : ["## Failing checks (#{labels.last})\n\n#{table(%w[suite check expected actual], rows)}\n"]
   end
 
   def failed(name, suite) = suite["checks"].reject { it["passed"] }.map { failure(name, it) }
@@ -40,7 +40,7 @@ class Evaluation::Comparison
 
   def corpus
     projects = @boards.flat_map { it.fetch("corpus", {}).keys }.uniq
-    "## Corpus\n\n#{projects.map { project(it) }.join("\n")}" unless projects.empty?
+    projects.empty? ? [] : ["## Corpus\n\n#{projects.map { project(it) }.join("\n")}"]
   end
 
   def project(name)
@@ -57,7 +57,7 @@ class Evaluation::Comparison
   def precision
     kinds = @boards.flat_map { it.fetch("precision", {}).keys }.uniq
     rows = kinds.map { |name| [name, *@boards.map { judged(it.dig("precision", name)) }] }
-    "## Precision (labeled sample)\n\n#{table(["kind", *labels], rows)}\n" unless kinds.empty?
+    kinds.empty? ? [] : ["## Precision (labeled sample)\n\n#{table(["kind", *labels], rows)}\n"]
   end
 
   def judged(entry)

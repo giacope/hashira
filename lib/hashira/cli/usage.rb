@@ -3,8 +3,6 @@
 require_relative "flags"
 
 class Hashira::CLI::Usage
-  PAGES = %i[help version].freeze
-
   HEADER = <<~TEXT
     Usage: hashira [DIRECTORY ...] [options]
 
@@ -41,25 +39,20 @@ class Hashira::CLI::Usage
     and every suppression is listed in the report.
   TEXT
 
-  def initialize(io = $stdout)
+  def initialize(io = $stdout, flags = Hashira::CLI::Flags.new)
     @io = io
+    @flags = flags
   end
 
   def help = emit(HEADER + options + FOOTER)
 
   def version = emit("hashira #{Hashira::VERSION}")
 
+  def status = 0
+
   private
 
-  def options = Hashira::CLI::FLAGS.map { rows(it) }.join
+  def options = @flags.to_a.join
 
-  def rows(flag)
-    first, *rest = flag.text
-    ["  #{flag.label.ljust(21)}#{first}\n", *rest.map { "#{" " * 23}#{it}\n" }].join
-  end
-
-  def emit(output)
-    @io.puts(output)
-    0
-  end
+  def emit(output) = @io.puts(output)
 end

@@ -9,7 +9,7 @@ class Evaluation::Precision
 
   def summary = @sizes.to_h { |kind, size| [kind, tally(kind, sampled(kind, size)).to_h] }
 
-  def pending = @sizes.flat_map { |kind, size| sampled(kind, size).reject { labels.verdict(it.key) } }
+  def pending = @sizes.flat_map { |kind, size| sampled(kind, size).reject { labels.verdicts(it.key).any? } }
 
   private
 
@@ -18,7 +18,7 @@ class Evaluation::Precision
   def sampled(kind, size) = @draw.pick(@sightings.select { it.kind == kind }, size)
 
   def tally(kind, picked)
-    verdicts = picked.filter_map { labels.verdict(it.key) }
+    verdicts = picked.flat_map { labels.verdicts(it.key) }
     population = @sightings.count { it.kind == kind }
     Evaluation::Tally.new(population:, sampled: picked.size, labeled: verdicts.size, positive: verdicts.count("tp"))
   end

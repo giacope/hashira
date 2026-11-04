@@ -1,23 +1,25 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, top: nil)
-    Hashira::Report::View.new(project:, graph:, complexity:, duplication:, hotspots:, findings:, top:, screened: Fixtures::CLEAR)
+  def view(project, graph, findings, complexity: [], duplication: [], hotspots: [], top: nil)
+    analyses = Hashira::Report::View::Analyses.new([graph].compact, complexity, duplication, hotspots)
+    verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
+    Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top))
   end
 
   # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
-  def printed(files, graph: true, parts: [], accepted: [])
+  def printed(files, graph: true, shown: [], accepted: [])
     within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"]))
-      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
-      added = parts.to_h { [it, pipeline.public_send(it)] }
-      capture { described_class.new(view(pipeline.project, (pipeline.graph if graph), findings, **added)).print }
+      project = Hashira::Project.new(["lib/app"])
+      pipeline = Hashira::Pipeline.build(project)
+      findings = Hashira::CI::Accepted.new(accepted).screen(kept(pipeline))
+      capture { view(project, (outcome(pipeline).graph if graph), findings, **parts(project, shown)).text.print }
     end
   end
 
   it "caps the findings list at --top and counts what it withheld" do
     with_pipeline do |project, graph, findings|
-      output = capture { described_class.new(view(project, graph, findings, top: 2)).print }
+      output = capture { view(project, graph, findings, top: 2).text.print }
       expect(output).to(include("Findings (5):"))
       expect(output).to(include("… and 3 more — raise the cap with --top, or read them all with --json"))
     end
@@ -25,7 +27,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
 
   it "prints the full report verbatim" do
     with_pipeline do |project, graph, findings|
-      output = capture { described_class.new(view(project, graph, findings)).print }
+      output = capture { view(project, graph, findings).text.print }
 
       expect(output).to(eq(<<~TEXT))
         Package (folder) metrics for lib/app  (3 packages, 3 files)
@@ -80,7 +82,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   it "adds the complexity section and its findings when complexity is present" do
-    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity])).to(
+    expect(printed(Fixtures::COMPLEX_FILES, shown: %i[complexity])).to(
       include(
         "Package (folder) metrics", "Cognitive complexity — worst methods",
         "Per-class rollup", "complexity: App::Knot::Tangle#tangled"
@@ -89,19 +91,19 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   it "renders complexity alone when coupling is skipped (no graph)" do
-    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])).to(
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity])).to(
       include("Cognitive complexity — worst methods").and(exclude("package  TC"))
     )
   end
 
   it "ranks the hotspots between the complexity tables and the findings" do
-    expect(printed(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity hotspots]))
+    expect(printed(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity hotspots]))
       .to(match(%r{Per-class rollup.*Hotspots — cost alone.*knot/tangle\.rb\s+12.*Findings \(}m))
   end
 
   it "lists accepted findings with their recorded reason" do
     entry = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
-    expect(printed(Fixtures::COMPLEX_FILES, parts: %i[complexity], accepted: [entry]))
+    expect(printed(Fixtures::COMPLEX_FILES, shown: %i[complexity], accepted: [entry]))
       .to(include("Accepted (1):", "~ complexity/App::Knot::Tangle#tangled — legacy tangle"))
   end
 
@@ -116,17 +118,14 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   describe(Hashira::Report::FindingList) do
-    def complex(name, cognitive)
-      detail = Hashira::Complexity::MethodFinding::Effort.new(
-        cognitive:, calls: 1, site: "#{name}.rb:1",
-        dominant: "if"
-      )
-      Hashira::Analysis::Finding.new(kind: "complexity", package: "A##{name}", detail:, evidence: [])
+    def effort(name, cognitive)
+      Hashira::Complexity::MethodFinding::Effort.new(cognitive:, calls: 1, site: "#{name}.rb:1", dominant: "if")
     end
 
+    def complex(name, cognitive, ratings: []) = handmade("complexity", "A##{name}", effort(name, cognitive), ratings:)
+
     def smell(kind, name, file = name)
-      detail = { site: "#{file}.rb:2", owner: :class }
-      Hashira::Analysis::Finding.new(kind:, package: "A##{name}", detail:, evidence: [])
+      handmade(kind, "A##{name}", Fakes::Detail.new({ site: "#{file}.rb:2", owner: :class, kind: :identical }))
     end
 
     def findings
@@ -137,7 +136,7 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
       ]
     end
 
-    def packages(list) = list.map(&:package)
+    def packages(list) = list.map { it.to_h[:package] }
 
     it "deals the kinds in turn, each worst first where it has a magnitude, else in the order found" do
       expect(packages(Hashira::Report::Spread.new(findings).to_a)).to(
@@ -154,11 +153,11 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
     end
 
     it "knows every structural kind the pipeline runs" do
-      expect(Hashira::Report::Spread::STRUCTURAL.sort).to(eq(Hashira::Pipeline::STRUCTURAL.sort))
+      expect(Hashira::Report::Spread::STRUCTURAL.sort).to(eq(Fixtures::STRUCTURAL.sort))
     end
 
     it "deals a doubted finding after every confident one of its kind, whatever its magnitude" do
-      doubted = complex("doubted", 50).with(confidence: :low)
+      doubted = complex("doubted", 50, ratings: [:low])
       dealt = Hashira::Report::Spread.new([doubted, complex("plain", 12), smell("nil_check", "n1")]).to_a
       expect(packages(dealt)).to(eq(%w[A#plain A#n1 A#doubted]))
     end
@@ -176,7 +175,8 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
             "  nil_check         3 in 2 files",
             "  utility_function  1 in 1 file",
             "",
-            "  complexity: A#worst — cognitive 30, 1 calls (worst.rb:1). #{Hashira::Report::Phrases::FLATTEN}"
+            "  complexity: A#worst — cognitive 30, 1 calls (worst.rb:1). " \
+              "flatten the branching — guard clauses, early returns, or polymorphism."
           ]
         )
       )
@@ -191,15 +191,15 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
   end
 
   describe(Hashira::Report::Tally) do
-    def finding(kind, package, evidence, detail: nil)
-      Hashira::Analysis::Finding.new(kind:, package:, detail:, evidence:)
+    def finding(kind, package, evidence, detail: {})
+      handmade(kind, package, Fakes::Detail.new(detail), evidence:)
     end
 
     it "counts the distinct files a kind names, wherever it names them" do
       findings = [
         finding("cycle", "a", ["models/a.rb:3: B", "models/b.rb:9: A"]),
         finding("cycle", "b", ["models/b.rb:4: C", "models/c.rb:1: B"]),
-        finding("duplication", "x/y.rb:5", ["x/y.rb:5-9", "x/z.rb:1-5"]),
+        finding("duplication", "x/y.rb:5", ["x/y.rb:5-9", "x/z.rb:1-5"], detail: { kind: :identical }),
         finding("roll_call", "pkg", ["lib/one.rb", "lib/two.rb"]),
         finding("complexity", "A#m", ["if +3 (line 4)"], detail: { site: "a/m.rb:2" })
       ]

@@ -24,7 +24,7 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
       end
     RUBY
     evidence = ["reads @text (lines 2, 4)", "reads @mark (line 4)"]
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["Loud", evidence]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(eq([["Loud", evidence]]))
     expect(message(findings.first)).to(
       eq(
         "Loud mixes behavior into its host's own state (zone/mixin.rb:1). " \
@@ -50,7 +50,7 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
         def hidden = @_hidden = 1
       end
     RUBY
-    expect(findings.first.evidence).to(
+    expect(findings.first.to_h[:evidence]).to(
       eq(
         [
           "keeps @events in its host (line 3)", "keeps @count in its host (line 4)",
@@ -86,7 +86,7 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
         def check = limit
       end
     RUBY
-    expect(findings.to_h { [it.package, it.evidence] }).to(
+    expect(findings.to_h { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq(
         "Trackable" => [
           "installs after_save (line 5)", "installs has_many (line 6)", "installs validates (line 7)",
@@ -142,7 +142,7 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
         included { has_paper_trail }
       end
     RUBY
-    expect(findings.to_h { [it.package, it.evidence] }).to(
+    expect(findings.to_h { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq(
         "Suppressed" => ["installs thread_mattr_accessor (line 5)"],
         "Shared" => [
@@ -200,7 +200,7 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
         end
       end
     RUBY
-    expect(findings.to_h { [it.package, it.evidence] }).to(
+    expect(findings.to_h { [it.to_h[:package], it.to_h[:evidence]] }).to(
       eq(
         "Pageish" => ["installs validates (line 5)"], "Audited" => ["installs after_save (line 13)"],
         "Named" => ["installs attr_accessor (line 18)"]
@@ -271,7 +271,9 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
         def started? = @started
       end
     RUBY
-    expect(findings.map { [it.package, it.evidence] }).to(eq([["Base", ["keeps @started in its host (line 2)"]]]))
+    expect(findings.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq([["Base", ["keeps @started in its host (line 2)"]]])
+    )
   end
 
   it "counts what a mixin assigns itself as its own when it extends or includes a module it cannot see" do
@@ -299,12 +301,12 @@ RSpec.describe(Hashira::Smells::StatefulMixin, :aggregate_failures) do
       end
     RUBY
     evidence = [["keeps @header in its host (line 6)", "reads @length (line 10)"], ["reads @type (line 20)"]]
-    expect(findings.map(&:evidence)).to(eq(evidence))
+    expect(findings.map { it.to_h[:evidence] }).to(eq(evidence))
   end
 
   it "takes a bare extend for a call, not for extending the module itself" do
     findings = mixed("module Odd\n  extend\n\n  def read = @value\nend\n")
-    expect(findings.map(&:evidence)).to(eq([["reads @value (line 4)"]]))
+    expect(findings.map { it.to_h[:evidence] }).to(eq([["reads @value (line 4)"]]))
   end
 
   it "reads only the included hook and its parameter as the host, and leaves a module the project does not own alone" do

@@ -1,16 +1,18 @@
 # frozen_string_literal: true
 
-module Hashira
-  module Complexity
-    Entry =
-      Data.define(:kind, :file, :site) do
-        def finding(detail, evidence)
-          Hashira::Analysis::Finding.new(kind:, package: site.subject, anchors: [spot], detail:, evidence:)
-        end
-
-        def cite(node) = "#{node.name} (line #{node.location.start_line})"
-
-        def spot = "#{file}:#{site.node.location.start_line}"
-      end
+class Hashira::Complexity::Entry
+  def initialize(kind, file, subject, node)
+    @kind = kind
+    @file = file
+    @subject = subject
+    @node = node
   end
+
+  def finding(detail, cited)
+    evidence = cited.map { |node, note| "#{node.name} (line #{node.location.start_line})#{note}" }
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, [spot])
+    Hashira::Analysis::Finding.new(@kind, Hashira::Analysis::Finding::Name.new(@subject), detail, proof)
+  end
+
+  def spot = "#{@file}:#{@node.location.start_line}"
 end

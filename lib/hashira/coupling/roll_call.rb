@@ -14,7 +14,36 @@ class Hashira::Coupling::RollCall
     maximum pattern additional_properties
   ].to_set.freeze
 
-  Roll = Data.define(:words, :files, :packages, :sites)
+  class Roll
+    def initialize(words, files, packages, sites)
+      @words = words
+      @files = files
+      @packages = packages
+      @sites = sites
+    end
+
+    def to_h = { words: @words, files: @files, packages: @packages }
+
+    def phrase(_package)
+      "the words #{@words.join(", ")} are listed together in #{@files.join(", ")} — " \
+        "#{@packages.size} packages keep one roll-call in sync by hand. Make the list data with a single owner."
+    end
+
+    def within?(words) = words.superset?(@words.to_set)
+
+    def swallows?(small) = @words != small.words && (small.words - @words).empty?
+
+    def finding(kind)
+      name = Hashira::Analysis::Finding::Name.new(@packages.fetch(0), [@words.join(",")])
+      Hashira::Analysis::Finding.new(kind, name, self, Hashira::Analysis::Finding::Proof.new(@sites))
+    end
+
+    def <=>(other) = @words <=> other.words
+
+    protected
+
+    attr_reader :words
+  end
 
   def initialize(lists, homes)
     @raw = lists
@@ -23,42 +52,32 @@ class Hashira::Coupling::RollCall
 
   def rolls
     found = candidates.filter_map { entry(it) }
-    found.reject { |roll| swallowed?(roll, found) }.sort_by(&:words)
+    found.reject { |roll| found.any? { it.swallows?(roll) } }.sort
   end
 
   private
 
-  def lists = @_lists ||= @raw.transform_values { |literals| literals.map { it.with(words: it.words - GENERIC) } }
+  def lists = @_lists ||= @raw.transform_values { |literals| literals.map { it.without(GENERIC) } }
 
   def files = @_files ||= lists.keys.sort
 
   def candidates
     pairs = files.combination(2).flat_map { |one, two| lists[one].product(lists[two]) }
-    pairs.filter_map { |mine, theirs| shared(mine, theirs) }.uniq
+    pairs.flat_map { |mine, theirs| shared(mine, theirs) }.uniq
   end
 
   def shared(mine, theirs)
-    words = mine.words & theirs.words
-    words if words.size >= MIN_WORDS && most?(words, mine) && most?(words, theirs)
+    words = mine.shared(theirs)
+    words.size >= MIN_WORDS && mine.holds?(words, SHARE) && theirs.holds?(words, SHARE) ? [words] : []
   end
 
-  def most?(words, literal) = words.size >= SHARE * literal.words.size
-
-  def holding(file, words) = lists[file].find { it.words >= words && most?(words, it) }
+  def holding(file, words) = lists[file].select { it.holds?(words, SHARE) }
 
   def entry(words)
-    holders = files.select { holding(it, words) }
+    holders = files.select { holding(it, words).any? }
     spread = holders.map { @homes[it] }.uniq.sort
     return unless holders.size >= MIN_FILES && spread.size >= MIN_PACKAGES
-    sites = holders.map { "#{it}:#{holding(it, words).line}" }
-    Roll.new(words: words.sort, files: holders, packages: spread, sites:)
-  end
-
-  def swallowed?(roll, rolls) = rolls.any? { swallows?(it, roll) }
-
-  def swallows?(big, small)
-    mine = big.words
-    theirs = small.words
-    mine != theirs && (theirs - mine).empty?
+    sites = holders.map { holding(it, words).fetch(0).site(it) }
+    Roll.new(words.sort, holders, spread, sites)
   end
 end

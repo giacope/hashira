@@ -9,6 +9,9 @@ end
 
 require "hashira"
 require "tmpdir"
+require_relative "support/fakes"
+require_relative "support/census"
+require_relative "support/readers"
 
 module Fixtures
   def within(files, &)
@@ -36,10 +39,26 @@ module Fixtures
   end
 
   def pipeline(directories, packaging: :folder)
-    project = Hashira::Project.new(directories)
-    trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-    census = Hashira::Coupling::Census.new(project, trees, packaging:)
-    [project, census, Hashira::Coupling::Graph.new(project, trees, census)]
+    project = Hashira::Project.new(directories, packaging:)
+    trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
+    [project, Fixtures::Census.new(project, trees), Hashira::Coupling::Graph.build(project, trees)]
+  end
+
+  # What a pipeline hands the run: its outcome, and its coverage of the checks; and the findings it kept.
+  def outcome(pipeline) = pipeline.call(->(found, _coverage) { found })
+
+  def coverage(pipeline) = pipeline.call(->(_found, covered) { covered })
+
+  def kept(pipeline) = outcome(pipeline).screened.to_a.fetch(0)
+
+  # The parts of a report the analyzers measure, over a project's trees: complexity, duplication and hotspots.
+  def parts(project, names)
+    trees = Hashira::Trees.new(project.listing)
+    complexity = [Hashira::Complexity::Scores.new(project.paths, trees.all, NONE, trees)]
+    duplication = [Hashira::Duplication::Clones.new(project.paths, trees.all)]
+    churn = Hashira::Churn.build(Hashira::GitLog.new(project.paths))
+    hotspots = [Hashira::Hotspots::Rollup.new(complexity, duplication, churn)]
+    { complexity:, duplication:, hotspots: }.slice(*names)
   end
 
   def analyze(files, directories: ["lib/app"], packaging: :folder)
@@ -48,29 +67,30 @@ module Fixtures
 
   def with_pipeline(&)
     within(Fixtures::CYCLIC_FILES) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(["lib/app"], rules: Hashira::Config::Rules::ALL))
-      yield(pipeline.project, pipeline.graph, Hashira::CI::Accepted.new([]).screen(pipeline.findings))
+      project = Hashira::Project.new(["lib/app"])
+      pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules::ALL)
+      yield(project, outcome(pipeline).graph, Hashira::CI::Accepted.new([]).screen(kept(pipeline)))
     end
   end
 
   def complexity(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      parsed = Hashira::Trees.new(project)
-      yield(Hashira::Complexity::Scores.new(project, parsed.all, NONE, parsed))
+      parsed = Hashira::Trees.new(project.listing)
+      yield(Hashira::Complexity::Scores.new(project.paths, parsed.all, NONE, parsed))
     end
   end
 
   def smells(files, directories: ["lib/app"], rules: NONE)
     within(files) do
       project = Hashira::Project.new(directories)
-      trees = project.files.to_h { [it, Prism.parse_file(it).value] }
-      yield(Hashira::Smells::Report.new(project, trees, Hashira::Boundaries.new([], trees), rules))
+      trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
+      yield(Hashira::Smells::Census.new(project, trees).report(Hashira::Boundaries.new([], trees), rules))
     end
   end
 
   def sniffed(files, kind, rules: Hashira::Config::Rules::ALL)
-    smells(files, rules:) { |report| return report.findings.select { it.kind == kind } }
+    smells(files, rules:) { |report| return report.findings.select { it.of?([kind]) } }
   end
 
   def strictly(files, kind) = sniffed(files, kind, rules: STRICT)
@@ -83,23 +103,46 @@ module Fixtures
 
   def cluster(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted.first
 
+  # The file each clone site sits in, and the lines it spans.
+  def site_files(sites) = sites.map { it.span.to_a.first }
+
+  def site_ranges(sites) = sites.map { it.span.range }
+
   def duplication(files, directories: ["lib/app"])
     within(files) do
       project = Hashira::Project.new(directories)
-      yield(Hashira::Duplication::Clones.new(project, project.files.to_h { [it, Prism.parse_file(it).value] }, Hashira::Churn.new({})))
+      trees = project.listing.to_a.to_h { [it, Prism.parse_file(it).value] }
+      yield(Hashira::Duplication::Clones.new(project.paths, trees))
     end
   end
 
-  def message(finding) = Hashira::Report::Phrases.new(finding).message
+  def message(finding) = finding.to_h.fetch(:message)
 
-  def spy_on(klass, method, log)
-    allow(klass).to(
-      receive(:new).and_wrap_original do |make, node|
-        made = make.call(node)
-        allow(made).to(receive(method).and_wrap_original { |call| (log << node) && call.call })
-        made
-      end
-    )
+  def anchors_of(finding) = Fakes::Directive.new.tap { finding.silenced([it]) }.to_a
+
+  def packages_in(findings) = findings.map { it.to_h[:package] }
+
+  def mark_of(finding) = finding.scored(->(_signature, magnitude, traces) { Fakes::Mark.new(magnitude, traces.first) })
+
+  def handmade(kind, package, detail = Fakes::Detail.new({}), evidence: [], anchors: [], digests: [], **marks)
+    shapes, ratings = marks.values_at(:shapes, :ratings).map { Array(it) }
+    proof = Hashira::Analysis::Finding::Proof.new(evidence, anchors, shapes, ratings)
+    Hashira::Analysis::Finding.new(kind, Hashira::Analysis::Finding::Name.new(package, digests), detail, proof)
+  end
+
+  # While the block runs, the first argument each instance of klass is built with, and, when a method is named,
+  # that argument again each time the method runs on the instance: watched by a TracePoint, which replaces nothing.
+  def observed(klass, method = :initialize, &)
+    built = {}.compare_by_identity
+    seen = []
+    TracePoint.new(:call) { |call| watch(call, klass, method, built, seen) }.enable(&)
+    seen
+  end
+
+  def watch(call, klass, method, built, seen)
+    return unless call.self.is_a?(klass)
+    built[call.self] = call.binding.local_variable_get(call.parameters.first.last) if call.method_id == :initialize
+    seen << built.fetch(call.self) if call.method_id == method
   end
 
   def capture
@@ -112,11 +155,21 @@ module Fixtures
     $stdout, $stderr = original
   end
 
-  NONE = Hashira::Config::Rules::NONE
+  NONE = Hashira::Config::Rules.new({})
 
-  STRICT = Hashira::Config::Rules::ALL.tightened
+  KINDS = Hashira::Checks.new.to_a
+
+  SMELLS = Hashira::Checks.new.names.fetch("smells")
+
+  STRUCTURAL = Hashira::Checks.new.then { |checks| checks.select { checks.owner(it) == :coupling } }
+
+  STRICT = Hashira::Config::Rules::ALL.chosen(strict: true)
 
   CLEAR = Hashira::Suppression::Suppressions::CLEAR
+
+  FLAT = Hashira::Config::Layers.new([])
+
+  JUDGED = Hashira::Report::View::Unjudged.new(kinds: [], history: nil, judged: true)
 
   CYCLIC_FILES = {
     "lib/app/alpha/one.rb" => <<~RUBY,

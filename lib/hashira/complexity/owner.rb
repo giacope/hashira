@@ -2,49 +2,27 @@
 
 require "prism"
 
-module Hashira
-  module Complexity
-    RECURSION = "recursion"
+class Hashira::Complexity::Owner
+  INSTANCE = "#"
 
-    Site =
-      Data.define(:owner, :node) do
-        def subject = owner.subject(node)
+  SINGLETON = "."
 
-        def family = subject.delete_suffix(node.name.to_s)
-
-        def callees = Calls.new(node).names.map { "#{family}#{it}" }
-
-        def recursion(cyclic) = cyclic.include?(subject) ? [mark] : []
-
-        def mark = Increment.new(line: node.location.start_line, cost: 1, label: RECURSION)
-      end
-
-    Defined =
-      Data.define(:call) do
-        def name
-          named.respond_to?(:unescaped) ? Hashira::Analysis::Syntax.new(named).symbol : :"define_method(#{named.slice})"
-        end
-
-        def named = call.arguments.arguments.first
-
-        def body = call.block.body
-
-        def location = call.location
-      end
-
-    Owner =
-      Data.define(:segments, :separator) do
-        def initialize(segments:, separator: "#") = super
-
-        def lifted = with(separator: ".")
-
-        def within(node) = node.is_a?(Prism::ConstantWriteNode) ? nested(node.name.to_s) : self
-
-        def nested(name) = Owner.new(segments: segments + [name])
-
-        def subject(node) = "#{segments.join("::")}#{singleton?(node) ? "." : separator}#{node.name}"
-
-        def singleton?(node) = node.is_a?(Prism::DefNode) && node.receiver
-      end
+  def initialize(segments, separator = INSTANCE)
+    @segments = segments
+    @separator = separator
   end
+
+  def lifted = Hashira::Complexity::Owner.new(@segments, SINGLETON)
+
+  def within(node)
+    node.is_a?(Prism::ConstantWriteNode) ? Hashira::Complexity::Owner.new(@segments + [node.name.to_s]) : self
+  end
+
+  def subject(node) = "#{@segments.join("::")}#{singleton?(node) ? SINGLETON : @separator}#{node.name}"
+
+  def family(node) = subject(node).delete_suffix(node.name.to_s)
+
+  private
+
+  def singleton?(node) = node.is_a?(Prism::DefNode) && node.receiver
 end

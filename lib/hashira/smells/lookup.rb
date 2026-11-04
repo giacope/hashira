@@ -4,9 +4,7 @@ require "prism"
 require_relative "foreign"
 
 class Hashira::Smells::Lookup
-  KEYED = Hashira::Smells::Foreign::KEYED_READS
-
-  KEYS = (Hashira::Smells::Foreign::KEYS + [Prism::IntegerNode]).freeze
+  KEYED = %i[[] fetch values_at dig key?].freeze
 
   NEAR = [
     NilClass, Prism::SelfNode, Prism::LocalVariableReadNode, Prism::ItLocalVariableReadNode,
@@ -26,5 +24,7 @@ class Hashira::Smells::Lookup
 
   def reader? = !@call.arguments
 
-  def keyed? = KEYED.include?(@call.name) && @call.arguments.arguments.all? { KEYS.include?(it.class) }
+  def keyed? = KEYED.include?(@call.name) && @call.arguments.arguments.all? { key?(it) }
+
+  def key?(node) = Hashira::Analysis::Syntax::Word.new(node).word? || node.is_a?(Prism::IntegerNode)
 end

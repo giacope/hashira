@@ -1,14 +1,17 @@
 # frozen_string_literal: true
 
 class Hashira::CLI::Sieve
-  def initialize(focus, kinds)
-    @focus = focus
+  def initialize(scope, kinds, fail_on)
+    @scope = scope
     @kinds = kinds
+    @fail_on = fail_on
   end
 
-  def narrowing? = @focus.narrowing? || @kinds.any?
+  def narrowing? = @scope.narrowing? || @kinds.any?
 
-  def narrow(findings) = findings.select { keeps?(it.kind) }
+  def narrow(findings) = @kinds.empty? ? findings : findings.select { it.of?(@kinds) }
 
   def keeps?(kind) = @kinds.empty? || @kinds.include?(kind)
+
+  def gated(checked) = Hashira::CLI::FailOn.new(@fail_on).every? ? checked : @fail_on
 end

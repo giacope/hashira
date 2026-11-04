@@ -24,13 +24,13 @@ class Hashira::Coupling::Manifest
 
   def nodes = @_nodes ||= Hashira::Analysis::NodeWalk.new(@tree).collect
 
-  def loaded(names) = nodes.grep(Prism::CallNode).select { names.include?(it.name) }.filter_map { named(it) }
+  def loaded(names) = nodes.grep(Prism::CallNode).select { names.include?(it.name) }.flat_map { named(it) }
 
-  def named(call) = Array(call.arguments&.arguments).grep(Prism::StringNode).map { text(it) }.last
+  def named(call) = Array(call.arguments&.arguments).grep(Prism::StringNode).map { text(it) }.last(1)
 
   def listed = nodes.grep(Prism::StringNode).map { text(it) }.select { it.end_with?(SOURCE) }
 
   def source(text) = "#{text.delete_suffix(SOURCE)}#{SOURCE}"
 
-  def text(node) = Hashira::Analysis::Syntax.new(node).text
+  def text(node) = Hashira::Analysis::Syntax::Word.new(node).to_s
 end

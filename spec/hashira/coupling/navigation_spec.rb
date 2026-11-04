@@ -12,14 +12,14 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
   def found(files, *kinds)
     within(files) do
       shown = kinds.empty? ? %w[cycle bidirectional_association] : kinds
-      Hashira::Pipeline.new(Hashira::Project.new(["app"])).findings.select { shown.include?(it.kind) }
+      kept(Hashira::Pipeline.build(Hashira::Project.new(["app"]))).select { shown.include?(it.to_h[:kind]) }
     end
   end
 
   it "reports two models that declare associations to each other once, with what the owning side carries" do
     paired = found(models("has_many :posts, dependent: :destroy", "belongs_to :user"))
     pledge = "models/user.rb:2: has_many :posts, dependent: :destroy"
-    expect(paired.map { [it.kind, it.package, it.detail] }).to(
+    expect(paired.map { [it.to_h[:kind], it.to_h[:package], it.to_h[:detail]] }).to(
       eq(
         [
           [
@@ -40,12 +40,20 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
     )
   end
 
+  it "does not report a model whose associations lead back to itself" do
+    files = {
+      "config/application.rb" => "module Shop; class Application; end; end\n",
+      "app/models/user.rb" => "class User\n  has_many :users\n  belongs_to :user\nend\n"
+    }
+    expect(found(files, "bidirectional_association")).to(be_empty)
+  end
+
   it "reports a model once for every model it is navigated both ways with, naming each class, namespaced or not" do
     finding = found(crowd).first
     said = "User is navigated both ways by 3 models, Comment, Post, Trs::TrnRequest: each declares an association " \
       "to the other (user.rb:2), which ties them together. Drop User's side of each and query the model " \
       "where it is needed."
-    expect([finding.package, finding.detail[:children], finding.evidence.size, message(finding)])
+    expect([finding.to_h[:package], finding.to_h[:detail][:children], finding.to_h[:evidence].size, message(finding)])
       .to(eq(["User", %w[Comment Post Trs::TrnRequest], 6, said]))
   end
 
@@ -56,8 +64,8 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
       "app/models/cms/site.rb" => "module Cms\n  class Site\n    has_many :posts\n  end\nend\n",
       "app/models/cms/post.rb" => "module Cms\n  class Post\n    belongs_to :site\n  end\nend\n"
     }
-    found = within(files) { Hashira::Pipeline.new(Hashira::Project.new(%w[app lib])).findings }
-    expect(found.select { it.kind == "bidirectional_association" }.map(&:package)).to(eq(%w[Site]))
+    found = within(files) { kept(Hashira::Pipeline.build(Hashira::Project.new(%w[app lib]))) }
+    expect(found.select { it.to_h[:kind] == "bidirectional_association" }.map { it.to_h[:package] }).to(eq(%w[Site]))
   end
 
   it "says which side to drop and what to hand on first" do
@@ -72,7 +80,7 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
     findings = pairs.map { found(it).first }
     said = "Post and User each declare an association to the other (models/post.rb:2) — navigating both ways ties " \
       "them together. Drop Post's side and query User where it is needed."
-    expect([findings.map { it.detail[:parent] }, message(findings.first)]).to(eq([%w[Post Post], said]))
+    expect([findings.map { it.to_h[:detail][:parent] }, message(findings.first)]).to(eq([%w[Post Post], said]))
   end
 
   it "leaves a declared pair's edges out of the stability check, since one side is to go" do
@@ -86,11 +94,11 @@ RSpec.describe(Hashira::Coupling::Navigation, :aggregate_failures) do
     owned = %w[Session Device Token].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  belongs_to :user\nend\n"] }
     files = models("has_many :posts", "has_many :tags\n  has_many :notes").merge(owned)
     leaves = %w[Tag Note].to_h { ["app/models/#{it.downcase}.rb", "class #{it}\n  def post = 1\nend\n"] }
-    expect(found(files.merge(leaves), "unstable_dependency").map(&:package)).to(eq(["User"]))
+    expect(found(files.merge(leaves), "unstable_dependency").map { it.to_h[:package] }).to(eq(["User"]))
   end
 
   it "keeps a declared pair in the cycle search when code reaches both ways besides the declarations" do
     files = models("has_many :posts\n  def latest = Post", "belongs_to :user\n  def owner = User")
-    expect(found(files).map(&:kind)).to(eq(%w[cycle bidirectional_association]))
+    expect(found(files).map { it.to_h[:kind] }).to(eq(%w[cycle bidirectional_association]))
   end
 end

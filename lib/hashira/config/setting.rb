@@ -3,6 +3,10 @@
 class Hashira::Config::Setting
   KEYS = %w[enabled threshold].freeze
 
+  THRESHOLDS = %w[
+    boundary_sprawl complexity indirection low_cohesion middle_man repeated_conditional state_sprawl wide_edge
+  ].freeze
+
   LIMITS = { "fragmentation" => %w[helpers lines], "change_coupling" => %w[commits degree files] }.freeze
 
   LISTS = { "dead_code" => %w[roots] }.freeze
@@ -16,7 +20,9 @@ class Hashira::Config::Setting
     keys = KEYS + named + listed
     stray = (@raw.keys - keys).first
     raise(Hashira::Error, "checks: #{@kind} has no setting #{stray.inspect} (use: #{keys.join(", ")})") if stray
-    Hashira::Config::Rule.new(enabled: @raw["enabled"] != false, threshold:, limits:)
+    enabled = @raw["enabled"] != false
+    scaled = threshold
+    Hashira::Config::Rule.new(enabled:, limits: scaled.merge(limits))
   end
 
   private
@@ -43,14 +49,15 @@ class Hashira::Config::Setting
   end
 
   def threshold
-    return unless @raw.key?("threshold")
+    return {} unless @raw.key?("threshold")
     value = @raw["threshold"]
-    scale = Hashira::Config::Rules::THRESHOLDS.join(", ")
+    scale = THRESHOLDS.join(", ")
     raise(Hashira::Error, "checks: #{@kind} has no threshold (thresholds: #{scale})") unless scaled?
-    whole?(value) ? value : raise(Hashira::Error, "checks: #{@kind} threshold must be a positive whole number")
+    return { "threshold" => value } if whole?(value)
+    raise(Hashira::Error, "checks: #{@kind} threshold must be a positive whole number")
   end
 
-  def scaled? = Hashira::Config::Rules::THRESHOLDS.include?(@kind)
+  def scaled? = THRESHOLDS.include?(@kind)
 
   def whole?(value) = value.is_a?(Integer) && value.positive?
 end

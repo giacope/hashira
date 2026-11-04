@@ -6,17 +6,15 @@ require_relative "reads"
 class Hashira::Smells::TypeTests
   include Hashira::Smells::Reads
 
-  CHECKS = %i[is_a? kind_of? instance_of?].freeze
-
   LOOKUPS = %i[[] fetch].freeze
 
   CASES = [Prism::CaseNode, Prism::CaseMatchNode].freeze
 
   SHAPED = [Prism::ArrayPatternNode, Prism::FindPatternNode, Prism::HashPatternNode].freeze
 
-  def initialize(body, ownership)
+  def initialize(body, names)
     @body = body
-    @ownership = ownership
+    @names = names
   end
 
   def of(&)
@@ -28,7 +26,9 @@ class Hashira::Smells::TypeTests
 
   def calls = @_calls ||= @body.grep(Prism::CallNode)
 
-  def probes(&) = calls.select { CHECKS.include?(it.name) && local?(it.receiver, &) }.filter_map { key(it) }
+  def probes(&) = calls.select { tests?(it) && local?(it.receiver, &) }.flat_map { keys(it) }
+
+  def tests?(call) = Hashira::Analysis::Syntax::Message.new(call).type_test?
 
   def arms(&)
     switches = @body.select { CASES.include?(it.class) && local?(it.predicate, &) }
@@ -40,8 +40,8 @@ class Hashira::Smells::TypeTests
   end
 
   def lookups(&)
-    calls.select { LOOKUPS.include?(it.name) && sorts?(key(it), &) }
-      .flat_map { @ownership.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
+    calls.select { |call| LOOKUPS.include?(call.name) && keys(call).any? { sorts?(it, &) } }
+      .flat_map { @names.keys(Hashira::Analysis::Syntax.new(it.receiver).segments) }
   end
 
   def sorts?(argument, &) = argument.is_a?(Prism::CallNode) && argument.name == :class && local?(argument.receiver, &)

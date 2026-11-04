@@ -17,10 +17,10 @@ class Hashira::Report::Spread
   private
 
   def piles
-    @_piles ||=
-      @findings.group_by(&:kind).each_with_index.sort_by { |(kind, _), at| [tier(kind), at] }
-        .map { |(_, pile), _| ranked(pile) }
+    @_piles ||= kinds.each_with_index.sort_by { |(kind, _), at| [tier(kind), at] }.map { |(_, pile), _| ranked(pile) }
   end
+
+  def kinds = @findings.group_by { it.to_h.fetch(:kind) }
 
   def tier(kind)
     return 0 if STRUCTURAL.include?(kind)
@@ -29,7 +29,5 @@ class Hashira::Report::Spread
 
   def deepest = piles.map(&:size).max.to_i
 
-  def ranked(pile) = pile.each_with_index.sort_by { |finding, index| [order(finding), index] }.map(&:first)
-
-  def order(finding) = [finding.doubted? ? 1 : 0, -finding.magnitude.to_i]
+  def ranked(pile) = pile.each_with_index.sort_by { |finding, index| [finding, index] }.map(&:first)
 end

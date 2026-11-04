@@ -9,27 +9,39 @@ class Hashira::CLI::ConfigFile
 
   SWITCHES = [true, false].freeze
 
-  def initialize(argv, home)
+  def initialize(argv, home, checks = Hashira::Checks.new)
     @argv = argv
     @home = home
+    @checks = checks
   end
 
-  attr_reader :home
-
-  def directories = setting("directories").split(",")
-
-  def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
-
-  def rules = blamed { tightened(checked_rules.layered(layers).bounded(declared)) }
-
-  def checked_rules = settings.key?("checks") ? checks : Hashira::Config::Rules::NONE
+  def rules
+    blamed do
+      raw = settings["checks"]
+      parsed = settings.key?("checks") ? Hashira::Config::Rules.parse(raw, @checks.to_a) : Hashira::Config::Rules.new({})
+      draft = Hashira::CLI::Draft.new(parsed, layers, declared)
+      strict? ? draft.chosen(strict: true) : draft
+    end
+  end
 
   def vet
     argv = directories + flags.flatten
     blamed { yield(argv) }
   end
 
+  def widened(argv, named)
+    base = named.empty? ? argv + directories : argv
+    flags.reduce(base) do |kept, flag|
+      tried = kept + flag
+      yield(tried) ? tried : kept
+    end
+  end
+
   private
+
+  def directories = setting("directories").split(",")
+
+  def flags = FLAGS.filter_map { |key| ["--#{key}", placed(key)] if settings.key?(key) }
 
   def path = @_path ||= chosen
 
@@ -47,10 +59,6 @@ class Hashira::CLI::ConfigFile
     found = @home.join(DEFAULT)
     File.exist?(found) ? found : ""
   end
-
-  def checks = Hashira::Config::Rules.parse(settings["checks"], Hashira::Pipeline::KINDS)
-
-  def tightened(rules) = strict? ? rules.tightened : rules
 
   def strict?
     chosen = settings.fetch("strict", false)

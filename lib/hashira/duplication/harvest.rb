@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 class Hashira::Duplication::Harvest
-  def initialize(project, trees)
-    @project = project
+  def initialize(paths, trees)
+    @paths = paths
     @trees = trees
   end
 
@@ -10,5 +10,5 @@ class Hashira::Duplication::Harvest
 
   private
 
-  def candidates(path, tree) = Hashira::Duplication::Candidates.new(@project.relative(path), tree)
+  def candidates(path, tree) = Hashira::Duplication::Candidates.new(@paths.relative(path), tree)
 end

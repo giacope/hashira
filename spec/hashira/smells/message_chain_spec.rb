@@ -39,25 +39,27 @@ RSpec.describe(Hashira::Smells::MessageChain, :aggregate_failures) do
 
   it "flags a call on what an owned object's reader returned, typed by name, with the classes it passed" do
     finding = chained("order.customer.address").first
-    expect([finding.package, finding.detail, finding.evidence]).to(
+    expect([finding.to_h[:package], finding.to_h[:detail], finding.to_h[:evidence]]).to(
       eq(
         [
-          "Shop::Desk#run", { site: "desk.rb:5", through: %w[Order Customer] },
-          ["order.customer.address (line 6: Order → Customer)"]
+          "Order → Customer", { site: "desk.rb:5", places: 1, through: %w[Order Customer] },
+          ["Shop::Desk#run (desk.rb:5)"]
         ]
       )
     )
   end
 
   it "says which object it reached through and what to do" do
-    said = "Shop::Desk#run reaches through Order into Customer (desk.rb:5). " \
+    said = "Order → Customer — 1 method reaches through Order into Customer (desk.rb:5). " \
       "Ask Order for what you need, or hand the Customer in."
     expect(message(chained("order.customer.address").first)).to(eq(said))
   end
 
-  it "reports the longest chain once, through every owned class it crosses" do
-    evidence = chained("order.customer.address.city").first.evidence
-    expect(evidence).to(eq(["order.customer.address.city (line 6: Order → Customer → Address)"]))
+  it "reports the longest chain once, named by the first two owned classes it crosses" do
+    found = chained("order.customer.address.city")
+    expect(found.map { [it.to_h[:package], it.to_h[:evidence]] }).to(
+      eq([["Order → Customer", ["Shop::Desk#run (desk.rb:5)"]]])
+    )
   end
 
   it "starts from a parameter, an instance variable, its own reader, or self's reader" do

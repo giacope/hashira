@@ -9,11 +9,11 @@ class Hashira::Coupling::Stratum
     @path = path
   end
 
-  def presentation? = PRESENTATION.include?(of)
+  def presentation? = within?(PRESENTATION)
 
-  def of
+  def within?(strata)
     folders = File.expand_path(@path).split("/")
     root = folders[...-2].rindex { APP.include?(it) }
-    folders[root + 1] if root
+    root ? strata.include?(folders.fetch(root + 1)) : false
   end
 end

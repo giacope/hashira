@@ -1,30 +1,10 @@
 # frozen_string_literal: true
 
-module Evaluation
-  Accord =
-    Data.define(:pairs) do
-      def size = pairs.size
-
-      def empty? = pairs.empty?
-
-      def agreed = pairs.count { |human, rater| human == rater }
-
-      def kappa
-        chance = Labels::VERDICTS.sum { |verdict| share(0, verdict) * share(1, verdict) }
-        chance == 1 ? "—" : ((agreed.fdiv(size) - chance) / (1 - chance)).round(2)
-      end
-
-      def share(side, verdict) = pairs.count { it[side] == verdict }.fdiv(size)
-
-      def positive(side) = pairs.count { it[side] == "tp" }
-    end
-end
-
 class Evaluation::Agreement
-  RATERS = [Evaluation::Labels::BLIND, Evaluation::Labels::SECOND].freeze
+  RATERS = Evaluation::Shelves.new.raters
 
-  def self.build(human, raters)
-    new(Evaluation::Labels.new(human, pending: true), (raters || RATERS).map { Evaluation::Labels.new(it) })
+  def self.build(human, raters = RATERS)
+    new(Evaluation::Labels.new(human, pending: true), raters.map { Evaluation::Labels.new(it) })
   end
 
   def initialize(human, raters)
@@ -32,7 +12,7 @@ class Evaluation::Agreement
     @raters = raters
   end
 
-  def markdown = [precision, agreement || missing].join("\n")
+  def markdown = [precision, agreement].join("\n")
 
   private
 
@@ -40,7 +20,7 @@ class Evaluation::Agreement
 
   def line(cells) = "| #{cells.join(" | ")} |"
 
-  def kind(key) = key.split("|")[1]
+  def kind(key) = key.split("|").fetch(1)
 
   def kinds = [*@human.listed.map { kind(it["key"]) }.uniq.sort, nil]
 
@@ -63,16 +43,16 @@ class Evaluation::Agreement
   def agreement
     rows = kinds.flat_map { |name| @raters.each_with_index.filter_map { |rater, index| row(name, rater, index) } }
     head = ["kind", "rater", "shared", "agree", "κ", "human tp", "rater tp"]
-    "## Human and rater agreement\n\n#{table(head, rows)}\n" unless rows.empty?
+    rows.empty? ? missing : "## Human and rater agreement\n\n#{table(head, rows)}\n"
   end
 
   def row(name, rater, index)
-    accord = Evaluation::Accord.new(pairs: paired(name, rater))
+    accord = Evaluation::Accord.new(paired(name, rater))
     return if accord.empty?
-    [name || "all", index + 1, accord.size, accord.agreed, accord.kappa, accord.positive(0), accord.positive(1)]
+    [name || "all", index + 1, *accord.cells]
   end
 
-  def paired(name, rater) = judged(name).filter_map { |key, entry| rater.verdict(key)&.then { [entry["label"], it] } }
+  def paired(name, rater) = judged(name).flat_map { |key, entry| rater.verdicts(key).map { [entry["label"], it] } }
 
   def missing = "No rater has labelled any of these keys yet, so this is human precision alone.\n"
 end

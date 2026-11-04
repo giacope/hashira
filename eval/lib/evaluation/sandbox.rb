@@ -1,25 +1,26 @@
 # frozen_string_literal: true
 
 class Evaluation::Sandbox
-  def initialize(source)
+  def initialize(source, scratch = Dir)
     @source = source
+    @scratch = scratch
   end
 
   def open
-    Dir.mktmpdir("evaluation") do |root|
+    @scratch.mktmpdir("evaluation") do |root|
       @source.each { |path, text| write(File.join(root, path), text) }
       yield(root)
     end
   end
 
   def copy
-    Dir.mktmpdir("evaluation") do |root|
+    @scratch.mktmpdir("evaluation") do |root|
       FileUtils.cp_r("#{@source}/.", root)
       yield(root)
     end
   end
 
-  def expectations = Dir["#{@source}/*/expect.yml"].map { File.dirname(it) }
+  def fixtures = Dir["#{@source}/*/expect.yml"].map { Evaluation::Fixture.new(File.dirname(it)) }
 
   private
 

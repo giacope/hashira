@@ -9,21 +9,23 @@ class Hashira::Smells::Attributes
 
   EVERY = %i[attr_reader attr_writer attr_accessor].freeze
 
+  private_constant :READERS, :WRITERS, :EVERY
+
   def initialize(nodes)
     @nodes = nodes
   end
 
   def declared(kinds = EVERY) = macros(kinds).flat_map { names(it) }
 
-  def macros(kinds) = @nodes.grep(Prism::CallNode).select { kinds.include?(it.name) && !it.receiver }
+  def readers = declared(READERS)
 
-  def ivars(kinds) = @nodes.select { kinds.include?(it.class) }.map(&:name)
+  def macros(kinds = EVERY) = @nodes.grep(Prism::CallNode).select { kinds.include?(it.name) && !it.receiver }
 
   def writers = declared(WRITERS).map { :"#{it}=" }
 
   private
 
   def names(call)
-    Array(call.arguments&.arguments).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax.new(it).text }
+    Array(call.arguments&.arguments).grep(Prism::SymbolNode).map { Hashira::Analysis::Syntax::Word.new(it).to_s }
   end
 end

@@ -1,18 +1,16 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
-  def view(project, graph, findings, complexity: nil, duplication: nil, hotspots: nil, compact: nil, top: nil)
-    Hashira::Report::View.new(
-      project:, graph:, complexity:, duplication:, hotspots:, findings:, compact:, top:, screened: Fixtures::CLEAR
-    )
+  def view(project, graph, findings, complexity: [], duplication: [], hotspots: [], compact: nil, top: nil)
+    analyses = Hashira::Report::View::Analyses.new([graph].compact, complexity, duplication, hotspots)
+    verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
+    Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top, compact))
   end
 
-  def full(pipeline, top: nil)
-    findings = Hashira::CI::Accepted.new([]).screen(pipeline.findings)
-    view(
-      pipeline.project, pipeline.graph, findings,
-      complexity: pipeline.complexity, duplication: pipeline.duplication, hotspots: pipeline.hotspots, top:
-    )
+  def full(project, top: nil)
+    pipeline = Hashira::Pipeline.build(project)
+    findings = Hashira::CI::Accepted.new([]).screen(kept(pipeline))
+    view(project, outcome(pipeline).graph, findings, **parts(project, %i[complexity duplication hotspots]), top:)
   end
 
   def lengths(report)
@@ -21,21 +19,22 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
       .merge("hotspots" => report["hotspots"]).transform_values(&:size)
   end
 
-  def emit(view) = JSON.parse(capture { described_class.new(view).print })
+  def emit(view) = JSON.parse(capture { view.json.print })
 
   def cyclic_report = with_pipeline { |project, graph, findings| emit(view(project, graph, findings)) }
 
   # The JSON report of a pipeline run over the files: with its graph or without, and with the parts named.
-  def reported(files, graph: true, parts: [], directories: ["lib/app"], accepted: [], **)
+  def reported(files, graph: true, shown: [], directories: ["lib/app"], accepted: [], enabled: Hashira::Checks.new.analyzers)
     within(files) do
-      pipeline = Hashira::Pipeline.new(Hashira::Project.new(directories), **)
-      findings = Hashira::CI::Accepted.new(accepted).screen(pipeline.findings)
-      emit(view(pipeline.project, (pipeline.graph if graph), findings, **parts.to_h { [it, pipeline.public_send(it)] }))
+      project = Hashira::Project.new(directories)
+      pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules.new({}), Fixtures::FLAT, Hashira::Selection.new(enabled))
+      findings = Hashira::CI::Accepted.new(accepted).screen(kept(pipeline))
+      emit(view(project, (outcome(pipeline).graph if graph), findings, **parts(project, shown)))
     end
   end
 
   def capped_at(files, top)
-    within(files) { emit(full(Hashira::Pipeline.new(Hashira::Project.new(["lib/app"])), top:)) }
+    within(files) { emit(full(Hashira::Project.new(["lib/app"]), top:)) }
   end
 
   def legacy = { "kind" => "complexity", "package" => "App::Knot::Tangle#tangled", "reason" => "legacy tangle" }
@@ -45,12 +44,12 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "says what produced it: schema version, packaging, targets, and file count" do
     expect(cyclic_report.values_at("version", "packaging", "targets", "files"))
-      .to(eq([Hashira::Report::Json::SCHEMA, "folder", ["lib/app"], 3]))
+      .to(eq([Hashira::Report::Json::About::SCHEMA, "folder", ["lib/app"], 3]))
   end
 
   it "emits one line under --compact, and the same data either way" do
     with_pipeline do |project, graph, findings|
-      dense = capture { described_class.new(view(project, graph, findings, compact: true)).print }
+      dense = capture { view(project, graph, findings, compact: true).json.print }
       expect(dense.lines.size).to(eq(1))
       expect(JSON.parse(dense)).to(eq(emit(view(project, graph, findings))))
     end
@@ -58,7 +57,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "indents across lines unless asked to be compact" do
     with_pipeline do |project, graph, findings|
-      printed = capture { described_class.new(view(project, graph, findings)).print }
+      printed = capture { view(project, graph, findings).json.print }
       expect(printed).to(eq("#{JSON.pretty_generate(JSON.parse(printed))}\n"))
     end
   end
@@ -102,7 +101,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "omits coupling keys when no graph is present" do
-    report = reported(Fixtures::COMPLEX_FILES, graph: false, parts: %i[complexity])
+    report = reported(Fixtures::COMPLEX_FILES, graph: false, shown: %i[complexity])
     expect(report).not_to(have_key("packages"))
     expect(report["complexity"]["methods"].first).to(include("subject" => "App::Knot::Tangle#tangled"))
     expect(report["complexity"]["classes"])
@@ -110,7 +109,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
   end
 
   it "includes duplication clusters when supplied" do
-    report = reported(Fixtures::DUPLICATION_FILES, parts: %i[duplication])
+    report = reported(Fixtures::DUPLICATION_FILES, shown: %i[duplication])
     expect(report["duplication"].first).to(include("sites" => 2, "kind" => "literal"))
   end
 
@@ -143,7 +142,7 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   it "deals the findings across kinds in the order the text report shows them" do
     with_pipeline do |project, graph, findings|
-      expected = Hashira::Report::Spread.new(findings.all).to_a.map(&:package)
+      expected = Hashira::Report::Spread.new(findings.to_a).to_a.map { it.to_h[:package] }
       expect(emit(view(project, graph, findings))["findings"].map { it["package"] }).to(eq(expected))
     end
   end
@@ -155,29 +154,30 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
     end
   end
 
-  describe(Hashira::Report::Confidence) do
+  describe(Hashira::Analysis::Confidence) do
     def clone(variance)
-      detail = Hashira::Duplication::DuplicationFinding::Overlap.new(size: 2, mass: 30, kind: variance, hot: false)
-      Hashira::Analysis::Finding.new(kind: "duplication", package: "a.rb:1", detail:, evidence: [])
+      detail = Hashira::Duplication::DuplicationFinding::Overlap.new(2, 30, variance, false)
+      handmade("duplication", "a.rb:1", detail)
     end
+
+    def rated(finding) = finding.to_h.fetch(:confidence)
 
     it "trusts a clone that differs only in one narrow way, doubts one whose control flow differs" do
       kinds = %i[identical literal message constant mixed renamed renamed_literal nil_guard renamed_nil_guard structure
         convention]
-      rated = kinds.map { described_class.new(clone(it)).of }
-      expect(rated).to(eq(%w[high high high high medium medium medium medium medium low low]))
+      expect(kinds.map { rated(clone(it)) }).to(eq(%w[high high high high medium medium medium medium medium low low]))
     end
 
     it "takes the confidence a finding states over the one its kind implies" do
-      stated = %i[low high].map { Hashira::Analysis::Finding.new(kind: "nil_check", package: "p", evidence: [], confidence: it) }
-      expect(stated.map { described_class.new(it).of }).to(eq(%w[low high]))
+      stated = %i[low high].map { handmade("nil_check", "p", ratings: [it]) }
+      expect(stated.map { rated(it) }).to(eq(%w[low high]))
     end
 
     it "treats every structural kind and complexity as measured, and every smell and history guess as a pattern" do
-      rate = ->(kind) { described_class.new(Hashira::Analysis::Finding.new(kind:, package: "p", evidence: [])).of }
+      rate = ->(kind) { described_class.new(kind, Fakes::Detail.new({})).to_s }
       guesses = %w[change_coupling dead_code]
-      expect([*(Hashira::Pipeline::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
-      expect([*Hashira::Pipeline::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))
+      expect([*(Fixtures::STRUCTURAL - guesses), "complexity"].map(&rate).uniq).to(eq(["high"]))
+      expect([*Fixtures::SMELLS, *guesses].map(&rate).uniq).to(eq(["medium"]))
     end
   end
 end

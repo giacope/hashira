@@ -5,19 +5,22 @@ class Hashira::Report::GraphPayload
     @graph = graph
   end
 
-  def to_h = { packages:, edges:, folds: @graph.folds }
+  def to_h = { packages: ranked, edges:, folds: packages.folds.map(&:to_h) }
 
   private
 
-  def packages
-    ranked.to_h { |package, metric| [package, metric.to_h.merge(cyclic: @graph.cycles.through?(package))] }
+  def ranked
+    cycles = packages.cycles
+    sorted = packages.to_h.sort_by { |_package, metric| metric.instability }
+    sorted.to_h { |package, metric| [package, metric.to_h.merge(cyclic: !cycles.path(package).nil?)] }
   end
 
-  def ranked = @graph.metrics.sort_by { |_package, metric| metric.instability }
+  def packages = @_packages ||= @graph.packages
 
   def edges
-    @graph.weighted.map do |from, to, weight|
-      { from:, to:, weight: }.merge(refs: @graph.evidence(from, to).to_a.sort)
+    @graph.edges.to_a.map do |edge|
+      from, to, weight = edge.to_a
+      { from:, to:, weight: }.merge(refs: edge.evidence.sort)
     end
   end
 end

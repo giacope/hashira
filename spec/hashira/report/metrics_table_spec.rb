@@ -67,12 +67,13 @@ RSpec.describe(Hashira::Report::MetricsTable, :aggregate_failures) do
   end
 
   def coupling_report
-    pipeline = Hashira::Pipeline.new(Hashira::Project.new(["app"]), enabled: %i[coupling])
-    view = Hashira::Report::View.new(
-      project: pipeline.project, graph: pipeline.graph, complexity: nil, duplication: nil,
-      hotspots: nil, findings: Hashira::CI::Accepted.new([]).screen(pipeline.findings), screened: Fixtures::CLEAR
-    )
-    capture { Hashira::Report::Text.new(view).print }
+    project = Hashira::Project.new(["app"])
+    pipeline = Hashira::Pipeline.build(project, Hashira::Config::Rules.new({}), Fixtures::FLAT, Hashira::Selection.new(%i[coupling]))
+    findings = Hashira::CI::Accepted.new([]).screen(kept(pipeline))
+    verdicts = Hashira::Report::View::Verdicts.new(findings, Fixtures::CLEAR, Fixtures::JUDGED)
+    analyses = Hashira::Report::View::Analyses.new([outcome(pipeline).graph], [], [], [])
+    view = Hashira::Report::View.new(project, analyses, verdicts)
+    capture { view.text.print }
   end
 
   it "prints each fold under the coupling section" do
