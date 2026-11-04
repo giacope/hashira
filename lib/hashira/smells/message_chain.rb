@@ -44,13 +44,7 @@ class Hashira::Smells::MessageChain < Hashira::Smells::Check
     @names = names
   end
 
-  def chains
-    @_chains ||=
-      begin
-        found = subject.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode).select { chained?(it) }
-        found.reject { |call| found.any? { it.receiver.equal?(call) } }
-      end
-  end
+  def chains = @_chains ||= subject.accept(Hashira::Smells::Scope).inside.grep(Prism::CallNode).select { chained?(it) }
 
   def chained?(call)
     hop = call.receiver
