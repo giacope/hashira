@@ -414,6 +414,57 @@ RSpec.describe(Hashira::Smells::UtilityFunction, :aggregate_failures) do
     )
   end
 
+  it "pairs a default with the rival that fills its slot or that a ternary builds instead, not with other slots" do
+    findings = utility(<<~RUBY)
+      module App
+        class Rows
+          def body(objects, &) = objects.map(&)
+        end
+
+        class KeyedRows
+          def initialize(key) = @key = key
+
+          def body(objects) = objects.to_h { |item| [item.public_send(@key), yield(item)] }
+        end
+
+        class Listing
+          def initialize(items) = @items = items
+
+          def keyed(key) = @_rows = KeyedRows.new(key)
+
+          def body = rows.body(@items, &:to_s)
+
+          private
+
+          def rows = @_rows ||= Rows.new
+        end
+
+        class Cells
+          def self.of(key) = key ? Wide.new : new
+
+          def body(objects) = objects.map(&:to_s)
+        end
+
+        class Wide
+          def body(objects) = objects.map(&:inspect)
+        end
+
+        class Lone
+          def body(objects) = objects.map(&:to_s)
+        end
+
+        class Holder
+          def initialize(items) = @items = items
+
+          def body = (@_lone ||= Lone.new).body(@items)
+
+          def other = @_other = Rows.new
+        end
+      end
+    RUBY
+    expect(findings.map { it.to_h[:package] }).to(eq(%w[App::Lone#body]))
+  end
+
   it "pairs a class with the decorator it hands itself to, not with every decorator" do
     findings = utility(<<~RUBY)
       module App

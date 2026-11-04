@@ -698,6 +698,43 @@ From the third field test (thirty MIT-licensed codebases):
 
 ### Fixed
 
+- Found by `--strict` on rubocop-kata and on the round-7 twins (alba and
+  blueprinter rewritten to rubocop-kata's strict profile):
+  - `nil_check` (strict) takes a lookup in a hash the class only ever builds
+    with a default for that default: rubocop-kata's `Gap#crossed?` answers
+    `@memo[key]` from `Hash.new { |memo, key| memo[key] = scan?(key) }`, which
+    computes a boolean for every key, and `unless gap.crossed?(key)` was
+    reported as a nil check. A default value (`Hash.new(0)`) counts too. `{}`,
+    `Hash.new`, `Hash.new(nil)`, a block that answers nothing or a value that
+    can be nil (`memo[key] = rows.find { … }`), and a hash the class also sets
+    without a default can still answer nil and are still reported.
+  - `utility_function` pairs a memoized default with the classes later
+    assigned to the same instance variable: `@_rows ||= Rows.new` beside
+    `@_rows = KeyedRows.new(key)` makes `Rows` and `KeyedRows` rivals for one
+    slot, and `Rows#body`, which fills that role, was told to move. A bare
+    `new` in a class's own choice (`key ? KeyedRows.new(key) : new`) builds
+    that class. A default whose slot nothing else fills is still reported.
+  - `duplication` leaves alone sibling classes that answer the same messages
+    with one-line methods, each its own way: alba's `BlockAttribute` and
+    `MethodAttribute` (`fetch` as `scope.evaluated(@block, object)` beside
+    `scope.answer(@name, object)`, both `view(fetched) = fetched` and
+    `cascade(_type) = self`) are two implementations of one protocol, and
+    "extract a method taking the receiver" would merge them back into one
+    behind a switch. Each method must send a message its twin does not, or
+    compute nothing. Identical classes, a shared method that computes
+    (`Time.zone.now.iso8601` in two presenters), copies that differ only in
+    data (ruby-openai's resource paths), and methods that hold more than a
+    one-line statement are still clones.
+  - `duplication` takes a facade's delegations as calls into an abstraction
+    the project already has: blueprinter's `include_view`/`include_views`
+    beside `exclude`/`excludes`, each one call to a different method of the
+    current view, were told to keep each name calling one shared method that
+    takes the receiver, which only dispatch by message name could do.
+    mechanize's accessors handing each message on to `@agent`, and its
+    agent's handing the same ones on to `@http`, are the same case. Copies
+    that call the same method of the same object (a rename), the same
+    method of different classes (`Charge.sync` beside `Subscription.sync`),
+    a method outside the project, or do more than the call are still clones.
 - Found by the sixth field test's sixth batch (service-manual-publisher,
   state_machines, rubycritic, sshkit, acts-as-taggable-on):
   - `repeated_call` reads a call to any reader the class, a parent or a mixin

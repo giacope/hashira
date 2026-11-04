@@ -696,9 +696,19 @@ What is not counted:
   request(:patch, path, body)` beside `def post` is already factored: a method
   whose body is one call to a method the project defines, and whose copies
   differ only in what they hand it, block included (`meanwhile(email, name) {
-  boost(message) }`). A test block (`test "..." do`, `it`, `specify`) counts
+  boost(message) }`), or, a facade's way, in which of the project's methods
+  they call or which held object they hand it to (`def add(song) =
+  tracks.add(song)` beside `def skip(song) = tracks.skip(song)`). A test
+  block (`test "..." do`, `it`, `specify`) counts
   as such a method, its name included in what may differ. What the block holds
   is still compared on its own, so copies inside it are a clone.
+- **Protocols.** Sibling classes that answer the same messages with one-line
+  methods, each its own way, are two implementations of one protocol: every
+  method sends a message its twin does not, or computes nothing (`def
+  fetch(scope) = scope.answer(@name)` beside `def fetch(scope) =
+  scope.evaluated(@block)`, both with `def view(value) = value`). Identical
+  copies, a shared method that computes, copies that differ only in data,
+  and methods that hold more are still compared.
 - **Inverse pairs.** `lock!`/`unlock!`, `enable_x`/`disable_x` share a shape by
   design.
 - **Abstract hooks.** A method whose body only raises (`raise
@@ -858,7 +868,10 @@ Findings (3):
   holds as its values, built or as a table of classes to pick from,
   `FORMATS = { plain: Plain, json: Json }`; a class attribute's default and
   the classes assigned to it, `class_attribute :debouncer, default: Debouncer`
-  beside `Host.debouncer = ImmediateDebouncer`; a class that hands itself to
+  beside `Host.debouncer = ImmediateDebouncer`; a memoized default and the
+  classes later assigned to its instance variable, `@_rows ||= Rows.new`
+  beside `@_rows = KeyedRows.new(key)`; the classes one choice builds, a bare
+  `new` there building the class it sits in (`key ? Wide.new : new`); a class that hands itself to
   a decorator, `Layer.new(self)`, or seeds a chain of them,
   `layers.inject(self) { |stack, layer| layer.new(stack) }`, and the
   decorators that forward what they define to the object they wrap) is
@@ -902,7 +915,9 @@ Findings (3):
   parameter the method defaults to nil, and the answer of another owned class's
   method that can answer nil (its body ends in `detect`, `find`, `first`,
   `last`, `[]`, `dig`, `min_by`, `&.`, a literal `nil`, an `if` or `case`
-  without `else`, or it returns early with nothing), reached through an
+  without `else`, or it returns early with nothing; a `[]` on a hash the
+  class only ever builds with a default, `Hash.new(0)` or `Hash.new { |memo,
+  key| memo[key] = scan?(key) }`, answers that default), reached through an
   instance variable or local named for that class or an object built on the
   spot (`Finder.new(rows).parent(id)`). An instance variable is typed by what
   its object's classes and mixins build into it first (`@socket = ::Socket.new`,
