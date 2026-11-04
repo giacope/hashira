@@ -348,6 +348,21 @@ RSpec.describe(Hashira::Smells::FeatureEnvy, :aggregate_failures) do
     expect(findings.flat_map { it.to_h[:evidence] }).to(eq(["order (line 5)", "self (line 5)"]))
   end
 
+  it "leaves a method alone when it reads self as often as the name it reads most" do
+    findings = envy(<<~RUBY)
+      module App
+        module Zone
+          class Thing
+            def total(order)
+              self.rate * order.net + self.fee - order.tax
+            end
+          end
+        end
+      end
+    RUBY
+    expect(findings).to(be_empty)
+  end
+
   it "still flags a name when the guard or lookup is about something else" do
     findings = envy(<<~RUBY)
       module App
