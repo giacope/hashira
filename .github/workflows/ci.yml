@@ -51,7 +51,7 @@ jobs:
           restore-keys: kimera-coverage-
       # Mutates every line of each file this PR changed, and the files its changed tests reach;
       # any surviving or uncovered mutant fails the build.
-      - run: bundle exec kimera ci --since-scope impact
+      - run: bundle exec kimera ci
 
   mutation-full:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
