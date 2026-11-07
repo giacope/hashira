@@ -44,14 +44,12 @@ module Fixtures
     [project, Fixtures::Census.new(project, trees), Hashira::Coupling::Graph.build(project, trees)]
   end
 
-  # What a pipeline hands the run: its outcome, and its coverage of the checks; and the findings it kept.
   def outcome(pipeline) = pipeline.call(->(found, _coverage) { found })
 
   def coverage(pipeline) = pipeline.call(->(_found, covered) { covered })
 
   def kept(pipeline) = outcome(pipeline).screened.to_a.fetch(0)
 
-  # The parts of a report the analyzers measure, over a project's trees: complexity, duplication and hotspots.
   def parts(project, names)
     trees = Hashira::Trees.new(project.listing)
     complexity = [Hashira::Complexity::Scores.new(project.paths, trees.all, NONE, trees)]
@@ -103,7 +101,6 @@ module Fixtures
 
   def cluster(sources) = Hashira::Duplication::Clusters.new(fragments(sources)).sorted.first
 
-  # The file each clone site sits in, and the lines it spans.
   def site_files(sites) = sites.map { it.span.to_a.first }
 
   def site_ranges(sites) = sites.map { it.span.range }
@@ -130,8 +127,6 @@ module Fixtures
     Hashira::Analysis::Finding.new(kind, Hashira::Analysis::Finding::Name.new(package, digests), detail, proof)
   end
 
-  # While the block runs, the first argument each instance of klass is built with, and, when a method is named,
-  # that argument again each time the method runs on the instance: watched by a TracePoint, which replaces nothing.
   def observed(klass, method = :initialize, &)
     built = {}.compare_by_identity
     seen = []

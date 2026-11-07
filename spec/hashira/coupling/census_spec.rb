@@ -117,7 +117,6 @@ RSpec.describe(Hashira::Coupling::Census, :aggregate_failures) do
   end
 
   describe "#resolve" do
-    # What each query, a path and the namespaces around it, resolves to.
     def resolved(files, queries, **)
       analyze(files, **) { |_project, census, _graph| queries.map { census.resolve(*it) } }
     end

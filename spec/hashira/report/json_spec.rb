@@ -23,7 +23,6 @@ RSpec.describe(Hashira::Report::Json, :aggregate_failures) do
 
   def cyclic_report = with_pipeline { |project, graph, findings| emit(view(project, graph, findings)) }
 
-  # The JSON report of a pipeline run over the files: with its graph or without, and with the parts named.
   def reported(files, graph: true, shown: [], directories: ["lib/app"], accepted: [], enabled: Hashira::Checks.new.analyzers)
     within(files) do
       project = Hashira::Project.new(directories)

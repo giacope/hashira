@@ -3,8 +3,6 @@
 require "prism"
 
 module Fixtures
-  # Every `accept` call in hashira's lib and every `accept` it defines; for each class a call names, the
-  # instance variables its constructor stores the node in, and those its public methods answer bare.
   class Readers
     HIDDEN = %i[private protected].freeze
 
@@ -93,6 +91,5 @@ module Fixtures
     end
   end
 
-  # The survey of hashira's own lib, parsed once for the whole suite.
   LIBRARY = Readers.new
 end

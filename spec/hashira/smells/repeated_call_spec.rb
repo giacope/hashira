@@ -3,7 +3,6 @@
 RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
   def merged(source) = sniffed({ "lib/app/zone/thing.rb" => source }, "repeated_call")
 
-  # The finding per class, read back per method from its evidence ("Class#method: call × n (lines)").
   def repeated(source) = merged(source).flat_map { methods_of(it) }
 
   def methods_of(finding)
@@ -567,8 +566,6 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     )
   end
 
-  # A modifier's condition runs before the statement written ahead of it, and
-  # an instance variable assigned between two calls hands them two values.
   it "counts a variable written before a trailing condition, or an instance variable reassigned, as two values" do
     findings = repeated(<<~RUBY)
       module App
@@ -1813,7 +1810,6 @@ RSpec.describe(Hashira::Smells::RepeatedCall, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
-  # Each method in a class of its own, so each finding is one method's, rated as that method's repeats are.
   def rated(*methods)
     classes = methods.each_with_index.map { |body, index| "class Thing#{index}\n#{body}\nend\n" }
     merged("module App\nmodule Zone\n#{classes.join}end\nend\n").map { it.to_h[:confidence] }

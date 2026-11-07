@@ -3,7 +3,6 @@
 RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
   around { |example| within({}) { example.run } }
 
-  # The census and graph of the files, written to the example's own folder.
   def charted(files, directories: ["app"], packaging: :namespace)
     files.each do |path, source|
       FileUtils.mkdir_p(File.dirname(path))
@@ -14,10 +13,8 @@ RSpec.describe(Hashira::Coupling::Census, "#charge", :aggregate_failures) do
 
   def edges(graph) = graph.edges.to_a.map(&:to_s)
 
-  # The edges that join two domain packages, neither of them aside.
   def domain(graph) = graph.edges.to_a.reject(&:aside?).map(&:to_s)
 
-  # A package's metric, as the fields it shows.
   def metric(graph, package) = graph.packages.to_h[package].to_h
 
   it "groups types by top-level namespace across layer folders" do

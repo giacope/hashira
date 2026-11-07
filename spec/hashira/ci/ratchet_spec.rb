@@ -43,7 +43,6 @@ RSpec.describe(Hashira::CI::Ratchet, :aggregate_failures) do
 
   def saved = JSON.parse(File.read("baseline.json"))
 
-  # What a call returned, and what it wrote.
   def noted
     io = StringIO.new
     [yield(io), io.string]

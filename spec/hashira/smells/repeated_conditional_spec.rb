@@ -259,8 +259,6 @@ RSpec.describe(Hashira::Smells::RepeatedConditional, :aggregate_failures) do
     expect(findings).to(be_empty)
   end
 
-  # A trailing condition runs before the statement written ahead of it, and an
-  # argument before the call it is passed to, so neither is a recheck after it.
   it "counts a test in a trailing condition or in a command's argument as made before that command" do
     findings = branching(<<~RUBY)
       module App

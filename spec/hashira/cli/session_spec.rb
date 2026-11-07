@@ -21,7 +21,6 @@ RSpec.describe(Hashira::CLI::Session, :aggregate_failures) do
 
   def probe(index) = "def probe#{index}(node) = node.is_a?(Prism::CallNode)"
 
-  # The exit status and what the run printed.
   def ran(arguments)
     status = nil
     capture { status = described_class.new(arguments).status }.then { [status, it] }

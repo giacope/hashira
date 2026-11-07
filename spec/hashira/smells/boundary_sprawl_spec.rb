@@ -1,8 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
-  # App::Ast copies Prism's node classes, App::Types copies App::Ast's, and
-  # App::Node aliases Parser's node class.
   let(:copies) { <<~RUBY }
     module App
       module Ast
@@ -106,7 +104,6 @@ RSpec.describe(Hashira::Smells::BoundarySprawl, :aggregate_failures) do
     expect(within(files) { interpreted }).to(be_empty)
   end
 
-  # The sprawl findings left once Prism is declared an interpreted model.
   def interpreted
     project = Hashira::Project.new(["lib/app"])
     trees = Hashira::Trees.new(project.listing).all

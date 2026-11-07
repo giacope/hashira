@@ -9,7 +9,6 @@ RSpec.describe(Hashira::Duplication::Clones, :aggregate_failures) do
     )
   end
 
-  # Two methods share a head and a tail; two others share the head and the tail's first line.
   def overlapping
     shared = " r.configure(host: fetch(:h), port: fetch(:p))\n r.connect(retries: 3, timeout: 30)\n"
     archived = " r.archive(path: File.join(root, name), mode: :append, level: 9)\n"

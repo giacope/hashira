@@ -7,7 +7,6 @@ RSpec.describe(Hashira::Report::Text, :aggregate_failures) do
     Hashira::Report::View.new(project, analyses, verdicts, Hashira::Report::View::Layout.new(top))
   end
 
-  # The text report of a pipeline run over the files: with its graph or without, and with the parts named.
   def printed(files, graph: true, shown: [], accepted: [])
     within(files) do
       project = Hashira::Project.new(["lib/app"])
