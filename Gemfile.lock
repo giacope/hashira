@@ -1,11 +1,10 @@
 GIT
   remote: https://github.com/giacope/kimera.git
-  revision: 29eab8450f706c762cf8f22d5929eab30f0353a8
+  revision: a98b1ee80a782dd9e53a2aa6642c1fab7be203e7
   branch: main
   specs:
     kimera (0.1.6)
-      prism (>= 0.19, < 2)
-      unparser (>= 0.8.1, < 0.10)
+      prism (>= 1.5.1, < 2)
 
 GIT
   remote: https://github.com/giacope/rubocop-kata.git
@@ -92,10 +91,6 @@ GEM
     unicode-display_width (3.3.0)
       unicode-emoji (~> 4.3)
     unicode-emoji (4.3.0)
-    unparser (0.9.0)
-      diff-lcs (>= 1.6, < 3)
-      parser (>= 3.3.0)
-      prism (>= 1.5.1)
 
 PLATFORMS
   arm64-darwin-23
@@ -140,7 +135,6 @@ CHECKSUMS
   simplecov (1.0.3) sha256=38ef0514f16ae7562f0d0f4df02610071115103d301b6de7dacbcc000082e39b
   unicode-display_width (3.3.0) sha256=4b7aa66a4b11db50f6f7e98411215cd0dd10eaecb665d36eec5bcacb3fa0b613
   unicode-emoji (4.3.0) sha256=11c02fa73290378c066bb0562cd4c87d8e1b706fbbe0059ca12746a4244de8ce
-  unparser (0.9.0) sha256=4331f174a73a23b69250b13d47da3794ed1449711ee0f9ed8947dc020ba76067
 
 BUNDLED WITH
   4.0.20
