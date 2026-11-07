@@ -43,7 +43,14 @@ jobs:
         with:
           ruby-version: "3.4"
           bundler-cache: true
-      # Mutates only the lines this PR changed; any surviving or uncovered mutant fails the build.
+      # main's full run stores which tests reach each file; the PR's run reads it.
+      - uses: actions/cache/restore@v4
+        with:
+          path: tmp/kimera/coverage.json
+          key: kimera-coverage-${{ github.event.pull_request.base.sha }}
+          restore-keys: kimera-coverage-
+      # Mutates every line of each file this PR changed, and the files its changed tests reach;
+      # any surviving or uncovered mutant fails the build.
       - run: bundle exec kimera ci
 
   mutation-full:
@@ -58,7 +65,12 @@ jobs:
           bundler-cache: true
       # Mutates all of lib. .kimera.yml allows no survivor, no uncovered mutant and
       # no ignore entry, so any of them fails the build.
-      - run: bundle exec kimera run --jobs 4 --no-progress --report tmp/kimera/full.json
+      - run: bundle exec kimera run --jobs 4 --no-progress --reuse-coverage --report tmp/kimera/full.json
+      - if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: tmp/kimera/coverage.json
+          key: kimera-coverage-${{ github.sha }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
