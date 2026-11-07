@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
 module Fixtures
-  # What the coupling graph is built from, wired as the graph wires it: the packages and the types each holds,
-  # the folds, the package a name resolves to in a nesting, the package each type path is claimed by, the
-  # namespace prefix, and the type that holds a name.
   class Census
     def initialize(project, trees)
       framework = project.framework

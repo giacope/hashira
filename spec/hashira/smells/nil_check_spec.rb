@@ -5,7 +5,6 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     sniffed({ "lib/app/zone/thing.rb" => source }, "nil_check", rules:)
   end
 
-  # The methods that check a nil, in file order: a finding's own package, or each method a source's finding lists.
   def checkers(findings)
     findings.flat_map { sites(it.to_h) }.sort_by { |_name, site| site[/:(\d+)/, 1].to_i }.map(&:first)
   end
@@ -19,7 +18,6 @@ RSpec.describe(Hashira::Smells::NilCheck, :aggregate_failures) do
     findings.flat_map { sites(it.to_h) }.sort_by { it[1][/:(\d+)/, 1].to_i }.map { [it[0], it[2] == "low"] }
   end
 
-  # Each method that checks a nil, and the sources its checks name: a source's finding lists the methods that check it.
   def sources_of(findings)
     pairs =
       findings.flat_map do |found|

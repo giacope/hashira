@@ -186,7 +186,6 @@ RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
     names.to_h { ["lib/app/core/#{it.downcase}.rb", "module App; module Core; class #{it}; #{body}; end; end; end\n"] }
   end
 
-  # A class in one folder of lib/app, using the constants listed.
   def client(path, uses)
     package, name = path.delete_suffix(".rb").split("/").map(&:capitalize)
     ["lib/app/#{path}", "module App; module #{package}; class #{name}; def c = [#{uses}]; end; end; end\n"]
@@ -206,7 +205,6 @@ RSpec.describe(Hashira::Pipeline, :aggregate_failures) do
     expect(told[:evidence]).to(include("main/d.rb:1: App::Core::Graph"))
   end
 
-  # Two clients use the constants given, two others Core::Graph and Core::Chart.
   def split(uses)
     other = "Core::Graph, Core::Chart"
     clients("one/a.rb" => uses, "two/b.rb" => uses, "three/c.rb" => other, "main/d.rb" => other)

@@ -6,7 +6,6 @@ RSpec.describe(Hashira::Coupling::Graph, :aggregate_failures) do
     "module App; module #{name.capitalize}; class X; def c = [#{refs}]; end; end; end\n"
   end
 
-  # The metrics of the named packages, and the graph's SDP violations.
   def judged(graph, *names) = [*graph.packages.to_h.values_at(*names), graph.packages.violations]
 
   def with_cycle(&)

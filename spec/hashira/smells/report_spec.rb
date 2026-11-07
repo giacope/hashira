@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
-  # The kinds a pipeline finds with the analyzers named: every rule on, or with nil every analyzer under the defaults.
   def sniffing(enabled)
     rules = enabled ? Hashira::Config::Rules::ALL : Hashira::Config::Rules.new({})
     selection = Hashira::Selection.new(*[enabled].compact)
@@ -23,7 +22,6 @@ RSpec.describe(Hashira::Smells::Report, :aggregate_failures) do
 
   def spied = [Hashira::Smells::DataClump, Hashira::Smells::BoundarySprawl, Hashira::Smells::SpreadSwitch]
 
-  # The classes among these that are built while the block runs, seen as they initialize.
   def built(classes, &)
     seen = []
     TracePoint.new(:call) { |call| seen << call.self.class if call.method_id == :initialize }.enable(&)

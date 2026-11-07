@@ -12,7 +12,6 @@ RSpec.describe(Hashira::Churn, :aggregate_failures) do
     expect(churn.hits("missing.rb")).to(eq(0))
   end
 
-  # A repository holding the files in one commit.
   def within_repository(files, *options)
     within(files) do
       git("init", "-q", *options)
